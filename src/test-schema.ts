@@ -26,6 +26,10 @@ def TodoErrorExpectation type (:todo :expect (subject :: Expression) :error (rea
 def stepParts(e :: TodoErrorExpectation) ("error","todo",e.subject,e.reason)
 def TodoAssertion type (:todo :assert (condition :: Expression))
 def stepParts(e :: TodoAssertion) ("assert","todo",e.condition)
+def LegacySetup type (:legacy (statement :: Expression))
+def stepParts(e :: LegacySetup) ("setup","legacy",e.statement)
+def TodoSetup type (:todo (statement :: Expression))
+def stepParts(e :: TodoSetup) ("setup","todo",e.statement)
 TestFileContent
 `;
 export const TEST_STEP_TYPES = [
@@ -39,3 +43,4 @@ export const TEST_STEP_TYPES = [
   "TodoErrorExpectation",
   "TodoAssertion",
 ] as const;
+export const TEST_SETUP_TYPES = ["LegacySetup", "TodoSetup"];

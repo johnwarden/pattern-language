@@ -29,6 +29,11 @@ the old error conditions. The source corpus also checks exact full packs.
 
 ## Retained and deferred coverage
 
+tests/setup/alternatives.test adds the current/future declaration pair as a real
+setup alternative. tests/symbols/classes.test checks the complete ASCII class table.
+Host tests retain trial isolation, duplicate-name unmasking, recursive grouping,
+fixture replay, source spelling and host-failure boundaries.
+
 [The legacy inventory](LEGACY-ASSERTIONS.md) accounts for every remaining legacy
 assertion. Of the original 139, 69 are now ordinary checks: defaults, concrete
 accessor results, structural equality/round trips and pack distinctions were not
@@ -183,7 +188,7 @@ predicate assertion. Empty returns use an explicit destructuring assertion. Host
 coverage retains exact complete-pack label/arity observations rather than assuming
 separate checks prove every pack property.
 
-The same 127 cases execute, with 247 passing assertions (70 legacy) and 116 todo
+The same 128 cases execute, with 249 passing assertions (70 legacy) and 117 todo
 expected failures. Higher assertion counts reflect split checks, not additional
 language features. All 76 examples remain runnable; final ordinary packs expose
 already captured results. Strict type/data checks and assertion-level modifiers are

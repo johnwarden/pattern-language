@@ -38,7 +38,9 @@ test("every legacy assertion has a same-subject todo or an explicit unresolved d
   for (const value of loadTests(
     sourceFiles(new URL("../tests/", import.meta.url)),
   )) {
-    for (const legacy of value.steps.filter((s) => s.mode === "legacy")) {
+    for (const legacy of value.steps.filter(
+      (s) => s.mode === "legacy" && s.kind !== "setup",
+    )) {
       if (
         !value.steps.some(
           (s) =>

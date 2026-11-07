@@ -7,7 +7,11 @@ import { single, singleton, unwrap, equal, observedType } from "./values.ts";
 import type { Value, TypeValue } from "./values.ts";
 import type { Pattern } from "./pattern.ts";
 import { renderDiagnostic } from "./diagnostics.ts";
-import { TEST_SCHEMA, TEST_STEP_TYPES } from "./test-schema.ts";
+import {
+  TEST_SCHEMA,
+  TEST_STEP_TYPES,
+  TEST_SETUP_TYPES,
+} from "./test-schema.ts";
 
 export type AssertionMode = "check" | "legacy" | "todo";
 export interface TestStep {
@@ -135,6 +139,8 @@ function slug(name: string): string {
 interface Rule {
   type: TypeValue;
   arity: number;
+  keyword: string;
+  setup: boolean;
 }
 class TestReader {
   schema = new Interpreter();
@@ -154,7 +160,7 @@ class TestReader {
       }
       return pattern;
     };
-    this.rules = TEST_STEP_TYPES.map((name) => {
+    this.rules = [...TEST_STEP_TYPES, ...TEST_SETUP_TYPES].map((name) => {
       const type = asType(single(this.schema.run(name))),
         pattern = shape(type.pattern());
       if (
@@ -174,7 +180,12 @@ class TestReader {
       if (literal.kind !== "symbol")
         throw new Error("Test step needs a symbol keyword");
       this.starts.add(literal.name);
-      return { type, arity: pattern.body.parts.length };
+      return {
+        type,
+        arity: pattern.body.parts.length,
+        keyword: literal.name,
+        setup: TEST_SETUP_TYPES.includes(name),
+      };
     });
   }
   steps(body: Syntax): TestStep[] {
@@ -191,6 +202,7 @@ class TestReader {
     for (let pos = 0; pos < tokens.length;) {
       const matches: { end: number; value: Value }[] = [];
       for (const rule of this.rules) {
+        if (rule.setup) continue;
         const end = pos + rule.arity;
         if (!boundaries.has(end)) continue;
         const tree: Syntax = {
@@ -238,7 +250,24 @@ class TestReader {
         pos = match.end;
       } else {
         const n = tokens[pos];
+        const setupRule =
+          n.kind === "symbol" && !n.quoted
+            ? this.rules.find((rule) => rule.setup && rule.keyword === n.name)
+            : undefined;
+        const operand = tokens[pos + 1];
+        const wrapsSetup =
+          setupRule &&
+          operand &&
+          !(
+            operand.kind === "symbol" &&
+            !operand.quoted &&
+            (this.starts.has(operand.name) ||
+              ["test", "value", "result", "results", "error"].includes(
+                operand.name,
+              ))
+          );
         if (
+          !wrapsSetup &&
           n.kind === "symbol" &&
           !n.quoted &&
           (this.starts.has(n.name) ||
@@ -268,12 +297,37 @@ class TestReader {
               : stop;
           source = dedent(start.source.text.slice(from, to).replace(/\n$/, ""));
         } else source = normal(body.lines[row]);
-        result.push({
-          kind: "setup",
-          mode: "check",
-          subject: body.lines[row],
-          source,
-        });
+        if (wrapsSetup) {
+          const rest = tokens.slice(pos + 1, next);
+          const statement: Syntax =
+            rest.length === 1
+              ? rest[0]
+              : { kind: "sequence", items: rest, span: rest[0].span };
+          const wrapped = this.schema.interpretSyntax(setupRule.type, {
+            kind: "sequence",
+            items: [n, statement],
+            span: n.span,
+          });
+          const [kind, mode, value] = this.schema.call(
+            "stepParts",
+            singleton(wrapped),
+          );
+          result.push({
+            kind: scalarString(kind.value) as "setup",
+            mode: scalarString(mode.value) as AssertionMode,
+            subject: dataSyntax(value.value),
+            source: source.replace(
+              new RegExp("^" + setupRule.keyword + "[ \\t]+", "m"),
+              "",
+            ),
+          });
+        } else
+          result.push({
+            kind: "setup",
+            mode: "check",
+            subject: body.lines[row],
+            source,
+          });
         pos = next;
       }
     }
@@ -282,6 +336,7 @@ class TestReader {
     const tail = result.at(-1);
     if (
       tail?.kind === "setup" &&
+      tail.mode === "check" &&
       one(tail.subject).kind === "pack" &&
       result.some(isAssertion)
     )
@@ -388,7 +443,9 @@ function typeOf(tree: Syntax, interpreter: Interpreter): TypeValue {
   return asType(single(execute(interpreter, tree)));
 }
 export function isAssertion(step: TestStep): boolean {
-  return step.kind !== "setup" && step.kind !== "output";
+  return (
+    step.kind !== "output" && (step.kind !== "setup" || step.mode === "todo")
+  );
 }
 interface ExpectedResult {
   value: Syntax;
@@ -478,16 +535,16 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
   try {
     if (fixture) interpreter.run(fixture, "repl", test.file + ":fixture");
     const setup: TestStep[] = [];
+    const history: string[] = [];
+    let alternativeBase: string[] | undefined;
     const flush = () => {
       if (!setup.length) return;
       phase = "setup";
       const first = setup[0];
+      alternativeBase = first.mode === "legacy" ? [...history] : undefined;
+      const source = setup.map((s) => s.source).join("\n");
       try {
-        interpreter.run(
-          setup.map((s) => s.source).join("\n"),
-          "repl",
-          test.file + ":setup",
-        );
+        interpreter.run(source, "repl", test.file + ":setup");
       } catch (error) {
         if (error instanceof LanguageError && first.subject.span)
           error.diagnostic.related.push({
@@ -496,14 +553,53 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
           });
         throw error;
       }
+      history.push(source);
       setup.length = 0;
     };
-    for (const step of test.steps) {
+    for (let index = 0; index < test.steps.length; index++) {
+      const step = test.steps[index];
       if (step.kind === "setup") {
+        if (step.mode === "todo") {
+          flush();
+          const group = [step];
+          while (
+            test.steps[index + 1]?.kind === "setup" &&
+            test.steps[index + 1]?.mode === "todo"
+          )
+            group.push(test.steps[++index]);
+          phase = "setup";
+          const trial = new Interpreter();
+          if (fixture) trial.run(fixture, "repl", test.file + ":fixture");
+          for (const source of alternativeBase ?? history)
+            trial.run(source, "repl", test.file + ":setup replay");
+          let failed = false;
+          try {
+            trial.run(
+              group.map((s) => s.source).join("\n"),
+              "repl",
+              test.file + ":todo setup",
+            );
+          } catch (error) {
+            if (!(error instanceof LanguageError)) throw error;
+            failed = true;
+          }
+          const message = failed ? "" : "This setup now succeeds; remove todo.";
+          checks.push({
+            kind: "setup",
+            mode: "todo",
+            status: failed ? "expected-failure" : "failed",
+            message,
+            span: step.subject.span,
+          });
+          if (!failed) fail(message);
+          continue;
+        }
+        if (setup.length && setup[0].mode !== step.mode) flush();
         setup.push(step);
         continue;
       }
       flush();
+      alternativeBase = undefined;
       if (step.kind === "output") {
         phase = "body";
         results = execute(interpreter, step.subject);

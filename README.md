@@ -9,11 +9,11 @@ interpreter/compiler. The TypeScript implementation is the bootstrap reference.
 
 ## Design and implementation status
 
-The revised value model extends beyond the bootstrap. All **127 source cases run**:
-**247 assertions pass (70 legacy)** and **116 todo assertions fail as expected**.
+The revised value model extends beyond the bootstrap. All **128 source cases run**:
+**249 assertions pass (70 legacy)** and **117 todo assertions fail as expected**.
 A fulfilled todo fails the suite and requests removal of its marker. All 76
 playground examples share this corpus. TypeScript retains host/API/DOM checks. The complete verification gate passes
-732 tests, with no skipped cases; build and type checking also pass.
+741 tests, with no skipped cases; build and type checking also pass.
 
 | Intended contract | Current bootstrap |
 | --- | --- |
@@ -102,7 +102,10 @@ test "Current and future literal types"
 end
 ```
 
-Modifiers apply to assertions, never whole tests. Ordinary and legacy assertions
+Modifiers apply to assertions and setup bindings/definitions, never whole tests.
+Legacy setup supplies current definitions; adjacent todo setup is tried in isolation
+from the same incoming scope, so duplicate names cannot mask an implemented replacement.
+Ordinary and legacy assertions
 must pass. Todo assertions run and must fail; failures are silent, while successes
 fail the suite with a request to remove todo. Shared setup, malformed source and
 internal harness errors still fail normally. Values and their observed types are

@@ -71,12 +71,12 @@ already defined abstract-call semantics, never a source-visible overload generat
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. **All 127 source cases execute**, with
-**247 passing assertions (70 legacy)** and **116 todo expected failures**. The corpus
+The reference is TypeScript prototype 0.2. **All 128 source cases execute**, with
+**249 passing assertions (70 legacy)** and **117 todo expected failures**. The corpus
 includes 76 playground examples, 14 other conformance cases, nine migrated binding/
 default cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
 separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 732 tests with no skips, plus build/type checks.
+verification gate passes 741 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -123,7 +123,7 @@ explicit layout termination, including shared string/if terminator ownership.
   Reject missing inner ends; clause continuations belong to one grammar form, not
   unrelated statements. Support strings ending at a dedented clause and a final
   end shared with their containing form. Keep EOF rejection and existing string data.
-- Add legacy/todo setup alternatives from the same incoming scope; do not allow
+- Implemented legacy/todo setup alternatives from the same incoming scope; do not allow
   duplicate-name failures or leaked bindings to mask a fulfilled todo.
 
 These are focused slices, not new completed milestones. Postfix value identity and
@@ -177,8 +177,8 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 127 cases run, including C01–C27. The corpus has 247 passing assertions (70
-legacy) and 116 todo expected failures. The Widget observation is already an ordinary
+All 128 cases run, including C01–C27. The corpus has 249 passing assertions (70
+legacy) and 117 todo expected failures. The Widget observation is already an ordinary
 passing contract. C03's supported Float32 designation and C19's empty/singleton rest
 checks have no todo. C27 remains exploratory. Current bootstrap observations are
 explicitly legacy where they depend on raw Expression behavior.
