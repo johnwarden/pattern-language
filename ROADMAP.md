@@ -71,12 +71,14 @@ already defined abstract-call semantics, never a source-visible overload generat
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. **All 133 source cases execute**, with
-**250 passing assertions (70 legacy)** and **122 todo expected failures**. The corpus
-includes 76 playground examples, 19 other conformance cases, nine migrated binding/
-default cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
-separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 746 tests with no skips, plus build/type checks.
+The reference is TypeScript prototype 0.2. **130 source cases execute** on this
+layout branch, with **249 passing assertions (67 legacy)** and **103 todo expected
+failures**. C01–C03 in `tests/specification/primitives.test` do not parse here; that
+file is owned by the concurrent Rational stream. The corpus includes 76 playground
+examples, 19 other conformance cases, nine migrated binding/default cases, the five
+explicit-end layout cases, and C04–C27. Host/canonical/control checks execute
+separately; expected failures are not counted as passing assertions. Host
+verification on this branch passes 748 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -177,11 +179,13 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 133 cases run, including C01–C27. The corpus has 250 passing assertions (70
-legacy) and 122 todo expected failures. The Widget observation is already an ordinary
-passing contract. C03's supported Float32 designation and C19's empty/singleton rest
-checks have no todo. C27 remains exploratory. Current bootstrap observations are
-explicitly legacy where they depend on raw Expression behavior.
+130 cases run on this layout branch, including C04–C27 and the explicit-end layout
+contracts. C01–C03 remain in `tests/specification/primitives.test` and do not parse
+until that Rational-owned file gains inner `end`. The corpus has 249 passing
+assertions (67 legacy) and 103 todo expected failures. The Widget observation is
+already an ordinary passing contract. C19's empty/singleton rest checks have no todo.
+C27 remains exploratory. Current bootstrap observations are explicitly legacy where
+they depend on raw Expression behavior.
 
 The 90 original source cases retain their intended payloads, with inaccurate type
 and expected-spelling assertions fixed. Nine binding/default host tests remain
