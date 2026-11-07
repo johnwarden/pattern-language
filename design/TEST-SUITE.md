@@ -9,7 +9,8 @@ The runner recursively discovers tests/**/*.test, grouped by broad topic. Each f
 contains one or more named test blocks. Shared setup belongs inside the test. IDs
 are root-relative file paths without .test plus the title slug, and survive selecting
 only a subset or inserting/reordering cases. Discovered symlinks are not traversed.
-Duplicate title slugs in a file reject. Modifiers apply to assertions, never tests.
+Duplicate title slugs in a file reject. Modifiers apply to assertions and setup,
+never whole tests.
 
 ```text
 test "A value and a predicate"
@@ -108,6 +109,27 @@ observation. Selecting/building examples never runs them to generate expectation
 
 ## Modifiers, scope and failures
 
+Bindings and definitions may also use legacy/todo prefixes:
+
+```text
+legacy def Color type :Black | :White
+todo type Color concrete :Black | :White
+```
+
+Legacy setup commits current definitions. A consecutive todo setup group is tried
+atomically in isolation from the scope before its adjacent legacy setup group.
+Successful setup fails with “This setup now succeeds; remove todo.” Failed trials
+are silent and cannot leak partial bindings. Incoming ordinary setup and fixtures
+remain available. Without an adjacent legacy group, a trial uses current setup.
+Consecutive definitions stay grouped to preserve mutual recursion. Normal checks
+end the adjacency between alternatives. Setup trial groups count as todo checks;
+legacy setup is not counted as a legacy assertion. Actual host errors, malformed
+files and failing ordinary/legacy setup are not expected failures.
+
+The bootstrap host runner recreates trial scopes by replaying committed pure setup;
+it does not expose a new evaluator or a runtime environment capability to source.
+Playground programs include supported setup without modifier prefixes and omit trials.
+
 | Assertion | Required outcome |
 | --- | --- |
 | expect / assert | Pass |
@@ -144,7 +166,7 @@ authoritative, and ordinary parsing still checks every executed operand. Storage
 adapters cannot accidentally make an unsupported future form pass. Malformed files
 reject even if their assertions would have been todo.
 
-All 127 cases execute: 247 assertions pass (70 legacy) and 116 todos fail as expected.
+All 128 cases execute: 249 assertions pass (70 legacy) and 117 todos fail as expected.
 The 27 reviewed C01–C27 cases use the same grammar and stay synchronized with the
 decision record. Supported contracts carry no todo; C27 remains an exploratory
 lexical candidate. Fifty-seven former complete-pack expectations were split into

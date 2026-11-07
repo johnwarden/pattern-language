@@ -126,4 +126,5 @@ successful replacement fails with a request to remove todo. It does not overwrit
 the legacy binding or supply evidence/bindings to subsequent checks. Malformed file
 syntax and host errors remain real failures. Recursive declaration alternatives
 must be tried as complete groups. These semantics need explicit runner support;
-ordinary assertion isolation alone is not sufficient.
+ordinary assertion isolation alone is not sufficient. This support is implemented
+by the source-defined setup wrappers and external runner; see TEST-SUITE.md.

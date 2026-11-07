@@ -159,7 +159,9 @@ test "Current and future primitives"
 end
 ```
 
-Only assertions have modifiers. Plain and legacy assertions must pass; todo
+Assertions and setup bindings/definitions may have modifiers; whole tests do not.
+Setup alternatives use the isolated incoming-scope rule in TEST-SUITE.md.
+Plain and legacy assertions must pass; todo
 assertions execute and must fail. A fulfilled todo fails the test and requests
 removing its marker. No case is skipped for containing todos. The same modifiers
 apply to assert, expected-error and single-result forms. File/setup/fixture/host

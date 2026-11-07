@@ -1,0 +1,7 @@
+test "Current and future type declaration syntax"
+  legacy def Color type :Black | :White
+  todo type Color concrete :Black | :White
+
+  expect Color result Type(:Black | :White) :: Type
+  expect (:Black :: Color) result :Black :: Color
+end
