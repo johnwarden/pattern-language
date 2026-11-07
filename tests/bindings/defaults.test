@@ -10,51 +10,33 @@ end
 
 test "Declarations cannot rewrite symbolic construction"
   def Plain type Rect(Int, Int)
-  def Rectangle type Rect(w :: Int, h :: Int, color: String)
-  (observed1, observed2) =
-    (Rect(2, 3), Rectangle(2, 3))
-  end
   legacy expect Rect(2, 3) result Rect(2, 3) :: Expression
   todo expect Rect(2, 3) error "no concrete interpretation established"
+  assert Rect(2, 3) .matches (type Plain)
+
+  def Rectangle type Rect(w :: Int, h :: Int, color: String)
   legacy expect Rectangle(2, 3) result Rectangle(2, 3) :: Expression
   todo expect Rectangle(2, 3) error "no concrete interpretation established"
-  (observed3, observed4) =
-    (Rect(2, 3) .matches (type Plain), Rect(2, 3) .matches (type Rectangle))
-  end
-  assert
-    observed3
-  assert
-    (
-      observed4
-    ) == False
+  assert False == Rect(2, 3) .matches (type Rectangle)
 end
 
 test "Destructuring defaults bind captures without adding fields"
   def Plain type Rect(Int, Int)
   raw = Rect(2, 3) :: Plain
   Rect(w, h, color: c :: String = "black") = raw
-  (observed1, observed2) =
-    (raw, c)
-  end
-  expect observed1 result Rect(2, 3) :: Plain
-  expect observed2 result "black" :: String
+  expect raw result Rect(2, 3) :: Plain
+  expect c result "black" :: String
   (size: Int, color: String = "black") = (size: 3)
-  (observed3, observed4) =
-    (size, color)
-  end
-  expect observed3 result 3 :: Int
-  expect observed4 result "black" :: String
+  expect size result 3 :: Int
+  expect color result "black" :: String
 end
 
 test "Named and anonymous parameter defaults share binding semantics"
   def Plain type R()
   def f(R(color: String = "black")) color
-  raw = R() :: Plain
-  (observed1, observed2) =
-    (f(raw), raw)
-  end
-  expect observed1 result "black" :: String
-  expect observed2 result R() :: Plain
+  raw = R()
+  expect f(raw) result "black" :: String
+  expect raw result R() :: Expression
   g = (color: c :: String = "black") -> c
   expect g() result "black" :: String
 end
@@ -67,25 +49,21 @@ test "Match defaults preserve the scrutinee"
       R(color: c :: String = "black") -> c
     end
   end
-  (observed1, observed2) =
-    (raw, color)
-  end
-  expect observed1 result R() :: Plain
-  expect observed2 result "black" :: String
-  # Inspect the captured return values.
-  (observed1, observed2)
+  expect raw result R() :: Plain
+  expect color result "black" :: String
 end
 
 test "Supplied values are validated and never replaced by defaults"
   expect
     def f(x: Int = (1 / 0)) x
     f(x: 8)
-  result
-    8 :: Int
+  result 8 :: Int
+
   expect
     def f(x: Int = 3) x
     f(x: "bad")
   error "no applicable function"
+
   expect
     def f(x: Int = "bad") x
     f()
