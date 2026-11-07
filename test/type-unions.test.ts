@@ -34,16 +34,19 @@ test("type unions preserve member spaces across overlapping unions", () => {
   );
 });
 
-test("option spaces stay distinct and their overlapping union is rejected", () => {
+test("option spaces stay distinct; their overlapping union needs reconstruction", () => {
   assert.throws(
     () => run("a = :None :: Int?\nb = :None :: String?\na == b"),
     /different concrete types/,
   );
-  for (const source of [
-    "UnionType(Int?,String?)",
-    "def U UnionType(Int?,String?)\n0",
-  ])
-    assert.throws(() => run(source), /overlapping syntax/);
+  assert.equal(
+    run("UnionType(Int?,String?)"),
+    "UnionType(Type(:None | Some(Int)), Type(:None | Some(String)))",
+  );
+  assert.throws(
+    () => run("def U UnionType(Int?,String?)\n(x :: U) = :None"),
+    /ambiguous/,
+  );
 });
 
 test("type unions flatten, deduplicate, and have order independent canonical text", () => {
@@ -82,9 +85,19 @@ test("type union values reconstruct in a fresh interpreter", () => {
   );
 });
 
-test("numerical spaces with the same literal syntax cannot form a union", () => {
-  for (const source of ["UnionType(Int,Number)", "UnionType(Float,Float32)"])
-    assert.throws(() => run(source), /overlapping syntax/);
+test("numerical spaces with overlapping spellings retain their member identities", () => {
+  assert.equal(
+    run(
+      "def U UnionType(type Float32,type Float64)\n(a :: U) = float32(0.5)\n(b :: U) = float64(0.5)\n(a .matches Float32,b .matches Float64,a == b)",
+    ),
+    "(True, True, False)",
+  );
+  assert.equal(
+    run(
+      "def U UnionType(type Float32,type Float64)\n(a :: U) = float32(0.5)\ntext = toString(U)(a)\nparse(U)(text) == a",
+    ),
+    "True",
+  );
 });
 
 test("pattern union and type union syntax cannot silently switch meanings", () => {

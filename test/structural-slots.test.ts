@@ -285,10 +285,10 @@ test("concrete Type cannot disguise an open constraint", () => {
   );
 });
 
-test("overlapping abstract members reject before matching", () => {
-  assert.throws(
-    () => run(full + "UnionType(type Rectangular,type Colored)"),
-    /overlapping syntax/,
+test("overlapping abstract members retain spaces; concrete duplicates still reject", () => {
+  assert.equal(
+    run(full + "UnionType(type Rectangular,type Colored)"),
+    "UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String)))",
   );
   assert.throws(() => run("def Bad type :A | :A\n0"), /ambiguous/);
 });

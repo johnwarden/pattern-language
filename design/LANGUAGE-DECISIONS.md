@@ -636,6 +636,8 @@ end
 
 The text must retain enough information to reconstruct Float32; no exact descriptor spelling is approved here.
 
+C13's `type Name abstract …` declaration spelling remains unconfirmed (D08), so this case stays todo. The overlap policy itself does not depend on that spelling: existing `UnionType` / `unionType` may contain overlapping members, typed members keep their spaces, and reconstruction uses the existing concrete `::` tag. Public `syntaxTree`/`NumberLiteral(Float)` adapters are lossy for exact Rational spellings and are not this case's reconstruction path.
+
 ### C14 — unambiguous grammar requirements are separate
 
 The qualifier spelling and certification diagnostics are provisional.
@@ -1224,7 +1226,7 @@ end
 
 ```text
 test "C25 infix operators retain equal precedence"
-  todo expect ((2 :: Float64) * (3 :: Float64) + (4 :: Float64)) result 14 :: Float64
+  expect ((2 :: Float64) * (3 :: Float64) + (4 :: Float64)) result 14 :: Float64
   todo expect
     def select(a)(b) b
     ("left" .select "right")

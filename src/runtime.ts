@@ -1,5 +1,4 @@
 import { bootstrapTypeNames } from "./primitive-names.ts";
-import { requireDisjointUnion } from "./union-disjointness.ts";
 import { symbolCategory } from "./lexical.ts";
 import { primitiveNames, constantNames } from "./primitive-names.ts";
 import {
@@ -671,7 +670,12 @@ export class Interpreter {
         numeric: numericKind,
         pattern: () => ({
           ...test(name, predicate),
-          identity: ["primitive", numericKind ?? name],
+          // Float64 is a distinct carveout of the same JS float64 payload as Float.
+          // Int64 stays the int64 space so unbound-alias converters still match Int.
+          identity: [
+            "primitive",
+            name === "Float64" ? "Float64" : (numericKind ?? name),
+          ],
         }),
       });
       this.primitives.set(name, scope.bindings.get(name) as TypeValue);
@@ -689,7 +693,8 @@ export class Interpreter {
     this.primitives.set("Symbol", symbol);
     // Canonical primitive atoms have fixed language meanings. Number remains a
     // source alias for Float, rather than another user type declaration.
-    for (const alias of ["Num", "Number", "Float64", "Int64"])
+    // Float64 is the distinct float64 carveout C13 uses; Num and Int64 stay unbound.
+    for (const alias of ["Num", "Number", "Int64"])
       scope.bindings.delete(alias);
     scope.bindings.set("Number", scope.bindings.get("Float")!);
     for (const name of constantNames)
@@ -904,8 +909,8 @@ export class Interpreter {
       }),
     );
     for (const [method, target] of [
-      ["toInt", "Int64"],
-      ["toFloat", "Float64"],
+      ["toInt", "Int"],
+      ["toFloat", "Float"],
       ["toFloat32", "Float32"],
     ])
       scope.bindings.set(
@@ -914,7 +919,7 @@ export class Interpreter {
           const n = numeric(v);
           return this.check(
             this.primitives.get(target)!,
-            checked(target === "Int64" ? Math.trunc(n) : n),
+            checked(target === "Int" ? Math.trunc(n) : n),
           );
         }),
       );
@@ -927,6 +932,17 @@ export class Interpreter {
         if (!Number.isFinite(n))
           throw new LanguageError("result exceeds safe numeric range");
         return this.check(this.primitives.get("Float32")!, valLiteral(n));
+      }),
+    );
+    scope.bindings.set(
+      "float64",
+      this.native("float64", [1], ([v]) => {
+        const r = asRational(v);
+        if (!r) throw new LanguageError("expected a number");
+        const n = rationalToNumber(r);
+        if (!Number.isFinite(n))
+          throw new LanguageError("result exceeds safe numeric range");
+        return this.check(this.primitives.get("Float64")!, valLiteral(n));
       }),
     );
     scope.bindings.set(
@@ -3059,7 +3075,6 @@ export class Interpreter {
         spaces.set(id, member);
       }
     }
-    requireDisjointUnion(entries.map(([, member]) => member));
     const key = "type-union:" + JSON.stringify(entries.map(([id]) => id));
     const cached = this.types.get(key);
     if (cached) return cached;

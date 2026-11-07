@@ -228,13 +228,20 @@ name. Runtime Expression and automatic descriptor decoding remain optional/unset
 
 The current bootstrap has structural descriptors, abstract slots/facets, runtime
 subsets, canonical typed-text support, recursive groups and typed Body inspection.
-Ordinary numeric literals are exact Rationals; Int/Float/Float32 remain concrete
-carveouts of representable Rationals (with JS payloads in this bootstrap). It still
-rejects syntax-overlapping UnionType members, admits raw Expression compatibility
-values, installs accessor products under the old type forms, and lacks the revised
-evidence/projection checker. These are implementation facts, not new accepted
-constraints. Details are in
+Ordinary numeric literals are exact Rationals; Int/Float/Float32/Float64 remain
+concrete carveouts of representable Rationals (with JS payloads in this bootstrap).
+General `UnionType` members may overlap; reconstruction uses existing concrete `::`
+tags. It still admits raw Expression compatibility values, installs accessor products
+under the old type forms, and lacks the revised evidence/projection checker. These
+are implementation facts, not new accepted constraints. Details are in
 [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md).
+
+The public `NumberLiteral(Float)` syntax codec stores a JS Float payload and drops
+source spelling. Consequently `syntaxExpression(syntaxTree(0.1))` can equal `0f0.1`
+rather than exact Rational `0.1`, integers above 2^53 collapse, and equal Code trees
+from source `0.1` versus a spliced `0.1` can evaluate differently. That adapter
+limitation is queued for separate canonical numeric-spelling repair; overlapping-union
+text must not rely on those adapters for exactness.
 
 [The roadmap](ROADMAP.md) schedules alignment. [The decision record](design/LANGUAGE-DECISIONS.md)
 contains 27 named design cases; [the suite specification](design/TEST-SUITE.md) defines
@@ -242,6 +249,6 @@ how all cases execute. Assertions can be ordinary, legacy (must pass until retir
 or todo (must fail; a pass demands removal of todo). These are assertion modifiers,
 not alternate kinds of test or value. Every value expectation checks the observed
 result type as well as value identity. No assertion grants proof facts to another.
-The suite has 128 executing cases, 249 passing assertions (70 legacy), and 117 todo
+The suite has 128 executing cases, 250 passing assertions (70 legacy), and 116 todo
 expected failures. Those outcomes do not implement the revised evidence or projection
 checker. Program CLI output uses the annotated REPL display.

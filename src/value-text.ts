@@ -157,7 +157,8 @@ export function valueText(
     if (v.kind === "slot") {
       const code = unwrap(v.value);
       if (code.kind === "code") return syntax(code);
-      if (v.type.unionMembers && concreteSpace(v))
+      // Unique spellings omit tags; overlapping members keep existing `::`.
+      if (v.type.unionMembers && concreteSpace(v) && implicit.has(v))
         return parseExpression(
           valueText(v.value, domain, concreteSpace(v)),
           true,

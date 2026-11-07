@@ -45,7 +45,7 @@ test("unionType evaluates type alternatives and normalizes just like UnionType",
     run("(unionType Int | String | Int) == UnionType(String,Int)"),
     "True",
   );
-  assert.throws(() => run("unionType Int | 3"), /type|Type/);
+  assert.throws(() => run("unionType Int | foo"), /unbound|type|Type/);
 });
 test("unannotated raw union values select and retain exactly one concrete member", () => {
   const i = new Interpreter();
@@ -81,28 +81,26 @@ test("facets and Any still retain required concrete metadata", () => {
   assert.throws(() => run('parse(Any)("3")'), /explicit concrete/);
   assert.equal(run("(x :: Any) = 3 :: Int\ntoString(Any)(x)"), '"3 :: Int"');
 });
-test("overlapping alternatives reject at construction even when unused or annotated", () => {
-  for (const source of [
-    "UnionType(Int?,String?)",
-    "UnionType(Int*,String*)",
-    "UnionType(Int,Float)",
-    "def A type :X(Int)\ndef B type :X(Number)\nUnionType(A,B)",
-    "def U unionType Int? | String?\n0",
-  ]) {
-    assert.throws(
-      () => run(source),
-      (e: unknown) =>
-        e instanceof LanguageError && e.diagnostic.code === "E_AMBIGUOUS_UNION",
-      source,
-    );
-  }
+test("overlapping abstract unions construct; unannotated values stay ambiguous", () => {
+  assert.equal(run("UnionType(Int,Float)"), "UnionType(Float, Int)");
+  assert.equal(
+    run("def A type :X(Int)\ndef B type :X(Number)\nUnionType(A,B)"),
+    "UnionType(Type(X(Float)), Type(X(Int)))",
+  );
+  assert.throws(
+    () => run("def U UnionType(type Int,type Float)\n(x :: U) = 3"),
+    /ambiguous/,
+  );
   assert.equal(run("UnionType(Int,Int) == UnionType(Int)"), "True");
 });
-test("disjointness never runs predicate bodies", () => {
+test("same-space refinement unions still reject without running predicates", () => {
   assert.throws(
     () =>
-      run('def P Int .where (n -> panic("must not run"))\nunionType P | Float'),
-    /overlapping syntax/,
+      run(
+        'def P Int .where (n -> panic("must not run"))\nunionType P | Int',
+      ),
+    (e: unknown) =>
+      e instanceof LanguageError && e.diagnostic.code === "E_REFINED_UNION",
   );
 });
 test("ordinary recursive expression grammar exposes concrete applications and symbols", () => {

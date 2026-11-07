@@ -166,7 +166,7 @@ authoritative, and ordinary parsing still checks every executed operand. Storage
 adapters cannot accidentally make an unsupported future form pass. Malformed files
 reject even if their assertions would have been todo.
 
-All 128 cases execute: 249 assertions pass (70 legacy) and 117 todos fail as expected.
+All 128 cases execute: 250 assertions pass (70 legacy) and 116 todos fail as expected.
 The 27 reviewed C01–C27 cases use the same grammar and stay synchronized with the
 decision record. Supported contracts carry no todo; C27 remains an exploratory
 lexical candidate. Fifty-seven former complete-pack expectations were split into

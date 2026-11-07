@@ -149,10 +149,10 @@ test("failed submissions roll back generic declaration products", () => {
 
 test("primitive atoms use canonical names and Number is an alias for Float", () => {
   assert.equal(
-    run("(type Int,type Number,type Float32)"),
-    "(Int, Float, Float32)",
+    run("(type Int,type Number,type Float32,type Float64)"),
+    "(Int, Float, Float32, Float64)",
   );
-  for (const alias of ["Num", "Float64", "Int64"])
+  for (const alias of ["Num", "Int64"])
     rejects("type " + alias, "E_UNBOUND_TYPE");
 });
 
