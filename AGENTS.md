@@ -100,18 +100,18 @@ This repository has no application secrets. Do not add Bitwarden wiring or inven
 
 | Recipe | Purpose |
 |---|---|
-| `just setup` | Install locked npm dependencies (`npm ci`). |
+| `just setup` | Install git hooks (`core.hooksPath=.githooks`) and locked npm dependencies (`npm ci`). |
 | `just run FILE` | Run a `.pattern` program through `src/cli.ts`. Extra CLI flags follow the filename (`just run demo.pattern --parse`). |
 | `just watch FILE` | Re-run FILE when it, `default.pattern`, or `src/**/*.ts` change (`entr`). |
 | `just repl` | Interactive CLI (`--repl`). |
 | `just test [path]` | Host tests (`test/*.test.ts`); optional single path. Full run also checks Dockerfile/devbox alignment and finite run/repl/watch smokes. |
-| `just test-language` | Source suite (`tests/**/*.test`). |
+| `just test-language` | Source suite (`tests/**/*.test`). `just test-language --list` lists cases. |
 | `just typecheck` | `tsc --noEmit`. |
 | `just build` | Generate the browser bundles. |
 | `just lint` | ShellCheck on repo shell scripts. |
 | `just check` | All of the above, in the order CI requires. |
 
-On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`. Do not fetch shared agent files from install or start scripts.
+On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
 The source suite is tests/**/*.test, grouped by topic. Assertions use
 expect subject result expected :: Type, assert, and expect subject error "reason".

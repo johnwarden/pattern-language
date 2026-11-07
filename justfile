@@ -9,19 +9,24 @@ node := "node --disable-warning=ExperimentalWarning"
 default:
     @just --list
 
-# Install locked npm dependencies (init_hook does this on direnv allow)
+# Install git hooks (idempotent) and locked npm dependencies
 setup:
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1 && [ -d .githooks ]; then git config core.hooksPath .githooks; fi
     npm ci
 
 # Run a .pattern program (extra CLI flags follow the filename)
+[positional-arguments]
 run FILE *args:
-    {{ node }} src/cli.ts {{ args }} {{ quote(FILE) }}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ node }} src/cli.ts "$@"
 
 # Re-run FILE when it, default.pattern, or src/**/*.ts change
+[positional-arguments]
 watch FILE:
     #!/usr/bin/env bash
     set -euo pipefail
-    file={{ quote(FILE) }}
+    file="$1"
     if [[ ! -e "$file" ]]; then
       printf 'watch: file not found: %s\n' "$file" >&2
       exit 1
@@ -39,11 +44,12 @@ repl:
     {{ node }} src/cli.ts --repl
 
 # Host tests; optional single path. Full run includes shell smokes.
+[positional-arguments]
 test path="":
     #!/usr/bin/env bash
     set -euo pipefail
-    if [[ -n {{ quote(path) }} ]]; then
-      {{ node }} --test {{ quote(path) }}
+    if [[ -n "${1:-}" ]]; then
+      {{ node }} --test "$1"
     else
       npm test
       bash test/cursor_dockerfile_devbox_align_test.sh
@@ -51,8 +57,11 @@ test path="":
     fi
 
 # Source-language suite (tests/**/*.test)
+[positional-arguments]
 test-language *args:
-    npm run test:language -- {{ args }}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    npm run test:language -- "$@"
 
 # Static types
 typecheck:

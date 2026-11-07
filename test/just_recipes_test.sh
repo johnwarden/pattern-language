@@ -17,6 +17,33 @@ printf '%s\n' "$listed" | grep -q 'run ' || fail "just --list missing run"
 printf '%s\n' "$listed" | grep -q 'watch ' || fail "just --list missing watch"
 printf '%s\n' "$listed" | grep -q 'repl' || fail "just --list missing repl"
 
+grep -q 'git config core.hooksPath .githooks' justfile ||
+	fail "just setup must install core.hooksPath"
+python3 -c '
+import json, sys
+hook = json.load(open("devbox.json"))["shell"]["init_hook"]
+text = "\n".join(hook)
+sys.exit(0 if "git config core.hooksPath .githooks" in text else 1)
+' || fail "devbox init_hook must install core.hooksPath"
+
+tmpgit="$(mktemp -d)"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmpgit" "$tmp"' EXIT
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git init -q "$tmpgit"
+cp -R .githooks "$tmpgit/.githooks"
+(
+	cd "$tmpgit"
+	export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+	if git rev-parse --is-inside-work-tree >/dev/null 2>&1 && [ -d .githooks ]; then
+		git config core.hooksPath .githooks
+	fi
+	[[ "$(git config --get core.hooksPath)" == ".githooks" ]]
+	if git rev-parse --is-inside-work-tree >/dev/null 2>&1 && [ -d .githooks ]; then
+		git config core.hooksPath .githooks
+	fi
+	[[ "$(git config --get core.hooksPath)" == ".githooks" ]]
+) || fail "hook install failed or is not idempotent"
+
 run_out="$(just run demo.pattern)"
 printf '%s\n' "$run_out" | grep -q '12 :: Float' ||
 	fail "just run demo.pattern unexpected output: $run_out"
@@ -25,12 +52,25 @@ parse_out="$(just run demo.pattern --parse)"
 printf '%s\n' "$parse_out" | grep -q 'def Rectangle' ||
 	fail "just run demo.pattern --parse unexpected output: $parse_out"
 
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
 cp demo.pattern "$tmp/demo file.pattern"
 space_out="$(just run "$tmp/demo file.pattern")"
 printf '%s\n' "$space_out" | grep -q '12 :: Float' ||
 	fail "just run with a spaced filename failed: $space_out"
+
+cp default.pattern "$tmp/custom grammar.pattern"
+grammar_out="$(just run demo.pattern --grammar "$tmp/custom grammar.pattern")"
+printf '%s\n' "$grammar_out" | grep -q '12 :: Float' ||
+	fail "just run --grammar with a spaced filename failed: $grammar_out"
+printf '%s\n' "$grammar_out" | grep -q '/custom$' &&
+	fail "just run --grammar split a spaced filename"
+
+list_out="$(just test-language --list)"
+printf '%s\n' "$list_out" | grep -q 'bindings/defaults' ||
+	fail "just test-language --list did not list cases"
+printf '%s\n' "$list_out" | grep -q 'unknown option --' &&
+	fail "just test-language --list forwarded an extra --"
+printf '%s\n' "$list_out" | grep -q 'Available recipes' &&
+	fail "just test-language --list was eaten by just --list"
 
 repl_out="$(printf ':Widget\n\n:quit\n' | just repl)"
 printf '%s\n' "$repl_out" | grep -q 'Widget :: TitleCaseSymbol' ||

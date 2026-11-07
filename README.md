@@ -122,7 +122,7 @@ Prerequisites: Devbox, and direnv hooked into your shell.
 
 ```sh
 git clone <repo> && cd <repo>
-direnv allow      # Devbox pins tools; init_hook runs npm ci when the lockfile changes
+direnv allow      # Devbox pins tools; init_hook installs git hooks and npm ci when the lockfile changes
 just              # lists recipes
 ```
 
@@ -158,8 +158,8 @@ just typecheck
 just build
 just test
 just test-language                 # recursively scans tests/**/*.test
-just test-language -- --list
-just test-language -- tests/bindings
+just test-language --list
+just test-language tests/bindings
 ```
 
 The browser and CLI use the same TypeScript modules. Host tests retain implementation
