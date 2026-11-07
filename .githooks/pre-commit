@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Pre-commit hook: typecheck
+set -euo pipefail
+
+printf 'Running pre-commit hook: typecheck\n'
+
+just typecheck || {
+	printf 'ERROR: just typecheck failed\n'
+	exit 1
+}
+
+printf 'Pre-commit hook passed\n'

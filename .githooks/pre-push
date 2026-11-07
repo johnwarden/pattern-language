@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Pre-push hook: build then host tests (playground checks read dist/)
+set -euo pipefail
+
+printf 'Running pre-push hook: build + tests\n'
+
+just build || {
+	printf 'ERROR: just build failed\n'
+	exit 1
+}
+
+just test || {
+	printf 'ERROR: just test failed\n'
+	exit 1
+}
+
+printf 'Pre-push hook passed\n'

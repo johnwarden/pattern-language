@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
+  "packages": {
+    "nodejs": "24",
+    "just": "latest",
+    "jq": "latest",
+    "git": "latest",
+    "bash": "latest",
+    "curl": "latest",
+    "shellcheck": "latest",
+    "coreutils": "latest",
+    "entr": "latest"
+  },
+  "shell": {
+    "init_hook": [
+      "if git rev-parse --is-inside-work-tree >/dev/null 2>&1 && [ -d .githooks ]; then git config core.hooksPath .githooks; fi",
+      "[ -f node_modules/.package-lock.json ] && [ ! package-lock.json -nt node_modules/.package-lock.json ] || npm ci"
+    ]
+  }
+}

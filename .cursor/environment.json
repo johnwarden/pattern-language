@@ -1,0 +1,8 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "install": "just setup && git config core.hooksPath .githooks",
+  "start": ".cursor/session-start.sh"
+}
