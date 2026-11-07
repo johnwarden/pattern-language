@@ -94,7 +94,9 @@ No tuple/unit value or new pack representation is introduced.
 A final ordinary argument-pack row can expose already captured values for a playground
 example. It is output, not a check. The example program consists of its setup and
 that final pack; checking each capture does not repeat the original call. Single
-non-todo expectations/assertions also provide standalone example programs. All 76
+supported expectations/assertions also provide standalone example programs, even
+with accompanying todo assertions. The extracted program excludes todo operands;
+the suite still executes every assertion. Todo-only cases are not examples. All 76
 existing menu options remain covered through actual controls, fresh/restored sessions.
 Each CheckReport records its own actual/expected output rather than only the last
 observation. Selecting/building examples never runs them to generate expectations.
@@ -106,6 +108,12 @@ observation. Selecting/building examples never runs them to generate expectation
 | expect / assert | Pass |
 | legacy expect / legacy assert | Pass until explicitly retired |
 | todo expect / todo assert | Fail silently; success fails with “This assertion now passes; remove todo.” |
+
+Legacy is reserved for a contract intended to change. Pair it with a same-subject
+todo when the replacement is settled. If it is not, record the precise unresolved
+decision in [LEGACY-ASSERTIONS.md](LEGACY-ASSERTIONS.md). A corpus check rejects
+unaccounted legacy assertions and stale unresolved entries. Stable semantics belong
+in ordinary assertions even when their setup still uses bootstrap declarations.
 
 The same modifiers apply to expect subject error "reason". An E_ string matches a
 subject diagnostic code exactly; another string matches its message by substring.
@@ -131,7 +139,7 @@ authoritative, and ordinary parsing still checks every executed operand. Storage
 adapters cannot accidentally make an unsupported future form pass. Malformed files
 reject even if their assertions would have been todo.
 
-All 126 cases execute: 227 assertions pass (139 legacy) and 71 todos fail as expected.
+All 126 cases execute: 227 assertions pass (70 legacy) and 116 todos fail as expected.
 The 27 reviewed C01–C27 cases use the same grammar and stay synchronized with the
 decision record. Supported contracts carry no todo; C27 remains an exploratory
 lexical candidate. Fifty-seven former complete-pack expectations were split into

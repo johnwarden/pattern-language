@@ -32,6 +32,7 @@ subset, not completion of the revised design.
 - [x] Report passing assertions, legacy checks and todo expected failures separately; discovery only reads source.
 - [x] Keep executable playground options on the shared corpus; do not expose expected-failure assertions as runnable examples.
 - [x] Record final coverage mapping and actual counts. Do not require source code.evaluate.
+- [x] Pair settled legacy changes with executable todos; inventory/check unresolved replacements and promote stable assertions.
 
 ## Next: alignment, then subsequent language work
 

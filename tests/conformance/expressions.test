@@ -1,32 +1,35 @@
 test "arithmetic"
-  legacy expect 1 + 2 result 3 :: Expression
+  expect (1 :: Int) + (2 :: Int) result 3 :: Int
 end
 
 test "dot is function call"
   def b(x) y -> x + y
-  a = 1
-  legacy expect a .b 2 result 3 :: Expression
+  a = 1 :: Int
+  expect a .b 2 result 3 :: Int
 end
 
 test "empty call"
   def f() 42
   legacy expect f() result 42 :: Expression
+  todo expect f() result 42 :: Rational
 end
 
 test "explicit named function parameter"
   def f(x, foo: y) y
   legacy expect f(1, foo: 2) result 2 :: Expression
+  todo expect f(1, foo: 2) result 2 :: Rational
 end
 
 test "multiple packs"
-  def f(x, y)(z) (x + y) * z
+  def f(x :: Int, y :: Int)(z :: Int) (x + y) * z
   g = f(1, 2)
-  legacy expect g(3) result 9 :: Expression
+  expect g(3) result 9 :: Int
 end
 
 test "no eager execution"
   def f() (1 / 0)
   legacy expect 7 result 7 :: Expression
+  todo expect 7 result 7 :: Rational
 end
 
 test "parameter interpretation"
@@ -36,10 +39,11 @@ test "parameter interpretation"
 end
 
 test "same precedence"
-  legacy expect 2 * 3 + 4 result 14 :: Expression
+  expect (2 :: Int) * (3 :: Int) + (4 :: Int) result 14 :: Int
 end
 
 test "single grouping"
   x = (1)
   legacy expect x result 1 :: Expression
+  todo expect x result 1 :: Rational
 end

@@ -1,4 +1,4 @@
 test "typed rest"
-  def copy(xs... :: Int*) [xs...]
-  legacy expect copy(1, 2) result [1 :: Int, 2 :: Int] :: Expression
+  def copy(xs... :: Int*) [xs...] :: Int*
+  expect copy(1, 2) result [1, 2] :: Int*
 end

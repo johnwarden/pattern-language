@@ -4,10 +4,11 @@ test "Canonical type alternatives"
   (observed1, observed2, observed3) =
     (a == b, toString(Type)(a), parse(Type)(toString(Type)(a)) == b)
   end
-  legacy assert
+  assert
     observed1
+  # Legacy blocked: public descriptor text is still provisional; retain normalization and round-trip checks.
   legacy expect observed2 result "Type(:Black | :Red)" :: Expression
-  legacy assert
+  assert
     observed3
   # Inspect the captured return values.
   (observed1, observed2, observed3)
@@ -41,10 +42,11 @@ test "Factory defaults and complete types"
   (observed1, observed2, observed3, observed4) =
     (r, r.color, toString(Type)(type Rectangle), :Rect(3, 4) .matches (type Rectangle))
   end
-  legacy expect observed1 result Rect(3, 4, color: :Black) :: Rectangle
-  legacy expect observed2 result :Black :: Color
+  expect observed1 result Rect(3, 4, color: :Black) :: Rectangle
+  expect observed2 result :Black :: Color
+  # Legacy blocked: public descriptor text is still provisional.
   legacy expect observed3 result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: Expression
-  legacy assert
+  assert
     (
       observed4
     ) == False
@@ -92,10 +94,12 @@ test "Local and global type text"
     (local, global, parseLocal(Type)(local) == t, parse(Type)(global) == t)
   end
   legacy expect observed1 result "Rectangle" :: Expression
+  todo expect observed1 result "Rectangle" :: String
+  # Legacy blocked: local alias policy and global descriptor spelling are still provisional.
   legacy expect observed2 result "Type(Rect(Float, Float))" :: Expression
-  legacy assert
+  assert
     observed3
-  legacy assert
+  assert
     observed4
   # Inspect the captured return values.
   (observed1, observed2, observed3, observed4)
@@ -152,8 +156,9 @@ test "Option factory with ()"
     (toString(Option(Int))(a), b, Option(Int))
   end
   legacy expect observed1 result ":None" :: Expression
-  legacy expect observed2 result Some(5) :: Option(Int)
-  legacy expect observed3 result Type(:None | Some(Int)) :: Type
+  todo expect observed1 result "None" :: String
+  expect observed2 result Some(5) :: Option(Int)
+  expect observed3 result Type(:None | Some(Int)) :: Type
   # Inspect the captured return values.
   (observed1, observed2, observed3)
 end
@@ -228,10 +233,11 @@ test "Portable recursive type"
   (observed1, observed2, observed3) =
     (text, restored == t, parse(restored)(toString(restored)(value)) == value)
   end
+  # Legacy blocked: public recursive descriptor text is still provisional.
   legacy expect observed1 result "Type(Recursive(:Nil | Cons(Int, Recur(0))))" :: Expression
-  legacy assert
+  assert
     observed2
-  legacy assert
+  assert
     observed3
   # Inspect the captured return values.
   (observed1, observed2, observed3)
@@ -244,9 +250,10 @@ test "Ordinary factory with defaults"
   (observed1, observed2, observed3) =
     (r, r.color, Rectangle(3, 4))
   end
-  legacy expect observed1 result Rect(3, 4, color: "black") :: Rectangle
-  legacy expect observed2 result "black" :: String
-  legacy expect observed3 result Rectangle(3, 4) :: Expression
+  expect observed1 result Rect(3, 4, color: "black") :: Rectangle
+  expect observed2 result "black" :: String
+  legacy expect Rectangle(3, 4) result Rectangle(3, 4) :: Expression
+  todo expect Rectangle(3, 4) error "no concrete interpretation established"
   # Inspect the captured return values.
   (observed1, observed2, observed3)
 end
@@ -304,10 +311,11 @@ test "Types as ordinary values"
   (observed1, observed2, observed3) =
     (Type(pattern) == t, t == (type Rectangle), toString(Type)(t))
   end
-  legacy assert
+  assert
     observed1
-  legacy assert
+  assert
     observed2
+  # Legacy blocked: public descriptor text is still provisional.
   legacy expect observed3 result "Type(Rect(Float, Float))" :: Expression
   # Inspect the captured return values.
   (observed1, observed2, observed3)
@@ -334,7 +342,9 @@ test "Inspect a typed code binding without evaluating it"
     end
   end
   legacy expect observed1 result "f" :: Expression
+  todo expect observed1 result "f" :: String
   legacy expect observed2 result "x -> x * 2" :: Expression
+  todo expect observed2 result "x -> x * 2" :: String
   # Inspect the captured return values.
   (observed1, observed2)
 end

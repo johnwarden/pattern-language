@@ -33,6 +33,52 @@ test("discovery reads the source schema without executing subjects or expected t
   assert.equal(report.phase, "expectation");
   assert.match(report.message, /MissingType/);
 });
+test("a companion todo does not remove a supported playground program", () => {
+  const value = loadTests({
+    "paired.test": `test "Literal migration"
+  legacy expect 1 result 1 :: Expression
+  todo expect 1 result 1 :: Rational
+end`,
+  })[0];
+  assert.equal(value.program, true);
+  assert.equal(value.source, "1");
+  const report = runTest(value);
+  assert.equal(report.passed, true, report.message);
+  assert.deepEqual(
+    report.checks.map((c) => c.status),
+    ["passed", "expected-failure"],
+  );
+});
+test("playground output includes setup and its final pack, excluding future checks", () => {
+  const value = loadTests({
+    "paired.test": `test "Captured migration"
+  (x, y) = (1, 2)
+  legacy expect x result 1 :: Expression
+  todo expect x result 1 :: Rational
+  legacy expect y result 2 :: Expression
+  todo expect y result 2 :: Rational
+  (x, y)
+end`,
+  })[0];
+  assert.equal(value.program, true);
+  assert.equal(value.source, "(x, y) = (1, 2)\n(x, y)");
+  const report = runTest(value);
+  assert.equal(report.passed, true, report.message);
+  const interpreter = new Interpreter();
+  assert.equal(
+    interpreter.inspect(interpreter.run(value.source)),
+    interpreter.inspect(report.results!),
+  );
+});
+test("todo-only cases do not become executable examples", () => {
+  const value = loadTests({
+    "future.test": `test "Future only"
+  todo expect 1 result 1 :: Rational
+  ()
+end`,
+  })[0];
+  assert.equal(value.program, false);
+});
 test("expected values are data rather than expressions to evaluate", () => {
   assert.equal(
     runTest(sample("x = 3\nx + 1", "result 4 :: Expression")).passed,

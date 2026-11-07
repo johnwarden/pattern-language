@@ -970,7 +970,7 @@ An empty-return assertion can bind () to the call, then return True. Ordinary pa
 shape and label rules remain covered by host tests. There is no results expectation
 or separate value/type keyword pair. Errors still use expect subject error "reason".
 
-All 126 cases execute: 227 assertions pass (139 legacy) and 71 todos fail as expected.
+All 126 cases execute: 227 assertions pass (70 legacy) and 116 todos fail as expected.
 All 76 playground examples remain standalone programs, with setup and optional final return packs included in their
 editable source. The build embeds source without running it to regenerate expected
 answers. Actual controls exercise every option from fresh/restored sessions, and

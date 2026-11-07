@@ -5,12 +5,14 @@ test "Abstract slots preserve identity"
   (observed1, observed2, observed3, observed4) =
     (n == x, x == y, toString(Any)(x), toString(Int)(x))
   end
-  legacy assert
+  assert
     observed1
-  legacy assert
+  assert
     observed2
   legacy expect observed3 result "3 :: Int" :: Expression
+  todo expect observed3 result "3 :: Int" :: String
   legacy expect observed4 result "3" :: Expression
+  todo expect observed4 result "3" :: String
   # Inspect the captured return values.
   (observed1, observed2, observed3, observed4)
 end
@@ -35,11 +37,11 @@ test "Result arity error"
 end
 
 test "Function block"
-  def f(x)
+  def f(x :: Int)
     y = x ^ 2
     y + 1
   end
-  legacy expect f(3) result 10 :: Expression
+  expect f(3) result 10 :: Int
 end
 
 test "Definitions evaluate their bodies"
@@ -48,8 +50,9 @@ test "Definitions evaluate their bodies"
   (observed1, observed2) =
     (r, type R)
   end
-  legacy expect observed1 result Rect(Float) :: Expression
-  legacy expect observed2 result Type(Rect(Float)) :: Type
+  legacy expect :Rect(Number) result Rect(Float) :: Expression
+  todo expect :Rect(Number) error "no concrete interpretation established"
+  expect observed2 result Type(Rect(Float)) :: Type
   # Inspect the captured return values.
   (observed1, observed2)
 end
@@ -71,6 +74,7 @@ test "Deferred expected output"
   end
   legacy expect observed1 result (1 / 0) :: Expression
   legacy expect observed2 result :MissingType :: Expression
+  todo expect observed2 result MissingType :: TitleCaseSymbol
   # Inspect the captured return values.
   (observed1, observed2)
 end
@@ -78,6 +82,7 @@ end
 test "Ignore named results"
   x = (1, foo: "bar")
   legacy expect x result 1 :: Expression
+  todo expect x result 1 :: Rational
 end
 
 test "Narrow an abstract slot"
@@ -103,9 +108,9 @@ test "Language as data"
   (observed1, observed2, observed3, observed4) =
     (l .matches languageSchema(), r == l, rules.len, nodes.len)
   end
-  legacy assert
+  assert
     observed1
-  legacy assert
+  assert
     observed2
   legacy expect observed3 result 6 :: Expression
   legacy expect observed4 result 1 :: Expression
@@ -114,13 +119,21 @@ test "Language as data"
 end
 
 test "Match"
+  def Option type :None | Some(Int)
   legacy expect
-    match Some(3)
+    match (Some(3) :: Option)
       :Some(v) -> v.toString
       :None -> ""
     end
   result
     "3" :: Expression
+  todo expect
+    match (Some(3) :: Option)
+      :Some(v) -> v.toString
+      :None -> ""
+    end
+  result
+    "3" :: String
 end
 
 test "Explicit primitive values"
@@ -147,6 +160,15 @@ test "Raw block preserves blank lines and dollars"
     end
   result
     "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: Expression
+  todo expect
+    '
+      Quotes: " ' `
+      Dollars: $name $(anything)
+      Backslashes: \n
+
+    end
+  result
+    "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: String
 end
 
 test "Mutually recursive function definitions"
@@ -169,13 +191,14 @@ end
 
 test "Multiple results"
   def pair(x) (x, x)
-  (a, b) = pair(3)
-  legacy expect a + b result 6 :: Expression
+  (a, b) = pair(3 :: Int)
+  expect a + b result 6 :: Int
 end
 
 test "Extra named arguments"
   def f(x) x
   legacy expect f(1, foo: "bar") result 1 :: Expression
+  todo expect f(1, foo: "bar") result 1 :: Rational
 end
 
 test "Open structural facet"
@@ -186,13 +209,14 @@ test "Open structural facet"
   (observed1, observed2, observed3, observed4, observed5, observed6) =
     (p, p.w, p.h, p == r, toString(Rectangular)(p), parse(Rectangular)(toString(Rectangular)(p)) == r)
   end
-  legacy expect observed1 result Rect(2, 3, color: "black") :: Colored
-  legacy expect observed2 result 2 :: Float
-  legacy expect observed3 result 3 :: Float
-  legacy assert
+  expect observed1 result Rect(2, 3, color: "black") :: Colored
+  expect observed2 result 2 :: Float
+  expect observed3 result 3 :: Float
+  assert
     observed4
+  # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
   legacy expect observed5 result "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: Expression
-  legacy assert
+  assert
     observed6
   # Inspect the captured return values.
   (observed1, observed2, observed3, observed4, observed5, observed6)
@@ -212,12 +236,13 @@ test "Abstract slots and ordering"
   (observed1, observed2, observed3, observed4, observed5) =
     (a, b, a < b, toString(U)(a), parse(U)(toString(U)(a)) == a)
   end
-  legacy expect observed1 result 99 :: Int
-  legacy expect observed2 result "0" :: String
-  legacy assert
+  expect observed1 result 99 :: Int
+  expect observed2 result "0" :: String
+  assert
     observed3
   legacy expect observed4 result "99" :: Expression
-  legacy assert
+  todo expect observed4 result "99" :: String
+  assert
     observed5
   # Inspect the captured return values.
   (observed1, observed2, observed3, observed4, observed5)
@@ -236,6 +261,10 @@ test "User-defined if"
     if True 42 else (1 / 0)
   result
     42 :: Expression
+  todo expect
+    if True 42 else (1 / 0)
+  result
+    42 :: Rational
 end
 
 test "Vector"

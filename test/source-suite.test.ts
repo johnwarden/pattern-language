@@ -26,6 +26,34 @@ for (const value of loadTests(
 // These source cases retain the former host canonical-source checks.
 import { Interpreter } from "../src/runtime.ts";
 import { normal } from "../src/syntax.ts";
+test("every legacy assertion has a same-subject todo or an explicit unresolved decision", () => {
+  const inventory = readFileSync(
+    new URL("../design/LEGACY-ASSERTIONS.md", import.meta.url),
+    "utf8",
+  );
+  const documented = [...inventory.matchAll(/^\| `([^`]+)` \| `([^`]+)` \|/gm)]
+    .map((m) => m[1] + " :: " + m[2])
+    .sort();
+  const unresolved: string[] = [];
+  for (const value of loadTests(
+    sourceFiles(new URL("../tests/", import.meta.url)),
+  )) {
+    for (const legacy of value.steps.filter((s) => s.mode === "legacy")) {
+      if (
+        !value.steps.some(
+          (s) =>
+            s.mode === "todo" && normal(s.subject) === normal(legacy.subject),
+        )
+      )
+        unresolved.push(value.id + " :: " + normal(legacy.subject));
+    }
+  }
+  assert.deepEqual(
+    unresolved.sort(),
+    documented,
+    "pair legacy with a real replacement, or document the specific unresolved decision",
+  );
+});
 for (const value of loadTests(
   sourceFiles(new URL("../tests/conformance/", import.meta.url)),
 )) {

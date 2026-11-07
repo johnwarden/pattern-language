@@ -4,22 +4,25 @@ test "independent captures"
     (x, y)
   end
   legacy expect observed1 result 1 :: Expression
+  todo expect observed1 result 1 :: Rational
   legacy expect observed2 result 2 :: Expression
+  todo expect observed2 result 2 :: Rational
   # Inspect the captured return values.
   (observed1, observed2)
 end
 
 test "list rest empty"
-  def copy(xs...) [xs...]
-  legacy expect copy() result [] :: Expression
+  def copy(xs... :: Int*) [xs...] :: Int*
+  expect copy() result [] :: Int*
 end
 
 test "list rest singleton"
-  def copy(xs...) [xs...]
-  legacy expect copy(1) result [1] :: Expression
+  def copy(xs... :: Int*) [xs...] :: Int*
+  expect copy(1) result [1] :: Int*
 end
 
 test "single pattern grouping"
   (x) = 1
   legacy expect x result 1 :: Expression
+  todo expect x result 1 :: Rational
 end

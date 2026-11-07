@@ -74,6 +74,11 @@ for (const state of ["fresh", "restored old grammar"]) {
     );
     assert.equal(el("type-schema").textContent, TYPE_SCHEMA);
     const tests = loadTests(suiteFiles).filter((value) => value.program);
+    assert.equal(
+      tests.length,
+      76,
+      "migration assertions must not hide existing examples",
+    );
     const select = el<HTMLSelectElement>("example");
     assert.equal(select.options.length, tests.length + 1);
     assert.equal(select.options[0].value, "draft");

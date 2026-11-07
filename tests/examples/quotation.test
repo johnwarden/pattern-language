@@ -6,7 +6,9 @@ test "Interpolation and literal dollars"
     (raw, expanded)
   end
   legacy expect observed1 result "Hello, $name" :: Expression
+  todo expect observed1 result "Hello, $name" :: String
   legacy expect observed2 result "Hello, Jo; 5" :: Expression
+  todo expect observed2 result "Hello, Jo; 5" :: String
   # Inspect the captured return values.
   (observed1, observed2)
 end
@@ -18,7 +20,7 @@ test "Quoted expression values"
   (observed1, observed2) =
     (b == c, b)
   end
-  legacy assert
+  assert
     observed1
   legacy expect observed2 result f(1) :: Expression
   # Inspect the captured return values.
@@ -37,9 +39,10 @@ test "Raw and interpolated typed Code"
 end
 
 test "Reader interpolation"
-  def html(fragments, values) {fragments: fragments, values: values}
+  def Html type {fragments: String*, values: String*}
+  def html(fragments :: String*, values :: String*) {fragments: fragments, values: values} :: Html
   name = "<strong>Jo</strong>"
-  legacy expect html$"<p>Hello, $(name)</p>" result {fragments: ["<p>Hello, ", "</p>"], values: ["<strong>Jo</strong>"]} :: Expression
+  expect html$"<p>Hello, $(name)</p>" result {fragments: ["<p>Hello, ", "</p>"], values: ["<strong>Jo</strong>"]} :: Html
 end
 
 test "Raw, escaped and explicitly interpolated strings"
@@ -48,10 +51,15 @@ test "Raw, escaped and explicitly interpolated strings"
     ('Hello, $name', "Hello, $name", $'Hello, $name', "one\ntwo", $'Hello, $$name')
   end
   legacy expect observed1 result "Hello, $name" :: Expression
+  todo expect observed1 result "Hello, $name" :: String
   legacy expect observed2 result "Hello, $name" :: Expression
+  todo expect observed2 result "Hello, $name" :: String
   legacy expect observed3 result "Hello, Jo" :: Expression
+  todo expect observed3 result "Hello, Jo" :: String
   legacy expect observed4 result "one\ntwo" :: Expression
+  todo expect observed4 result "one\ntwo" :: String
   legacy expect observed5 result "Hello, $name" :: Expression
+  todo expect observed5 result "Hello, $name" :: String
   # Inspect the captured return values.
   (observed1, observed2, observed3, observed4, observed5)
 end
@@ -77,7 +85,8 @@ test "Typed parse / toString round-trip"
     (text, parse(Rectangle)(text) == value)
   end
   legacy expect observed1 result "Rect(3, 4)" :: Expression
-  legacy assert
+  todo expect observed1 result "Rect(3, 4)" :: String
+  assert
     observed2
   # Inspect the captured return values.
   (observed1, observed2)

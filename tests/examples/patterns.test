@@ -11,33 +11,36 @@ test "Capture accessors"
 end
 
 test "Defaults in function arguments"
+  def Plain type Rect(Int, Int)
   def Rectangle type :Rect(width :: Int, height :: Int, color: String)
   def colorOf(Rect(w, h, color: String = "black")) color
-  raw = Rect(3, 4)
+  raw = Rect(3, 4) :: Plain
   (observed1, observed2) =
     (colorOf(raw), raw)
   end
-  legacy expect observed1 result "black" :: String
-  legacy expect observed2 result Rect(3, 4) :: Expression
+  expect observed1 result "black" :: String
+  expect observed2 result Rect(3, 4) :: Plain
   # Inspect the captured return values.
   (observed1, observed2)
 end
 
 test "Exact fields and rest markers"
-  Rect(w, h, ..., color: c, **) = Rect(2, 3, 4, color: :Black, note: "extra")
+  def Packet type Rect(Int, Int, Int, color: Symbol, note: String)
+  Rect(w, h, ..., color: c, **) = Rect(2, 3, 4, color: :Black, note: "extra") :: Packet
   (observed1, observed2, observed3) =
     (w, h, c)
   end
-  legacy expect observed1 result 2 :: Expression
-  legacy expect observed2 result 3 :: Expression
-  legacy expect observed3 result Black :: TitleCaseSymbol
+  expect observed1 result 2 :: Int
+  expect observed2 result 3 :: Int
+  expect observed3 result Black :: TitleCaseSymbol
   # Inspect the captured return values.
   (observed1, observed2, observed3)
 end
 
 test "Labels containing patterns"
+  def Rectangle type Rectangle(Int, Int)
   def area(shape: Rectangle(w, h)) w * h
-  legacy expect area(shape: Rectangle(3, 4)) result 12 :: Expression
+  expect area(shape: (Rectangle(3, 4) :: Rectangle)) result 12 :: Int
 end
 
 test "Named result capture"
@@ -46,7 +49,8 @@ test "Named result capture"
     (x, foo)
   end
   legacy expect observed1 result 1 :: Expression
-  legacy expect observed2 result "bar" :: String
+  todo expect observed1 result 1 :: Rational
+  expect observed2 result "bar" :: String
   # Inspect the captured return values.
   (observed1, observed2)
 end

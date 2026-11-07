@@ -1230,6 +1230,7 @@ test "C26 todo assertions execute in isolated scopes"
     futureLocal()
   error "E_UNBOUND_NAME"
   legacy expect marker result 1 :: Expression
+  todo expect marker result 1 :: Rational
 end
 ```
 
