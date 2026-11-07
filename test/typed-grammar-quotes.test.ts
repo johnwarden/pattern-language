@@ -88,6 +88,18 @@ test("unquoted expected-grammar sidefix evaluates fields for bindings and argume
     "True",
   );
   assert.equal(run(prelude + "show(do \"Foo\" with name) == x"), "True");
+  assert.equal(
+    run(
+      'def MyDsl type (:do String :with String)\n(y :: MyDsl) = do "Foo" with "bar"\ny == MyDsl` do "Foo" with "bar"',
+    ),
+    "True",
+  );
+  assert.equal(
+    run(
+      'def MyDsl type (:do String :with String)\ndef show(x :: MyDsl) x\n(y :: MyDsl) = do "Foo" with "bar"\nshow(y) == y',
+    ),
+    "True",
+  );
   assert.throws(
     () => run(prelude + 'do "Foo" with name'),
     /grammar|syntax|macro/,

@@ -192,12 +192,18 @@ end
 test "Unquoted expected-grammar DSL"
   def MyDsl type (:do String :with String)
   def show(x :: MyDsl) x
+  (y :: MyDsl) = do "Foo" with "bar"
   x = MyDsl` do "Foo" with "bar"
-  name = "bar"
-  (y :: MyDsl) = do "Foo" with name
 
   assert (x == y)
-  assert (show(do "Foo" with name) == x)
+  assert (show(do "Foo" with "bar") == x)
 
   (x == y)
+end
+
+test "Unquoted expected-grammar binding after a type definition"
+  def MyDsl type (:do String :with String)
+  (y :: MyDsl) = do "Foo" with "bar"
+  assert (y == MyDsl` do "Foo" with "bar")
+  y
 end

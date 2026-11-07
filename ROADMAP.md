@@ -71,12 +71,12 @@ already defined abstract-call semantics, never a source-visible overload generat
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. **All 128 source cases execute**, with
-**249 passing assertions (70 legacy)** and **117 todo expected failures**. The corpus
+The reference is TypeScript prototype 0.2. **All 130 source cases execute**, with
+**252 passing assertions (70 legacy)** and **117 todo expected failures**. The corpus
 includes 76 playground examples, 14 other conformance cases, nine migrated binding/
 default cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
 separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 741 tests with no skips, plus build/type checks.
+verification gate passes 744 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -177,7 +177,7 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 128 cases run, including C01–C27. The corpus has 249 passing assertions (70
+All 130 cases run, including C01–C27. The corpus has 252 passing assertions (70
 legacy) and 117 todo expected failures. The Widget observation is already an ordinary
 passing contract. C03's supported Float32 designation and C19's empty/singleton rest
 checks have no todo. C27 remains exploratory. Current bootstrap observations are
@@ -221,6 +221,10 @@ No unaccepted spelling, first-class overload policy or family inversion is chose
 merely to satisfy a future assertion.
 
 ### 5b. Grow Body into interpreted Code grammar
+
+The bootstrap implements the single-line String-field slice: annotated bindings and
+unique typed-parameter arguments share one expected-grammar elaborator. Returns,
+layout, Code categories and canonical `toString :: String` remain later work.
 
 Propagate expected grammars through bindings, calls and returns, allowing unquoted
 DSL forms with normally evaluated field expressions. Keep literal keywords quoted

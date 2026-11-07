@@ -1190,7 +1190,11 @@ export class Interpreter {
           }
         },
         repl,
-        (input) => this.completeExpectedGrammarLine(input, env),
+        (input) => {
+          // Leave the consecutive-def group the same way a non-def line does.
+          flush();
+          return this.completeExpectedGrammarLine(input, env);
+        },
       );
       flush();
       if (!local) this.lastTree = tree;

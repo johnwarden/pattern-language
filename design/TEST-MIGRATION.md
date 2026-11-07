@@ -188,7 +188,7 @@ predicate assertion. Empty returns use an explicit destructuring assertion. Host
 coverage retains exact complete-pack label/arity observations rather than assuming
 separate checks prove every pack property.
 
-The same 128 cases execute, with 249 passing assertions (70 legacy) and 117 todo
+The same 130 cases execute, with 252 passing assertions (70 legacy) and 117 todo
 expected failures. Higher assertion counts reflect split checks, not additional
 language features. All 76 examples remain runnable; final ordinary packs expose
 already captured results. Strict type/data checks and assertion-level modifiers are
