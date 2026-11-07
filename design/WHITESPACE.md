@@ -84,3 +84,10 @@ typed quotes. The strict ownership rule above is an implementation milestone, no
 a claim that these cases already reject. The existing host suite must be migrated
 with the reader; a test-only wrapper or a hardcoded list of clause keywords would
 not satisfy this requirement.
+
+The executable future contracts in tests/layout/explicit-ends.test cover EOF,
+missing nested terminators, indentation changes, an expectation borrowing its
+test's end, and the shared string/if terminator. E_BLOCK_END is the specified
+diagnostic for a missing layout closure. These remain todo assertions until the
+reader owns each terminator explicitly; required infix spacing already passes.
+The cases parse source without running println or requiring code.evaluate.

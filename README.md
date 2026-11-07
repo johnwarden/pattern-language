@@ -9,11 +9,11 @@ interpreter/compiler. The TypeScript implementation is the bootstrap reference.
 
 ## Design and implementation status
 
-The revised value model extends beyond the bootstrap. All **128 source cases run**:
-**249 assertions pass (70 legacy)** and **117 todo assertions fail as expected**.
+The revised value model extends beyond the bootstrap. All **133 source cases run**:
+**250 assertions pass (70 legacy)** and **122 todo assertions fail as expected**.
 A fulfilled todo fails the suite and requests removal of its marker. All 76
 playground examples share this corpus. TypeScript retains host/API/DOM checks. The complete verification gate passes
-741 tests, with no skipped cases; build and type checking also pass.
+746 tests, with no skipped cases; build and type checking also pass.
 
 | Intended contract | Current bootstrap |
 | --- | --- |
