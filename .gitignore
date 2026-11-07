@@ -1,6 +1,8 @@
 node_modules/
 dist/
 coverage/
+/.devbox/
+/.direnv/
 .env
 .env.*
 !.env.example

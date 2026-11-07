@@ -1,12 +1,15 @@
 name: CI
 on:
-  push:
   pull_request:
+    branches: [master]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      TZ: America/Denver
     steps:
       - uses: actions/checkout@v6
         with:
@@ -15,8 +18,13 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - run: npm ci
-      - run: npm run check
-      - run: npm run build
-      - run: npm test
-      - run: npm run test:language
+      - name: Install just
+        run: |
+          # sha256 = GitHub release-asset digest of just-1.58.0-x86_64-unknown-linux-musl.tar.gz
+          curl -fsSL -o /tmp/just.tgz https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-x86_64-unknown-linux-musl.tar.gz
+          echo "4a5cc2f53e6f0f8c59092a6cc38291eb729d46a7dd95d3ae582008881b84931d  /tmp/just.tgz" | sha256sum -c -
+          sudo tar -xzf /tmp/just.tgz -C /usr/local/bin just
+      - name: Install check tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends shellcheck entr
+      - run: just setup
+      - run: just check

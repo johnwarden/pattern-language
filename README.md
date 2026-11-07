@@ -116,15 +116,30 @@ language milestone is **5a.2: align the bootstrap with the revised value model**
 It progressively replaces legacy checks with fulfilled future contracts. No
 self-hosted evaluator is required to run the suite.
 
+## Getting started
+
+Prerequisites: Devbox, and direnv hooked into your shell.
+
+```sh
+git clone <repo> && cd <repo>
+direnv allow      # Devbox pins tools; init_hook runs npm ci when the lockfile changes
+just              # lists recipes
+```
+
+Cloud VMs have no direnv; run `just` directly there. The justfile is the command
+surface. `just check` is the full CI gate.
+
 ## Run the current bootstrap
 
 Node 24 or later executes the TypeScript directly. Programs and REPL entries print
 annotated values, for example `Widget :: TitleCaseSymbol`; --parse prints syntax:
 
 ```sh
-node src/cli.ts --grammar default.pattern demo.pattern
-node src/cli.ts --grammar default.pattern --repl
-node src/cli.ts --grammar default.pattern --parse demo.pattern
+just run demo.pattern
+just run demo.pattern --grammar default.pattern
+just repl
+just run demo.pattern --parse
+just watch demo.pattern
 ```
 
 Submit a REPL entry with a blank line; `:quit` exits. Program blocks require a
@@ -137,13 +152,14 @@ expected results come from shared source Test files; selecting an example does n
 Drafts use best-effort browser storage, with Save session / Load session for backup.
 
 ```sh
-npm ci
-npm run check
-npm run build
-npm test
-npm run test:language              # recursively scans tests/**/*.test
-npm run test:language -- --list
-npm run test:language -- tests/bindings
+just setup
+just check
+just typecheck
+just build
+just test
+just test-language                 # recursively scans tests/**/*.test
+just test-language -- --list
+just test-language -- tests/bindings
 ```
 
 The browser and CLI use the same TypeScript modules. Host tests retain implementation

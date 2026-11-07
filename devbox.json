@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
+  "packages": {
+    "nodejs": "24",
+    "just": "latest",
+    "jq": "latest",
+    "git": "latest",
+    "bash": "latest",
+    "curl": "latest",
+    "shellcheck": "latest",
+    "coreutils": "latest",
+    "entr": "latest"
+  },
+  "shell": {
+    "init_hook": [
+      "[ -f node_modules/.package-lock.json ] && [ ! package-lock.json -nt node_modules/.package-lock.json ] || npm ci"
+    ]
+  }
+}
