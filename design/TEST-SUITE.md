@@ -20,7 +20,7 @@ test "A value and a predicate"
 end
 
 test "Current and future literals"
-  expect :Widget result Widget :: TitleCaseSymbol
+  expect :Widget result Widget :: UpperCamelSymbol
   legacy expect 5 result 5 :: Expression
   todo expect 5 result 5 :: Rational
 end
@@ -58,7 +58,7 @@ A result check requires exactly one positional value, an equal observed type, an
 an equal expected value. A broad expected type is not a substitute for exact type
 identity. Expected data must have the canonical tree spelling for that type, modulo
 surface grouping/formatting normalization. In particular :Widget produces Widget
-in TitleCaseSymbol. Quoting Widget in that expected data rejects. The shared printer
+in UpperCamelSymbol. Quoting Widget in that expected data rejects. The shared printer
 uses a space after every comma, without changing the content of string values.
 
 Use assert condition for predicates and assert (condition == False) for negative
@@ -139,7 +139,7 @@ authoritative, and ordinary parsing still checks every executed operand. Storage
 adapters cannot accidentally make an unsupported future form pass. Malformed files
 reject even if their assertions would have been todo.
 
-All 126 cases execute: 227 assertions pass (70 legacy) and 116 todos fail as expected.
+All 127 cases execute: 247 assertions pass (70 legacy) and 116 todos fail as expected.
 The 27 reviewed C01–C27 cases use the same grammar and stay synchronized with the
 decision record. Supported contracts carry no todo; C27 remains an exploratory
 lexical candidate. Fifty-seven former complete-pack expectations were split into

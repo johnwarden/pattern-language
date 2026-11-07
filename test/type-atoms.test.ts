@@ -27,7 +27,7 @@ test("Boolean constants and native predicates have a known Bool result type", ()
     ),
     "(True :: Bool, False :: Bool, False :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool)",
   );
-  assert.equal(i.inspect(i.run(":True")), ":True :: TitleCaseSymbol");
+  assert.equal(i.inspect(i.run(":True")), ":True :: UpperCamelSymbol");
 });
 
 test("primitive names evaluate as type values in ordinary expressions", () => {

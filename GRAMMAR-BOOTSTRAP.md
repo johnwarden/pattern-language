@@ -40,10 +40,10 @@ outside literals they retain their whitespace role. The rules apply to the whole
 source, including literal and reader-macro content. They do not transform strings
 received at runtime. Interior BOM characters are not stripped.
 
-Identifier tokens, including quoted symbols, labels and interpolation names, are
-NFC-normalized before validation and lookup. Combining marks are permitted within
-the existing camelCase/TitleCase shape. Literal string contents are not Unicode-
-normalized. The full Unicode identifier policy remains to be specified.
+Word symbols, including quoted symbols, labels and interpolation names, are ASCII.
+The classes are LowerCamelSymbol, UpperCamelSymbol and UpperSnakeSymbol; one- and two-letter
+upper-snake words have a trailing underscore. Literal strings remain Unicode and
+are not Unicode-normalized. Unicode identifier casing remains deferred.
 Diagnostic spans and excerpts refer to the normalized source; name normalization
 does not change their source extents.
 
@@ -190,7 +190,8 @@ and explicitly return a complete value; type annotations never complete fields.
 match the annotated type. A label in a binding pattern may be absent because it has a default, not
 because its type is `T?`. Type fields remain required.
 
-Names must use strict camelCase or TitleCase, without acronym runs. `!` still
+Names use ASCII lower camel, upper camel or upper snake; capital runs are allowed.
+Lower-snake words and malformed underscore separators reject. `!` still
 parses as an ordinary postfix application, but evaluating its type is reserved. Assignment binds
 only as a direct block statement; it has no general expression-level binding
 behavior. User-authored macros are implemented. Static type checking is not;

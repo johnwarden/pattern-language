@@ -1,10 +1,10 @@
 # A bounded source grammar for inert code inspection. No evaluation is installed.
-def Capture type (name :: SentenceCaseSymbol) ::: (annotation :: Expression)
-def Pattern unionType SentenceCaseSymbol | Capture
+def Capture type (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+def Pattern unionType LowerCamelSymbol | Capture
 def Sum type (left :: ValueExpression) :+ (right :: ValueExpression)
 def Product type (left :: ValueExpression) :* (right :: ValueExpression)
 def ValueExpression unionType Number | String | Symbol | Sum | Product
-def FunctionSignature type (name :: SentenceCaseSymbol)(parameters... :: Pattern*)
+def FunctionSignature type (name :: LowerCamelSymbol)(parameters... :: Pattern*)
 def Definition type (:def (signature :: FunctionSignature) (value :: (unionType ValueExpression | Body)))
 def DestructuringBinding type (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
 def Binding unionType DestructuringBinding | Definition

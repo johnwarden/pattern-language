@@ -569,10 +569,26 @@ test("actions are absent and postfix exclamation is reserved", () => {
   assert.equal(normal(parseExpression("Int!")), "!(Int)");
 });
 
-test("strict camel case rejects acronyms and underscores", () => {
-  for (const s of ["HTTP", "someURL", "foo_bar", "URLValue"])
-    assert.throws(() => parseExpression(s), /strict camelCase/);
-  for (const s of ["foo", "fooBar", "Http", "UserId", "Int", "T", "Ts"])
+test("ASCII camel and upper-snake words have explicit spelling boundaries", () => {
+  for (const s of ["foo_bar", "foo_", "_FOO", "A__B", "A_B_", "café"])
+    assert.throws(() => parseExpression(s), /ASCII/);
+  for (const s of [
+    "HTTP",
+    "someURL",
+    "URLValue",
+    "aB",
+    "ABc",
+    "AB_",
+    "A_B",
+    "ERR_FILE_NOT_FOUND",
+    "foo",
+    "fooBar",
+    "Http",
+    "UserId",
+    "Int",
+    "T",
+    "Ts",
+  ])
     assert.doesNotThrow(() => parseExpression(s));
 });
 

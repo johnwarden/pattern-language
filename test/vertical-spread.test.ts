@@ -160,7 +160,7 @@ test("direct binding destructuring extracts a nested Body without resolving free
   assert.equal(
     run(
       bodyGrammar +
-        "b = DestructuringBinding`\n (a,b) =\n  y = 2\n  z = 3\n  (y * z,y)\n end\nend\n((first :: SentenceCaseSymbol,second :: SentenceCaseSymbol) := (body :: Body)) = b\n(first,second,toString(Binding*)(body.bindings))",
+        "b = DestructuringBinding`\n (a,b) =\n  y = 2\n  z = 3\n  (y * z,y)\n end\nend\n((first :: LowerCamelSymbol,second :: LowerCamelSymbol) := (body :: Body)) = b\n(first,second,toString(Binding*)(body.bindings))",
     ),
     '(:a, :b, "[y = 2, z = 3]")',
   );

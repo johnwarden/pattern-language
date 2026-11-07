@@ -12,7 +12,7 @@ function invoke(source: string, ...args: string[]) {
 test("program output uses the same annotated display as the REPL", () => {
   const program = invoke(":Widget");
   assert.equal(program.status, 0, program.stderr);
-  assert.equal(program.stdout, "Widget :: TitleCaseSymbol\n");
+  assert.equal(program.stdout, "Widget :: UpperCamelSymbol\n");
   const repl = invoke(":Widget\n\n:quit\n", "--repl");
   assert.equal(repl.status, 0);
   assert.equal(repl.stdout, program.stdout);

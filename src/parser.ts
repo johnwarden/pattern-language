@@ -225,7 +225,7 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
     if (kind === "name") text = text.normalize("NFC");
     if (kind === "name" && !identifierName(text))
       throw new LanguageError(
-        "identifiers require strict camelCase or TitleCase; acronyms and underscores are not allowed",
+        "word symbols require ASCII lowerCamel, UpperCamel, or UPPER_SNAKE (one- and two-letter upper-snake words need a trailing underscore)",
         span,
       );
     const consumed = source.slice(start, i).split("\n");

@@ -74,7 +74,7 @@ test "Deferred expected output"
   end
   legacy expect observed1 result (1 / 0) :: Expression
   legacy expect observed2 result :MissingType :: Expression
-  todo expect observed2 result MissingType :: TitleCaseSymbol
+  todo expect observed2 result MissingType :: UpperCamelSymbol
   # Inspect the captured return values.
   (observed1, observed2)
 end

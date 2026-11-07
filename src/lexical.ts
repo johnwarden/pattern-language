@@ -26,23 +26,30 @@ export function infixPunctuation(name: string): boolean {
 export const identifierName = (name: string): boolean =>
   ["[]", "{}", "_"].includes(name) ||
   /^_\d+$/.test(name) ||
-  /^(?:(?:\p{Ll}\p{M}*)+[\p{N}]*|\p{Lu}\p{M}*(?:\p{Ll}\p{M}*)*[\p{N}]*)(?:\p{Lu}\p{M}*(?:\p{Ll}\p{M}*)+[\p{N}]*)*$/u.test(
-    name,
-  );
+  /^[a-zA-Z][a-zA-Z0-9]*$/.test(name) ||
+  upperSnakeName(name);
+export const upperSnakeName = (name: string): boolean =>
+  /^(?:[A-Z]{1,2}_|[A-Z]{3,}[A-Z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z][A-Z0-9]*)+)$/.test(name);
 export const labelName = (name: string): boolean =>
-  /^\p{Ll}/u.test(name) && identifierName(name);
+  /^[a-z]/.test(name) && identifierName(name);
 
 /** Intrinsic surface symbol classes; constructor heads use the same spelling rules. */
 export function symbolCategory(
   name: string,
-): "SentenceCaseSymbol" | "TitleCaseSymbol" | "PunctuationSymbol" | undefined {
+):
+  | "LowerCamelSymbol"
+  | "UpperCamelSymbol"
+  | "UpperSnakeSymbol"
+  | "PunctuationSymbol"
+  | undefined {
   if (!identifierName(name))
     return name.length &&
       [...name].every((c) => punctuation.has(c) || ":.[]{}".includes(c))
       ? "PunctuationSymbol"
       : undefined;
-  if (/^\p{Ll}/u.test(name)) return "SentenceCaseSymbol";
-  if (/^\p{Lu}/u.test(name)) return "TitleCaseSymbol";
+  if (upperSnakeName(name)) return "UpperSnakeSymbol";
+  if (/^[a-z]/.test(name)) return "LowerCamelSymbol";
+  if (/^[A-Z]/.test(name)) return "UpperCamelSymbol";
   return ["[]", "{}", "_"].includes(name) || /^_\d+$/.test(name)
     ? "PunctuationSymbol"
     : undefined;

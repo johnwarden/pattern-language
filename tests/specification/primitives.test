@@ -4,7 +4,7 @@ test "C01 intrinsic primitive values"
   todo expect "hello" result "hello" :: String
   legacy expect 5 result 5 :: Expression
   todo expect 5 result 5 :: Rational
-  expect :Widget result Widget :: TitleCaseSymbol
+  expect :Widget result Widget :: UpperCamelSymbol
   legacy expect Bool result Bool :: Type
   todo expect Bool result Bool :: PrimitiveType
   todo expect PrimitiveType result PrimitiveType :: PrimitiveType

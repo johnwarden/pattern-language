@@ -125,7 +125,7 @@ test "DSL: Symbols and unannotated unions"
   (observed1, observed2, observed3) =
     (a, text, parse(MathExp)(text) == a)
   end
-  expect observed1 result a :: SentenceCaseSymbol
+  expect observed1 result a :: LowerCamelSymbol
   legacy expect observed2 result "a" :: Expression
   todo expect observed2 result "a" :: String
   assert
@@ -136,12 +136,12 @@ end
 
 test "Vertical spreading: Inspect a nested Body"
   # A bounded source grammar for inert code inspection. No evaluation is installed.
-  def Capture type (name :: SentenceCaseSymbol) ::: (annotation :: Expression)
-  def Pattern unionType SentenceCaseSymbol | Capture
+  def Capture type (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+  def Pattern unionType LowerCamelSymbol | Capture
   def Sum type (left :: ValueExpression) :+ (right :: ValueExpression)
   def Product type (left :: ValueExpression) :* (right :: ValueExpression)
   def ValueExpression unionType Number | String | Symbol | Sum | Product
-  def FunctionSignature type (name :: SentenceCaseSymbol)(parameters... :: Pattern*)
+  def FunctionSignature type (name :: LowerCamelSymbol)(parameters... :: Pattern*)
   def Definition type (:def (signature :: FunctionSignature) (value :: (unionType ValueExpression | Body)))
   def DestructuringBinding type (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
   def Binding unionType DestructuringBinding | Definition
@@ -158,12 +158,12 @@ test "Vertical spreading: Inspect a nested Body"
       (y * z, y)
     end
   end
-  ((first :: SentenceCaseSymbol, second :: SentenceCaseSymbol) := (body :: Body)) = binding
+  ((first :: LowerCamelSymbol, second :: LowerCamelSymbol) := (body :: Body)) = binding
   (observed1, observed2, observed3, observed4, observed5) =
     (first, second, toString(Binding*)(body.bindings), toString(ValueExpression*)(body.resultExpression), parse(Body)(toString(Body)(body)) == body)
   end
-  expect observed1 result a :: SentenceCaseSymbol
-  expect observed2 result b :: SentenceCaseSymbol
+  expect observed1 result a :: LowerCamelSymbol
+  expect observed2 result b :: LowerCamelSymbol
   legacy expect observed3 result "[y = 2, z = 3]" :: Expression
   todo expect observed3 result "[y = 2, z = 3]" :: String
   legacy expect observed4 result "[y * z, y]" :: Expression

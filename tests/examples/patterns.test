@@ -32,7 +32,7 @@ test "Exact fields and rest markers"
   end
   expect observed1 result 2 :: Int
   expect observed2 result 3 :: Int
-  expect observed3 result Black :: TitleCaseSymbol
+  expect observed3 result Black :: UpperCamelSymbol
   # Inspect the captured return values.
   (observed1, observed2, observed3)
 end

@@ -23,7 +23,7 @@ ordered first-match interpretation. Match-arm order is a different policy.
 Distinct source syntax may evaluate to the same primitive. Numeric literals denote
 exact Rationals; ordinary strings, Bool values and symbolic values have intrinsic
 interpretations. Reserved primitive atoms cannot simultaneously become ordinary
-TitleCaseSymbol values through a different quoting route.
+UpperCamelSymbol values through a different quoting route.
 
 The proposed primitive vocabulary includes self-evaluating PrimitiveType, with Bool
 and PrimitiveType as its values. The complete metatype and redundant primitive-quote

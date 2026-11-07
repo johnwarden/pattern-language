@@ -41,8 +41,8 @@ end
 
 The classes are LowerCamelSymbol, UpperCamelSymbol and UpperSnakeSymbol. Word
 symbols use ASCII; strings remain Unicode. General Unicode capitalization/conversion
-rules are deferred. Underscores distinguish single-word upper-snake names from
-upper-camel names. PORT is UpperCamel; PORT_ is UpperSnake. The possible constant /
+rules are deferred. Trailing underscores distinguish the one- and two-letter upper-snake names from
+upper-camel names. PORT is UpperSnake, with port / Port as its camel equivalents. The possible constant /
 environment-variable role of UpperSnake is not decided by lexical classification.
 
 | Lower camel | Upper camel | Upper snake |

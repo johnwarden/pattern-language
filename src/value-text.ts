@@ -237,8 +237,9 @@ export function valueText(
         quoted:
           expected &&
           [
-            "SentenceCaseSymbol",
-            "TitleCaseSymbol",
+            "LowerCamelSymbol",
+            "UpperCamelSymbol",
+            "UpperSnakeSymbol",
             "PunctuationSymbol",
           ].includes(expected.name)
             ? isSelfEvaluating(v.name)
