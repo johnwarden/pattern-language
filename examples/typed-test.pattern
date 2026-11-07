@@ -6,6 +6,7 @@ t = Test`
   test "Typed code body"
     x = 3
     x + 1
+  end
   expect
     4 :: Int
   end

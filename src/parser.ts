@@ -1,7 +1,14 @@
 import { attachSource } from "./diagnostics.ts";
 import { readText } from "./text-reader.ts";
 import { scalarText } from "./string-format.ts";
-import { LanguageError, symbol, apply, fields, packOf } from "./syntax.ts";
+import {
+  LanguageError,
+  symbol,
+  apply,
+  fields,
+  packOf,
+  isName,
+} from "./syntax.ts";
 import type { Syntax, Field, Span } from "./syntax.ts";
 import {
   punctuation,
@@ -9,9 +16,122 @@ import {
   identifierName,
   labelName,
 } from "./lexical.ts";
-interface SurfaceOptions {
+export type LayoutForms = Map<string, Set<string>>;
+export interface ParseSurfaceOptions {
   /** Inert specification reading only; execution always uses the ordinary reader. */
   specification?: boolean;
+  /** Sidefix start keyword -> additional clause keywords from the active grammar. */
+  layoutForms?: LayoutForms;
+}
+type SurfaceOptions = ParseSurfaceOptions;
+function quotedLayoutNames(n: Syntax): string[] {
+  switch (n.kind) {
+    case "symbol":
+      return n.quoted ? [n.name] : [];
+    case "sequence":
+      return n.items.flatMap(quotedLayoutNames);
+    case "pack":
+      return n.body.flatMap((field) => quotedLayoutNames(field.value));
+    case "apply":
+      return [
+        ...quotedLayoutNames(n.head),
+        ...n.body.flatMap((field) => quotedLayoutNames(field.value)),
+      ];
+    case "quote":
+      return quotedLayoutNames(n.value);
+    case "block":
+      return n.lines.flatMap(quotedLayoutNames);
+    default:
+      return [];
+  }
+}
+export function addLayoutForm(forms: LayoutForms, items: Syntax[]): void {
+  const quoted = items.flatMap(quotedLayoutNames);
+  if (!quoted.length) return;
+  const [start, ...clauses] = quoted;
+  let set = forms.get(start);
+  if (!set) {
+    set = new Set();
+    forms.set(start, set);
+  }
+  for (const clause of clauses) set.add(clause);
+}
+export function layoutFormsFromBlock(root: Syntax): LayoutForms {
+  const forms: LayoutForms = new Map();
+  if (root.kind !== "block") return forms;
+  for (const line of root.lines) {
+    const items = line.kind === "sequence" ? line.items : [line];
+    if (
+      items.length < 4 ||
+      !isName(items[0], "def") ||
+      !isName(items[2], "type")
+    )
+      continue;
+    addLayoutForm(forms, items.slice(3));
+  }
+  return forms;
+}
+export function mergeLayoutForms(
+  left: LayoutForms,
+  right: LayoutForms,
+): LayoutForms {
+  const forms: LayoutForms = new Map();
+  for (const source of [left, right])
+    for (const [start, clauses] of source) {
+      let set = forms.get(start);
+      if (!set) {
+        set = new Set();
+        forms.set(start, set);
+      }
+      for (const clause of clauses) set.add(clause);
+    }
+  return forms;
+}
+function owningClauses(
+  names: string[],
+  forms: LayoutForms | undefined,
+): Set<string> | undefined {
+  if (!forms?.size) return;
+  for (const name of names) {
+    const clauses = forms.get(name);
+    if (clauses) return new Set(clauses);
+  }
+  for (const clauses of forms.values())
+    if (names.some((name) => clauses.has(name))) return new Set(clauses);
+}
+function unquotedNames(tokens: Token[]): string[] {
+  return tokens
+    .filter((token) => token.kind === "name" && !token.quoted)
+    .map((token) => token.text);
+}
+function unquotedNamesSinceNewline(out: Token[]): string[] {
+  const names: string[] = [];
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out[i].kind === "newline") break;
+    if (out[i].kind === "name" && !out[i].quoted) names.unshift(out[i].text);
+  }
+  return names;
+}
+function isEndLine(ts: Token[]): boolean {
+  return (
+    ts.length === 1 &&
+    ts[0].kind === "name" &&
+    ts[0].text === "end" &&
+    !ts[0].quoted
+  );
+}
+function blockEndError(span?: Span, here?: Span): never {
+  throw new LanguageError(
+    "an indented block requires an explicit aligned end",
+    span,
+    {
+      code: "E_BLOCK_END",
+      phase: "parse",
+      related: here
+        ? [{ message: "expected an aligned end before this line", span: here }]
+        : [],
+    },
+  );
 }
 interface Token extends Span {
   kind: string;
@@ -22,6 +142,7 @@ interface Token extends Span {
   block?: Syntax;
   textNode?: Syntax;
   interpolate?: boolean;
+  layoutHold?: boolean;
 }
 const identifier = /^[\p{L}_][\p{L}\p{M}\p{N}_]*/u;
 /** Source conventions are applied once, before any tokens or literal values exist. */
@@ -92,12 +213,20 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
       const interpolate = c === "$",
         opening = i + Number(interpolate);
       const reader = out.at(-1)?.kind === "name" && out.at(-1)?.end === i;
+      const owner = owningClauses(
+        unquotedNamesSinceNewline(out),
+        options.layoutForms,
+      );
       const read = readText(
         source,
         opening,
         interpolate,
         !!reader && source[opening] === "'",
         (text) => expressionFromNormalized(text, true),
+        {
+          clauses: owner ?? new Set(),
+          shareEnd: owner !== undefined,
+        },
       );
       i = read.end;
       kind = reader ? "readerText" : "string";
@@ -125,7 +254,17 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
         endLine: line,
         endColumn: column,
         textNode: node,
+        layoutHold: read.held,
       });
+      if (read.held && i > 0 && source[i - 1] === "\n")
+        out.push({
+          kind: "newline",
+          text: "\n",
+          start: i - 1,
+          end: i,
+          line: line - 1,
+          column: 1,
+        });
       continue;
     } else if (options.specification && /[<>]/.test(c)) {
       i++;
@@ -625,25 +764,31 @@ function layout(
     );
   function region(start: number, indent: number): [Syntax[], number] {
     const result: Syntax[] = [];
-    let i = start,
-      hadBlock = false;
+    let i = start;
+    let open:
+      | {
+          clauses: Set<string>;
+          span: Span;
+        }
+      | undefined;
     while (i < lines.length) {
       let { indent: level, tokens: ts } = lines[i];
-      if (level < indent) break;
+      if (level < indent) {
+        if (open) blockEndError(open.span, ts[0]);
+        break;
+      }
       if (level > indent)
         throw new LanguageError("inconsistent indentation", ts[0]);
-      if (
-        ts.length === 1 &&
-        ts[0].kind === "name" &&
-        ts[0].text === "end" &&
-        !ts[0].quoted
-      ) {
-        if (!hadBlock)
-          throw new LanguageError("end has no preceding block", ts[0]);
+      if (isEndLine(ts)) {
+        if (!open) throw new LanguageError("end has no preceding block", ts[0]);
         i++;
-        hadBlock = false;
+        open = undefined;
         continue;
       }
+      const names = unquotedNames(ts);
+      if (open && !(names.length && open.clauses.has(names[0])))
+        blockEndError(open.span, ts[0]);
+      const continuing = !!open;
       i++;
       let block: Syntax | undefined;
       if (i < lines.length && lines[i].indent > indent) {
@@ -653,9 +798,7 @@ function layout(
           ts.at(-1)?.kind === "typedQuote" &&
           !(
             lines[next]?.indent === indent &&
-            lines[next].tokens.length === 1 &&
-            lines[next].tokens[0].text === "end" &&
-            !lines[next].tokens[0].quoted
+            isEndLine(lines[next].tokens)
           )
         )
           throw new LanguageError(
@@ -676,7 +819,26 @@ function layout(
         };
         i = next;
         block = { kind: "block", lines: body, span };
-        hadBlock = true;
+        if (!continuing)
+          open = {
+            clauses:
+              owningClauses(unquotedNames(ts), options.layoutForms) ??
+              new Set(),
+            span: ts[0],
+          };
+      } else if (!continuing) {
+        const form = owningClauses(names, options.layoutForms);
+        const next = lines[i];
+        const nextName = next ? unquotedNames(next.tokens)[0] : undefined;
+        if (
+          form &&
+          ts.some((token) => token.layoutHold) &&
+          next &&
+          next.indent === indent &&
+          (isEndLine(next.tokens) ||
+            (nextName !== undefined && form.has(nextName)))
+        )
+          open = { clauses: form, span: ts[0] };
       }
       if (
         block &&
@@ -729,6 +891,7 @@ function layout(
       if (seq.kind === "sequence" && block) seq.items.push(block);
       result.push(seq);
     }
+    if (open) blockEndError(open.span);
     return [result, i];
   }
   const [body, consumed] = region(0, topLevel ? 0 : (lines[0]?.indent ?? 0));
@@ -805,8 +968,12 @@ function groups(tokens: Token[], options: SurfaceOptions = {}): Token[] {
   }
   return result;
 }
-export function parseSurface(source: string, sourceName = "program"): Syntax {
-  return readSurface(source, sourceName);
+export function parseSurface(
+  source: string,
+  sourceName = "program",
+  options: ParseSurfaceOptions = {},
+): Syntax {
+  return readSurface(source, sourceName, options);
 }
 /** Source-only reader for future specifications, not executable Code.
  * This specification reader still materializes numeric spellings as NumericSource
@@ -817,8 +984,9 @@ export function parseSurface(source: string, sourceName = "program"): Syntax {
 export function parseTestSource(
   source: string,
   sourceName = "test file",
+  options: ParseSurfaceOptions = {},
 ): Syntax {
-  return readSurface(source, sourceName, { specification: true });
+  return readSurface(source, sourceName, { ...options, specification: true });
 }
 function readSurface(
   source: string,

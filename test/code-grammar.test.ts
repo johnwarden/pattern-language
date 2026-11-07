@@ -184,7 +184,7 @@ test("typed Code fields and abstract slots reconstruct without evaluation", () =
 
 test("Test data can contain typed Code and deferred expected syntax", () => {
   const source =
-    'def ExpectedOutput type (e :: Expression) ::: (type :: Expression)\ndef Test type (:test (name :: String) (code :: Code) :expect (expected :: ExpectedOutput))\nt = Test`\n  test "body"\n    x = 3\n    x + 1\n  expect 4 :: Int\nend\n';
+    'def ExpectedOutput type (e :: Expression) ::: (type :: Expression)\ndef Test type (:test (name :: String) (code :: Code) :expect (expected :: ExpectedOutput))\nt = Test`\n  test "body"\n    x = 3\n    x + 1\n  end\n  expect 4 :: Int\nend\n';
   assert.equal(
     run(
       source +

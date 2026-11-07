@@ -20,7 +20,7 @@ const pad = (text: string) =>
     .join("\n");
 function sample(body: string, clause: string, mode: AssertionMode = "check") {
   return loadTests({
-    "sample.test": `test "Sample"\n  ${mode === "check" ? "" : mode + " "}expect\n${pad(body)}\n  ${clause}\nend`,
+    "sample.test": `test "Sample"\n  ${mode === "check" ? "" : mode + " "}expect\n${pad(body)}\n  ${clause}\n  end\nend`,
   })[0];
 }
 const run = (source: string) => runTest(loadTests({ "case.test": source })[0]);
@@ -137,6 +137,7 @@ test("ordinary destructuring retains empty and exact positional arity checks", (
     assert
       () = (() -> ())()
       True
+    end
 end`).passed,
     true,
   );
@@ -146,7 +147,7 @@ end`).passed,
     "() = (1)",
     "(x, color: c) = (1)",
   ]) {
-    const result = run(`test "Bad pack"\n assert\n  ${body}\n  True\nend`);
+    const result = run(`test "Bad pack"\n assert\n  ${body}\n  True\n end\nend`);
     assert.equal(result.passed, false, body);
   }
 });
@@ -334,7 +335,7 @@ test("legacy assertions must pass and never suppress failures", () => {
 });
 test("todo operands resolve and execute without leaking bindings or definitions", () => {
   const r = run(
-    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
+    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  end\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  end\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.equal(
@@ -380,7 +381,7 @@ test("every assertion runs after failures; expected failures are not passes", ()
 test("setup is shared only within its case, while individual subjects remain isolated", () => {
   const cases = loadTests({
     "scope.test":
-      'test "Setup"\n  def Box type Box(Int)\n  x = 3 :: Int\n  expect (Box(x) :: Box) result Box(3) :: Box\n  expect\n    x = 9 :: Int\n    x\n  result 9 :: Int\n  expect x result 3 :: Int\nend\ntest "Fresh"\n  expect x error "E_UNBOUND_NAME"\nend',
+      'test "Setup"\n  def Box type Box(Int)\n  x = 3 :: Int\n  expect (Box(x) :: Box) result Box(3) :: Box\n  expect\n    x = 9 :: Int\n    x\n  result 9 :: Int\n  end\n  expect x result 3 :: Int\nend\ntest "Fresh"\n  expect x error "E_UNBOUND_NAME"\nend',
   });
   for (const t of cases) {
     const r = runTest(t);

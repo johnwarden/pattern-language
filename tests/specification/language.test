@@ -5,6 +5,7 @@ test "C23 supported global typed text preserves value identity"
     text = toString(Rectangle)(r)
     restored = parse(Rectangle)(text)
     (restored == r)
+  end
 
   todo assert
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
@@ -13,6 +14,7 @@ test "C23 supported global typed text preserves value identity"
     restored = parse(Rectangle)(text)
     assert ((restored == r))
     (toString(Rectangle)(restored) == text)
+  end
 end
 
 test "C24 applications preserve complete successive packs"
@@ -30,6 +32,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+  end
 
   todo expect
     def combine(x, y)(z) (x, y, z)
@@ -45,6 +48,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+  end
 
   todo expect
     def combine(x, y)(z) (x, y, z)
@@ -60,6 +64,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+  end
 
   todo expect
     def combine(x, y)(z) (x, y, z)
@@ -70,6 +75,7 @@ test "C24 applications preserve complete successive packs"
     x = ("a", "b")
     x
   error "one capture cannot consume two positional results"
+  end
 end
 
 test "C25 infix operators retain equal precedence"
@@ -84,6 +90,7 @@ test "C25 infix operators retain equal precedence"
       def select(a)(b) b
       String
     )
+  end
 end
 
 test "C26 todo assertions execute in isolated scopes"
@@ -100,6 +107,7 @@ test "C26 todo assertions execute in isolated scopes"
   expect
     futureLocal()
   error "E_UNBOUND_NAME"
+  end
 
   expect marker result 1 :: Rational
 end
@@ -108,8 +116,10 @@ test "C27 candidate Code rejection of redundant primitive quotation"
   todo expect
     :5
   error "primitive quotation is not a Code form"
+  end
 
   todo expect
     :Bool
   error "primitive quotation is not a Code form"
+  end
 end

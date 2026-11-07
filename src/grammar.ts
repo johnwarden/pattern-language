@@ -1,7 +1,11 @@
 import { readBootstrap } from "./bootstrap.ts";
 import { elaborateBlock, validateLanguageBlock } from "./elaboration.ts";
 import { PatternCompiler } from "./pattern-compiler.ts";
-import { parseSurface } from "./parser.ts";
+import {
+  addLayoutForm,
+  parseSurface,
+  type LayoutForms,
+} from "./parser.ts";
 import {
   LanguageError,
   operator,
@@ -718,18 +722,28 @@ export class Grammar {
     );
     this.keywords.set(first.name, name);
   }
+  /** Start keywords and extra clause keywords from this grammar's sidefix rules. */
+  layoutForms(): LayoutForms {
+    const forms: LayoutForms = new Map();
+    for (const items of this.ruleSyntax.values()) addLayoutForm(forms, items);
+    return forms;
+  }
   parse(
     source: string,
     mode: "program" | "repl" = "program",
     sourceName = "program",
   ): Syntax {
-    const root = parseSurface(source, sourceName);
+    const root = parseSurface(source, sourceName, {
+      layoutForms: this.layoutForms(),
+    });
     if (root.kind !== "block") throw new LanguageError("expected program");
     return this.blockBody(root, new Matcher(syntaxAdapter), mode === "repl");
   }
   parseAs(source: string, start: string): Syntax {
     if (start === "Program") return this.parse(source);
-    const root = parseSurface(source);
+    const root = parseSurface(source, "program", {
+      layoutForms: this.layoutForms(),
+    });
     if (root.kind !== "block") throw new LanguageError("expected source");
     const xs = root.lines
       .flatMap((n) => (n.kind === "sequence" ? n.items : [n]))
