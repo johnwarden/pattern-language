@@ -71,13 +71,13 @@ already defined abstract-call semantics, never a source-visible overload generat
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. **All 136 source cases execute**, with
-**263 passing assertions (70 legacy)** and **117 todo expected failures**. The corpus
+The reference is TypeScript prototype 0.2. **All 143 source cases execute**, with
+**276 passing assertions (71 legacy)** and **118 todo expected failures**. The corpus
 includes 76 playground examples, 14 other conformance cases, nine migrated binding/
-default cases, five explicit-end layout cases, three postfix-suffix cases and the 27
+default cases, eleven explicit-end layout cases, four postfix-suffix cases and the 27
 C01–C27 design cases. Host/canonical/control checks execute
 separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 758 tests with no skips, plus build/type checks.
+verification gate passes 770 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -179,8 +179,8 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 136 cases run, including C01–C27, the explicit-end layout contracts and tight
-postfix suffix wrapping. The corpus has 263 passing assertions (70 legacy) and 117
+All 143 cases run, including C01–C27, the explicit-end layout contracts and tight
+postfix suffix wrapping. The corpus has 276 passing assertions (71 legacy) and 118
 todo expected failures. The Widget observation is already an ordinary passing
 contract. C03's supported Float32 designation and C19's empty/singleton rest checks
 have no todo. C27 remains exploratory. Current bootstrap observations are
