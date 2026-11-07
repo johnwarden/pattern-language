@@ -98,3 +98,9 @@ T** is (T*)*, and T+ parses as the same suffix wrap. tests/layout/postfix-suffix
 covers that wrapping. T+ as a nonempty-list refinement, and a distinct postfix
 tree from prefix + / ordinary application, remain deferred: they need shared
 adapter identity, not a reader-only change.
+
+Tight `f(x)` is application; spaced `f (x)` is a sequence that needs a sidefix
+grammar, not an automatic call. A field colon must touch its label: `w: 1` is
+the label `w`, while `w :(1)` is a positional sequence of `w` and a quotation.
+tests/layout/call-label-spacing.test records those reader distinctions. No new
+public meaning is added; the reader already implemented both survey rows.

@@ -1,0 +1,23 @@
+test "Tight f(x) is application; spaced f (x) is a sequence"
+  expect syntaxTree(:(f(x))) result Apply(Name("f", False), [Field("_1", Name("x", False))]) :: SyntaxNode
+  expect syntaxTree(:(f (x))) result Sequence([Name("f", False), Name("x", False)]) :: SyntaxNode
+  expect syntaxTree(:(f())) result Apply(Name("f", False), []) :: SyntaxNode
+  expect syntaxTree(:(f ())) result Sequence([Name("f", False), Pack([])]) :: SyntaxNode
+  assert (parse(Code)("f(x)") != parse(Code)("f (x)"))
+
+  def id(x) x
+  expect id(3) result 3 :: Expression
+  expect
+    def id(x) x
+    id (3)
+  error "expected a complete expression"
+  end
+end
+
+test "A field colon must touch its label"
+  expect syntaxTree(:(Rect(w: 1))) result Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
+  expect syntaxTree(:(Rect(w: (1)))) result Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
+  expect syntaxTree(:(Rect(w :(1)))) result Apply(Name("Rect", False), [Field("_1", Sequence([Name("w", False), Quote(NumberLiteral(1))]))]) :: SyntaxNode
+  assert (parse(Code)("Rect(w: 1)") != parse(Code)("Rect(w :(1))"))
+  expect parse(Code)("Rect(w : 1)") error "quotation requires :(expression)"
+end
