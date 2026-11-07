@@ -1,0 +1,60 @@
+test "An indented function cannot terminate at EOF"
+  source = "def f(x)\n  x"
+
+  todo expect parse(Code)(source) error "E_BLOCK_END"
+end
+
+test "A nested block needs its own aligned end"
+  source = '
+    main = do
+      f = do
+        println("a")
+      println("b")
+      f
+    end
+  end
+
+  todo expect parse(Code)(source) error "E_BLOCK_END"
+
+  moved = '
+    main = do
+      f = do
+        println("a")
+        println("b")
+      f
+    end
+  end
+
+  todo expect parse(Code)(moved) error "E_BLOCK_END"
+end
+
+test "An expectation cannot borrow its enclosing test's end"
+  source = '
+    test "outer"
+      expect
+        def f(x: Int = (1 / 0)) x
+        f(x: 8)
+      result
+        8 :: Int
+    end
+  end
+
+  todo expect parse(Code)(source) error "E_BLOCK_END"
+end
+
+test "A final end can close a string and its surrounding if"
+  source = '
+    s = if True '
+      Hello, World!
+    else '
+      What is cooking?
+    end
+    s
+  end
+
+  todo assert parse(Code)(source) .matches Code
+end
+
+test "Removing required infix spaces is an error"
+  expect parse(Code)("a+b") error "infix operators require spaces"
+end
