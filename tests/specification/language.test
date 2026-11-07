@@ -1,0 +1,109 @@
+test "C23 supported global typed text preserves value identity"
+  todo assert
+    type Rectangle concrete Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 3) :: Rectangle)
+    text = toString(Rectangle)(r)
+    restored = parse(Rectangle)(text)
+    (restored == r)
+  todo assert
+    type Rectangle concrete Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 3) :: Rectangle)
+    text = toString(Rectangle)(r)
+    restored = parse(Rectangle)(text)
+    assert ((restored == r))
+    (toString(Rectangle)(restored) == text)
+end
+
+test "C24 applications preserve complete successive packs"
+  todo expect
+    def combine(x, y)(z) (x, y, z)
+    partial = combine("a", "b")
+    (a, b, c) = partial("c")
+    a
+  result
+    (
+      "a"
+    ) :: (
+      def combine(x, y)(z) (x, y, z)
+      partial = combine("a", "b")
+      (a, b, c) = partial("c")
+      String
+    )
+  todo expect
+    def combine(x, y)(z) (x, y, z)
+    partial = combine("a", "b")
+    (a, b, c) = partial("c")
+    b
+  result
+    (
+      "b"
+    ) :: (
+      def combine(x, y)(z) (x, y, z)
+      partial = combine("a", "b")
+      (a, b, c) = partial("c")
+      String
+    )
+  todo expect
+    def combine(x, y)(z) (x, y, z)
+    partial = combine("a", "b")
+    (a, b, c) = partial("c")
+    c
+  result
+    (
+      "c"
+    ) :: (
+      def combine(x, y)(z) (x, y, z)
+      partial = combine("a", "b")
+      (a, b, c) = partial("c")
+      String
+    )
+  todo expect
+    def combine(x, y)(z) (x, y, z)
+    partial = combine("a", "b")
+    (a, b, c) = partial("c")
+    def empty() ()
+    () = empty()
+    x = ("a", "b")
+    x
+  error "one capture cannot consume two positional results"
+end
+
+test "C25 infix operators retain equal precedence"
+  todo expect ((2 :: Float64) * (3 :: Float64) + (4 :: Float64)) result 14 :: Float64
+  todo expect
+    def select(a)(b) b
+    ("left" .select "right")
+  result
+    (
+      "right"
+    ) :: (
+      def select(a)(b) b
+      String
+    )
+end
+
+test "C26 todo assertions execute in isolated scopes"
+  marker = 1
+  todo assert
+    FuturePredicate(FutureValue)
+  todo expect FutureSubject() result FutureExpected() :: FutureType
+  todo expect
+    marker = 2
+    def futureLocal() 99
+    missing()
+  result
+    0 :: Expression
+  expect
+    futureLocal()
+  error "E_UNBOUND_NAME"
+  legacy expect marker result 1 :: Expression
+end
+
+test "C27 candidate Code rejection of redundant primitive quotation"
+  todo expect
+    :5
+  error "primitive quotation is not a Code form"
+  todo expect
+    :Bool
+  error "primitive quotation is not a Code form"
+end

@@ -1,0 +1,362 @@
+test "Canonical type alternatives"
+  a = type :Red | :Black
+  b = type :Black | :Red
+  (observed1, observed2, observed3) =
+    (a == b, toString(Type)(a), parse(Type)(toString(Type)(a)) == b)
+  end
+  legacy assert
+    observed1
+  legacy expect observed2 result "Type(:Black | :Red)" :: Expression
+  legacy assert
+    observed3
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Typed Code and recursive splicing"
+  def wrap(n, e :: Code)
+    if n == 0 e else
+      inner = wrap(n - 1, e)
+      Code$` inc($inner)
+    end
+  end
+  c = wrap(3, Code` 1)
+  expect
+    c
+  result
+    (
+      (
+        (inc(inc(inc(1))))
+      )
+    ) :: (
+      Code
+    )
+end
+
+test "Factory defaults and complete types"
+  def Color type :Black | :White
+  def Rectangle type :Rect(w :: Int, h :: Int, color: Color)
+  def rectangle(w :: Int, h :: Int, color: Color = :Black) Rect(w, h, color: color) :: Rectangle
+  r = rectangle(3, 4)
+  (observed1, observed2, observed3, observed4) =
+    (r, r.color, toString(Type)(type Rectangle), :Rect(3, 4) .matches (type Rectangle))
+  end
+  legacy expect observed1 result Rect(3, 4, color: :Black) :: Rectangle
+  legacy expect observed2 result :Black :: Color
+  legacy expect observed3 result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: Expression
+  legacy assert
+    (
+      observed4
+    ) == False
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4)
+end
+
+test "Optional labeled defaults"
+  def Color type :Black | :White
+  (size: s :: Int, color: c :: Color = :Black) = (size: 3)
+  expect c result :Black :: Color
+end
+
+test "Type fields and ignored captures"
+  def Rectangle type :Rect(width :: Number, height :: Number)
+  r = Rect(3, 4) :: Rectangle
+  Rect(_, h) = r
+  (observed1, observed2) =
+    (type Rectangle, h)
+  end
+  expect observed1 result Type(Rect(Float, Float)) :: Type
+  expect observed2 result 4 :: Float
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Inspect a pattern union"
+  t = type :Some(Int) | :None
+  Type(:|(left)(right)) = t
+  (observed1, observed2) =
+    (left, right)
+  end
+  legacy expect observed1 result :None :: Expression
+  legacy expect observed2 result Some(Int) :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Local and global type text"
+  def Rectangle type :Rect(width :: Number, height :: Number)
+  t = type Rectangle
+  local = toStringLocal(Type)(t)
+  global = toString(Type)(t)
+  (observed1, observed2, observed3, observed4) =
+    (local, global, parseLocal(Type)(local) == t, parse(Type)(global) == t)
+  end
+  legacy expect observed1 result "Rectangle" :: Expression
+  legacy expect observed2 result "Type(Rect(Float, Float))" :: Expression
+  legacy assert
+    observed3
+  legacy assert
+    observed4
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4)
+end
+
+test "Mutually recursive mathematical expression types"
+  def Sum type (a :: MathExp) :+ (b :: MathExp)
+  def Product type (a :: MathExp) :* (b :: MathExp)
+  def MathExp UnionType(Sum, Product, Symbol, Number)
+  (one :: MathExp) = 1 :: Number
+  (two :: MathExp) = 2 :: Number
+  (three :: MathExp) = 3 :: Number
+  (sum :: MathExp) = (one :+ two) :: Sum
+  expression = (sum :* three) :: Product
+  text = toString(Product)(expression)
+  (observed1, observed2) =
+    (parse(Product)(text) == expression, parse(Type)(toString(Type)(MathExp)) == MathExp)
+  end
+  assert
+    observed1
+  assert
+    observed2
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Named types and local accessors"
+  def Left type :Left(x :: Int)
+  def Right type :Right(x :: Int)
+  def Outer type :Outer(Left, Right)
+  r = Outer(Left(2), Right(3)) :: Outer
+  Outer(left, right) = r
+  (observed1, observed2) =
+    (left.x, x(right))
+  end
+  expect observed1 result 2 :: Int
+  expect observed2 result 3 :: Int
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "A union of type values"
+  def Circle type :Circle(Number)
+  def Square type :Square(Number)
+  shape = UnionType(type Circle, type Square)
+  expect shape result UnionType(Type(Circle(Float)), Type(Square(Float))) :: Type
+end
+
+test "Option factory with ()"
+  def Option(T :: Type) type :None | Some(T)
+  a = :None :: Option(Int)
+  b = Some(5) :: Option(Int)
+  (observed1, observed2, observed3) =
+    (toString(Option(Int))(a), b, Option(Int))
+  end
+  legacy expect observed1 result ":None" :: Expression
+  legacy expect observed2 result Some(5) :: Option(Int)
+  legacy expect observed3 result Type(:None | Some(Int)) :: Type
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Type arguments use ordinary packs"
+  def nonZero(T :: Type)(n :: T) n != 0
+  (observed1, observed2, observed3) =
+    (nonZero(Int)(5), nonZero(Int)(0), nonZero(Float)(0.5))
+  end
+  assert
+    observed1
+  assert
+    (
+      observed2
+    ) == False
+  assert
+    observed3
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Types use ordinary value equality"
+  cached = Int
+  tree = :Int
+  value = 3 :: tree
+  (observed1, observed2, observed3) =
+    (cached == tree, toString(Type)(cached) == toString(Type)(tree), parse(tree)(toString(tree)(value)) == value)
+  end
+  assert
+    observed1
+  assert
+    observed2
+  assert
+    observed3
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Picture: named shape type"
+  def Rectangle type :Rectangle(w :: Number, h :: Number)
+  def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle)
+  p = Picture(color: :Black, shape: Rectangle(3, 4)) :: Picture
+  (observed1, observed2, observed3) =
+    (p.shape, p.shape.w, p.shape.h)
+  end
+  expect observed1 result Rectangle(3, 4) :: Rectangle
+  expect observed2 result 3 :: Float
+  expect observed3 result 4 :: Float
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Recursive type"
+  def List(t :: Type) type :Nil | :Cons(t, List(t))
+  expect Cons(1, Cons(2, :Nil)) :: List(Int) result Cons(1, Cons(2, :Nil)) :: List(Int)
+end
+
+test "Local recursive type block"
+  (x :: (
+    def List(t :: Type) type :Nil | :Cons(t, List(t))
+    List(Int)
+  )) = Cons(5, :Nil)
+  expect x result Cons(5, :Nil) :: (parse(Type)("Type(Recursive(:Nil | Cons(Int,Recur(0))))"))
+end
+
+test "Portable recursive type"
+  def List(t :: Type) type :Nil | :Cons(t, List(t))
+  t = type List(Int)
+  text = toString(Type)(t)
+  restored = parse(Type)(text)
+  value = Cons(5, :Nil) :: restored
+  (observed1, observed2, observed3) =
+    (text, restored == t, parse(restored)(toString(restored)(value)) == value)
+  end
+  legacy expect observed1 result "Type(Recursive(:Nil | Cons(Int, Recur(0))))" :: Expression
+  legacy assert
+    observed2
+  legacy assert
+    observed3
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Ordinary factory with defaults"
+  def Rectangle type :Rect(width :: Int, height :: Int, color: String)
+  def rectangle(w :: Int, h :: Int, color: String = "black") Rect(w, h, color: color) :: Rectangle
+  r = rectangle(3, 4)
+  (observed1, observed2, observed3) =
+    (r, r.color, Rectangle(3, 4))
+  end
+  legacy expect observed1 result Rect(3, 4, color: "black") :: Rectangle
+  legacy expect observed2 result "black" :: String
+  legacy expect observed3 result Rectangle(3, 4) :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Subset of an optional type"
+  def NoInt Int? .where (v -> v .matches :None)
+  a = :None :: NoInt
+  b = :None :: Int?
+  assert
+    a == b
+end
+
+test "Tuple type"
+  def Tuple(ts... :: Type*) type {ts…}
+  expect {1, "hello"} :: Tuple(Int, String) result {1, "hello"} :: Tuple(Int, String)
+end
+
+test "Types are ordinary values"
+  def Rect type Rect(Float, Float)
+  r = Rect
+  (observed1, observed2, observed3, observed4) =
+    (r, Int, Float, Type(Int))
+  end
+  expect observed1 result Type(Rect(Float, Float)) :: Type
+  expect observed2 result Int :: Type
+  expect observed3 result Float :: Type
+  expect observed4 result Type(Int) :: Type
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4)
+end
+
+test "Type factory · ordinary calls"
+  def restrict(base)(predicate) base .where predicate
+  small = restrict(type Int)(n -> n < 5)
+  expect 3 :: small result 3 :: Int
+end
+
+test "Type normalization and wrappers"
+  def Rect type Rect(Float, Float)
+  (observed1, observed2, observed3, observed4) =
+    (type Int, type type Int, Type(Int), type type Rect)
+  end
+  expect observed1 result Int :: Type
+  expect observed2 result Int :: Type
+  expect observed3 result Type(Int) :: Type
+  expect observed4 result Type(Rect(Float, Float)) :: Type
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4)
+end
+
+test "Types as ordinary values"
+  def Rectangle type :Rect(width :: Number, height :: Number)
+  t = Type(Rect(Float, Float))
+  Type(pattern) = t
+  (observed1, observed2, observed3) =
+    (Type(pattern) == t, t == (type Rectangle), toString(Type)(t))
+  end
+  legacy assert
+    observed1
+  legacy assert
+    observed2
+  legacy expect observed3 result "Type(Rect(Float, Float))" :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Inspect a typed code binding without evaluating it"
+  def isBinding(e)
+    match syntaxTree(e)
+      Apply(Apply(Name("=", False), _), _) -> True
+      _ -> False
+    end
+  end
+  def Binding Code .where (e -> isBinding(e))
+
+  code = Code` f = x -> x * 2
+  (observed1, observed2) =
+    match code
+      (binding :: Binding) ->
+        Apply(Apply(_, left), right) = syntaxTree(binding)
+        [Field("_1", pattern)] = left
+        [Field("_1", value)] = right
+        (toString(Code)(Code(syntaxExpression(pattern))), toString(Code)(Code(syntaxExpression(value))))
+      _ -> panic("Expected a binding")
+    end
+  end
+  legacy expect observed1 result "f" :: Expression
+  legacy expect observed2 result "x -> x * 2" :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Overlapping unions and narrowing"
+  def IntOrString UnionType(type Int, type String)
+  def IntOrBool UnionType(type Int, type Bool)
+  (x :: IntOrString) = (3 :: Int)
+  (y :: IntOrBool) = (3 :: Int)
+  assert
+    match x
+      (a :: Int) -> match y
+        (b :: Int) -> a == b
+        _ -> False
+      end
+      _ -> False
+    end
+end
+
+test "Numeric spaces and conversion"
+  (x :: Number .where (n -> isInt64(n))) = 10
+  (y :: Int) = 10
+  assert
+    x.toInt == y
+end

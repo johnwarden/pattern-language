@@ -1,0 +1,269 @@
+test "C19 horizontal rest remains a typed positional list"
+  expect
+    def copy(xs... :: Float32*) ([xs...] :: Float32*)
+    copy()
+  result
+    (
+      []
+    ) :: (
+      def copy(xs... :: Float32*) ([xs...] :: Float32*)
+      Float32*
+    )
+  expect
+    def copy(xs... :: Float32*) ([xs...] :: Float32*)
+    copy(0.5)
+  result
+    (
+      [0.5]
+    ) :: (
+      def copy(xs... :: Float32*) ([xs...] :: Float32*)
+      Float32*
+    )
+  todo expect
+    def copy(xs... :: Float32*) ([xs...] :: Float32*)
+    type Packet concrete Packet(Float32, Float32, color: String, note: String)
+    packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
+    Packet(first, rest... :: Float32*, color: c, **) = packet
+    rest
+  result
+    (
+      [1]
+    ) :: (
+      def copy(xs... :: Float32*) ([xs...] :: Float32*)
+      type Packet concrete Packet(Float32, Float32, color: String, note: String)
+      packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
+      Packet(first, rest... :: Float32*, color: c, **) = packet
+      Float32*
+    )
+  todo expect
+    def copy(xs... :: Float32*) ([xs...] :: Float32*)
+    type Packet concrete Packet(Float32, Float32, color: String, note: String)
+    packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
+    Packet(first, rest... :: Float32*, color: c, **) = packet
+    c
+  result
+    (
+      "blue"
+    ) :: (
+      def copy(xs... :: Float32*) ([xs...] :: Float32*)
+      type Packet concrete Packet(Float32, Float32, color: String, note: String)
+      packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
+      Packet(first, rest... :: Float32*, color: c, **) = packet
+      String
+    )
+end
+
+test "C20 row capture and spreading are mirror images"
+  todo expect
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    rows
+  result
+    (
+      [[0.5, 1], [2, 4]]
+    ) :: (
+      type Matrix concrete [
+        cells... :: Float32**
+        ...
+      ]
+      x = ([
+        0.5, 1
+        2, 4
+      ] :: Matrix)
+      rows = x.cells
+      Float32**
+    )
+  todo assert
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    y = ([
+      rows...
+      ...
+    ] :: Matrix)
+    (y == x)
+  todo expect
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    y = ([
+      rows...
+      ...
+    ] :: Matrix)
+    assert ((y == x))
+    empty = ([
+    ] :: Matrix)
+    oneEmptyRow = ([
+      ()
+    ] :: Matrix)
+    empty.cells
+  result
+    (
+      []
+    ) :: (
+      type Matrix concrete [
+        cells... :: Float32**
+        ...
+      ]
+      x = ([
+        0.5, 1
+        2, 4
+      ] :: Matrix)
+      rows = x.cells
+      y = ([
+        rows...
+        ...
+      ] :: Matrix)
+      assert ((y == x))
+      empty = ([
+      ] :: Matrix)
+      oneEmptyRow = ([
+        ()
+      ] :: Matrix)
+      Float32**
+    )
+  todo expect
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    y = ([
+      rows...
+      ...
+    ] :: Matrix)
+    assert ((y == x))
+    empty = ([
+    ] :: Matrix)
+    oneEmptyRow = ([
+      ()
+    ] :: Matrix)
+    oneEmptyRow.cells
+  result
+    (
+      [[]]
+    ) :: (
+      type Matrix concrete [
+        cells... :: Float32**
+        ...
+      ]
+      x = ([
+        0.5, 1
+        2, 4
+      ] :: Matrix)
+      rows = x.cells
+      y = ([
+        rows...
+        ...
+      ] :: Matrix)
+      assert ((y == x))
+      empty = ([
+      ] :: Matrix)
+      oneEmptyRow = ([
+        ()
+      ] :: Matrix)
+      Float32**
+    )
+  todo assert
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    y = ([
+      rows...
+      ...
+    ] :: Matrix)
+    assert ((y == x))
+    empty = ([
+    ] :: Matrix)
+    oneEmptyRow = ([
+      ()
+    ] :: Matrix)
+    (empty != oneEmptyRow)
+end
+
+test "C21 vertical-only capture is a list of items"
+  todo expect
+    type TodoList concrete :todo
+      todos :: String*
+      ...
+    end
+    items = TodoList`
+      todo
+        "first"
+        "second"
+      end
+    end
+    items.todos
+  result
+    (
+      ["first", "second"]
+    ) :: (
+      type TodoList concrete :todo
+        todos :: String*
+        ...
+      end
+      items = TodoList`
+        todo
+          "first"
+          "second"
+        end
+      end
+      String*
+    )
+end
+
+test "C22 keyword remainder retains its record field types"
+  todo expect
+    type PersonRecord concrete {name: String, id: Int64, age: Int8}
+    type Person abstract {name: String, id: Int64, **}
+    type AgeInfo concrete {age: Int8}
+    def extra(person :: Person)
+      {name: name, id: id, rest**: {**}} = person
+      rest
+    end
+    john = ({name: "John", id: 5, age: 48} :: PersonRecord)
+    extra(john)
+  result
+    (
+      {age: 48}
+    ) :: (
+      type PersonRecord concrete {name: String, id: Int64, age: Int8}
+      type Person abstract {name: String, id: Int64, **}
+      type AgeInfo concrete {age: Int8}
+      def extra(person :: Person)
+        {name: name, id: id, rest**: {**}} = person
+        rest
+      end
+      john = ({name: "John", id: 5, age: 48} :: PersonRecord)
+      AgeInfo
+    )
+end

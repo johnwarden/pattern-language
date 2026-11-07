@@ -1,0 +1,726 @@
+import { readBootstrap } from "./bootstrap.ts";
+import { elaborateBlock, validateLanguageBlock } from "./elaboration.ts";
+import { PatternCompiler } from "./pattern-compiler.ts";
+import { parseSurface } from "./parser.ts";
+import {
+  LanguageError,
+  operator,
+  binary,
+  spread,
+  isName,
+  normal,
+  syntaxKey,
+} from "./syntax.ts";
+import type { Syntax, Field } from "./syntax.ts";
+import { Matcher, sequencePattern } from "./pattern.ts";
+import type { Pattern, Match, Adapter } from "./pattern.ts";
+import {
+  HOST_READERS,
+  record,
+  list,
+  encodeSyntax,
+  decodeSyntax,
+  field,
+  items,
+  text,
+  blockPolicy,
+  readerDescriptions,
+  typeGrammarDescription,
+} from "./language-description.ts";
+import { valLiteral, valSymbol, equal, unwrap } from "./values.ts";
+import type { Value } from "./values.ts";
+export const DEFAULT_GRAMMAR = `def Definition type :def (signature :: Signature) (body :: Body)
+def MacroRegistration type :macro (signature :: Signature) (body :: Body)
+def TypeExpression type :type (pattern :: PatternBody)
+def UnionTypeExpression type :unionType (pattern :: PatternBody)
+def IfExpression type :if (condition :: Expression) (consequent :: Body) :else (alternative :: Body)
+def MatchExpression type :match (subject :: Expression) (arms :: Arms)`;
+const syntaxAdapter: Adapter<Syntax> = {
+  equal: (a, b) => syntaxKey(a) === syntaxKey(b),
+  decompose: (n) =>
+    n.kind === "apply"
+      ? { head: n.head, body: n.body }
+      : n.kind === "block"
+        ? {
+            head: { kind: "symbol", name: "syntaxBlock", quoted: true },
+            body: n.lines.map((value, i) => ({ label: "_" + (i + 1), value })),
+          }
+        : undefined,
+  rebuild: (n, head, body) =>
+    n.kind === "block"
+      ? { ...n, lines: body.map((f) => f.value) }
+      : ({ ...n, head, body } as Syntax),
+  row: (n) => {
+    if (n.kind === "sequence" && n.items.length === 1) n = n.items[0];
+    return n.kind === "pack" ? n.body : [{ label: "_1", value: n }];
+  },
+  collection: (body) => ({
+    kind: "apply",
+    head: { kind: "symbol", name: "[]", quoted: false },
+    body,
+  }),
+};
+const entry = (value: Syntax, label = "_1"): Field<Syntax> => ({
+  label,
+  value,
+});
+export const syntaxGrammars = new WeakMap<Syntax, Grammar>();
+export class Grammar {
+  deferBlocks = false;
+  rules = new Map<string, Pattern<Syntax>>();
+  private ruleSyntax = new Map<string, Syntax[]>();
+  private structuralNames = new Set<string>();
+  keywords = new Map<string, string>();
+  constructor(source = DEFAULT_GRAMMAR) {
+    for (const { name, pattern: items } of readBootstrap(source)) {
+      if (
+        this.rules.has(name.name) ||
+        [...HOST_READERS.map(([name]) => name), "Num"].includes(name.name)
+      )
+        throw new LanguageError(
+          "duplicate or reserved grammar name: " + name.name,
+        );
+      this.ruleSyntax.set(name.name, items);
+      this.rules.set(
+        name.name,
+        sequencePattern(items.map((n) => this.compilePattern(n))),
+      );
+      if (items.length > 1) {
+        const first = items[0];
+        if (first.kind !== "symbol" || !first.quoted)
+          throw new LanguageError(
+            "a sidefix form starts with a quoted keyword",
+          );
+        if (this.keywords.has(first.name))
+          throw new LanguageError(
+            "duplicate sidefix starting keyword: " + first.name,
+          );
+        this.keywords.set(first.name, name.name);
+      }
+    }
+  }
+  private compiler(
+    typeDefinition = false,
+    dimensions = 0,
+  ): PatternCompiler<Syntax> {
+    return new PatternCompiler<Syntax>(
+      {
+        bareCaptures: true,
+        expression: (n) =>
+          n.kind === "apply" &&
+          n.head.kind === "symbol" &&
+          ["*", "?", "^"].includes(n.head.name) &&
+          n.body.length === 1
+            ? this.compiler(typeDefinition).domain.atom(n)
+            : undefined,
+        defaultValue: (n) => n,
+        head: (n, depth = 0) =>
+          n.kind === "symbol"
+            ? {
+                kind: "test",
+                name: n.name,
+                test: (v) => v.kind === "symbol" && v.name === n.name,
+              }
+            : this.compiler(typeDefinition, depth).compile(n),
+        annotation: (n, dimensions = 0) => {
+          for (let i = 0; i < dimensions; i++) {
+            if (
+              n.kind !== "apply" ||
+              !isName(n.head, "*") ||
+              n.body.length !== 1
+            )
+              throw new LanguageError(
+                "vertical capture annotation requires a list layer",
+                n.span,
+              );
+            n = n.body[0].value;
+          }
+          return this.compilePattern(n);
+        },
+        repeatedElement: (n, dimensions = 0) => {
+          for (let i = 0; i < dimensions; i++) {
+            if (
+              n.kind !== "apply" ||
+              !isName(n.head, "*") ||
+              n.body.length !== 1
+            )
+              throw new LanguageError(
+                "vertical capture annotation requires a list layer",
+                n.span,
+              );
+            n = n.body[0].value;
+          }
+          if (n.kind !== "apply" || !isName(n.head, "*") || n.body.length !== 1)
+            throw new LanguageError("rest annotation requires T*");
+          return this.compilePattern(n.body[0].value);
+        },
+        expand: () => undefined,
+        atom: (n) => {
+          if (
+            n.kind === "apply" &&
+            n.head.kind === "symbol" &&
+            ["?", "^"].includes(n.head.name) &&
+            n.body.length === 1
+          ) {
+            const tagged = (
+              name: string,
+              pattern: Pattern<Syntax>,
+            ): Pattern<Syntax> => ({
+              kind: "node",
+              head: {
+                kind: "test",
+                name,
+                test: (v) => v.kind === "symbol" && v.name === name,
+              },
+              body: {
+                kind: "fields",
+                parts: [{ kind: "label", label: "_1", pattern }],
+              },
+            });
+            const element = this.compilePattern(n.body[0].value);
+            return {
+              kind: "union",
+              choices:
+                n.head.name === "?"
+                  ? [
+                      {
+                        kind: "test",
+                        name: "None",
+                        test: (v) => v.kind === "symbol" && v.name === "None",
+                      },
+                      tagged("Some", element),
+                    ]
+                  : [tagged("Ok", element), tagged("Error", { kind: "any" })],
+            };
+          }
+          if (n.kind === "apply" && isName(n.head, "*") && n.body.length === 1)
+            return {
+              kind: "node",
+              head: {
+                kind: "test",
+                name: "[]",
+                test: (v) => v.kind === "symbol" && v.name === "[]",
+              },
+              body: {
+                kind: "fields",
+                parts: [
+                  {
+                    kind: "repeat",
+                    pattern: {
+                      kind: "label",
+                      label: "_1",
+                      pattern: this.compilePattern(n.body[0].value),
+                    },
+                  },
+                ],
+              },
+            };
+          if (n.kind === "symbol")
+            return n.quoted
+              ? {
+                  kind: "test",
+                  name: n.name,
+                  test: (v) => v.kind === "symbol" && v.name === n.name,
+                }
+              : {
+                  kind: "ref",
+                  key: "grammar:" + n.name,
+                  name: n.name,
+                  resolve: () => this.reference(n.name),
+                };
+          if (n.kind === "literal")
+            return {
+              kind: "test",
+              name: normal(n),
+              test: (v) => v.kind === "literal" && v.value === n.value,
+            };
+          throw new LanguageError("unsupported grammar pattern", n.span);
+        },
+      },
+      dimensions,
+    );
+  }
+  private compilePattern(n: Syntax, typeDefinition = false): Pattern<Syntax> {
+    const annotation = binary(n, "::");
+    if (spread(n) || (annotation && spread(annotation[0])))
+      throw new LanguageError(
+        "spread (...) is only valid inside an argument pack; sidefix sequences are fixed-length",
+        n.span,
+        { code: "E_SIDEFIX_SPREAD", phase: "declaration" },
+      );
+    return this.compiler(typeDefinition).compile(n);
+  }
+  private reference(name: string): Pattern<Syntax> {
+    if (this.rules.has(name)) {
+      const pattern = this.rules.get(name)!;
+      return this.structuralNames.has(name)
+        ? {
+            kind: "map",
+            pattern,
+            localCaptures: true,
+            transform: (fields) => fields,
+          }
+        : pattern;
+    }
+    if (["Number", "Num", "Int", "String"].includes(name))
+      return {
+        kind: "test",
+        name,
+        test: (n) =>
+          n.kind === "literal" &&
+          (name === "String"
+            ? typeof n.value === "string"
+            : typeof n.value === "number" &&
+              (name !== "Int" || Number.isInteger(n.value))),
+      };
+    if (name === "Pattern") return { kind: "test", name, test: () => true };
+    if (name === "PatternBody")
+      return {
+        kind: "reader",
+        name,
+        read: (items, pos, matcher) => {
+          const value = items[pos]?.value;
+          if (!value) return [];
+          // Only nested type forms are interpreted here. Other pattern operands
+          // stay opaque; a grouped sidefix sequence is one surface operand.
+          if (
+            value.kind === "symbol" &&
+            !value.quoted &&
+            this.keywords.get(value.name) === "TypeExpression"
+          )
+            return this.readForm(items, pos, matcher);
+          const block = items[pos + 1]?.value;
+          const attached =
+            value.kind === "symbol" && value.quoted && block?.kind === "block";
+          return [
+            {
+              end: pos + (attached ? 2 : 1),
+              fields: [
+                entry(
+                  attached
+                    ? {
+                        kind: "sequence",
+                        items: [value, block],
+                        span: value.span,
+                      }
+                    : value,
+                  items[pos].label,
+                ),
+              ],
+              captures: new Map(),
+            },
+          ];
+        },
+      };
+    if (name === "Signature")
+      return {
+        kind: "test",
+        name,
+        test: (n) => {
+          if (n.kind === "sequence")
+            return n.items[0]?.kind === "symbol" && n.items[0].quoted;
+          let head: Syntax = n;
+          while (head.kind === "apply") head = head.head;
+          return head.kind === "symbol" && !head.quoted;
+        },
+      };
+    if (["Expression", "Form", "Body", "Arms"].includes(name))
+      return {
+        kind: "reader",
+        name,
+        read: (items, pos, matcher) => {
+          const n = items[pos]?.value;
+          if (!n) return [];
+          if (n.kind === "block") {
+            if (name === "Expression" || name === "Form") return [];
+            const value =
+              name === "Arms"
+                ? this.arms(n, matcher)
+                : this.block(n, matcher, false);
+            return [
+              {
+                end: pos + 1,
+                fields: [entry(value, items[pos].label)],
+                captures: new Map(),
+              },
+            ];
+          }
+          if (name === "Arms") return [];
+          return this.readForm(items, pos, matcher).filter(
+            (m) =>
+              name !== "Expression" ||
+              m.fields.every((e) => e.value.kind !== "form"),
+          );
+        },
+      };
+    throw new LanguageError("unknown grammar reference: " + name);
+  }
+  private readForm(
+    items: Field<Syntax>[],
+    pos: number,
+    matcher: Matcher<Syntax>,
+  ): Match<Syntax>[] {
+    const n = items[pos]?.value;
+    if (!n) return [];
+    if (n.kind === "symbol" && !n.quoted && this.keywords.has(n.name)) {
+      const name = this.keywords.get(n.name)!;
+      return matcher.scan(this.rules.get(name)!, items, pos).map((m) => ({
+        end: m.end,
+        fields: [
+          entry(
+            {
+              kind: "form",
+              name,
+              captures: m.captures,
+              items: m.fields.map((e) => e.value),
+              span: n.span,
+            },
+            items[pos].label,
+          ),
+        ],
+        captures: new Map(),
+      }));
+    }
+    const resolved = this.resolveOperand(n, items, pos + 1, matcher);
+    return [
+      {
+        end: resolved.end,
+        fields: [entry(resolved.node, items[pos].label)],
+        captures: new Map(),
+      },
+    ];
+  }
+  /** Macro operands consume the available surface tail uniformly, not by keyword patches. */
+  private resolveOperand(
+    n: Syntax,
+    tail: Field<Syntax>[],
+    end: number,
+    matcher: Matcher<Syntax>,
+  ): { node: Syntax; end: number } {
+    if (n.kind === "quote" || n.kind === "typedQuote" || n.kind === "template")
+      return { node: n, end };
+    if (n.kind === "sequence")
+      if (n.items[0]?.kind === "symbol" && n.items[0].quoted)
+        return { node: n, end };
+    if (n.kind === "sequence")
+      return { node: this.resolveSequence(n, matcher), end };
+    if (n.kind === "block") return { node: this.block(n, matcher, false), end };
+    if (n.kind === "apply" || n.kind === "pack") {
+      const head =
+        n.kind === "pack"
+          ? undefined
+          : operator(n, "=") || operator(n, "->")
+            ? n.head
+            : this.resolveOperand(n.head, [], 0, matcher).node;
+      const body = n.body.map((field, i) => {
+        // Only the final operand can consume an unparenthesized macro tail.
+        const mayConsume = i === n.body.length - 1;
+        const v = field.value;
+        if (
+          mayConsume &&
+          v.kind === "symbol" &&
+          !v.quoted &&
+          this.keywords.has(v.name)
+        ) {
+          const borrowed = [entry(v), ...tail.slice(end)],
+            matches = this.readForm(borrowed, 0, matcher);
+          if (matches.length !== 1)
+            throw new LanguageError(
+              "incomplete or ambiguous macro operand",
+              v.span,
+            );
+          end += matches[0].end - 1;
+          return { ...field, value: matches[0].fields[0].value };
+        }
+        const r = this.resolveOperand(
+          v,
+          mayConsume ? tail : [],
+          mayConsume ? end : 0,
+          matcher,
+        );
+        if (mayConsume) end = r.end;
+        return { ...field, value: r.node };
+      });
+      return {
+        node: n.kind === "pack" ? { ...n, body } : { ...n, head: head!, body },
+        end,
+      };
+    }
+    return { node: n, end };
+  }
+  private resolveSequence(n: Syntax, matcher: Matcher<Syntax>): Syntax {
+    if (n.kind !== "sequence")
+      return this.resolveOperand(n, [], 0, matcher).node;
+    const xs = n.items.map((v) => entry(v)),
+      matches = this.readForm(xs, 0, matcher).filter(
+        (m) => m.end === xs.length,
+      );
+    if (matches.length !== 1)
+      throw new LanguageError(
+        matches.length ? "ambiguous macro" : "unknown or incomplete macro form",
+        n.span,
+      );
+    return matches[0].fields[0].value;
+  }
+  private arms(
+    n: Extract<Syntax, { kind: "block" }>,
+    matcher: Matcher<Syntax>,
+  ): Syntax {
+    if (!n.lines.length)
+      throw new LanguageError("match needs at least one arm", n.span);
+    const lines = n.lines.map((line) => this.resolveSequence(line, matcher));
+    for (const line of lines)
+      if (!operator(line, "->"))
+        throw new LanguageError(
+          "match arms require pattern -> expression",
+          line.span,
+        );
+    return { ...n, lines };
+  }
+  private block(
+    n: Extract<Syntax, { kind: "block" }>,
+    matcher: Matcher<Syntax>,
+    repl: boolean,
+  ): Syntax {
+    if (this.deferBlocks) {
+      // Check the obvious tail without interpreting the body's local grammar.
+      validateLanguageBlock(n.lines, false);
+      return n;
+    }
+    const rules = new Map(this.rules),
+      keywords = new Map(this.keywords),
+      syntax = new Map(this.ruleSyntax),
+      structuralNames = new Set(this.structuralNames);
+    try {
+      return this.blockBody(n, matcher, repl);
+    } finally {
+      this.rules = rules;
+      this.keywords = keywords;
+      this.ruleSyntax = syntax;
+      this.structuralNames = structuralNames;
+    }
+  }
+  /** Runtime staging: accept each form before reading the next, with nested bodies deferred. */
+  elaborate(
+    n: Extract<Syntax, { kind: "block" }>,
+    accept: (form: Syntax) => Syntax | void,
+    repl = false,
+  ): Syntax {
+    const matcher = new Matcher(syntaxAdapter);
+    return elaborateBlock(n, {
+      read: (items, pos) => this.readForm(items, pos, matcher),
+      accept,
+      finish: (lines) => validateLanguageBlock(lines, repl),
+    });
+  }
+  private blockBody(
+    n: Extract<Syntax, { kind: "block" }>,
+    matcher: Matcher<Syntax>,
+    repl: boolean,
+  ): Syntax {
+    return elaborateBlock(n, {
+      read: (items, pos) => this.readForm(items, pos, matcher),
+      accept: (line) => this.registerDefinition(line),
+      finish: (lines) => validateLanguageBlock(lines, repl),
+    });
+  }
+  registerDefinition(line: Syntax): void {
+    if (
+      line.kind === "form" &&
+      ["Definition", "MacroRegistration"].includes(line.name)
+    ) {
+      const signature = line.captures.get("signature")?.fields[0]?.value;
+      const body = line.captures.get("body")?.fields[0]?.value;
+      if (line.name === "MacroRegistration" && signature?.kind !== "sequence")
+        throw new LanguageError(
+          "macro registration requires a sidefix signature; functions use micro syntax",
+          signature?.span,
+          { code: "E_MACRO_SIGNATURE", phase: "declaration" },
+        );
+      if (signature?.kind === "sequence" && body) {
+        if (line.name !== "MacroRegistration")
+          throw new LanguageError(
+            "sidefix syntax requires explicit macro registration",
+            signature.span,
+            { code: "E_MACRO_REGISTRATION", phase: "declaration" },
+          );
+        this.registerSidefix(signature);
+      }
+      if (
+        signature?.kind === "symbol" &&
+        !signature.quoted &&
+        /^\p{Lu}/u.test(signature.name) &&
+        body?.kind === "form" &&
+        body.name === "TypeExpression"
+      ) {
+        const pattern = body.captures.get("pattern")?.fields[0]?.value;
+        if (pattern) {
+          // Sidefix data grammars are selected by typed quotation, not installed
+          // as executable forms in the surrounding Code grammar.
+          if (pattern.kind === "sequence") return;
+          this.ruleSyntax.set(signature.name, [pattern]);
+          this.structuralNames.add(signature.name);
+          this.rules.set(signature.name, {
+            kind: "ref",
+            name: signature.name,
+            key: pattern,
+            resolve: () => this.compilePattern(pattern, true),
+          });
+        }
+      }
+      if (signature) syntaxGrammars.set(signature, this.clone());
+    }
+  }
+
+  clone(): Grammar {
+    const grammar = new Grammar("");
+    grammar.deferBlocks = this.deferBlocks;
+    grammar.ruleSyntax = new Map(this.ruleSyntax);
+    grammar.structuralNames = new Set(this.structuralNames);
+    grammar.keywords = new Map(this.keywords);
+    for (const [name, items] of grammar.ruleSyntax)
+      grammar.rules.set(
+        name,
+        grammar.structuralNames.has(name)
+          ? {
+              kind: "ref",
+              name,
+              key: items,
+              resolve: () =>
+                sequencePattern(
+                  items.map((n) => grammar.compilePattern(n, true)),
+                ),
+            }
+          : sequencePattern(items.map((n) => grammar.compilePattern(n))),
+      );
+    return grammar;
+  }
+  /** The active rule set, including scoped structural and sidefix registrations. */
+  description(): Value {
+    return record("Language", {
+      start: valSymbol("Program"),
+      rules: list(
+        [...this.ruleSyntax].map(([name, pattern]) =>
+          record("Rule", {
+            name: valLiteral(name),
+            kind: valSymbol(
+              this.structuralNames.has(name) ? "Structural" : "Form",
+            ),
+            pattern: list(pattern.map(encodeSyntax)),
+          }),
+        ),
+      ),
+      readers: readerDescriptions(),
+      blocks: blockPolicy(),
+      typeGrammar: typeGrammarDescription(),
+    });
+  }
+  /** Rebuild recognition only: macro implementations are not installed by data. */
+  static fromDescription(
+    value: Value,
+    validate: (value: Value) => void,
+  ): Grammar {
+    validate(value);
+    const start = unwrap(field(value, "start"));
+    if (
+      start.kind !== "symbol" ||
+      start.name !== "Program" ||
+      !equal(field(value, "readers"), readerDescriptions()) ||
+      !equal(field(value, "blocks"), blockPolicy()) ||
+      !equal(field(value, "typeGrammar"), typeGrammarDescription())
+    )
+      throw new LanguageError(
+        "language description requests an unsupported host reader or block/type policy",
+        undefined,
+        { code: "E_LANGUAGE_DESCRIPTION", phase: "declaration" },
+      );
+    const grammar = new Grammar("");
+    for (const rule of items(field(value, "rules"))) {
+      const name = text(field(rule, "name")),
+        kind = unwrap(field(rule, "kind"));
+      if (
+        grammar.rules.has(name) ||
+        [...HOST_READERS.map(([name]) => name), "Num"].includes(name) ||
+        kind.kind !== "symbol" ||
+        !["Structural", "Form"].includes(kind.name)
+      )
+        throw new LanguageError(
+          "duplicate rule or invalid rule kind: " + name,
+          undefined,
+          { code: "E_LANGUAGE_DESCRIPTION", phase: "declaration" },
+        );
+      const pattern = items(field(rule, "pattern")).map(decodeSyntax);
+      if (!pattern.length)
+        throw new LanguageError("empty grammar rule: " + name);
+      if (kind.name === "Structural") grammar.structuralNames.add(name);
+      else if (pattern.length > 1) {
+        const first = pattern[0];
+        if (
+          first.kind !== "symbol" ||
+          !first.quoted ||
+          grammar.keywords.has(first.name)
+        )
+          throw new LanguageError(
+            "sidefix rule requires a unique quoted starting keyword: " + name,
+          );
+        grammar.keywords.set(first.name, name);
+      }
+      grammar.ruleSyntax.set(name, pattern);
+      grammar.rules.set(
+        name,
+        sequencePattern(
+          pattern.map((n) =>
+            grammar.compilePattern(n, kind.name === "Structural"),
+          ),
+        ),
+      );
+    }
+    return grammar;
+  }
+  resolve(n: Syntax): Syntax {
+    return this.resolveSequence(n, new Matcher(syntaxAdapter));
+  }
+  private registerSidefix(signature: Extract<Syntax, { kind: "sequence" }>) {
+    const first = signature.items[0];
+    if (first?.kind !== "symbol" || !first.quoted)
+      throw new LanguageError(
+        "sidefix signature must start with a quoted keyword",
+        signature.span,
+      );
+    const name = "User:" + first.name;
+    if (this.rules.has(name))
+      throw new LanguageError(
+        "duplicate sidefix keyword: " + first.name,
+        signature.span,
+        { code: "E_SIDEFIX_KEYWORD", phase: "declaration" },
+      );
+    this.ruleSyntax.set(name, signature.items);
+    this.rules.set(
+      name,
+      sequencePattern(signature.items.map((n) => this.compilePattern(n))),
+    );
+    this.keywords.set(first.name, name);
+  }
+  parse(
+    source: string,
+    mode: "program" | "repl" = "program",
+    sourceName = "program",
+  ): Syntax {
+    const root = parseSurface(source, sourceName);
+    if (root.kind !== "block") throw new LanguageError("expected program");
+    return this.blockBody(root, new Matcher(syntaxAdapter), mode === "repl");
+  }
+  parseAs(source: string, start: string): Syntax {
+    if (start === "Program") return this.parse(source);
+    const root = parseSurface(source);
+    if (root.kind !== "block") throw new LanguageError("expected source");
+    const xs = root.lines
+      .flatMap((n) => (n.kind === "sequence" ? n.items : [n]))
+      .map((n) => entry(n));
+    const matcher = new Matcher(syntaxAdapter);
+    const m = matcher.match(this.reference(start), xs);
+    return m.fields.length === 1
+      ? m.fields[0].value
+      : { kind: "sequence", items: m.fields.map((e) => e.value) };
+  }
+}

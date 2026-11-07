@@ -1,0 +1,129 @@
+test "C07 refinement evidence preserves the base value"
+  todo assert
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def keep(x :: NonZero) x
+    x = 0.5
+    (nonZero(x))
+  todo assert
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def keep(x :: NonZero) x
+    x = 0.5
+    assert ((nonZero(x)))
+    (n :: NonZero) = x
+    (n == x)
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def keep(x :: NonZero) x
+    x = 0.5
+    assert ((nonZero(x)))
+    (n :: NonZero) = x
+    assert ((n == x))
+    keep(n)
+  result
+    (
+      0.5
+    ) :: (
+      nonZero = n -> (n != 0)
+      type NonZero refinement Rational .where nonZero
+      def keep(x :: NonZero) x
+      x = 0.5
+      assert ((nonZero(x)))
+      (n :: NonZero) = x
+      assert ((n == x))
+      NonZero
+    )
+end
+
+test "C08 todo assert supplies no refinement evidence"
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def keep(x :: NonZero) x
+    def unchecked(x :: Rational)
+      keep(x)
+    end
+    unchecked(1)
+  error "refinement evidence is missing in unchecked"
+end
+
+test "C09 base and refinement overloads overlap"
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def choose(x :: Rational) "base"
+    def choose(x :: NonZero) "refined"
+    choose(1)
+  error "overlapping base and refinement overload domains"
+end
+
+test "C10 unrelated domains can coexist"
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def choose(x :: NonZero) "number"
+    def choose(x :: String) "string"
+    def checked(x :: Rational)
+      if nonZero(x) choose(x) else "zero"
+    end
+    checked(1)
+  result
+    (
+      "number"
+    ) :: (
+      nonZero = n -> (n != 0)
+      type NonZero refinement Rational .where nonZero
+      def choose(x :: NonZero) "number"
+      def choose(x :: String) "string"
+      def checked(x :: Rational)
+        if nonZero(x) choose(x) else "zero"
+      end
+      String
+    )
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def choose(x :: NonZero) "number"
+    def choose(x :: String) "string"
+    def checked(x :: Rational)
+      if nonZero(x) choose(x) else "zero"
+    end
+    checked(0)
+  result
+    (
+      "zero"
+    ) :: (
+      nonZero = n -> (n != 0)
+      type NonZero refinement Rational .where nonZero
+      def choose(x :: NonZero) "number"
+      def choose(x :: String) "string"
+      def checked(x :: Rational)
+        if nonZero(x) choose(x) else "zero"
+      end
+      String
+    )
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def choose(x :: NonZero) "number"
+    def choose(x :: String) "string"
+    def checked(x :: Rational)
+      if nonZero(x) choose(x) else "zero"
+    end
+    choose("hello")
+  result
+    (
+      "string"
+    ) :: (
+      nonZero = n -> (n != 0)
+      type NonZero refinement Rational .where nonZero
+      def choose(x :: NonZero) "number"
+      def choose(x :: String) "string"
+      def checked(x :: Rational)
+        if nonZero(x) choose(x) else "zero"
+      end
+      String
+    )
+end

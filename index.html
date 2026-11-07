@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pattern language playground</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --foreground: light-dark(#202020, #eeeeee);
+        --background: light-dark(#ffffff, #151515);
+        --border: light-dark(#cccccc, #555555);
+        --destructive: light-dark(#b33200, #ff9966);
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        max-width: 860px;
+        margin: 24px auto;
+        padding: 0 16px;
+        background: var(--background);
+        color: var(--foreground);
+      }
+      .form-control,
+      .form-select,
+      .btn {
+        font: inherit;
+        padding: 10px;
+        box-sizing: border-box;
+        color: inherit;
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+      .form-control,
+      .form-select {
+        width: 100%;
+      }
+      .btn {
+        cursor: pointer;
+      }
+      .btn-primary {
+        font-weight: 600;
+      }
+      .text-small {
+        font-size: 14px;
+      }
+      .text-destructive {
+        color: var(--destructive);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- INLINE_START -->
+    <div id="typescript-pattern-playground">
+      <style>
+        #typescript-pattern-playground {
+          display: grid;
+          gap: 12px;
+          min-width: 0;
+          color: var(--foreground);
+        }
+        #typescript-pattern-playground .pl-controls {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: end;
+        }
+        #typescript-pattern-playground .pl-controls label {
+          flex: 1 1 180px;
+          min-width: 0;
+        }
+        #typescript-pattern-playground .pl-field {
+          display: grid;
+          gap: 6px;
+        }
+        #typescript-pattern-playground pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          margin: 8px 0;
+        }
+        #typescript-pattern-playground details {
+          min-width: 0;
+        }
+        #typescript-pattern-playground .pl-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+      </style>
+      <div class="pl-controls">
+        <label class="form-label pl-field"
+          >Example
+          <select class="form-select" id="pl-example">
+            <option value="draft">Your code</option>
+          </select></label
+        >
+        <label class="form-label pl-field"
+          >Evaluation<select class="form-select" id="pl-mode">
+            <option value="program">Fresh program</option>
+            <option value="repl">REPL · keep bindings</option>
+          </select></label
+        >
+      </div>
+      <div class="pl-actions">
+        <button class="btn" id="pl-save" type="button">Save session</button
+        ><span id="pl-storage" class="text-small" role="status"></span>
+      </div>
+      <details>
+        <summary>Load session or source</summary>
+        <label class="form-label pl-field"
+          >File<input
+            id="pl-load"
+            class="form-control"
+            type="file"
+            accept=".json,.pattern,.txt"
+        /></label>
+      </details>
+      <label class="form-label pl-field"
+        >Source<textarea
+          id="pl-source"
+          class="form-control"
+          rows="9"
+          spellcheck="false"
+          autocapitalize="off"
+          autocorrect="off"
+        ></textarea>
+      </label>
+      <div class="pl-actions">
+        <button id="pl-run" class="btn btn-primary" type="button">Run</button
+        ><button id="pl-parse" class="btn" type="button">Parse</button
+        ><button id="pl-clear" class="btn" type="button" hidden>
+          Clear REPL</button
+        ><span id="pl-status" class="text-small" role="status"></span>
+      </div>
+      <div>
+        <span>Result</span>
+        <pre id="pl-result" aria-live="polite"></pre>
+        <pre id="pl-error" class="text-destructive" role="alert"></pre>
+      </div>
+      <details>
+        <summary>Normalized syntax and tree</summary>
+        <pre id="pl-normal"></pre>
+        <pre id="pl-tree"></pre>
+      </details>
+      <details>
+        <summary>Grammar · surface syntax and sidefix rules</summary>
+        <div>
+          <span>Infix application · syntax reference</span>
+          <pre id="pl-infix"></pre>
+        </div>
+        <label class="form-label pl-field"
+          >Editable sidefix declarations<textarea
+            id="pl-grammar"
+            class="form-control"
+            rows="8"
+            spellcheck="false"
+            autocapitalize="off"
+            autocorrect="off"
+          ></textarea></label
+        ><button id="pl-default" class="btn" type="button">
+          Use default sidefix grammar
+        </button>
+      </details>
+      <details>
+        <summary>Type-description grammar</summary>
+        <pre id="pl-type-schema"></pre>
+      </details>
+      <details>
+        <summary>Language-description schema</summary>
+        <pre id="pl-language-schema"></pre>
+      </details>
+    </div>
+    <!-- INLINE_END -->
+    <script src="dist/playground.js"></script>
+  </body>
+</html>

@@ -1,0 +1,45 @@
+test "arithmetic"
+  legacy expect 1 + 2 result 3 :: Expression
+end
+
+test "dot is function call"
+  def b(x) y -> x + y
+  a = 1
+  legacy expect a .b 2 result 3 :: Expression
+end
+
+test "empty call"
+  def f() 42
+  legacy expect f() result 42 :: Expression
+end
+
+test "explicit named function parameter"
+  def f(x, foo: y) y
+  legacy expect f(1, foo: 2) result 2 :: Expression
+end
+
+test "multiple packs"
+  def f(x, y)(z) (x + y) * z
+  g = f(1, 2)
+  legacy expect g(3) result 9 :: Expression
+end
+
+test "no eager execution"
+  def f() (1 / 0)
+  legacy expect 7 result 7 :: Expression
+end
+
+test "parameter interpretation"
+  def Rectangle type :Rect(w :: Number, h :: Number)
+  def area(r :: Rectangle) r.w * r.h
+  expect area(Rect(3, 4)) result 12 :: Float
+end
+
+test "same precedence"
+  legacy expect 2 * 3 + 4 result 14 :: Expression
+end
+
+test "single grouping"
+  x = (1)
+  legacy expect x result 1 :: Expression
+end

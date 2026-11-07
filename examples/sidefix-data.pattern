@@ -1,0 +1,9 @@
+# The Code field temporarily uses Expression until the public Code grammar is ready.
+def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
+def Test type (:test (name :: String) (code :: Expression) :expect (expected :: ExpectedOutput))
+t = Test`
+  test "inert data"
+    missing(1 / 0)
+  expect 3 :: MissingType
+end
+(t.name,t.expected.e,t.expected.type)

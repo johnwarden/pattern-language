@@ -1,0 +1,41 @@
+/** Test result annotations are grammar data, never evaluated as ascriptions. */
+export const TEST_SCHEMA = `def Test type (:test (name :: String) (body :: Expression))
+def TestFileContent type
+  first :: Test
+  rest :: Test*
+  ...
+end
+def tests(f :: TestFileContent) [f.first,f.rest...]
+def testParts(t :: Test) (t.name,t.body)
+def ExpectedResult type (expected :: Expression) ::: (expectedType :: Expression)
+def ResultExpectation type (:expect (subject :: Expression) :result (result :: ExpectedResult))
+def stepParts(e :: ResultExpectation) ("result","check",e.subject,e.result.expected,e.result.expectedType)
+def ErrorExpectation type (:expect (subject :: Expression) :error (reason :: String))
+def stepParts(e :: ErrorExpectation) ("error","check",e.subject,e.reason)
+def Assertion type (:assert (condition :: Expression))
+def stepParts(e :: Assertion) ("assert","check",e.condition)
+def LegacyResultExpectation type (:legacy :expect (subject :: Expression) :result (result :: ExpectedResult))
+def stepParts(e :: LegacyResultExpectation) ("result","legacy",e.subject,e.result.expected,e.result.expectedType)
+def LegacyErrorExpectation type (:legacy :expect (subject :: Expression) :error (reason :: String))
+def stepParts(e :: LegacyErrorExpectation) ("error","legacy",e.subject,e.reason)
+def LegacyAssertion type (:legacy :assert (condition :: Expression))
+def stepParts(e :: LegacyAssertion) ("assert","legacy",e.condition)
+def TodoResultExpectation type (:todo :expect (subject :: Expression) :result (result :: ExpectedResult))
+def stepParts(e :: TodoResultExpectation) ("result","todo",e.subject,e.result.expected,e.result.expectedType)
+def TodoErrorExpectation type (:todo :expect (subject :: Expression) :error (reason :: String))
+def stepParts(e :: TodoErrorExpectation) ("error","todo",e.subject,e.reason)
+def TodoAssertion type (:todo :assert (condition :: Expression))
+def stepParts(e :: TodoAssertion) ("assert","todo",e.condition)
+TestFileContent
+`;
+export const TEST_STEP_TYPES = [
+  "ResultExpectation",
+  "ErrorExpectation",
+  "Assertion",
+  "LegacyResultExpectation",
+  "LegacyErrorExpectation",
+  "LegacyAssertion",
+  "TodoResultExpectation",
+  "TodoErrorExpectation",
+  "TodoAssertion",
+] as const;

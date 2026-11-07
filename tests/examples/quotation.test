@@ -1,0 +1,84 @@
+test "Interpolation and literal dollars"
+  name = "Jo"
+  raw = "Hello, $name"
+  expanded = $"Hello, $(name); $(2 + 3)"
+  (observed1, observed2) =
+    (raw, expanded)
+  end
+  legacy expect observed1 result "Hello, $name" :: Expression
+  legacy expect observed2 result "Hello, Jo; 5" :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Quoted expression values"
+  def f(x) 2 * x
+  b = :f(1)
+  c = :(f(1))
+  (observed1, observed2) =
+    (b == c, b)
+  end
+  legacy assert
+    observed1
+  legacy expect observed2 result f(1) :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Raw and interpolated typed Code"
+  name = "Jo"
+  (observed1, observed2) =
+    (Code` hello($name), Code$` hello($name))
+  end
+  expect observed1 result hello($(name)) :: Code
+  expect observed2 result hello("Jo") :: Code
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Reader interpolation"
+  def html(fragments, values) {fragments: fragments, values: values}
+  name = "<strong>Jo</strong>"
+  legacy expect html$"<p>Hello, $(name)</p>" result {fragments: ["<p>Hello, ", "</p>"], values: ["<strong>Jo</strong>"]} :: Expression
+end
+
+test "Raw, escaped and explicitly interpolated strings"
+  name = 'Jo'
+  (observed1, observed2, observed3, observed4, observed5) =
+    ('Hello, $name', "Hello, $name", $'Hello, $name', "one\ntwo", $'Hello, $$name')
+  end
+  legacy expect observed1 result "Hello, $name" :: Expression
+  legacy expect observed2 result "Hello, $name" :: Expression
+  legacy expect observed3 result "Hello, Jo" :: Expression
+  legacy expect observed4 result "one\ntwo" :: Expression
+  legacy expect observed5 result "Hello, $name" :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4, observed5)
+end
+
+test "Typed expression quotes"
+  x = 2
+  raw = Code` x ^ 2
+  expanded = Code$` $x ^ 2
+  (observed1, observed2) =
+    (raw, expanded)
+  end
+  expect observed1 result (x ^ 2) :: Code
+  expect observed2 result (2 ^ 2) :: Code
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Typed parse / toString round-trip"
+  def Rectangle type :Rect(width :: Number, height :: Number)
+  value = Rect(3, 4) :: Rectangle
+  text = toString(Rectangle)(value)
+  (observed1, observed2) =
+    (text, parse(Rectangle)(text) == value)
+  end
+  legacy expect observed1 result "Rect(3, 4)" :: Expression
+  legacy assert
+    observed2
+  # Inspect the captured return values.
+  (observed1, observed2)
+end

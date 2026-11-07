@@ -1,0 +1,262 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import {
+  Interpreter,
+  Grammar,
+  displayResults,
+  LANGUAGE_SCHEMA,
+  encodeSyntax,
+  decodeSyntax,
+  parseSurface,
+  parseExpression,
+  normal,
+  LanguageError,
+} from "../src/index.ts";
+import { syntaxKey } from "../src/syntax.ts";
+import {
+  field,
+  items,
+  list,
+  record,
+  node,
+} from "../src/language-description.ts";
+import { valLiteral, valSymbol } from "../src/values.ts";
+import type { Value } from "../src/values.ts";
+
+const run = (s: string) => displayResults(new Interpreter().run(s));
+const validate = (v: Value) => {
+  const i = new Interpreter();
+  i.env.bindings.set("description", v);
+  if (displayResults(i.run("description .matches languageSchema()")) !== "True")
+    throw new LanguageError("invalid language-description shape");
+};
+test("recursive Language schema is executable and generated documentation is current", () => {
+  assert.equal(
+    readFileSync(
+      new URL("../examples/language-description.pattern", import.meta.url),
+      "utf8",
+    ),
+    LANGUAGE_SCHEMA,
+  );
+  assert.equal(run("language() .matches languageSchema()"), "True");
+});
+test("AST transport distinguishes source quotation from similarly named applications", () => {
+  for (const source of [
+    ":f(1)",
+    "Quote(f(1))",
+    "(1,color: :Red)",
+    "f()(3)",
+    "if True\n  1\nelse\n  2\nend",
+  ]) {
+    const tree = parseSurface(source);
+    assert.equal(syntaxKey(decodeSyntax(encodeSyntax(tree))), syntaxKey(tree));
+  }
+  assert.notDeepEqual(
+    encodeSyntax(parseSurface(":x")),
+    encodeSyntax(parseSurface("Quote(x)")),
+  );
+});
+test("default and edited grammars round trip through ordinary language-description values", () => {
+  for (const grammar of [
+    new Grammar(),
+    new Grammar(
+      "def Choice type :choose (a :: Expression) :otherwise (b :: Expression)",
+    ),
+  ]) {
+    const restored = Grammar.fromDescription(grammar.description(), validate);
+    const source = grammar.keywords.has("choose")
+      ? "choose 1 otherwise 2"
+      : "if True 1 else 2";
+    assert.equal(
+      syntaxKey(restored.parse(source)),
+      syntaxKey(grammar.parse(source)),
+    );
+  }
+  assert.equal(
+    run(
+      "l = language()\ns = toString(Expression)(l)\nr = parse(Expression)(s)\n(r == l,r .matches languageSchema())",
+    ),
+    "(True, True)",
+  );
+});
+test("source parseSyntax uses the transported grammar without evaluating source", () => {
+  const i = new Interpreter();
+  const result = i.run('parseSyntax(language())("missing(1 / 0)")');
+  assert.match(displayResults(result), /Apply/);
+  assert.throws(() => i.run("missing"), /unbound/);
+});
+test("scoped sidefix and structural rules are reflected without transporting macro implementations", () => {
+  const i = new Interpreter();
+  i.run(
+    "def Box type Box(value :: Int)\nmacro (:answer Args(x)) Code$` $(x)\n0",
+  );
+  const restored = Grammar.fromDescription(i.grammar.description(), validate);
+  assert.equal(normal(restored.parseAs("Box(3)", "Box")), "Box(3)");
+  assert.equal(restored.parse("answer Args(3)").kind, "block");
+  const fresh = new Interpreter();
+  fresh.grammar = restored;
+  assert.throws(
+    () => fresh.run("answer Args(3)"),
+    /sidefix macro is not available: answer/,
+  );
+});
+test("language schemas and descriptions transfer into fresh interpreters", () => {
+  assert.equal(
+    run(
+      "t = languageSchema()\ns = toString(Type)(t)\nu = parse(Type)(s)\n(t == u,language() .matches u)",
+    ),
+    "(True, True)",
+  );
+});
+test("language descriptions reject changed host policies, duplicate rules and invalid AST variants", () => {
+  const original = new Grammar().description();
+  const values = Object.fromEntries(
+    (original as Extract<Value, { kind: "term" }>).body.map((f) => [
+      f.label,
+      f.value,
+    ]),
+  );
+  assert.throws(
+    () =>
+      Grammar.fromDescription(
+        record("Language", { ...values, start: valSymbol("Elsewhere") }),
+        validate,
+      ),
+    /unsupported/,
+  );
+  const rules = items(field(original, "rules"));
+  assert.throws(
+    () =>
+      Grammar.fromDescription(
+        record("Language", { ...values, rules: list([rules[0], rules[0]]) }),
+        validate,
+      ),
+    /duplicate/,
+  );
+  const badRule = record("Rule", {
+    name: valLiteral("Bad"),
+    kind: valSymbol("Form"),
+    pattern: list([node("UnknownAst")]),
+  });
+  assert.throws(
+    () =>
+      Grammar.fromDescription(
+        record("Language", { ...values, rules: list([badRule]) }),
+        validate,
+      ),
+    /invalid language-description/,
+  );
+});
+test("AST codec has an explicit recursion budget", () => {
+  let ast: ReturnType<typeof parseSurface> = {
+    kind: "symbol",
+    name: "x",
+    quoted: false,
+  };
+  for (let n = 0; n < 300; n++) ast = { kind: "quote", value: ast };
+  assert.throws(() => encodeSyntax(ast), /codec budget/);
+});
+
+const contexts = (spec: string, value: string, result: string) => [
+  spec + " = " + value + "\n" + result,
+  "def f(" + spec + ") " + result + "\nf(" + value + ")",
+  "match " + value + "\n  " + spec + " -> " + result + "\nend",
+  "macro (:take Args(" +
+    spec +
+    ")) Code$` (" +
+    result.replace(/\b(n|c|rest)\b/g, (name) => "$" + name) +
+    ")\n(take Args(" +
+    value +
+    "))",
+];
+for (const [name, spec, value, result, expected] of [
+  [
+    "label order and explicit label openness",
+    "Box(n :: Int,color: c :: String,**)",
+    'Box(3,extra: 7,color: "red")',
+    "(n,c)",
+    '(3, "red")',
+  ],
+  [
+    "defaults only bind omitted captures",
+    'Box(n :: Int,color: c :: String = "red")',
+    "Box(3)",
+    "(n,c)",
+    '(3, "red")',
+  ],
+  [
+    "positional rest never consumes labels",
+    "Box(n :: Int,rest... :: Int*,color: c :: String,**)",
+    'Box(1,2,3,color: "red",extra: 9)',
+    "rest",
+    "[2, 3]",
+  ],
+] as const) {
+  test("binding/parameter/arm conformance: " + name, () => {
+    for (const source of contexts(spec, value, result))
+      assert.equal(run(source), expected, source);
+    assert.equal(
+      normal(new Grammar("def B type " + spec).parseAs(value, "B")),
+      normal(parseExpression(value)),
+    );
+  });
+}
+test("required fields, exactness and ambiguity reject consistently across binding contexts and grammar", () => {
+  for (const [spec, value] of [
+    ["Box(n :: Int,color: c :: String,**)", "Box(3,extra: 7)"],
+    ["Box(n :: Int)", "Box(3,extra: 7)"],
+    ["(Box(n :: Int) | Box(n :: Number))", "Box(3)"],
+  ]) {
+    for (const source of contexts(spec, value, "n"))
+      assert.throws(() => run(source));
+    assert.throws(() => new Grammar("def B type " + spec).parseAs(value, "B"));
+  }
+});
+test("type defaults remain forbidden, and facet accessors preserve original fields", () => {
+  assert.throws(
+    () => run('def B type Box(color: String = "red")\n0'),
+    /defaults/,
+  );
+  assert.equal(
+    run(
+      'def B type Box(n :: Int,color: c :: String,**)\nb = Box(3,color: "red",extra: 7) :: (type Box(Int,color: String,extra: Int))\n(v :: B) = b\n(v.n,v.c)',
+    ),
+    '(3, "red")',
+  );
+});
+
+test("duplicate capture diagnostics agree across every applicable pattern context", () => {
+  const spec = "Box(n :: Int,n :: Int)",
+    value = "Box(1,2)";
+  for (const source of [
+    ...contexts(spec, value, "n"),
+    "def B type " + spec + "\n0",
+  ])
+    assert.throws(
+      () => run(source),
+      (e: unknown) =>
+        e instanceof LanguageError &&
+        e.diagnostic.code === "E_DUPLICATE_CAPTURE",
+    );
+  assert.throws(
+    () => new Grammar("def B type " + spec),
+    (e: unknown) =>
+      e instanceof LanguageError && e.diagnostic.code === "E_DUPLICATE_CAPTURE",
+  );
+});
+test("schema recognition rejects malformed constructor arities before interpretation", () => {
+  for (const source of [
+    "Type(:Type())",
+    "Type(:Literal())",
+    "Type(:Apply(:A))",
+    "Type(:Recur())",
+    "Type(:OpenFields(labels: True,positional: False))",
+  ])
+    assert.throws(
+      () => run(source),
+      (e: unknown) =>
+        e instanceof LanguageError &&
+        e.diagnostic.code === "E_TYPE_DESCRIPTION",
+    );
+});

@@ -1,0 +1,113 @@
+test "C16 declarations own accessor products"
+  todo expect
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    r = (Rect(2, 3) :: Rectangle)
+    r.w
+  result
+    (
+      2
+    ) :: (
+      type Rectangle concrete Rect(w :: Rational, h :: Rational)
+      r = (Rect(2, 3) :: Rectangle)
+      Rational
+    )
+  todo expect
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    r = (Rect(2, 3) :: Rectangle)
+    t = concrete Rect(width :: Rational, height :: Rational)
+    t
+  error "ordinary type construction cannot declare captures/accessors"
+end
+
+test "C17 defaults belong to bindings and explicit factories"
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
+    def rectangle(w :: Float32, h :: Float32, color: String = "black")
+      (Rect(w, h, color: color) :: Rectangle)
+    end
+    rectangle(2, 3)
+  result
+    (
+      Rect(2, 3, color: "black")
+    ) :: (
+      type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
+      def rectangle(w :: Float32, h :: Float32, color: String = "black")
+        (Rect(w, h, color: color) :: Rectangle)
+      end
+      Rectangle
+    )
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
+    def rectangle(w :: Float32, h :: Float32, color: String = "black")
+      (Rect(w, h, color: color) :: Rectangle)
+    end
+    (Rect(2, 3) :: Rectangle)
+  error "required color field is absent"
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
+    def rectangle(w :: Float32, h :: Float32, color: String = "black")
+      (Rect(w, h, color: color) :: Rectangle)
+    end
+    type Invalid concrete Rect(color: String = "black")
+    Invalid
+  error "defaults are forbidden in type descriptions"
+end
+
+test "C18 equivalent independently named descriptors interoperate"
+  todo assert
+    produced = (
+      type Option<T> concrete :None | Some(T)
+      (Some("hello") :: Option<String>)
+    )
+    independent = (
+      type Optional<T> concrete :None | Some(T)
+      (Some("hello") :: Optional<String>)
+    )
+    (produced == independent)
+  todo expect
+    produced = (
+      type Option<T> concrete :None | Some(T)
+      (Some("hello") :: Option<String>)
+    )
+    independent = (
+      type Optional<T> concrete :None | Some(T)
+      (Some("hello") :: Optional<String>)
+    )
+    assert ((produced == independent))
+    consumed = (
+      type LocalOption<T> concrete :None | Some(T)
+      def read(x :: LocalOption<String>)
+        match x
+          Some(s) -> s
+          :None -> "absent"
+        end
+      end
+      read(produced)
+    )
+    consumed
+  result
+    (
+      "hello"
+    ) :: (
+      produced = (
+        type Option<T> concrete :None | Some(T)
+        (Some("hello") :: Option<String>)
+      )
+      independent = (
+        type Optional<T> concrete :None | Some(T)
+        (Some("hello") :: Optional<String>)
+      )
+      assert ((produced == independent))
+      consumed = (
+        type LocalOption<T> concrete :None | Some(T)
+        def read(x :: LocalOption<String>)
+          match x
+            Some(s) -> s
+            :None -> "absent"
+          end
+        end
+        read(produced)
+      )
+      String
+    )
+end

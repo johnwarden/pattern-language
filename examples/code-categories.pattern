@@ -1,0 +1,16 @@
+# Categories narrow the existing Code space; they do not introduce new spaces.
+def isApplication(e)
+  match syntaxTree(e)
+    Apply(_,_) -> True
+    _ -> False
+  end
+end
+def FunctionApplication Code .where (e -> isApplication(e))
+
+code = Code` factory(1)(color: :Red)
+match code
+  (app :: FunctionApplication) ->
+    Apply(function,arguments) = syntaxTree(app)
+    (syntaxExpression(function),arguments)
+  _ -> panic("Expected an application")
+end

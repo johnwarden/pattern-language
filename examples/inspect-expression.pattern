@@ -1,0 +1,15 @@
+# The public structural view uses the same executable schema as language().
+(Tree :: Type) = syntaxSchema()
+expression = :(factory(1)(2,color: :Red))
+tree = syntaxTree(expression)
+
+# Application heads are expressions; each Apply owns exactly one argument pack.
+Apply(function,arguments) = tree
+Apply(Name(name,quoted),firstPack) = function
+[Field(firstLabel,NumberLiteral(first))] = firstPack
+[Field(secondLabel,NumberLiteral(second)),Field(label,color)] = arguments
+
+# Rebuild using ordinary values and the checked inverse bridge.
+changed = Apply(function,[Field(secondLabel,NumberLiteral(3)),Field(label,color)])
+restored = syntaxExpression(changed)
+(name,first,second,label,restored,tree .matches Tree)

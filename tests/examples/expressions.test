@@ -1,0 +1,245 @@
+test "Abstract slots preserve identity"
+  n = 3 :: Int
+  (x :: Any) = n
+  (y :: Int) = x
+  (observed1, observed2, observed3, observed4) =
+    (n == x, x == y, toString(Any)(x), toString(Int)(x))
+  end
+  legacy assert
+    observed1
+  legacy assert
+    observed2
+  legacy expect observed3 result "3 :: Int" :: Expression
+  legacy expect observed4 result "3" :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4)
+end
+
+test "Accessor ambiguity"
+  expect
+    def Rectangle type :Rect(w :: Number, h :: Number)
+    def w(x) 99
+    r = Rect(3, 4) :: Rectangle
+    r.w
+  error "E_AMBIGUOUS_CALL"
+end
+
+test "Result arity error"
+  expect
+    x =
+      y = 1
+      (y, y)
+    end
+    x
+  error "E_PATTERN_MISMATCH"
+end
+
+test "Function block"
+  def f(x)
+    y = x ^ 2
+    y + 1
+  end
+  legacy expect f(3) result 10 :: Expression
+end
+
+test "Definitions evaluate their bodies"
+  def r :Rect(Number)
+  def R type :Rect(Number)
+  (observed1, observed2) =
+    (r, type R)
+  end
+  legacy expect observed1 result Rect(Float) :: Expression
+  legacy expect observed2 result Type(Rect(Float)) :: Type
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Zero results"
+  def nothing() ()
+  assert
+    () =
+      nothing()
+    end
+    True
+end
+
+test "Deferred expected output"
+  def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
+  expected = ExpectedOutput` (1 / 0) :: MissingType
+  (observed1, observed2) =
+    (expected.e, expected.type)
+  end
+  legacy expect observed1 result (1 / 0) :: Expression
+  legacy expect observed2 result :MissingType :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Ignore named results"
+  x = (1, foo: "bar")
+  legacy expect x result 1 :: Expression
+end
+
+test "Narrow an abstract slot"
+  (x :: Any) = (3 :: Int)
+  (value :: Int) = x
+  (observed1, observed2, observed3) =
+    (value, type Int, value == x)
+  end
+  expect observed1 result 3 :: Int
+  expect observed2 result Int :: Type
+  assert
+    observed3
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Language as data"
+  l = language()
+  s = toString(Expression)(l)
+  r = parse(Expression)(s)
+  Language(rules: rules, **) = l
+  Block(nodes) = parseSyntax(r)("if True 1 else 2")
+  (observed1, observed2, observed3, observed4) =
+    (l .matches languageSchema(), r == l, rules.len, nodes.len)
+  end
+  legacy assert
+    observed1
+  legacy assert
+    observed2
+  legacy expect observed3 result 6 :: Expression
+  legacy expect observed4 result 1 :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4)
+end
+
+test "Match"
+  legacy expect
+    match Some(3)
+      :Some(v) -> v.toString
+      :None -> ""
+    end
+  result
+    "3" :: Expression
+end
+
+test "Explicit primitive values"
+  t = Float
+  (observed1, observed2, observed3, observed4) =
+    (t, Int, Bool, t == (type Number))
+  end
+  expect observed1 result Float :: Type
+  expect observed2 result Int :: Type
+  expect observed3 result Bool :: Type
+  assert
+    observed4
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4)
+end
+
+test "Raw block preserves blank lines and dollars"
+  legacy expect
+    '
+      Quotes: " ' `
+      Dollars: $name $(anything)
+      Backslashes: \n
+
+    end
+  result
+    "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: Expression
+end
+
+test "Mutually recursive function definitions"
+  def even(n) if n == 0 True else odd(n - 1)
+  def odd(n) if n == 0 False else even(n - 1)
+  (observed1, observed2, observed3) =
+    (even(8), odd(7), even(7))
+  end
+  assert
+    observed1
+  assert
+    observed2
+  assert
+    (
+      observed3
+    ) == False
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Multiple results"
+  def pair(x) (x, x)
+  (a, b) = pair(3)
+  legacy expect a + b result 6 :: Expression
+end
+
+test "Extra named arguments"
+  def f(x) x
+  legacy expect f(1, foo: "bar") result 1 :: Expression
+end
+
+test "Open structural facet"
+  def Colored type :Rect(Number, Number, color: String)
+  def Rectangular type :Rect(w :: Number, h :: Number, **)
+  r = Rect(2, 3, color: "black") :: Colored
+  (p :: Rectangular) = r
+  (observed1, observed2, observed3, observed4, observed5, observed6) =
+    (p, p.w, p.h, p == r, toString(Rectangular)(p), parse(Rectangular)(toString(Rectangular)(p)) == r)
+  end
+  legacy expect observed1 result Rect(2, 3, color: "black") :: Colored
+  legacy expect observed2 result 2 :: Float
+  legacy expect observed3 result 3 :: Float
+  legacy assert
+    observed4
+  legacy expect observed5 result "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: Expression
+  legacy assert
+    observed6
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4, observed5, observed6)
+end
+
+test "Inspect and rebuild syntax"
+  tree = syntaxTree(:(factory(1)(2, color: :Red)))
+  Apply(function, arguments) = tree
+  changed = Apply(function, [Field("_1", NumberLiteral(3)), Field("color", Name("Red", True))])
+  legacy expect syntaxExpression(changed) result (factory(1)(3, color: :Red)) :: Expression
+end
+
+test "Abstract slots and ordering"
+  def U UnionType(type Int, type String)
+  (a :: U) = (99 :: Int)
+  (b :: U) = ("0" :: String)
+  (observed1, observed2, observed3, observed4, observed5) =
+    (a, b, a < b, toString(U)(a), parse(U)(toString(U)(a)) == a)
+  end
+  legacy expect observed1 result 99 :: Int
+  legacy expect observed2 result "0" :: String
+  legacy assert
+    observed3
+  legacy expect observed4 result "99" :: Expression
+  legacy assert
+    observed5
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4, observed5)
+end
+
+test "User-defined if"
+  macro (:if (c :: Expression) (v :: Body) :else (a :: Body))
+    Code$` (
+    match ($(c)) (
+      (True -> $(v))
+      (False -> $(a))
+    )
+  )
+  end
+  legacy expect
+    if True 42 else (1 / 0)
+  result
+    42 :: Expression
+end
+
+test "Vector"
+  def Vector(t :: Type) type [values... :: t*]
+  (v :: Vector(Number)) = [1, 2]
+  expect v result [1, 2] :: Vector(Float)
+end

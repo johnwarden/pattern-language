@@ -1,0 +1,199 @@
+test "C11 projection is one explicit concrete boundary"
+  todo expect
+    small = n -> (n == 0)
+    smaller = n -> True
+    type Small concrete Rational .where small
+    type Wrapped concrete Small .where smaller
+    (w :: Wrapped) = 0
+    match w (s :: Small)
+    match s (r :: Rational)
+    r
+  result
+    (
+      0
+    ) :: (
+      small = n -> (n == 0)
+      smaller = n -> True
+      type Small concrete Rational .where small
+      type Wrapped concrete Small .where smaller
+      (w :: Wrapped) = 0
+      match w (s :: Small)
+      match s (r :: Rational)
+      Rational
+    )
+  todo expect
+    small = n -> (n == 0)
+    smaller = n -> True
+    type Small concrete Rational .where small
+    type Wrapped concrete Small .where smaller
+    (w :: Wrapped) = 0
+    match w (s :: Small)
+    match s (r :: Rational)
+    (direct :: Rational) = w
+    direct
+  error "ordinary binding does not unwrap Wrapped"
+  todo expect
+    small = n -> (n == 0)
+    smaller = n -> True
+    type Small concrete Rational .where small
+    type Wrapped concrete Small .where smaller
+    (w :: Wrapped) = 0
+    match w (s :: Small)
+    match s (r :: Rational)
+    match w (direct :: Rational)
+    direct
+  error "the immediate base of Wrapped is Small"
+  todo expect
+    small = n -> (n == 0)
+    smaller = n -> True
+    type Small concrete Rational .where small
+    type Wrapped concrete Small .where smaller
+    (w :: Wrapped) = 0
+    match w (s :: Small)
+    match s (r :: Rational)
+    def consume(x :: Rational) x
+    consume(w)
+  error "dispatch does not unwrap Wrapped"
+end
+
+test "C12 designation is recursive only when unambiguous"
+  todo expect
+    type Option<T> concrete T | :None
+    (outer :: Option<Option<String>>) = "Hello"
+    text = match outer
+      (inner :: Option<String>) -> match inner
+        (s :: String) -> s
+        :None -> "inner absent"
+      end
+      :None -> "outer absent"
+    end
+    text
+  result
+    (
+      "Hello"
+    ) :: (
+      type Option<T> concrete T | :None
+      (outer :: Option<Option<String>>) = "Hello"
+      text = match outer
+        (inner :: Option<String>) -> match inner
+          (s :: String) -> s
+          :None -> "inner absent"
+        end
+        :None -> "outer absent"
+      end
+      String
+    )
+  todo expect
+    type Option<T> concrete T | :None
+    (outer :: Option<Option<String>>) = "Hello"
+    text = match outer
+      (inner :: Option<String>) -> match inner
+        (s :: String) -> s
+        :None -> "inner absent"
+      end
+      :None -> "outer absent"
+    end
+    (ambiguous :: Option<Option<String>>) = :None
+    ambiguous
+  error "None has more than one designation path"
+  todo expect
+    type Option<T> concrete T | :None
+    (outer :: Option<Option<String>>) = "Hello"
+    text = match outer
+      (inner :: Option<String>) -> match inner
+        (s :: String) -> s
+        :None -> "inner absent"
+      end
+      :None -> "outer absent"
+    end
+    def extract(x :: Option<String>)
+      match x (s :: String)
+      s
+    end
+    extract("Hello" :: Option<String>)
+  error "String extraction is not guaranteed for every Option<String>"
+end
+
+test "C13 abstract union retains overlapping numeric members"
+  todo expect
+    type EitherFloat abstract Float32 | Float64
+    (a :: EitherFloat) = float32(0.5)
+    (b :: EitherFloat) = float64(0.5)
+    a
+  result
+    (
+      0.5
+    ) :: (
+      type EitherFloat abstract Float32 | Float64
+      (a :: EitherFloat) = float32(0.5)
+      (b :: EitherFloat) = float64(0.5)
+      Float32
+    )
+  todo expect
+    type EitherFloat abstract Float32 | Float64
+    (a :: EitherFloat) = float32(0.5)
+    (b :: EitherFloat) = float64(0.5)
+    b
+  result
+    (
+      0.5
+    ) :: (
+      type EitherFloat abstract Float32 | Float64
+      (a :: EitherFloat) = float32(0.5)
+      (b :: EitherFloat) = float64(0.5)
+      Float64
+    )
+  todo assert
+    type EitherFloat abstract Float32 | Float64
+    (a :: EitherFloat) = float32(0.5)
+    (b :: EitherFloat) = float64(0.5)
+    text = toString(EitherFloat)(a)
+    (parse(EitherFloat)(text) == a)
+end
+
+test "C14 unambiguous is a separate grammar requirement"
+  todo assert
+    type Token unambiguous abstract Rational | String
+    (n :: Token) = 0.5
+    (parse(Token)(toString(Token)(n)) == n)
+  todo expect
+    type Token unambiguous abstract Rational | String
+    (n :: Token) = 0.5
+    assert ((parse(Token)(toString(Token)(n)) == n))
+    type Bad unambiguous abstract Float32 | Float64
+    Bad
+  error "the same numeric spelling admits more than one interpretation"
+end
+
+test "C15 facet intersection preserves concrete identity and fields"
+  todo assert
+    type Card concrete {width: Float32, height: Float32, color: String}
+    type Rectangular abstract {width: Float32, height: Float32, **}
+    type Colored abstract {color: String, **}
+    type ColoredRectangle abstract Rectangular & Colored
+    card = ({width: 0.5, height: 1, color: "blue"} :: Card)
+    (view :: ColoredRectangle) = card
+    (view == card)
+  todo expect
+    type Card concrete {width: Float32, height: Float32, color: String}
+    type Rectangular abstract {width: Float32, height: Float32, **}
+    type Colored abstract {color: String, **}
+    type ColoredRectangle abstract Rectangular & Colored
+    card = ({width: 0.5, height: 1, color: "blue"} :: Card)
+    (view :: ColoredRectangle) = card
+    assert ((view == card))
+    view
+  result
+    (
+      {width: 0.5, height: 1, color: "blue"}
+    ) :: (
+      type Card concrete {width: Float32, height: Float32, color: String}
+      type Rectangular abstract {width: Float32, height: Float32, **}
+      type Colored abstract {color: String, **}
+      type ColoredRectangle abstract Rectangular & Colored
+      card = ({width: 0.5, height: 1, color: "blue"} :: Card)
+      (view :: ColoredRectangle) = card
+      assert ((view == card))
+      Card
+    )
+end

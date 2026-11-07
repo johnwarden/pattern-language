@@ -1,0 +1,1296 @@
+# Language decisions and conformance specification
+
+**Integrated 7 November 2026. This specifies design direction, not implementation status.**
+
+This is the integrated decision record authorized by the author. Confirmed and retained rules are the intended contract; passages explicitly marked proposed or deferred keep that status. The 27 cases C01–C27 execute through the test DSL, with assertion-level todo and legacy modifiers. Expected failures record future contracts; supported assertions already pass normally. This does not claim conformance with all of the future language semantics. [TEST-SUITE.md](TEST-SUITE.md) defines the runner contract; the [roadmap](../ROADMAP.md) tracks the language work separately.
+
+## Status and sources
+
+- **Confirmed:** an explicit author decision or subsequent clarification.
+- **Retained:** an existing contract not withdrawn by the new decisions.
+- **Proposed:** exploratory syntax, recipes or reviewer policy awaiting approval.
+- **Deferred:** deliberately outside the next integration; no particular solution is ratified.
+
+| Key | Source |
+| --- | --- |
+| O | [Original review](https://chatgpt.com/library?file_id=libfile_69243ccbd4fc81919e6e5d44dc5fb0dd&account_id=personal) — baseline concerns and retained-contract references |
+| A | [Answers](https://chatgpt.com/library?file_id=libfile_08976976c6d481918d9566d5b22c8bd6&account_id=personal) |
+| K | [Kind recipes](https://chatgpt.com/library?file_id=libfile_6c2918274f288191a2dd3e44b3de23d3&account_id=personal) |
+| P | [Primitive types](https://chatgpt.com/library?file_id=libfile_a0f669a38e5c81918e18445b7534e195&account_id=personal) |
+| N | [Fixed-precision numbers](https://chatgpt.com/library?file_id=libfile_ea21b8d12df48191b831e95829ad1dbc&account_id=personal) |
+| C | [Refinements, carveouts and constructedBy](https://chatgpt.com/library?file_id=libfile_d48279c3419c8191a88228fd9c14e9d2&account_id=personal) |
+| S | [Specialization](https://chatgpt.com/library?file_id=libfile_12da41d01b748191a1d5346cfe6ba0d0&account_id=personal) |
+| R | [Rest capture and spreading](https://chatgpt.com/library?file_id=libfile_a0b325976f8c8191b62dece0f273d8a2&account_id=personal) |
+| I | [Interop sketch](https://chatgpt.com/library?file_id=libfile_d520e298e4e88191952e5fad68938fbb&account_id=personal) |
+| AR | Author's subsequent response in this conversation |
+| R1 | [Follow-up review](https://chatgpt.com/library?file_id=libfile_0f1ee920426c819190adddb95c69bcb3&account_id=personal) — reviewer recommendations, not automatically decisions |
+| R2 | [Reviewer reply](https://chatgpt.com/library?file_id=libfile_ff4abc7dd604819185664bd581ab04cb&account_id=personal) — clarifications and recommendations, not automatically decisions |
+| L | Author clarification on 6 November: table constructedBy; settle designation/projection as stated below; defer IEEE details; add todo to the intended test DSL |
+| L7 | Author instruction on 7 November: integrate this record into the project docs and plan a small DSL-suite milestone covering these cases and cogent TypeScript migrations |
+
+The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
+
+## Current decision specification
+
+### D01. Preserve the structural application model — retained
+
+An application has one head and one argument pack. `f(a)(b)` differs from `f(a,b)`; bare `f` differs from `f()`. Empty and multiple results are packs, not implicit unit/tuple values. Ordinary partial application consumes complete packs. Infix operators retain equal precedence and right associativity; parentheses preserve intended grouping. Type-parameter notation must not flatten runtime packs. Reason: these are the common structural rules; none of the new proposals withdraws them. **Sources:** O, A, S.
+
+### D02. Primitive values and syntax are distinct levels — confirmed direction; lexical details proposed
+
+Different source expressions may evaluate to the same value without being the same syntax tree. Primitive values have intrinsic concrete interpretations: ordinary strings are String, booleans are Bool, numeric literals are Rational, and ordinary quoted symbols have their intrinsic symbol classes. A reserved primitive atom must not simultaneously become an ordinary TitleCaseSymbol merely because colon quotation was used.
+
+P proposes self-evaluating `PrimitiveType`, including `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`, with `Type` no longer a reserved primitive atom. This vocabulary is recorded as the proposed primitive representation, not a completed metatype specification. Int/Float families are intended to be definable fixed-precision types rather than primitive numeric atoms.
+
+A proposes rejecting redundant `:5` and quoted primitive atoms in Code while permitting their raw syntax in the Expression parsing domain. R2 notes that preserving primitive values under quotation would also be coherent. **The prohibition itself has not been finally chosen.** Ordinary symbolic quotation, raw colon quotation, explicit typed interpolation and separation of quotation from execution otherwise remain unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved Symbols,” AR; R2.
+
+### D03. Structured runtime values require concrete interpretation — confirmed; runtime Expression deferred
+
+A structured expression cannot become a runtime value with unspecified concrete identity. An explicit annotation, typed quotation or a sufficiently informative context must determine its interpretation. Thus an unconstrained `z = Rect(2,2)` is rejected; `Rect(2,2) :: Rectangle` can succeed. Primitive literals already have intrinsic interpretations.
+
+The raw domain used for parsing/pattern recognition need not itself be an exposed runtime concrete Expression type. The author may omit runtime computation over Expression. If an explicit concrete Expression interpretation is retained, its relationship to evaluated type values still needs specification: no decision says that an Expression-typed descriptor automatically equals the type it describes. R2's recommendation to require explicit decoding remains a recommendation. **Sources:** A “Require Annotation…,” P “Raw Expressions…,” AR “Expression”; R2.
+
+### D04. All numeric literals denote exact Rational values — confirmed
+
+Decimal, hexadecimal and binary spellings denote exact values. `0f` first selects the Float64-rounded value and denotes that value **as an exact Rational**, not as a Float64-typed value. Consequently `0f0.5` equals Rational 1/2 and can be designated into Decimal32. A stored result of `float64(...)`, by contrast, already has Float64 identity.
+
+Explicit converters such as `float32` and `float64` return their fixed-precision typed values. Exact designation must not silently round: `0.1 :: Float32` fails, whereas an explicit converter may round. Finite fixed-precision types are concrete carveouts of representable Rational values with their own operations. Cross-space operations/conversions must be explicit; base arithmetic is not inherited merely because a Rational representation exists.
+
+Default short type names, the Number union's exact membership, complete format families, ties/overflow policies, integer wrap/check policies, numeric separators and canonical numeric spelling remain to be finalized. Hexadecimal canonical output and nearest-ties-to-even are proposals, not ratified here. Rational runtime arithmetic may be omitted; literal representation, equality and projection still require a defined model. **Sources:** P, N, K “Refinement Type vs Carveouts,” AR “0f” and “Rationals and IEEE Floats.”
+
+### D05. Structural descriptor identity remains the rule — confirmed/retained
+
+Equal normalized structural descriptors denote equal types, independently of declaration names and positional capture names. Physical field labels and nested type boundaries remain structural. Adding an alternative changes a concrete descriptor and therefore its concrete space. Two equal-looking payloads in different concrete spaces are not directly comparable as though the spaces were identical.
+
+This is **descriptor equality**, not proof of extensional equality of arbitrary predicates. The author accepted that correction. Functions/predicates eventually need portable representations; no new host-identity exception is approved. Canonical same-value/same-type printing and parse/print round trips remain goals. **Sources:** A “Structurally equal types…,” AR agreement on extension versus descriptor identity; O.
+
+### D06. Concrete, refinement and abstract interpretations have different effects — confirmed direction
+
+- `concrete` establishes one structural concrete space; structs, alternatives and predicate carveouts are recipes for it.
+- `refinement` restricts an existing concrete space while preserving its identity and operations.
+- `abstract` preserves each accepted value's actual concrete identity; unions and open facets are recipes for it. Concrete structures may themselves contain abstract-typed fields.
+
+Facet combinations require both constraints while preserving the member, not constructing a merged record. The author's documents call these products; R1/R2 recommend the term **intersection**, but that terminology has not been separately ratified. Likewise **abstract** versus **polymorphic** remains a naming choice; the recommendations favor abstract for the type category and polymorphic for functions.
+
+The author proposed disallowing a written singleton union such as `abstract String`. Normalization to the sole member was a reviewer suggestion, **not accepted policy**. How an abstract qualifier behaves when constraints leave one admitted member remains open. **Sources:** A “Kinds…,” K, S; AR singleton question; R1/R2.
+
+### D07. General abstract unions are separate from unambiguous grammars — confirmed direction
+
+An abstract union may admit distinct concrete spaces with overlapping source spellings. This removes the old blanket syntax-disjointness requirement. Typed members retain their actual spaces; general typed text must carry enough reconstruction information where the spelling does not select a unique member.
+
+A DSL can separately require an **unambiguous** grammar with no concrete-type reconstruction annotations in its value text. This requirement concerns the complete interpretation, including nested abstract fields and facets. It must not create another concrete value space merely by certifying the grammar. The qualifier's spelling, certification protocol and supported proof subset remain proposals. **Sources:** A “Disjoint Source Syntax / Unambiguous Grammars,” P union proposal; AR.
+
+### D08. Named declarations install accessors; ordinary type construction does not — confirmed direction
+
+The proposed `type Name ...` declaration binds the type and registers its local accessor/printing metadata. Ordinary type-valued expressions must be capture-free; `t = concrete Rect(w :: Float32,h :: Float32)` must not quietly install methods. Capture-free type values remain ordinary values and can be passed, stored and compared. Parameterized declarations can supply compact local names for instantiated type descriptions without changing identity.
+
+The author accepted that functional equality alone does not justify banning all duplicate declaration names for equal descriptors. **No replacement alias/import policy has yet been chosen.** Do not assume either that the old ban survives unchanged or that multiple accessor bundles can be imported without collision rules. **Sources:** A “Local Accessors,” AR acknowledgment; R1/R2.
+
+### D09. Designation and projection are settled, different operations — confirmed
+
+Designation into an expected concrete type may recursively establish the necessary inward interpretations **when there is exactly one justified path**. Predicate constraints along that path require evidence. This does not license missing required fields, arbitrary rounding or branch priority. Nested optional designation from a String is permitted when unique; nested `None` is rejected when it could identify different absence levels. C12 uses unwrapped optional branches for direct typed-branch projection; it must not be read as silently stripping Some nodes from a tagged representation.
+
+Projection crosses **exactly one explicitly requested concrete boundary**. It is performed by explicit match-based extraction, not by an ordinary typed binding or by function dispatch. Repeated boundaries require repeated explicit projections. An unannotated capture preserves the value rather than stripping wrappers. Single-arm extraction must be guaranteed over its admitted input domain; otherwise a multi-arm match or additional evidence is required.
+
+These are settled rules, **not remaining design blockers**. Wording and checking rules must faithfully implement uniqueness, evidence and single-arm coverage; no new alternative policy is requested. **Sources:** A “Binding, Contextual Type Inference,” AR projection clarification; L.
+
+### D10. where constraints need evidence; refinement-qualified functions are allowed — retained/clarified
+
+Explicit successful checks, assertions, proven facts and specified result guarantees can supply evidence about the exact value and predicate environment. Missing evidence is a checking failure, not proof of nonmembership. A sole function over a refinement is allowed and callable with sufficient evidence.
+
+The no-predicate-dispatch boundary rejects selecting between overlapping base/refinement implementations by running predicates. A base-domain overload and its refinement overload overlap; without an accepted specificity rule, they are rejected/ambiguous rather than prioritized. Unrelated concrete domains can coexist. No unchecked ordinary `insist`, predicate-based fallback or new static specificity rule is approved. **Sources:** O retained overload rule; C “where”; AR question and evidence clarification; R2 explanation.
+
+### D11. Explicit factories and binding-only defaults remain in force — retained
+
+No subsequent decision reinstates defaults in type descriptions. Binding defaults supply missing local captures without adding fields to the input. Types describe complete values and reject defaults. Ordinary factories can use defaulted parameters and explicitly return complete values. Required type fields remain required during designation, membership and parsing. **Sources:** O baseline, especially “Necessary asymmetries”; no superseding change in A–AR.
+
+### D12. Generics remain type-valued; family facets are a proposal — partly confirmed, partly proposed
+
+Type values are ordinary values; parameterized type factories produce structural type values. The author proposes angle parameters whose declaration-site `<T>` binds a type parameter without writing `<T :: Type>` every time. These examples use that spelling provisionally. Constraints such as `MemberOf<Number>` are proposed for concrete parameters; their exact admissible members and metatype remain unsettled.
+
+The intended bare-family view, such as using `Rectangle` to admit some `Rectangle<N>`, is a proposal. Its structural membership and parameter recovery must not be claimed solved. Phantom/non-injective parameters cannot generally be recovered from a descriptor. The reviewer recommendation to make this existential, structural membership rather than declaration provenance has not itself completed the design. K also contains incompatible broad statements about abstract types inside patterns; its individual recipes are not all ratified restrictions. **Sources:** A type parameters, K “Generics / Type Constructors,” S; R1/R2.
+
+### D13. Specialization is only a later compiler optimization — confirmed and deferred
+
+It must preserve abstract-call behavior, dispatch and errors; it must not create source-visible overloads or make otherwise invalid definitions valid only at known call sites. The exploratory overload-expansion account in S is superseded by AR. First-class overload-set values remain a separate **unaccepted proposal**; returning a defined function name as `OverloadedFunction(...)` is not approved by accepting specialization. **Sources:** S; AR “only a compiler optimization”; R1/R2.
+
+### D14. Interoperability follows structural descriptors — confirmed intent
+
+Independently scoped declarations with equivalent capture-free descriptions exchange equal values without a shared nominal declaration or importing accessor names. Consumers may destructure their known shapes. This does not yet specify source modules, simultaneous imports or duplicate local accessor policy. **Sources:** I; A structural identity; O.
+
+### D15. Repetition dimensions are consistent; new spreading/rest features are proposals
+
+The horizontal/vertical capture contract is retained: one repeated dimension contributes one list layer to the aggregate capture. A horizontal rest alone has `T*`; horizontal rest repeated over rows has `T**`. The author corrected the specialization Matrix example's `N*` to the two-dimensional rule. Zero rows, one empty row and a flat empty pack remain distinct.
+
+R proposes mirrored row spreading/capture and a keyword remainder represented by an actual typed record preserving its field labels and concrete field types. These are **intended proposals, not implemented guarantees**. Postfix `...` is preferred; postfix keyword-rest/spread `**`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
+
+### D16. constructedBy is tabled entirely — deferred by latest decision
+
+The motivating intent was explicit constructor calls granting guarantees without automatically retesting an arbitrary property, usable with refinement or concrete construction. The discussion distinguished static evidence, output-image membership and original call provenance. It did **not** ratify one final semantic model.
+
+The author has now tabled the feature until decoding values of constructedBy refinement types can be solved. Do not implement constructor replay, fixed-point checks, retained witnesses, `insist`, or a chosen image/provenance semantics as part of this agreement. Different witnesses for equal outputs also cannot be assumed to provide canonical value text. Ordinary `where` refinements remain available. **Sources:** C, N, AR, R2; superseding L.
+
+### D17. IEEE special-value details are deferred
+
+AR proposes a concrete union of NaN/infinities and finite Rational carveouts when Rational itself is not their superset. This is a possible representation, not a settled specification. Signed zero, NaN equality/payloads, exact special-value vocabulary and finite-only versus IEEE-complete scope may remain unsettled for now. Do not ratify the reviewer's finite-only or reflexive-NaN recommendations. **Sources:** P, N, AR; L.
+
+## D18. Test assertions and migration contracts
+
+Files contain ordinary test blocks with shared setup. Assertions may use expect,
+assert, expected-error and single-result forms. Modifiers apply to assertions,
+never tests. Plain and legacy assertions must pass. Legacy identifies a current
+compatibility contract to be explicitly retired as the roadmap advances. Todo
+assertions execute and are required to fail; their failures emit no diagnostics.
+A success fails the suite: “This assertion now passes; remove todo.” Pending is not
+a syntax modifier or skipped-test state. The term inert retains its capability/value
+meaning and does not describe a test outcome.
+
+Each assertion has its own evaluation scope. Language errors belonging to a todo
+check count as expected failures; shared setup/fixture errors, malformed source and
+host exceptions fail normally. All assertions are attempted, including those after
+an ordinary check failure. No assertion installs definitions or grants proof facts
+for another assertion. The static evidence checker is future work, independent of
+the host test DSL. Expected values are data; their exact observed types, canonical
+spelling and complete pack boundaries are checked rather than only their payloads.
+
+The cases below are **executed design specifications**, not claims that every future
+rule is implemented. Supported assertions are ordinary checks, retained bootstrap
+observations are legacy, and unfinished contracts carry todo. In particular Widget
+already has TitleCaseSymbol, so that expectation is not todo. Numeric cases assume
+the proposed exact Rational model and finite numeric vocabulary only as future
+contracts. Provisional type/angle/qualifier spellings do not become approved language
+features just because their failing assertions are stored and attempted. C27 remains
+an exploratory lexical candidate. Each individual subject/expected-type block repeats
+any needed future setup in an isolated scope; unavailable future types are not installed
+in shared setup merely to allow an assertion to be recorded.
+
+### C01 — intrinsic primitive values
+
+Confirmed direction; the PrimitiveType spelling/self-description is P's proposed vocabulary.
+
+```text
+test "C01 intrinsic primitive values"
+  expect True result True :: Bool
+  legacy expect "hello" result "hello" :: Expression
+  todo expect "hello" result "hello" :: String
+  legacy expect 5 result 5 :: Expression
+  todo expect 5 result 5 :: Rational
+  expect :Widget result Widget :: TitleCaseSymbol
+  legacy expect Bool result Bool :: Type
+  todo expect Bool result Bool :: PrimitiveType
+  todo expect PrimitiveType result PrimitiveType :: PrimitiveType
+end
+```
+
+### C02 — exact literals, including Float64-rounded Rational literals
+
+```text
+test "C02 exact Rational literal meanings"
+  todo expect 0.1 result 0.1 :: Rational
+  todo expect 0f0.5 result 0.5 :: Rational
+  todo expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
+  todo assert
+    (0f0.1 != 0.1)
+  todo assert
+    assert ((0f0.1 != 0.1))
+    (0xFp8 == 0b1111p8)
+end
+```
+
+No halfway, overflow or nonfinite behavior is specified by this case.
+
+### C03 — exact designation and explicit typed conversion
+
+```text
+test "C03 exact designation differs from rounding"
+  expect (0.5 :: Float32) result 0.5 :: Float32
+  todo expect float32(0.5) result 0.5 :: Float32
+  todo expect (0f0.5 :: Decimal32) result 0.5 :: Decimal32
+  todo expect (0f0.1 :: Float64) result 0f0.1 :: Float64
+  todo expect
+    (0.1 :: Float32)
+  error "not exactly representable as Float32"
+  todo expect
+    (0.5 :: Int16)
+  error "not an integer"
+end
+```
+
+### C04 — structured values require interpretation
+
+```text
+test "C04 structured values need a concrete interpretation"
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 2) :: Rectangle)
+    r
+  result
+    (
+      Rect(2, 2)
+    ) :: (
+      type Rectangle concrete Rect(w :: Float32, h :: Float32)
+      r = (Rect(2, 2) :: Rectangle)
+      Rectangle
+    )
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 2) :: Rectangle)
+    x = Rect(2, 2)
+    x
+  error "no concrete interpretation established for Rect(2,2)"
+end
+```
+
+The first annotation supplies context. The second binding deliberately supplies none.
+
+### C05 — ordinary capture-free type values and a type factory
+
+```text
+test "C05 types are structural values"
+  todo assert
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    t = Rectangle
+    u = concrete Rect(Rational, Rational)
+    (t == u)
+  todo assert
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    t = Rectangle
+    u = concrete Rect(Rational, Rational)
+    assert ((t == u))
+    type Box<T> concrete Box(T)
+    (Box<String> == (concrete Box(String)))
+  todo expect
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    t = Rectangle
+    u = concrete Rect(Rational, Rational)
+    assert ((t == u))
+    type Box<T> concrete Box(T)
+    assert ((Box<String> == (concrete Box(String))))
+    b = (Box("hello") :: Box<String>)
+    Box(text) = b
+    text
+  result
+    (
+      "hello"
+    ) :: (
+      type Rectangle concrete Rect(w :: Rational, h :: Rational)
+      t = Rectangle
+      u = concrete Rect(Rational, Rational)
+      assert ((t == u))
+      type Box<T> concrete Box(T)
+      assert ((Box<String> == (concrete Box(String))))
+      b = (Box("hello") :: Box<String>)
+      Box(text) = b
+      String
+    )
+end
+```
+
+This does not compare an Expression-typed descriptor with a type, or decide bare-family membership.
+
+### C06 — alternative sets determine concrete identity
+
+```text
+test "C06 equal spellings can belong to different concrete spaces"
+  todo expect
+    type PrimaryColor concrete :Red | :Green | :Blue
+    type TicketStatus concrete :Red | :Green
+    red = (:Red :: PrimaryColor)
+    stopped = (:Red :: TicketStatus)
+    (red == stopped)
+  error "incomparable concrete spaces"
+end
+```
+
+### C07 — where evidence preserves identity and permits a sole refined function
+
+```text
+test "C07 refinement evidence preserves the base value"
+  todo assert
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def keep(x :: NonZero) x
+    x = 0.5
+    (nonZero(x))
+  todo assert
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def keep(x :: NonZero) x
+    x = 0.5
+    assert ((nonZero(x)))
+    (n :: NonZero) = x
+    (n == x)
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def keep(x :: NonZero) x
+    x = 0.5
+    assert ((nonZero(x)))
+    (n :: NonZero) = x
+    assert ((n == x))
+    keep(n)
+  result
+    (
+      0.5
+    ) :: (
+      nonZero = n -> (n != 0)
+      type NonZero refinement Rational .where nonZero
+      def keep(x :: NonZero) x
+      x = 0.5
+      assert ((nonZero(x)))
+      (n :: NonZero) = x
+      assert ((n == x))
+      NonZero
+    )
+end
+```
+
+The expectation retains the NonZero qualification; `n == x` demonstrates that refinement adds no new concrete space beyond Rational. This case does not choose how a REPL distinguishes displayed guarantees from concrete identity, or require refinements to print only their base type.
+
+### C08 — isolated assertions grant no evidence to another subject
+
+The static evidence model remains future work. The unchecked function has no assertion establishing its required refinement; a separate test assertion cannot grant it a fact.
+
+```text
+test "C08 todo assert supplies no refinement evidence"
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def keep(x :: NonZero) x
+    def unchecked(x :: Rational)
+      keep(x)
+    end
+    unchecked(1)
+  error "refinement evidence is missing in unchecked"
+end
+```
+
+### C09 — overlapping base/refinement overloads do not gain priority
+
+```text
+test "C09 base and refinement overloads overlap"
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def choose(x :: Rational) "base"
+    def choose(x :: NonZero) "refined"
+    choose(1)
+  error "overlapping base and refinement overload domains"
+end
+```
+
+### C10 — unrelated overload domains and explicit branch evidence
+
+```text
+test "C10 unrelated domains can coexist"
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def choose(x :: NonZero) "number"
+    def choose(x :: String) "string"
+    def checked(x :: Rational)
+      if nonZero(x) choose(x) else "zero"
+    end
+    checked(1)
+  result
+    (
+      "number"
+    ) :: (
+      nonZero = n -> (n != 0)
+      type NonZero refinement Rational .where nonZero
+      def choose(x :: NonZero) "number"
+      def choose(x :: String) "string"
+      def checked(x :: Rational)
+        if nonZero(x) choose(x) else "zero"
+      end
+      String
+    )
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def choose(x :: NonZero) "number"
+    def choose(x :: String) "string"
+    def checked(x :: Rational)
+      if nonZero(x) choose(x) else "zero"
+    end
+    checked(0)
+  result
+    (
+      "zero"
+    ) :: (
+      nonZero = n -> (n != 0)
+      type NonZero refinement Rational .where nonZero
+      def choose(x :: NonZero) "number"
+      def choose(x :: String) "string"
+      def checked(x :: Rational)
+        if nonZero(x) choose(x) else "zero"
+      end
+      String
+    )
+  todo expect
+    nonZero = n -> (n != 0)
+    type NonZero refinement Rational .where nonZero
+    def choose(x :: NonZero) "number"
+    def choose(x :: String) "string"
+    def checked(x :: Rational)
+      if nonZero(x) choose(x) else "zero"
+    end
+    choose("hello")
+  result
+    (
+      "string"
+    ) :: (
+      nonZero = n -> (n != 0)
+      type NonZero refinement Rational .where nonZero
+      def choose(x :: NonZero) "number"
+      def choose(x :: String) "string"
+      def checked(x :: Rational)
+        if nonZero(x) choose(x) else "zero"
+      end
+      String
+    )
+end
+```
+
+The conditional explicitly checks the predicate; overload selection does not run it speculatively.
+
+### C11 — explicit projection crosses one boundary only
+
+```text
+test "C11 projection is one explicit concrete boundary"
+  todo expect
+    small = n -> (n == 0)
+    smaller = n -> True
+    type Small concrete Rational .where small
+    type Wrapped concrete Small .where smaller
+    (w :: Wrapped) = 0
+    match w (s :: Small)
+    match s (r :: Rational)
+    r
+  result
+    (
+      0
+    ) :: (
+      small = n -> (n == 0)
+      smaller = n -> True
+      type Small concrete Rational .where small
+      type Wrapped concrete Small .where smaller
+      (w :: Wrapped) = 0
+      match w (s :: Small)
+      match s (r :: Rational)
+      Rational
+    )
+  todo expect
+    small = n -> (n == 0)
+    smaller = n -> True
+    type Small concrete Rational .where small
+    type Wrapped concrete Small .where smaller
+    (w :: Wrapped) = 0
+    match w (s :: Small)
+    match s (r :: Rational)
+    (direct :: Rational) = w
+    direct
+  error "ordinary binding does not unwrap Wrapped"
+  todo expect
+    small = n -> (n == 0)
+    smaller = n -> True
+    type Small concrete Rational .where small
+    type Wrapped concrete Small .where smaller
+    (w :: Wrapped) = 0
+    match w (s :: Small)
+    match s (r :: Rational)
+    match w (direct :: Rational)
+    direct
+  error "the immediate base of Wrapped is Small"
+  todo expect
+    small = n -> (n == 0)
+    smaller = n -> True
+    type Small concrete Rational .where small
+    type Wrapped concrete Small .where smaller
+    (w :: Wrapped) = 0
+    match w (s :: Small)
+    match s (r :: Rational)
+    def consume(x :: Rational) x
+    consume(w)
+  error "dispatch does not unwrap Wrapped"
+end
+```
+
+### C12 — recursive designation, nested absence and guaranteed extraction
+
+```text
+test "C12 designation is recursive only when unambiguous"
+  todo expect
+    type Option<T> concrete T | :None
+    (outer :: Option<Option<String>>) = "Hello"
+    text = match outer
+      (inner :: Option<String>) -> match inner
+        (s :: String) -> s
+        :None -> "inner absent"
+      end
+      :None -> "outer absent"
+    end
+    text
+  result
+    (
+      "Hello"
+    ) :: (
+      type Option<T> concrete T | :None
+      (outer :: Option<Option<String>>) = "Hello"
+      text = match outer
+        (inner :: Option<String>) -> match inner
+          (s :: String) -> s
+          :None -> "inner absent"
+        end
+        :None -> "outer absent"
+      end
+      String
+    )
+  todo expect
+    type Option<T> concrete T | :None
+    (outer :: Option<Option<String>>) = "Hello"
+    text = match outer
+      (inner :: Option<String>) -> match inner
+        (s :: String) -> s
+        :None -> "inner absent"
+      end
+      :None -> "outer absent"
+    end
+    (ambiguous :: Option<Option<String>>) = :None
+    ambiguous
+  error "None has more than one designation path"
+  todo expect
+    type Option<T> concrete T | :None
+    (outer :: Option<Option<String>>) = "Hello"
+    text = match outer
+      (inner :: Option<String>) -> match inner
+        (s :: String) -> s
+        :None -> "inner absent"
+      end
+      :None -> "outer absent"
+    end
+    def extract(x :: Option<String>)
+      match x (s :: String)
+      s
+    end
+    extract("Hello" :: Option<String>)
+  error "String extraction is not guaranteed for every Option<String>"
+end
+```
+
+This case deliberately uses an **unwrapped** optional representation, `concrete T | :None`, to exercise direct typed branch projection without silently stripping a Some constructor. C18 separately uses a tagged `:None | Some(T)` representation. The last error concerns the declared input domain of `extract`, not the particular known argument at one call site. A multi-arm consumer can handle absence explicitly.
+
+### C13 — a general union admits overlapping spellings
+
+```text
+test "C13 abstract union retains overlapping numeric members"
+  todo expect
+    type EitherFloat abstract Float32 | Float64
+    (a :: EitherFloat) = float32(0.5)
+    (b :: EitherFloat) = float64(0.5)
+    a
+  result
+    (
+      0.5
+    ) :: (
+      type EitherFloat abstract Float32 | Float64
+      (a :: EitherFloat) = float32(0.5)
+      (b :: EitherFloat) = float64(0.5)
+      Float32
+    )
+  todo expect
+    type EitherFloat abstract Float32 | Float64
+    (a :: EitherFloat) = float32(0.5)
+    (b :: EitherFloat) = float64(0.5)
+    b
+  result
+    (
+      0.5
+    ) :: (
+      type EitherFloat abstract Float32 | Float64
+      (a :: EitherFloat) = float32(0.5)
+      (b :: EitherFloat) = float64(0.5)
+      Float64
+    )
+  todo assert
+    type EitherFloat abstract Float32 | Float64
+    (a :: EitherFloat) = float32(0.5)
+    (b :: EitherFloat) = float64(0.5)
+    text = toString(EitherFloat)(a)
+    (parse(EitherFloat)(text) == a)
+end
+```
+
+The text must retain enough information to reconstruct Float32; no exact descriptor spelling is approved here.
+
+### C14 — unambiguous grammar requirements are separate
+
+The qualifier spelling and certification diagnostics are provisional.
+
+```text
+test "C14 unambiguous is a separate grammar requirement"
+  todo assert
+    type Token unambiguous abstract Rational | String
+    (n :: Token) = 0.5
+    (parse(Token)(toString(Token)(n)) == n)
+  todo expect
+    type Token unambiguous abstract Rational | String
+    (n :: Token) = 0.5
+    assert ((parse(Token)(toString(Token)(n)) == n))
+    type Bad unambiguous abstract Float32 | Float64
+    Bad
+  error "the same numeric spelling admits more than one interpretation"
+end
+```
+
+C13 remains legal without the additional requirement.
+
+### C15 — facets and their intersection preserve the complete member
+
+The `abstract A & B` spelling records the proposed facet-combination recipe.
+
+```text
+test "C15 facet intersection preserves concrete identity and fields"
+  todo assert
+    type Card concrete {width: Float32, height: Float32, color: String}
+    type Rectangular abstract {width: Float32, height: Float32, **}
+    type Colored abstract {color: String, **}
+    type ColoredRectangle abstract Rectangular & Colored
+    card = ({width: 0.5, height: 1, color: "blue"} :: Card)
+    (view :: ColoredRectangle) = card
+    (view == card)
+  todo expect
+    type Card concrete {width: Float32, height: Float32, color: String}
+    type Rectangular abstract {width: Float32, height: Float32, **}
+    type Colored abstract {color: String, **}
+    type ColoredRectangle abstract Rectangular & Colored
+    card = ({width: 0.5, height: 1, color: "blue"} :: Card)
+    (view :: ColoredRectangle) = card
+    assert ((view == card))
+    view
+  result
+    (
+      {width: 0.5, height: 1, color: "blue"}
+    ) :: (
+      type Card concrete {width: Float32, height: Float32, color: String}
+      type Rectangular abstract {width: Float32, height: Float32, **}
+      type Colored abstract {color: String, **}
+      type ColoredRectangle abstract Rectangular & Colored
+      card = ({width: 0.5, height: 1, color: "blue"} :: Card)
+      (view :: ColoredRectangle) = card
+      assert ((view == card))
+      Card
+    )
+end
+```
+
+### C16 — accessor installation belongs to a declaration
+
+```text
+test "C16 declarations own accessor products"
+  todo expect
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    r = (Rect(2, 3) :: Rectangle)
+    r.w
+  result
+    (
+      2
+    ) :: (
+      type Rectangle concrete Rect(w :: Rational, h :: Rational)
+      r = (Rect(2, 3) :: Rectangle)
+      Rational
+    )
+  todo expect
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    r = (Rect(2, 3) :: Rectangle)
+    t = concrete Rect(width :: Rational, height :: Rational)
+    t
+  error "ordinary type construction cannot declare captures/accessors"
+end
+```
+
+No case assumes that two equal local declarations are either permitted or forbidden; that policy is still pending.
+
+### C17 — ordinary factories keep defaults out of types
+
+```text
+test "C17 defaults belong to bindings and explicit factories"
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
+    def rectangle(w :: Float32, h :: Float32, color: String = "black")
+      (Rect(w, h, color: color) :: Rectangle)
+    end
+    rectangle(2, 3)
+  result
+    (
+      Rect(2, 3, color: "black")
+    ) :: (
+      type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
+      def rectangle(w :: Float32, h :: Float32, color: String = "black")
+        (Rect(w, h, color: color) :: Rectangle)
+      end
+      Rectangle
+    )
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
+    def rectangle(w :: Float32, h :: Float32, color: String = "black")
+      (Rect(w, h, color: color) :: Rectangle)
+    end
+    (Rect(2, 3) :: Rectangle)
+  error "required color field is absent"
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
+    def rectangle(w :: Float32, h :: Float32, color: String = "black")
+      (Rect(w, h, color: color) :: Rectangle)
+    end
+    type Invalid concrete Rect(color: String = "black")
+    Invalid
+  error "defaults are forbidden in type descriptions"
+end
+```
+
+### C18 — independent scopes interoperate structurally
+
+```text
+test "C18 equivalent independently named descriptors interoperate"
+  todo assert
+    produced = (
+      type Option<T> concrete :None | Some(T)
+      (Some("hello") :: Option<String>)
+    )
+    independent = (
+      type Optional<T> concrete :None | Some(T)
+      (Some("hello") :: Optional<String>)
+    )
+    (produced == independent)
+  todo expect
+    produced = (
+      type Option<T> concrete :None | Some(T)
+      (Some("hello") :: Option<String>)
+    )
+    independent = (
+      type Optional<T> concrete :None | Some(T)
+      (Some("hello") :: Optional<String>)
+    )
+    assert ((produced == independent))
+    consumed = (
+      type LocalOption<T> concrete :None | Some(T)
+      def read(x :: LocalOption<String>)
+        match x
+          Some(s) -> s
+          :None -> "absent"
+        end
+      end
+      read(produced)
+    )
+    consumed
+  result
+    (
+      "hello"
+    ) :: (
+      produced = (
+        type Option<T> concrete :None | Some(T)
+        (Some("hello") :: Option<String>)
+      )
+      independent = (
+        type Optional<T> concrete :None | Some(T)
+        (Some("hello") :: Optional<String>)
+      )
+      assert ((produced == independent))
+      consumed = (
+        type LocalOption<T> concrete :None | Some(T)
+        def read(x :: LocalOption<String>)
+          match x
+            Some(s) -> s
+            :None -> "absent"
+          end
+        end
+        read(produced)
+      )
+      String
+    )
+end
+```
+
+These are isolated lexical blocks, not a new source-module syntax. The consumer imports no producer accessor bundle.
+
+### C19 — horizontal captures retain positional-only list semantics
+
+```text
+test "C19 horizontal rest remains a typed positional list"
+  expect
+    def copy(xs... :: Float32*) ([xs...] :: Float32*)
+    copy()
+  result
+    (
+      []
+    ) :: (
+      def copy(xs... :: Float32*) ([xs...] :: Float32*)
+      Float32*
+    )
+  expect
+    def copy(xs... :: Float32*) ([xs...] :: Float32*)
+    copy(0.5)
+  result
+    (
+      [0.5]
+    ) :: (
+      def copy(xs... :: Float32*) ([xs...] :: Float32*)
+      Float32*
+    )
+  todo expect
+    def copy(xs... :: Float32*) ([xs...] :: Float32*)
+    type Packet concrete Packet(Float32, Float32, color: String, note: String)
+    packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
+    Packet(first, rest... :: Float32*, color: c, **) = packet
+    rest
+  result
+    (
+      [1]
+    ) :: (
+      def copy(xs... :: Float32*) ([xs...] :: Float32*)
+      type Packet concrete Packet(Float32, Float32, color: String, note: String)
+      packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
+      Packet(first, rest... :: Float32*, color: c, **) = packet
+      Float32*
+    )
+  todo expect
+    def copy(xs... :: Float32*) ([xs...] :: Float32*)
+    type Packet concrete Packet(Float32, Float32, color: String, note: String)
+    packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
+    Packet(first, rest... :: Float32*, color: c, **) = packet
+    c
+  result
+    (
+      "blue"
+    ) :: (
+      def copy(xs... :: Float32*) ([xs...] :: Float32*)
+      type Packet concrete Packet(Float32, Float32, color: String, note: String)
+      packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
+      Packet(first, rest... :: Float32*, color: c, **) = packet
+      String
+    )
+end
+```
+
+Labels are not consumed by the positional capture. Independent `...`/`**` openness retains the original pack/constructed distinction.
+
+### C20 — horizontal plus vertical capture/spread has two dimensions
+
+Capture dimensions are retained; mirrored vertical spreading is R's proposed extension.
+
+```text
+test "C20 row capture and spreading are mirror images"
+  todo expect
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    rows
+  result
+    (
+      [[0.5, 1], [2, 4]]
+    ) :: (
+      type Matrix concrete [
+        cells... :: Float32**
+        ...
+      ]
+      x = ([
+        0.5, 1
+        2, 4
+      ] :: Matrix)
+      rows = x.cells
+      Float32**
+    )
+  todo assert
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    y = ([
+      rows...
+      ...
+    ] :: Matrix)
+    (y == x)
+  todo expect
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    y = ([
+      rows...
+      ...
+    ] :: Matrix)
+    assert ((y == x))
+    empty = ([
+    ] :: Matrix)
+    oneEmptyRow = ([
+      ()
+    ] :: Matrix)
+    empty.cells
+  result
+    (
+      []
+    ) :: (
+      type Matrix concrete [
+        cells... :: Float32**
+        ...
+      ]
+      x = ([
+        0.5, 1
+        2, 4
+      ] :: Matrix)
+      rows = x.cells
+      y = ([
+        rows...
+        ...
+      ] :: Matrix)
+      assert ((y == x))
+      empty = ([
+      ] :: Matrix)
+      oneEmptyRow = ([
+        ()
+      ] :: Matrix)
+      Float32**
+    )
+  todo expect
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    y = ([
+      rows...
+      ...
+    ] :: Matrix)
+    assert ((y == x))
+    empty = ([
+    ] :: Matrix)
+    oneEmptyRow = ([
+      ()
+    ] :: Matrix)
+    oneEmptyRow.cells
+  result
+    (
+      [[]]
+    ) :: (
+      type Matrix concrete [
+        cells... :: Float32**
+        ...
+      ]
+      x = ([
+        0.5, 1
+        2, 4
+      ] :: Matrix)
+      rows = x.cells
+      y = ([
+        rows...
+        ...
+      ] :: Matrix)
+      assert ((y == x))
+      empty = ([
+      ] :: Matrix)
+      oneEmptyRow = ([
+        ()
+      ] :: Matrix)
+      Float32**
+    )
+  todo assert
+    type Matrix concrete [
+      cells... :: Float32**
+      ...
+    ]
+    x = ([
+      0.5, 1
+      2, 4
+    ] :: Matrix)
+    rows = x.cells
+    y = ([
+      rows...
+      ...
+    ] :: Matrix)
+    assert ((y == x))
+    empty = ([
+    ] :: Matrix)
+    oneEmptyRow = ([
+      ()
+    ] :: Matrix)
+    (empty != oneEmptyRow)
+end
+```
+
+The annotation is `Float32**`, not `Float32*`. It describes the aggregate capture. Row widths need not be equal without a separate constraint.
+
+### C21 — vertical repetition alone adds one list layer
+
+```text
+test "C21 vertical-only capture is a list of items"
+  todo expect
+    type TodoList concrete :todo
+      todos :: String*
+      ...
+    end
+    items = TodoList`
+      todo
+        "first"
+        "second"
+      end
+    end
+    items.todos
+  result
+    (
+      ["first", "second"]
+    ) :: (
+      type TodoList concrete :todo
+        todos :: String*
+        ...
+      end
+      items = TodoList`
+        todo
+          "first"
+          "second"
+        end
+      end
+      String*
+    )
+end
+```
+
+### C22 — keyword remainder is a typed record
+
+**Proposal, not an implemented or fully spelled feature.** The `rest**: {**}` capture syntax follows R's sketch and still needs grammar approval.
+
+```text
+test "C22 keyword remainder retains its record field types"
+  todo expect
+    type PersonRecord concrete {name: String, id: Int64, age: Int8}
+    type Person abstract {name: String, id: Int64, **}
+    type AgeInfo concrete {age: Int8}
+    def extra(person :: Person)
+      {name: name, id: id, rest**: {**}} = person
+      rest
+    end
+    john = ({name: "John", id: 5, age: 48} :: PersonRecord)
+    extra(john)
+  result
+    (
+      {age: 48}
+    ) :: (
+      type PersonRecord concrete {name: String, id: Int64, age: Int8}
+      type Person abstract {name: String, id: Int64, **}
+      type AgeInfo concrete {age: Int8}
+      def extra(person :: Person)
+        {name: name, id: id, rest**: {**}} = person
+        rest
+      end
+      john = ({name: "John", id: 5, age: 48} :: PersonRecord)
+      AgeInfo
+    )
+end
+```
+
+This corrects R's inconsistent id-width example. It makes no claim that specialization is required to give `rest` a descriptor or that its shape is always statically known. Keyword spread spelling is not settled by this capture example.
+
+### C23 — canonical typed text remains a value round trip
+
+```text
+test "C23 supported global typed text preserves value identity"
+  todo assert
+    type Rectangle concrete Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 3) :: Rectangle)
+    text = toString(Rectangle)(r)
+    restored = parse(Rectangle)(text)
+    (restored == r)
+  todo assert
+    type Rectangle concrete Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 3) :: Rectangle)
+    text = toString(Rectangle)(r)
+    restored = parse(Rectangle)(text)
+    assert ((restored == r))
+    (toString(Rectangle)(restored) == text)
+end
+```
+
+This does not choose a constructedBy decoder or a raw Expression/type equality policy.
+
+### C24 — whole-pack application and result consumption remain intact
+
+```text
+test "C24 applications preserve complete successive packs"
+  todo expect
+    def combine(x, y)(z) (x, y, z)
+    partial = combine("a", "b")
+    (a, b, c) = partial("c")
+    a
+  result
+    (
+      "a"
+    ) :: (
+      def combine(x, y)(z) (x, y, z)
+      partial = combine("a", "b")
+      (a, b, c) = partial("c")
+      String
+    )
+  todo expect
+    def combine(x, y)(z) (x, y, z)
+    partial = combine("a", "b")
+    (a, b, c) = partial("c")
+    b
+  result
+    (
+      "b"
+    ) :: (
+      def combine(x, y)(z) (x, y, z)
+      partial = combine("a", "b")
+      (a, b, c) = partial("c")
+      String
+    )
+  todo expect
+    def combine(x, y)(z) (x, y, z)
+    partial = combine("a", "b")
+    (a, b, c) = partial("c")
+    c
+  result
+    (
+      "c"
+    ) :: (
+      def combine(x, y)(z) (x, y, z)
+      partial = combine("a", "b")
+      (a, b, c) = partial("c")
+      String
+    )
+  todo expect
+    def combine(x, y)(z) (x, y, z)
+    partial = combine("a", "b")
+    (a, b, c) = partial("c")
+    def empty() ()
+    () = empty()
+    x = ("a", "b")
+    x
+  error "one capture cannot consume two positional results"
+end
+```
+
+### C25 — equal precedence and right associativity are preserved
+
+```text
+test "C25 infix operators retain equal precedence"
+  todo expect ((2 :: Float64) * (3 :: Float64) + (4 :: Float64)) result 14 :: Float64
+  todo expect
+    def select(a)(b) b
+    ("left" .select "right")
+  result
+    (
+      "right"
+    ) :: (
+      def select(a)(b) b
+      String
+    )
+end
+```
+
+The first subject denotes `2 * (3 + 4)`. Each ascription is grouped explicitly so the test does not accidentally change its tree.
+
+### C26 — todo assertions execute without leaking local state
+
+**Implemented assertion-level policy.** Unknown future operands are attempted, and failed subjects cannot change the surrounding case scope.
+
+```text
+test "C26 todo assertions execute in isolated scopes"
+  marker = 1
+  todo assert
+    FuturePredicate(FutureValue)
+  todo expect FutureSubject() result FutureExpected() :: FutureType
+  todo expect
+    marker = 2
+    def futureLocal() 99
+    missing()
+  result
+    0 :: Expression
+  expect
+    futureLocal()
+  error "E_UNBOUND_NAME"
+  legacy expect marker result 1 :: Expression
+end
+```
+
+Discovery reads source only; running the case attempts each assertion. The local declaration is absent afterward and marker remains 1. Todo does not hide setup or harness errors. C08 independently records the future evidence requirement.
+
+### C27 — candidate lexical prohibition on redundant primitive quotation
+
+**Exploratory expectation only, awaiting the author's lexical choice.** It must not be integrated as a confirmed decision.
+
+```text
+test "C27 candidate Code rejection of redundant primitive quotation"
+  todo expect
+    :5
+  error "primitive quotation is not a Code form"
+  todo expect
+    :Bool
+  error "primitive quotation is not a Code form"
+end
+```
+
+No corresponding expected result is assigned for raw Expression computation, which may be omitted entirely.
+
+## Remaining and deferred items
+
+| Item | Precise status |
+| --- | --- |
+| constructedBy, its evidence semantics and decoding | **Tabled entirely.** Preserve motivation; do not select a replay/image/provenance model or add conformance results now. |
+| IEEE NaN/infinities, signed zero and special equality | **Deferred.** AR's union recipe is a possibility, not a chosen representation. |
+| Designation/projection | **Settled.** Only faithful wording/checking and eventual tests remain; no renewed policy debate is requested. |
+| Bare generic-family facets, MemberOf and parameter recovery | **Proposed.** Constraint vocabulary, structural matching and non-injective cases remain unresolved. |
+| Duplicate local type names, accessor bundles/imports and preferred display names | **Unresolved policy.** Functional equality is not a sufficient reason for a blanket ban; no alternative has been ratified. |
+| Singleton abstract unions and qualifiers narrowed to one member | **Unresolved.** Author proposed rejecting explicit singleton unions; normalization is only a reviewer recommendation. |
+| Runtime Expression and descriptor/value comparison | **Optional/unresolved.** May disappear from ordinary programs if runtime Expression computation is omitted. |
+| Specialization | **Deferred optimization only.** No source-visible generated overload semantics. |
+| First-class overload sets | **Unaccepted proposal.** No approved bare-name callable-value behavior change. |
+| Numeric aliases/families, rounding edge policies and canonical spelling | **Provisional.** Do not infer these from isolated draft typos or examples. |
+| Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
+| Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
+| Test DSL modifiers | Implemented assertion-level todo/legacy execution and reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
+
+Obvious draft slips are normalized only to express the intended rules: String/sqrt examples meant an integer type; inconsistent normalizer names refer to one function; the Float union's self-reference is not a proposed recursive numeric member; mismatched id widths and Matrix dimensions are corrected explicitly. No semantic decision is extracted from those slips.
+
+## Decision-to-case index
+
+| Decision | Named cases / coverage |
+| --- | --- |
+| D01 application, packs, precedence | C24, C25; runtime packs remain distinct from generic parameters in C05 |
+| D02 primitives and quotation | C01; C27 is an **unaccepted lexical candidate**, not confirmed behavior |
+| D03 mandatory interpretation / optional Expression | C04, C05; no expected result assigned to the unresolved Expression/type comparison |
+| D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
+| D05 structural identity | C05, C06, C18, C23 |
+| D06 concrete/refinement/abstract kinds | C06, C07, C13, C15; singleton policy deliberately unassigned |
+| D07 general unions versus unambiguous grammars | C13, C14; qualifier spelling remains provisional |
+| D08 declaration-only accessors | C05, C16; duplicate-name/import outcomes deliberately unassigned |
+| D09 recursive designation / one-boundary projection | C03, C11, C12, C17 |
+| D10 evidence and refinement-qualified functions | C07–C10; C08 depends on the future static evidence checker |
+| D11 factories and binding-only defaults | C17 |
+| D12 type-valued generics / proposed family views | C05, C12, C18; no case pretends family recovery or MemberOf is settled |
+| D13 specialization and first-class overloads | No optimization-dependent expected result; C09/C10/C12 must retain their semantics independently of specialization |
+| D14 structural interoperability | C18, with transport law in C23 |
+| D15 captures/spreading/keyword remainders | C19–C22; new spread/rest surface mechanics explicitly proposed |
+| D16 constructedBy deferral | No active or pending expected-result case selects a semantics |
+| D17 IEEE deferral | No expected result selects NaN/signed-zero/special-value policies |
+| D18 intended DSL and todo | All cases execute; assertions use todo/legacy as appropriate. C08 records evidence requirements and C26 checks evaluation isolation |

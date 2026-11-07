@@ -1,0 +1,69 @@
+test "C04 structured values need a concrete interpretation"
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 2) :: Rectangle)
+    r
+  result
+    (
+      Rect(2, 2)
+    ) :: (
+      type Rectangle concrete Rect(w :: Float32, h :: Float32)
+      r = (Rect(2, 2) :: Rectangle)
+      Rectangle
+    )
+  todo expect
+    type Rectangle concrete Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 2) :: Rectangle)
+    x = Rect(2, 2)
+    x
+  error "no concrete interpretation established for Rect(2,2)"
+end
+
+test "C05 types are structural values"
+  todo assert
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    t = Rectangle
+    u = concrete Rect(Rational, Rational)
+    (t == u)
+  todo assert
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    t = Rectangle
+    u = concrete Rect(Rational, Rational)
+    assert ((t == u))
+    type Box<T> concrete Box(T)
+    (Box<String> == (concrete Box(String)))
+  todo expect
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    t = Rectangle
+    u = concrete Rect(Rational, Rational)
+    assert ((t == u))
+    type Box<T> concrete Box(T)
+    assert ((Box<String> == (concrete Box(String))))
+    b = (Box("hello") :: Box<String>)
+    Box(text) = b
+    text
+  result
+    (
+      "hello"
+    ) :: (
+      type Rectangle concrete Rect(w :: Rational, h :: Rational)
+      t = Rectangle
+      u = concrete Rect(Rational, Rational)
+      assert ((t == u))
+      type Box<T> concrete Box(T)
+      assert ((Box<String> == (concrete Box(String))))
+      b = (Box("hello") :: Box<String>)
+      Box(text) = b
+      String
+    )
+end
+
+test "C06 equal spellings can belong to different concrete spaces"
+  todo expect
+    type PrimaryColor concrete :Red | :Green | :Blue
+    type TicketStatus concrete :Red | :Green
+    red = (:Red :: PrimaryColor)
+    stopped = (:Red :: TicketStatus)
+    (red == stopped)
+  error "incomparable concrete spaces"
+end

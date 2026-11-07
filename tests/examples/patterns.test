@@ -1,0 +1,82 @@
+test "Capture accessors"
+  def Rectangle type :Rect(w :: Number, h :: Number)
+  r = Rect(3, 4) :: Rectangle
+  (observed1, observed2) =
+    (r.w, w(r))
+  end
+  expect observed1 result 3 :: Float
+  expect observed2 result 3 :: Float
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Defaults in function arguments"
+  def Rectangle type :Rect(width :: Int, height :: Int, color: String)
+  def colorOf(Rect(w, h, color: String = "black")) color
+  raw = Rect(3, 4)
+  (observed1, observed2) =
+    (colorOf(raw), raw)
+  end
+  legacy expect observed1 result "black" :: String
+  legacy expect observed2 result Rect(3, 4) :: Expression
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Exact fields and rest markers"
+  Rect(w, h, ..., color: c, **) = Rect(2, 3, 4, color: :Black, note: "extra")
+  (observed1, observed2, observed3) =
+    (w, h, c)
+  end
+  legacy expect observed1 result 2 :: Expression
+  legacy expect observed2 result 3 :: Expression
+  legacy expect observed3 result Black :: TitleCaseSymbol
+  # Inspect the captured return values.
+  (observed1, observed2, observed3)
+end
+
+test "Labels containing patterns"
+  def area(shape: Rectangle(w, h)) w * h
+  legacy expect area(shape: Rectangle(3, 4)) result 12 :: Expression
+end
+
+test "Named result capture"
+  (x, foo: String) = (1, foo: "bar")
+  (observed1, observed2) =
+    (x, foo)
+  end
+  legacy expect observed1 result 1 :: Expression
+  legacy expect observed2 result "bar" :: String
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Patterns as values"
+  p = type :Pair(Int, Int)
+  testPair = matches(Pair(1, 2))
+  (observed1, observed2) =
+    (testPair(p), Pair(1, "x") .matches p)
+  end
+  assert
+    observed1
+  assert
+    (
+      observed2
+    ) == False
+  # Inspect the captured return values.
+  (observed1, observed2)
+end
+
+test "Picture: nested pattern captures"
+  def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle(w :: Number, h :: Number))
+  p = Picture(color: :Red, shape: Rectangle(3, 4)) :: Picture
+  (observed1, observed2, observed3, observed4) =
+    (p.color, p.w, p.h, type Picture)
+  end
+  expect observed1 result :Red :: (type (:Red | :Black))
+  expect observed2 result 3 :: Float
+  expect observed3 result 4 :: Float
+  expect observed4 result Type(Picture(color: Type(:Black | :Red), shape: Rectangle(Float, Float))) :: Type
+  # Inspect the captured return values.
+  (observed1, observed2, observed3, observed4)
+end
