@@ -530,7 +530,7 @@ class Reader {
       } else if (
         t.kind === "op" &&
         !t.quoted &&
-        /^[?*!^]+$/.test(t.text) &&
+        /^[?*!^+]+$/.test(t.text) &&
         this.suffixBoundary()
       ) {
         this.take();

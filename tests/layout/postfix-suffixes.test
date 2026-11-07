@@ -1,0 +1,16 @@
+test "Tight postfix suffixes wrap one character at a time"
+  assert parse(Code)("Int**") .matches Code
+  assert parse(Code)("String?*^!") .matches Code
+  assert parse(Code)("Int+") .matches Code
+  assert parse(Code)("Int*+") .matches Code
+end
+
+test "Tight plus is a suffix; spaced plus remains infix"
+  expect parse(Code)("a+b") error "infix operators require spaces"
+  assert parse(Code)("a + b") .matches Code
+  assert parse(Code)("T * U") .matches Code
+end
+
+test "Bare keyword-rest ** is not rewritten by the suffix rule"
+  assert parse(Code)("Rect(w, h, **)") .matches Code
+end

@@ -71,12 +71,13 @@ already defined abstract-call semantics, never a source-visible overload generat
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. **All 133 source cases execute**, with
-**255 passing assertions (70 legacy)** and **117 todo expected failures**. The corpus
+The reference is TypeScript prototype 0.2. **All 136 source cases execute**, with
+**263 passing assertions (70 legacy)** and **117 todo expected failures**. The corpus
 includes 76 playground examples, 14 other conformance cases, nine migrated binding/
-default cases, five explicit-end layout cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
+default cases, five explicit-end layout cases, three postfix-suffix cases and the 27
+C01–C27 design cases. Host/canonical/control checks execute
 separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 751 tests with no skips, plus build/type checks.
+verification gate passes 758 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -114,11 +115,12 @@ explicit layout termination, including shared string/if terminator ownership.
   preserve the disambiguation table, defer Unicode casing and UpperSnake binding roles.
 - Implemented grammar diagnostics with found input, active expected form and locations.
   Contextual type-inference diagnostics still depend on milestones 6/7.
-- Extend the shared tree/value/pattern/serialization adapters with distinct postfix
-  expressions. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
-  from the nearest suffix outward. Type-name/head rules apply to every suffix.
-- Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
-  and replace TestFileContent's first/tail workaround once common repetition supports it.
+- Implemented tight postfix suffixes as one character each: T** is (T*)*, T+ wraps
+  like other suffixes, and String?*^! wraps from the nearest suffix outward.
+  Distinct postfix trees versus ordinary application, and T+ as a nonempty-list
+  refinement of T* (TestFileContent first/tail replacement), remain deferred until
+  value/pattern/serialization identity is coherent across adapters. Prefix + and
+  postfix T+ currently share an application tree.
 - Implement explicit layout end ownership and migrate source/host fixtures together.
   Reject missing inner ends; clause continuations belong to one grammar form, not
   unrelated statements. Support strings ending at a dedented clause and a final
@@ -177,12 +179,12 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 133 cases run, including C01–C27 and the explicit-end layout contracts. The
-corpus has 255 passing assertions (70 legacy) and 117 todo expected failures. The
-Widget observation is already an ordinary passing contract. C03's supported Float32
-designation and C19's empty/singleton rest checks have no todo. C27 remains
-exploratory. Current bootstrap observations are explicitly legacy where they depend
-on raw Expression behavior.
+All 136 cases run, including C01–C27, the explicit-end layout contracts and tight
+postfix suffix wrapping. The corpus has 263 passing assertions (70 legacy) and 117
+todo expected failures. The Widget observation is already an ordinary passing
+contract. C03's supported Float32 designation and C19's empty/singleton rest checks
+have no todo. C27 remains exploratory. Current bootstrap observations are
+explicitly legacy where they depend on raw Expression behavior.
 
 The 90 original source cases retain their intended payloads, with inaccurate type
 and expected-spelling assertions fixed. Nine binding/default host tests remain

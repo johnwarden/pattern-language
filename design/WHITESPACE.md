@@ -88,3 +88,9 @@ tests/layout/explicit-ends.test covers EOF, missing nested terminators,
 indentation changes, an expectation borrowing its test's end, and the shared
 string/if terminator. Required infix spacing remains an ordinary check. The cases
 parse source without running println or requiring code.evaluate.
+
+Tight postfix punctuation is one suffix character: T* is a wrap, T * U is infix,
+T** is (T*)*, and T+ parses as the same suffix wrap. tests/layout/postfix-suffixes.test
+covers that wrapping. T+ as a nonempty-list refinement, and a distinct postfix
+tree from prefix + / ordinary application, remain deferred: they need shared
+adapter identity, not a reader-only change.
