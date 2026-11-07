@@ -80,6 +80,23 @@ test("recursive symbolic operators in application heads are structural, not type
     "True",
   );
 });
+test("unquoted expected-grammar sidefix evaluates fields for bindings and arguments", () => {
+  const prelude =
+    'def MyDsl type (:do String :with String)\ndef show(x :: MyDsl) x\nname = "bar"\nx = MyDsl` do "Foo" with "bar"\n';
+  assert.equal(
+    run(prelude + '(y :: MyDsl) = do "Foo" with name\nx == y'),
+    "True",
+  );
+  assert.equal(run(prelude + "show(do \"Foo\" with name) == x"), "True");
+  assert.throws(
+    () => run(prelude + 'do "Foo" with name'),
+    /grammar|syntax|macro/,
+  );
+  assert.throws(
+    () => run(prelude + '(y :: MyDsl) = do "Foo" with $name'),
+    /quotation/,
+  );
+});
 test("ordinary sidefix types quote and destructure without installing a Code keyword", () => {
   const decl =
     "def Entry type (:test (name :: String) :expect (value :: Expression))\n";

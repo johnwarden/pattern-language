@@ -45,6 +45,12 @@ import { valueText, parseValueText } from "./value-text.ts";
 import type { TextDomain } from "./value-text.ts";
 import { Grammar, DEFAULT_GRAMMAR, syntaxGrammars } from "./grammar.ts";
 import {
+  annotatedPatternTypes,
+  elaborateSequenceGrammar,
+  regroupAssignmentLine,
+  sequenceGrammarParts,
+} from "./expected-grammar.ts";
+import {
   LanguageError,
   isCapture,
   isTypeCapture,
@@ -1081,7 +1087,11 @@ export class Interpreter {
       try {
         if (node.kind === "then") result = this.evaluate(node.expression, env);
         else {
-          const values = this.evaluateFields(node.value, env);
+          const values = this.evaluateFields(
+            node.value,
+            env,
+            this.expectedTypesFromPattern(node.pattern, env),
+          );
           const matched = this.matchParameters(node.pattern, values, env);
           // Same block scope deliberately preserves duplicate-name errors and REPL bindings.
           const runtime = [
@@ -1180,6 +1190,7 @@ export class Interpreter {
           }
         },
         repl,
+        (input) => this.completeExpectedGrammarLine(input, env),
       );
       flush();
       if (!local) this.lastTree = tree;
@@ -1565,6 +1576,8 @@ export class Interpreter {
           );
       }
     }
+    if (n.kind === "sequence")
+      throw new LanguageError("unknown or incomplete macro form", n.span);
     if (n.kind !== "apply")
       throw new LanguageError("unresolved syntax reached evaluator");
     if (n.head.kind === "symbol" && !n.head.quoted && n.head.name === "$")
@@ -1674,7 +1687,26 @@ export class Interpreter {
           candidates: methods,
         }
       : single(this.evaluate(n.head, env), "function head");
-    return this.invoke(fn, this.evaluateFields(n.body, env), env);
+    const unique =
+      methods.length === 1 &&
+      methods[0].kind === "closure" &&
+      !methods[0].macro
+        ? methods[0]
+        : undefined;
+    return this.invoke(
+      fn,
+      this.evaluateFields(
+        n.body,
+        env,
+        unique
+          ? this.expectedTypesFromPattern(
+              unique.parameters[0] ?? [],
+              unique.env,
+            )
+          : [],
+      ),
+      env,
+    );
   }
   private snapshot(env: Scope): Scope {
     const copy = new Scope(env.parent);
@@ -1684,7 +1716,49 @@ export class Interpreter {
     copy.runtimeBindings = new Set(env.runtimeBindings);
     return copy;
   }
-  private evaluateFields(xs: Field<Syntax>[], env: Scope): Field<Value>[] {
+  private expectedTypesFromPattern(
+    pattern: Field<Syntax>[],
+    env: Scope,
+  ): (TypeValue | undefined)[] {
+    return annotatedPatternTypes(pattern).length
+      ? pattern.map((field) => {
+          const annotation = binary(field.value, "::");
+          return annotation
+            ? this.typeFromSyntax(annotation[1], env)
+            : undefined;
+        })
+      : [];
+  }
+  private completeExpectedGrammarLine(
+    input: Syntax,
+    env: Scope,
+  ): Syntax | undefined {
+    if (input.kind !== "sequence") return;
+    const regrouped = regroupAssignmentLine(input.items);
+    const assignment = regrouped && operator(regrouped, "=");
+    if (!assignment) return;
+    const types = this.expectedTypesFromPattern(assignment[0], env);
+    if (types.length !== 1 || !types[0] || !sequenceGrammarParts(types[0]))
+      return;
+    return regrouped;
+  }
+  private evaluateExpectedGrammar(
+    n: Syntax,
+    type: TypeValue,
+    env: Scope,
+  ): Field<Value>[] | undefined {
+    const parts = sequenceGrammarParts(type);
+    if (!parts) return;
+    const data = elaborateSequenceGrammar(n, parts, (tree) =>
+      single(this.evaluate(tree, env)),
+    );
+    return data && this.check(type, data, env);
+  }
+  private evaluateFields(
+    xs: Field<Syntax>[],
+    env: Scope,
+    expected: (TypeValue | undefined)[] = [],
+  ): Field<Value>[] {
     const out: Field<Value>[] = [];
     let index = 0,
       named = false;
@@ -1707,7 +1781,10 @@ export class Interpreter {
           throw new LanguageError("spread requires an argument body");
         values = v.body;
       } else {
-        values = this.evaluate(e.value, env);
+        const type = positional(e.label) ? expected[out.length] : undefined;
+        values =
+          (type && this.evaluateExpectedGrammar(e.value, type, env)) ??
+          this.evaluate(e.value, env);
         if (!positional(e.label)) {
           if (values.length !== 1)
             throw new LanguageError(

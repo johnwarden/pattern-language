@@ -432,6 +432,14 @@ export class Grammar {
           end += matches[0].end - 1;
           return { ...field, value: matches[0].fields[0].value };
         }
+        if (v.kind === "sequence") {
+          if (!(v.items[0]?.kind === "symbol" && v.items[0].quoted))
+            return {
+              ...field,
+              value: this.resolveSequence(v, matcher, true),
+            };
+          return { ...field, value: v };
+        }
         const r = this.resolveOperand(
           v,
           mayConsume ? tail : [],
@@ -448,18 +456,23 @@ export class Grammar {
     }
     return { node: n, end };
   }
-  private resolveSequence(n: Syntax, matcher: Matcher<Syntax>): Syntax {
+  private resolveSequence(
+    n: Syntax,
+    matcher: Matcher<Syntax>,
+    nested = false,
+  ): Syntax {
     if (n.kind !== "sequence")
       return this.resolveOperand(n, [], 0, matcher).node;
     const xs = n.items.map((v) => entry(v)),
       matches = this.readForm(xs, 0, matcher).filter(
         (m) => m.end === xs.length,
       );
-    if (matches.length !== 1)
-      throw new LanguageError(
-        matches.length ? "ambiguous macro" : "unknown or incomplete macro form",
-        n.span,
-      );
+    if (matches.length > 1)
+      throw new LanguageError("ambiguous macro", n.span);
+    if (matches.length !== 1) {
+      if (nested) return n;
+      throw new LanguageError("unknown or incomplete macro form", n.span);
+    }
     return matches[0].fields[0].value;
   }
   private arms(
@@ -520,6 +533,7 @@ export class Grammar {
     n: Extract<Syntax, { kind: "block" }>,
     accept: (form: Syntax) => Syntax | void,
     repl = false,
+    complete?: (input: Syntax) => Syntax | undefined,
   ): Syntax {
     const matcher = new Matcher(syntaxAdapter);
     return elaborateBlock(n, {
@@ -527,6 +541,7 @@ export class Grammar {
       accept,
       finish: (lines) => validateLanguageBlock(lines, repl),
       describe: (input) => this.describeForm(input),
+      complete,
     });
   }
   private blockBody(

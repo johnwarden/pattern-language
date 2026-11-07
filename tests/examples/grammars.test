@@ -188,3 +188,16 @@ test "Vertical spreading: TodoList"
 
   (list.todos, (parse(TodoList)(toString(TodoList)(list)) == list))
 end
+
+test "Unquoted expected-grammar DSL"
+  def MyDsl type (:do String :with String)
+  def show(x :: MyDsl) x
+  x = MyDsl` do "Foo" with "bar"
+  name = "bar"
+  (y :: MyDsl) = do "Foo" with name
+
+  assert (x == y)
+  assert (show(do "Foo" with name) == x)
+
+  (x == y)
+end

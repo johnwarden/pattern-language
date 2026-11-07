@@ -109,6 +109,11 @@ from captures. The values and their grammar-directed canonical text omit those
 colons. Supporting this requires expected-grammar propagation and field-expression
 evaluation; a special parser case for annotated bindings would be insufficient.
 
+The bootstrap implements the single-line String-field slice for annotated bindings
+and arguments whose parameter already has that grammar type. Canonical
+`toString :: String`, return positions, indented expected-type layout and further
+Code categories remain later work.
+
 ## Test setup alternatives
 
 Assertions retain their existing todo / legacy behavior. Setup bindings and
