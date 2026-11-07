@@ -91,6 +91,11 @@ of exact label sets. Host tests retain direct complete-pack shape/label coverage
 source tests also check labeled capture, missing labels and exact positional arity.
 No tuple/unit value or new pack representation is introduced.
 
+Use direct subjects such as expect r.w result 3 :: Float. Keep definitions close to
+their uses, put blank lines between tests and logical sections, and avoid numbered
+observation captures. Genuine multiple returns may be destructured into descriptive
+names. Keep legacy/todo counterparts adjacent so their change is easy to review.
+
 A final ordinary argument-pack row can expose already captured values for a playground
 example. It is output, not a check. The example program consists of its setup and
 that final pack; checking each capture does not repeat the original call. Single

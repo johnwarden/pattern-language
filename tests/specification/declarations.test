@@ -11,6 +11,7 @@ test "C16 declarations own accessor products"
       r = (Rect(2, 3) :: Rectangle)
       Rational
     )
+
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     r = (Rect(2, 3) :: Rectangle)
@@ -36,6 +37,7 @@ test "C17 defaults belong to bindings and explicit factories"
       end
       Rectangle
     )
+
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
     def rectangle(w :: Float32, h :: Float32, color: String = "black")
@@ -43,6 +45,7 @@ test "C17 defaults belong to bindings and explicit factories"
     end
     (Rect(2, 3) :: Rectangle)
   error "required color field is absent"
+
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
     def rectangle(w :: Float32, h :: Float32, color: String = "black")
@@ -64,6 +67,7 @@ test "C18 equivalent independently named descriptors interoperate"
       (Some("hello") :: Optional<String>)
     )
     (produced == independent)
+
   todo expect
     produced = (
       type Option<T> concrete :None | Some(T)

@@ -1,20 +1,17 @@
 test "Abstract slots preserve identity"
   n = 3 :: Int
   (x :: Any) = n
+  assert (n == x)
+
   (y :: Int) = x
-  (observed1, observed2, observed3, observed4) =
-    (n == x, x == y, toString(Any)(x), toString(Int)(x))
-  end
-  assert
-    observed1
-  assert
-    observed2
-  legacy expect observed3 result "3 :: Int" :: Expression
-  todo expect observed3 result "3 :: Int" :: String
-  legacy expect observed4 result "3" :: Expression
-  todo expect observed4 result "3" :: String
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4)
+  assert (x == y)
+
+  legacy expect toString(Any)(x) result "3 :: Int" :: Expression
+  todo expect toString(Any)(x) result "3 :: Int" :: String
+  legacy expect toString(Int)(x) result "3" :: Expression
+  todo expect toString(Int)(x) result "3" :: String
+
+  ((n == x), (x == y), toString(Any)(x), toString(Int)(x))
 end
 
 test "Accessor ambiguity"
@@ -41,24 +38,23 @@ test "Function block"
     y = x ^ 2
     y + 1
   end
+
   expect f(3) result 10 :: Int
 end
 
 test "Definitions evaluate their bodies"
   def r :Rect(Number)
   def R type :Rect(Number)
-  (observed1, observed2) =
-    (r, type R)
-  end
+
   legacy expect :Rect(Number) result Rect(Float) :: Expression
   todo expect :Rect(Number) error "no concrete interpretation established"
-  expect observed2 result Type(Rect(Float)) :: Type
-  # Inspect the captured return values.
-  (observed1, observed2)
+  expect (type R) result Type(Rect(Float)) :: Type
+  (r, (type R))
 end
 
 test "Zero results"
   def nothing() ()
+
   assert
     () =
       nothing()
@@ -69,18 +65,15 @@ end
 test "Deferred expected output"
   def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
   expected = ExpectedOutput` (1 / 0) :: MissingType
-  (observed1, observed2) =
-    (expected.e, expected.type)
-  end
-  legacy expect observed1 result (1 / 0) :: Expression
-  legacy expect observed2 result :MissingType :: Expression
-  todo expect observed2 result MissingType :: UpperCamelSymbol
-  # Inspect the captured return values.
-  (observed1, observed2)
+  legacy expect expected.e result (1 / 0) :: Expression
+  legacy expect expected.type result :MissingType :: Expression
+  todo expect expected.type result MissingType :: UpperCamelSymbol
+  (expected.e, expected.type)
 end
 
 test "Ignore named results"
   x = (1, foo: "bar")
+
   legacy expect x result 1 :: Expression
   todo expect x result 1 :: Rational
 end
@@ -88,66 +81,60 @@ end
 test "Narrow an abstract slot"
   (x :: Any) = (3 :: Int)
   (value :: Int) = x
-  (observed1, observed2, observed3) =
-    (value, type Int, value == x)
-  end
-  expect observed1 result 3 :: Int
-  expect observed2 result Int :: Type
-  assert
-    observed3
-  # Inspect the captured return values.
-  (observed1, observed2, observed3)
+
+  expect value result 3 :: Int
+  expect (type Int) result Int :: Type
+
+  assert (value == x)
+
+  (value, (type Int), (value == x))
 end
 
 test "Language as data"
   l = language()
+  assert l .matches languageSchema()
+
   s = toString(Expression)(l)
   r = parse(Expression)(s)
+  assert (r == l)
+
   Language(rules: rules, **) = l
+  legacy expect rules.len result 6 :: Expression
+
   Block(nodes) = parseSyntax(r)("if True 1 else 2")
-  (observed1, observed2, observed3, observed4) =
-    (l .matches languageSchema(), r == l, rules.len, nodes.len)
-  end
-  assert
-    observed1
-  assert
-    observed2
-  legacy expect observed3 result 6 :: Expression
-  legacy expect observed4 result 1 :: Expression
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4)
+  legacy expect nodes.len result 1 :: Expression
+
+  (l .matches languageSchema(), (r == l), rules.len, nodes.len)
 end
 
 test "Match"
   def Option type :None | Some(Int)
+
   legacy expect
     match (Some(3) :: Option)
       :Some(v) -> v.toString
       :None -> ""
     end
-  result
-    "3" :: Expression
+  result "3" :: Expression
+
   todo expect
     match (Some(3) :: Option)
       :Some(v) -> v.toString
       :None -> ""
     end
-  result
-    "3" :: String
+  result "3" :: String
 end
 
 test "Explicit primitive values"
   t = Float
-  (observed1, observed2, observed3, observed4) =
-    (t, Int, Bool, t == (type Number))
-  end
-  expect observed1 result Float :: Type
-  expect observed2 result Int :: Type
-  expect observed3 result Bool :: Type
-  assert
-    observed4
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4)
+
+  expect t result Float :: Type
+  expect Int result Int :: Type
+  expect Bool result Bool :: Type
+
+  assert (t == (type Number))
+
+  (t, Int, Bool, (t == (type Number)))
 end
 
 test "Raw block preserves blank lines and dollars"
@@ -158,8 +145,8 @@ test "Raw block preserves blank lines and dollars"
       Backslashes: \n
 
     end
-  result
-    "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: Expression
+  result "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: Expression
+
   todo expect
     '
       Quotes: " ' `
@@ -167,36 +154,30 @@ test "Raw block preserves blank lines and dollars"
       Backslashes: \n
 
     end
-  result
-    "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: String
+  result "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: String
 end
 
 test "Mutually recursive function definitions"
   def even(n) if n == 0 True else odd(n - 1)
   def odd(n) if n == 0 False else even(n - 1)
-  (observed1, observed2, observed3) =
-    (even(8), odd(7), even(7))
-  end
-  assert
-    observed1
-  assert
-    observed2
-  assert
-    (
-      observed3
-    ) == False
-  # Inspect the captured return values.
-  (observed1, observed2, observed3)
+
+  assert even(8)
+  assert odd(7)
+
+  assert False == (even(7))
+  (even(8), odd(7), even(7))
 end
 
 test "Multiple results"
   def pair(x) (x, x)
   (a, b) = pair(3 :: Int)
+
   expect a + b result 6 :: Int
 end
 
 test "Extra named arguments"
   def f(x) x
+
   legacy expect f(1, foo: "bar") result 1 :: Expression
   todo expect f(1, foo: "bar") result 1 :: Rational
 end
@@ -206,26 +187,25 @@ test "Open structural facet"
   def Rectangular type :Rect(w :: Number, h :: Number, **)
   r = Rect(2, 3, color: "black") :: Colored
   (p :: Rectangular) = r
-  (observed1, observed2, observed3, observed4, observed5, observed6) =
-    (p, p.w, p.h, p == r, toString(Rectangular)(p), parse(Rectangular)(toString(Rectangular)(p)) == r)
-  end
-  expect observed1 result Rect(2, 3, color: "black") :: Colored
-  expect observed2 result 2 :: Float
-  expect observed3 result 3 :: Float
-  assert
-    observed4
+
+  expect p result Rect(2, 3, color: "black") :: Colored
+  expect p.w result 2 :: Float
+  expect p.h result 3 :: Float
+
+  assert (p == r)
   # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
-  legacy expect observed5 result "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: Expression
-  assert
-    observed6
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4, observed5, observed6)
+  legacy expect toString(Rectangular)(p) result "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: Expression
+
+  assert (parse(Rectangular)(toString(Rectangular)(p)) == r)
+
+  (p, p.w, p.h, (p == r), toString(Rectangular)(p), (parse(Rectangular)(toString(Rectangular)(p)) == r))
 end
 
 test "Inspect and rebuild syntax"
   tree = syntaxTree(:(factory(1)(2, color: :Red)))
   Apply(function, arguments) = tree
   changed = Apply(function, [Field("_1", NumberLiteral(3)), Field("color", Name("Red", True))])
+
   legacy expect syntaxExpression(changed) result (factory(1)(3, color: :Red)) :: Expression
 end
 
@@ -233,19 +213,16 @@ test "Abstract slots and ordering"
   def U UnionType(type Int, type String)
   (a :: U) = (99 :: Int)
   (b :: U) = ("0" :: String)
-  (observed1, observed2, observed3, observed4, observed5) =
-    (a, b, a < b, toString(U)(a), parse(U)(toString(U)(a)) == a)
-  end
-  expect observed1 result 99 :: Int
-  expect observed2 result "0" :: String
-  assert
-    observed3
-  legacy expect observed4 result "99" :: Expression
-  todo expect observed4 result "99" :: String
-  assert
-    observed5
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4, observed5)
+
+  expect a result 99 :: Int
+  expect b result "0" :: String
+  assert (a < b)
+  legacy expect toString(U)(a) result "99" :: Expression
+  todo expect toString(U)(a) result "99" :: String
+
+  assert (parse(U)(toString(U)(a)) == a)
+
+  (a, b, (a < b), toString(U)(a), (parse(U)(toString(U)(a)) == a))
 end
 
 test "User-defined if"
@@ -257,18 +234,19 @@ test "User-defined if"
     )
   )
   end
+
   legacy expect
     if True 42 else (1 / 0)
-  result
-    42 :: Expression
+  result 42 :: Expression
+
   todo expect
     if True 42 else (1 / 0)
-  result
-    42 :: Rational
+  result 42 :: Rational
 end
 
 test "Vector"
   def Vector(t :: Type) type [values... :: t*]
   (v :: Vector(Number)) = [1, 2]
+
   expect v result [1, 2] :: Vector(Float)
 end

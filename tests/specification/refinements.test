@@ -5,6 +5,7 @@ test "C07 refinement evidence preserves the base value"
     def keep(x :: NonZero) x
     x = 0.5
     (nonZero(x))
+
   todo assert
     nonZero = n -> (n != 0)
     type NonZero refinement Rational .where nonZero
@@ -13,6 +14,7 @@ test "C07 refinement evidence preserves the base value"
     assert ((nonZero(x)))
     (n :: NonZero) = x
     (n == x)
+
   todo expect
     nonZero = n -> (n != 0)
     type NonZero refinement Rational .where nonZero
@@ -82,6 +84,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+
   todo expect
     nonZero = n -> (n != 0)
     type NonZero refinement Rational .where nonZero
@@ -104,6 +107,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+
   todo expect
     nonZero = n -> (n != 0)
     type NonZero refinement Rational .where nonZero

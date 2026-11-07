@@ -1,13 +1,10 @@
 test "Capture accessors"
   def Rectangle type :Rect(w :: Number, h :: Number)
   r = Rect(3, 4) :: Rectangle
-  (observed1, observed2) =
-    (r.w, w(r))
-  end
-  expect observed1 result 3 :: Float
-  expect observed2 result 3 :: Float
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  expect r.w result 3 :: Float
+  expect w(r) result 3 :: Float
+  (r.w, w(r))
 end
 
 test "Defaults in function arguments"
@@ -15,72 +12,55 @@ test "Defaults in function arguments"
   def Rectangle type :Rect(width :: Int, height :: Int, color: String)
   def colorOf(Rect(w, h, color: String = "black")) color
   raw = Rect(3, 4) :: Plain
-  (observed1, observed2) =
-    (colorOf(raw), raw)
-  end
-  expect observed1 result "black" :: String
-  expect observed2 result Rect(3, 4) :: Plain
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  expect colorOf(raw) result "black" :: String
+  expect raw result Rect(3, 4) :: Plain
+  (colorOf(raw), raw)
 end
 
 test "Exact fields and rest markers"
   def Packet type Rect(Int, Int, Int, color: Symbol, note: String)
   Rect(w, h, ..., color: c, **) = Rect(2, 3, 4, color: :Black, note: "extra") :: Packet
-  (observed1, observed2, observed3) =
-    (w, h, c)
-  end
-  expect observed1 result 2 :: Int
-  expect observed2 result 3 :: Int
-  expect observed3 result Black :: UpperCamelSymbol
-  # Inspect the captured return values.
-  (observed1, observed2, observed3)
+
+  expect w result 2 :: Int
+  expect h result 3 :: Int
+  expect c result Black :: UpperCamelSymbol
+  (w, h, c)
 end
 
 test "Labels containing patterns"
   def Rectangle type Rectangle(Int, Int)
   def area(shape: Rectangle(w, h)) w * h
+
   expect area(shape: (Rectangle(3, 4) :: Rectangle)) result 12 :: Int
 end
 
 test "Named result capture"
   (x, foo: String) = (1, foo: "bar")
-  (observed1, observed2) =
-    (x, foo)
-  end
-  legacy expect observed1 result 1 :: Expression
-  todo expect observed1 result 1 :: Rational
-  expect observed2 result "bar" :: String
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  legacy expect x result 1 :: Expression
+  todo expect x result 1 :: Rational
+  expect foo result "bar" :: String
+  (x, foo)
 end
 
 test "Patterns as values"
   p = type :Pair(Int, Int)
   testPair = matches(Pair(1, 2))
-  (observed1, observed2) =
-    (testPair(p), Pair(1, "x") .matches p)
-  end
-  assert
-    observed1
-  assert
-    (
-      observed2
-    ) == False
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  assert testPair(p)
+
+  assert False == (Pair(1, "x") .matches p)
+  (testPair(p), Pair(1, "x") .matches p)
 end
 
 test "Picture: nested pattern captures"
   def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle(w :: Number, h :: Number))
   p = Picture(color: :Red, shape: Rectangle(3, 4)) :: Picture
-  (observed1, observed2, observed3, observed4) =
-    (p.color, p.w, p.h, type Picture)
-  end
-  expect observed1 result :Red :: (type (:Red | :Black))
-  expect observed2 result 3 :: Float
-  expect observed3 result 4 :: Float
-  expect observed4 result Type(Picture(color: Type(:Black | :Red), shape: Rectangle(Float, Float))) :: Type
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4)
+
+  expect p.color result :Red :: (type (:Red | :Black))
+  expect p.w result 3 :: Float
+  expect p.h result 4 :: Float
+  expect (type Picture) result Type(Picture(color: Type(:Black | :Red), shape: Rectangle(Float, Float))) :: Type
+  (p.color, p.w, p.h, (type Picture))
 end

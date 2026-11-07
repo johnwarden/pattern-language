@@ -10,21 +10,15 @@ test "DSL: Infix syntax and distinct argument packs"
 
   text = toString(ValueExpr)(infix)
   # Surface sugar preserves the application tree, including pack boundaries.
-  (observed1, observed2, observed3, observed4) =
-    (infix == prefix, packed == successive, text, parse(ValueExpr)(text) == infix)
-  end
-  assert
-    observed1
-  assert
-    (
-      observed2
-    ) == False
-  legacy expect observed3 result "a + b" :: Expression
-  todo expect observed3 result "a + b" :: String
-  assert
-    observed4
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4)
+  assert (infix == prefix)
+
+  assert False == (packed == successive)
+  legacy expect text result "a + b" :: Expression
+  todo expect text result "a + b" :: String
+
+  assert (parse(ValueExpr)(text) == infix)
+
+  ((infix == prefix), (packed == successive), text, (parse(ValueExpr)(text) == infix))
 end
 
 test "Sidefix data DSL"
@@ -36,14 +30,11 @@ test "Sidefix data DSL"
     test "Stored test data"
       expect missing(1 / 0) result 3 :: MissingType
   end
-  (observed1, observed2, observed3) =
-    (t.name, t.check.expected.e, t.check.expected.type)
-  end
-  expect observed1 result "Stored test data" :: String
-  legacy expect observed2 result 3 :: Expression
-  legacy expect observed3 result :MissingType :: Expression
-  # Inspect the captured return values.
-  (observed1, observed2, observed3)
+
+  expect t.name result "Stored test data" :: String
+  legacy expect t.check.expected.e result 3 :: Expression
+  legacy expect t.check.expected.type result :MissingType :: Expression
+  (t.name, t.check.expected.e, t.check.expected.type)
 end
 
 test "DSL: Recursive expression grammar"
@@ -56,20 +47,17 @@ test "DSL: Recursive expression grammar"
   # a + b is +(a)(b). The outer head is the application +(a).
   (head :: ValueExpr)(args... :: ValueExpr*) = expression
   (operator :: ValueExpr)(left... :: ValueExpr*) = head
-  (observed1, observed2, observed3, observed4, observed5) =
-    (expression, toString(ValueExpr)(head), toString(ValueExpr*)(args), toString(ValueExpr)(operator), toString(ValueExpr*)(left))
-  end
-  expect observed1 result (a + b) :: Application
-  legacy expect observed2 result "+(a)" :: Expression
-  todo expect observed2 result "+(a)" :: String
-  legacy expect observed3 result "[b]" :: Expression
-  todo expect observed3 result "[b]" :: String
-  legacy expect observed4 result "+" :: Expression
-  todo expect observed4 result "+" :: String
-  legacy expect observed5 result "[a]" :: Expression
-  todo expect observed5 result "[a]" :: String
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4, observed5)
+
+  expect expression result (a + b) :: Application
+  legacy expect toString(ValueExpr)(head) result "+(a)" :: Expression
+  todo expect toString(ValueExpr)(head) result "+(a)" :: String
+  legacy expect toString(ValueExpr*)(args) result "[b]" :: Expression
+  todo expect toString(ValueExpr*)(args) result "[b]" :: String
+  legacy expect toString(ValueExpr)(operator) result "+" :: Expression
+  todo expect toString(ValueExpr)(operator) result "+" :: String
+  legacy expect toString(ValueExpr*)(left) result "[a]" :: Expression
+  todo expect toString(ValueExpr*)(left) result "[a]" :: String
+  (expression, toString(ValueExpr)(head), toString(ValueExpr*)(args), toString(ValueExpr)(operator), toString(ValueExpr*)(left))
 end
 
 test "DSL: Tests with explicit value and type"
@@ -84,17 +72,13 @@ test "DSL: Tests with explicit value and type"
   end
 
   # Inspect the parts; the quoted calculation is never evaluated here.
-  (observed1, observed2, observed3, observed4, observed5) =
-    (t.name, toString(Code)(t.code), t.actual, t.expected.e, t.expected.type)
-  end
-  expect observed1 result "An unevaluated calculation" :: String
-  legacy expect observed2 result "(\n  (1 / 0)\n)" :: Expression
-  todo expect observed2 result "(\n  (1 / 0)\n)" :: String
-  legacy expect observed3 result :result :: Expression
-  legacy expect observed4 result (:a + :b) :: Expression
-  legacy expect observed5 result :MissingType :: Expression
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4, observed5)
+  expect t.name result "An unevaluated calculation" :: String
+  legacy expect toString(Code)(t.code) result "(\n  (1 / 0)\n)" :: Expression
+  todo expect toString(Code)(t.code) result "(\n  (1 / 0)\n)" :: String
+  legacy expect t.actual result :result :: Expression
+  legacy expect t.expected.e result (:a + :b) :: Expression
+  legacy expect t.expected.type result :MissingType :: Expression
+  (t.name, toString(Code)(t.code), t.actual, t.expected.e, t.expected.type)
 end
 
 test "Test DSL with typed Code"
@@ -108,30 +92,25 @@ test "Test DSL with typed Code"
         x + 1
       result 4 :: Int
   end
-  (observed1, observed2, observed3) =
-    (t.name, t.check.expected.e, t.check.expected.type)
-  end
-  expect observed1 result "Typed code body" :: String
-  legacy expect observed2 result 4 :: Expression
-  legacy expect observed3 result Int :: Expression
-  # Inspect the captured return values.
-  (observed1, observed2, observed3)
+
+  expect t.name result "Typed code body" :: String
+  legacy expect t.check.expected.e result 4 :: Expression
+  legacy expect t.check.expected.type result Int :: Expression
+  (t.name, t.check.expected.e, t.check.expected.type)
 end
 
 test "DSL: Symbols and unannotated unions"
   def MathExp unionType Symbol | Number
   (a :: MathExp) = :a
   text = toString(MathExp)(a)
-  (observed1, observed2, observed3) =
-    (a, text, parse(MathExp)(text) == a)
-  end
-  expect observed1 result a :: LowerCamelSymbol
-  legacy expect observed2 result "a" :: Expression
-  todo expect observed2 result "a" :: String
-  assert
-    observed3
-  # Inspect the captured return values.
-  (observed1, observed2, observed3)
+
+  expect a result a :: LowerCamelSymbol
+  legacy expect text result "a" :: Expression
+  todo expect text result "a" :: String
+
+  assert (parse(MathExp)(text) == a)
+
+  (a, text, (parse(MathExp)(text) == a))
 end
 
 test "Vertical spreading: Inspect a nested Body"
@@ -159,19 +138,19 @@ test "Vertical spreading: Inspect a nested Body"
     end
   end
   ((first :: LowerCamelSymbol, second :: LowerCamelSymbol) := (body :: Body)) = binding
-  (observed1, observed2, observed3, observed4, observed5) =
-    (first, second, toString(Binding*)(body.bindings), toString(ValueExpression*)(body.resultExpression), parse(Body)(toString(Body)(body)) == body)
-  end
-  expect observed1 result a :: LowerCamelSymbol
-  expect observed2 result b :: LowerCamelSymbol
-  legacy expect observed3 result "[y = 2, z = 3]" :: Expression
-  todo expect observed3 result "[y = 2, z = 3]" :: String
-  legacy expect observed4 result "[y * z, y]" :: Expression
-  todo expect observed4 result "[y * z, y]" :: String
-  assert
-    observed5
-  # Inspect the captured return values.
-  (observed1, observed2, observed3, observed4, observed5)
+
+  expect first result a :: LowerCamelSymbol
+  expect second result b :: LowerCamelSymbol
+
+  legacy expect toString(Binding*)(body.bindings) result "[y = 2, z = 3]" :: Expression
+
+  todo expect toString(Binding*)(body.bindings) result "[y = 2, z = 3]" :: String
+  legacy expect toString(ValueExpression*)(body.resultExpression) result "[y * z, y]" :: Expression
+  todo expect toString(ValueExpression*)(body.resultExpression) result "[y * z, y]" :: String
+
+  assert (parse(Body)(toString(Body)(body)) == body)
+
+  (first, second, toString(Binding*)(body.bindings), toString(ValueExpression*)(body.resultExpression), (parse(Body)(toString(Body)(body)) == body))
 end
 
 test "Vertical spreading: Two-dimensional lists"
@@ -183,14 +162,12 @@ test "Vertical spreading: Two-dimensional lists"
     1, 2
     3, 4
   ]
-  (observed1, observed2) =
-    (m.values, parse(Matrix)(toString(Matrix)(m)) == m)
-  end
-  expect observed1 result [[1, 2], [3, 4]] :: *(*(Float))
-  assert
-    observed2
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  expect m.values result [[1, 2], [3, 4]] :: *(*(Float))
+
+  assert (parse(Matrix)(toString(Matrix)(m)) == m)
+
+  (m.values, (parse(Matrix)(toString(Matrix)(m)) == m))
 end
 
 test "Vertical spreading: TodoList"
@@ -204,12 +181,10 @@ test "Vertical spreading: TodoList"
       "item 2"
     end
   end
-  (observed1, observed2) =
-    (list.todos, parse(TodoList)(toString(TodoList)(list)) == list)
-  end
-  expect observed1 result ["item 1", "item 2"] :: *(String)
-  assert
-    observed2
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  expect list.todos result ["item 1", "item 2"] :: *(String)
+
+  assert (parse(TodoList)(toString(TodoList)(list)) == list)
+
+  (list.todos, (parse(TodoList)(toString(TodoList)(list)) == list))
 end
