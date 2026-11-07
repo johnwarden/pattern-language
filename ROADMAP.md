@@ -76,7 +76,7 @@ The reference is TypeScript prototype 0.2. **All 127 source cases execute**, wit
 includes 76 playground examples, 14 other conformance cases, nine migrated binding/
 default cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
 separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 730 tests with no skips, plus build/type checks.
+verification gate passes 732 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -112,7 +112,8 @@ explicit layout termination, including shared string/if terminator ownership.
 
 - Implemented ASCII LowerCamelSymbol / UpperCamelSymbol / UpperSnakeSymbol classes;
   preserve the disambiguation table, defer Unicode casing and UpperSnake binding roles.
-- Add actionable grammar diagnostics with found input, expected form and locations.
+- Implemented grammar diagnostics with found input, active expected form and locations.
+  Contextual type-inference diagnostics still depend on milestones 6/7.
 - Extend the shared tree/value/pattern/serialization adapters with distinct postfix
   expressions. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
   from the nearest suffix outward. Type-name/head rules apply to every suffix.
