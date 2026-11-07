@@ -19,6 +19,8 @@ import {
   valRational,
   float64ToRational,
   integerValue,
+  isExactFloat32,
+  isExactFloat64,
 } from "./values.ts";
 import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
@@ -84,11 +86,38 @@ export function valueText(
             }
           : v;
       };
+      const printedNumericDesignates = (value: Value, space: TypeValue) => {
+        const raw = unwrap(value);
+        if (
+          raw.kind !== "literal" ||
+          isRational(raw.value) ||
+          typeof raw.value !== "number"
+        )
+          return true;
+        const parsed = parseNumericSpelling(String(Math.abs(raw.value)));
+        if (!parsed) return false;
+        const sign = raw.value < 0 || Object.is(raw.value, -0) ? -1n : 1n;
+        const rational = { n: sign * parsed.n, d: parsed.d };
+        const numeric = space.numeric ?? space.baseType?.numeric;
+        if (numeric === "float32") return isExactFloat32(rational);
+        if (numeric === "float64") return isExactFloat64(rational);
+        return true;
+      };
       const collect = (original: Value, reconstructed: Value) => {
         const a = concreteSpace(original),
           b = concreteSpace(reconstructed);
-        if (a && b && typeIdentity(a) === typeIdentity(b))
-          implicit.add(original);
+        if (a && b && typeIdentity(a) === typeIdentity(b)) {
+          // Overlapping union members keep `::` unless the printed spelling
+          // designates; live IEEE bits are not a unique spelling.
+          if (
+            !(
+              original.kind === "slot" &&
+              original.type.unionMembers &&
+              !printedNumericDesignates(original, a)
+            )
+          )
+            implicit.add(original);
+        }
         original = unwrap(original);
         reconstructed = unwrap(reconstructed);
         if (
@@ -157,7 +186,7 @@ export function valueText(
     if (v.kind === "slot") {
       const code = unwrap(v.value);
       if (code.kind === "code") return syntax(code);
-      // Unique spellings omit tags; overlapping members keep existing `::`.
+      // Unique printed spellings omit tags; overlapping members keep existing `::`.
       if (v.type.unionMembers && concreteSpace(v) && implicit.has(v))
         return parseExpression(
           valueText(v.value, domain, concreteSpace(v)),

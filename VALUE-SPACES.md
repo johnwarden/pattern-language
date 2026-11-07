@@ -231,7 +231,11 @@ subsets, canonical typed-text support, recursive groups and typed Body inspectio
 Ordinary numeric literals are exact Rationals; Int/Float/Float32/Float64 remain
 concrete carveouts of representable Rationals (with JS payloads in this bootstrap).
 General `UnionType` members may overlap; reconstruction uses existing concrete `::`
-tags. It still admits raw Expression compatibility values, installs accessor products
+tags. Unique-spelling omission follows printed numeric text, not live IEEE bits.
+`toString(EitherFloat)(float64(0.1))` therefore keeps `:: Float64` so parse does not
+read untagged `0.1` as Rational 1/10. Untagged `toString(Float64)` of that payload
+remains JS decimal and is not a claimed round-trip spelling. The bootstrap still admits raw Expression
+compatibility values, installs accessor products
 under the old type forms, and lacks the revised evidence/projection checker. These
 are implementation facts, not new accepted constraints. Details are in
 [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md).
@@ -249,6 +253,6 @@ how all cases execute. Assertions can be ordinary, legacy (must pass until retir
 or todo (must fail; a pass demands removal of todo). These are assertion modifiers,
 not alternate kinds of test or value. Every value expectation checks the observed
 result type as well as value identity. No assertion grants proof facts to another.
-The suite has 128 executing cases, 250 passing assertions (70 legacy), and 116 todo
+The suite has 129 executing cases, 261 passing assertions (54 legacy), and 94 todo
 expected failures. Those outcomes do not implement the revised evidence or projection
 checker. Program CLI output uses the annotated REPL display.

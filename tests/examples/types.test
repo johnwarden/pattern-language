@@ -316,3 +316,11 @@ test "Numeric spaces and conversion"
 
   assert x.toInt == y
 end
+
+test "EitherFloat Float64 reconstruction keeps :: for inexact decimals"
+  def EitherFloat UnionType(type Float32, type Float64)
+  (c :: EitherFloat) = float64(0.1)
+  text = toString(EitherFloat)(c)
+  assert (text == "0.1 :: Float64")
+  assert (parse(EitherFloat)(text) == c)
+end

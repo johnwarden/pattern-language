@@ -40,7 +40,12 @@ implementation restriction; it must not redefine general union membership.
 The current source spelling `unionType A | B` constructs normalized UnionType(A,B)
 from type-valued members. General abstract unions may overlap; unannotated text that
 fits more than one member is ambiguous rather than first-success. Reconstruction uses
-the existing concrete `::` tag. The `unambiguous` qualifier and `type Name abstract`
+the existing concrete `::` tag. Unique-spelling omission follows printed numeric
+text, not live IEEE bits, so `float64(0.1)` under EitherFloat prints `0.1 :: Float64`
+rather than untagged `0.1`. Untagged `0.1` parses as Rational 1/10 and fails;
+the tagged form uses existing `::` reconstruction. Converters and `0f` are not a
+public Float64 payload schema. Untagged `toString(Float64)` of that payload remains
+JS decimal and is not claimed as a round-trip spelling. The `unambiguous` qualifier and `type Name abstract`
 declaration spelling remain unimplemented. Primitive symbol classes and their Symbol
 union work. The exact updated type/generic sugar is not yet implemented.
 

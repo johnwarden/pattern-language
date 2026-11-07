@@ -30,6 +30,17 @@ test("C13 overlap policy: UnionType keeps Float32 versus Float64 members", () =>
     "True",
   );
   assert.match(run(prelude + "toString(EitherFloat)(a)"), /Float32/);
+  assert.equal(
+    run(prelude + '(c :: EitherFloat) = float64(0.1)\ntoString(EitherFloat)(c)'),
+    '"0.1 :: Float64"',
+  );
+  assert.equal(
+    run(
+      prelude +
+        '(c :: EitherFloat) = float64(0.1)\ntext = toString(EitherFloat)(c)\nparse(EitherFloat)(text) == c',
+    ),
+    "True",
+  );
   assert.throws(
     () => run("def U UnionType(type Float32, type Float64)\n(x :: U) = 0.5"),
     /ambiguous/,
