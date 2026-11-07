@@ -37,7 +37,7 @@ try {
       tests.push(...loadTests({ [name]: source }));
     } catch (error) {
       console.error(renderDiagnostic(error));
-      if (!list) failures++;
+      failures++;
     }
   }
   if (!tests.length && !failures) throw new Error("no .test files found");

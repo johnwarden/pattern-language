@@ -84,6 +84,9 @@ test("CLI rejects empty, malformed, and unsupported explicit files", () =>
     const result = invoke(dir);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /E_/);
+    const listed = invoke("--list", dir);
+    assert.equal(listed.status, 1, listed.stderr + listed.stdout);
+    assert.match(listed.stderr, /E_/);
     writeFileSync(file, "");
     assert.equal(invoke(dir).status, 1);
     const other = join(dir, "bad.txt");
