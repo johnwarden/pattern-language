@@ -21,8 +21,9 @@ const some = (answers: Answer[]): Answer =>
 const numeric = new Set(["int64", "float32", "float64"]);
 const symbols = new Set([
   "Symbol",
-  "SentenceCaseSymbol",
-  "TitleCaseSymbol",
+  "LowerCamelSymbol",
+  "UpperCamelSymbol",
+  "UpperSnakeSymbol",
   "PunctuationSymbol",
   "Bool",
 ]);
@@ -78,7 +79,7 @@ export function patternOverlap(left: P, right: P): Answer {
     if (symbols.has(n) && symbols.has(m)) {
       if (n === "Symbol" || m === "Symbol") return "yes";
       if (n === "Bool" || m === "Bool")
-        return [n, m].includes("TitleCaseSymbol") ? "yes" : "no";
+        return [n, m].includes("UpperCamelSymbol") ? "yes" : "no";
       return "no";
     }
     if (

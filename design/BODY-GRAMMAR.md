@@ -155,7 +155,7 @@ binding = DestructuringBinding`
   end
 end
 
-((symbol1 :: SentenceCaseSymbol, symbol2 :: SentenceCaseSymbol) := (body :: Body)) = binding
+((symbol1 :: LowerCamelSymbol, symbol2 :: LowerCamelSymbol) := (body :: Body)) = binding
 
 # symbol1 is the symbol a; symbol2 is the symbol b.
 # body.bindings contains the two typed binding values y = 2 and z = 3.

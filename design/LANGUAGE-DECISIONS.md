@@ -38,7 +38,7 @@ An application has one head and one argument pack. `f(a)(b)` differs from `f(a,b
 
 ### D02. Primitive values and syntax are distinct levels — confirmed direction; lexical details proposed
 
-Different source expressions may evaluate to the same value without being the same syntax tree. Primitive values have intrinsic concrete interpretations: ordinary strings are String, booleans are Bool, numeric literals are Rational, and ordinary quoted symbols have their intrinsic symbol classes. A reserved primitive atom must not simultaneously become an ordinary TitleCaseSymbol merely because colon quotation was used.
+Different source expressions may evaluate to the same value without being the same syntax tree. Primitive values have intrinsic concrete interpretations: ordinary strings are String, booleans are Bool, numeric literals are Rational, and ordinary quoted symbols have their intrinsic symbol classes. A reserved primitive atom must not simultaneously become an ordinary UpperCamelSymbol merely because colon quotation was used.
 
 P proposes self-evaluating `PrimitiveType`, including `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`, with `Type` no longer a reserved primitive atom. This vocabulary is recorded as the proposed primitive representation, not a completed metatype specification. Int/Float families are intended to be definable fixed-precision types rather than primitive numeric atoms.
 
@@ -156,7 +156,7 @@ spelling and complete pack boundaries are checked rather than only their payload
 The cases below are **executed design specifications**, not claims that every future
 rule is implemented. Supported assertions are ordinary checks, retained bootstrap
 observations are legacy, and unfinished contracts carry todo. In particular Widget
-already has TitleCaseSymbol, so that expectation is not todo. Numeric cases assume
+already has UpperCamelSymbol, so that expectation is not todo. Numeric cases assume
 the proposed exact Rational model and finite numeric vocabulary only as future
 contracts. Provisional type/angle/qualifier spellings do not become approved language
 features just because their failing assertions are stored and attempted. C27 remains
@@ -175,7 +175,7 @@ test "C01 intrinsic primitive values"
   todo expect "hello" result "hello" :: String
   legacy expect 5 result 5 :: Expression
   todo expect 5 result 5 :: Rational
-  expect :Widget result Widget :: TitleCaseSymbol
+  expect :Widget result Widget :: UpperCamelSymbol
   legacy expect Bool result Bool :: Type
   todo expect Bool result Bool :: PrimitiveType
   todo expect PrimitiveType result PrimitiveType :: PrimitiveType

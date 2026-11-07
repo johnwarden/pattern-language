@@ -9,9 +9,9 @@ def ValueExpr unionType Atom | Application
 
 test("surface symbols have intrinsic concrete classes", () => {
   for (const [symbol, type] of [
-    [":a", "SentenceCaseSymbol"],
-    [":fooBar", "SentenceCaseSymbol"],
-    [":Rect", "TitleCaseSymbol"],
+    [":a", "LowerCamelSymbol"],
+    [":fooBar", "LowerCamelSymbol"],
+    [":Rect", "UpperCamelSymbol"],
     [":+", "PunctuationSymbol"],
     [":…", "PunctuationSymbol"],
   ]) {
@@ -23,7 +23,7 @@ test("surface symbols have intrinsic concrete classes", () => {
   }
   assert.equal(
     run(
-      "Symbol == (unionType SentenceCaseSymbol | TitleCaseSymbol | PunctuationSymbol)",
+      "Symbol == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)",
     ),
     "True",
   );
@@ -53,7 +53,7 @@ test("unannotated raw union values select and retain exactly one concrete member
     i.inspect(
       i.run("def MathExp unionType Symbol | Number\n(a :: MathExp) = :a\na"),
     ),
-    "a :: SentenceCaseSymbol",
+    "a :: LowerCamelSymbol",
   );
   assert.equal(
     run(

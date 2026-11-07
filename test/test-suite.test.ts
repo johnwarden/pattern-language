@@ -95,18 +95,18 @@ test("expected values are data rather than expressions to evaluate", () => {
 });
 test("each result requires the stated type and canonical data spelling", () => {
   assert.equal(
-    runTest(sample(":Widget", "result Widget :: TitleCaseSymbol")).passed,
+    runTest(sample(":Widget", "result Widget :: UpperCamelSymbol")).passed,
     true,
   );
   const wrongType = runTest(sample(":Widget", "result Widget :: Expression"));
   assert.equal(wrongType.passed, false);
-  assert.match(wrongType.message, /type mismatch.*Expression.*TitleCaseSymbol/);
-  for (const type of ["Expression", "TitleCaseSymbol"]) {
+  assert.match(wrongType.message, /type mismatch.*Expression.*UpperCamelSymbol/);
+  for (const type of ["Expression", "UpperCamelSymbol"]) {
     const quoted = runTest(sample(":Widget", `result :Widget :: ${type}`));
     assert.equal(quoted.passed, false);
     assert.match(
       quoted.message,
-      type === "TitleCaseSymbol"
+      type === "UpperCamelSymbol"
         ? /E_TEST_VALUE_SYNTAX.*write Widget instead of :Widget/
         : /type mismatch/,
     );
@@ -118,7 +118,7 @@ test("one result is required; multiple and labeled returns must be destructured"
   for (const [body, clause] of [
     ["()", "result 1 :: Expression"],
     ["(1, 2)", "result 1 :: Expression"],
-    ["(color: :Red)", "result Red :: TitleCaseSymbol"],
+    ["(color: :Red)", "result Red :: UpperCamelSymbol"],
   ])
     assert.match(
       runTest(sample(body, clause)).message,
@@ -127,7 +127,7 @@ test("one result is required; multiple and labeled returns must be destructured"
   const result = run(`test "Separate fields"
     (n, color: c) = (1, color: :Red)
     legacy expect n result 1 :: Expression
-    expect c result Red :: TitleCaseSymbol
+    expect c result Red :: UpperCamelSymbol
 end`);
   assert.equal(result.passed, true, result.message);
 });
@@ -313,7 +313,7 @@ test("todo assertions actually execute; their language failures produce no diagn
 test("a fulfilled todo fails and asks for removal, including expected-error assertions", () => {
   for (const source of [
     'test "Bool"\n todo assert True\nend',
-    'test "Value"\n todo expect :Widget result Widget :: TitleCaseSymbol\nend',
+    'test "Value"\n todo expect :Widget result Widget :: UpperCamelSymbol\nend',
     'test "Error"\n todo expect missing() error "E_UNBOUND_NAME"\nend',
   ]) {
     const r = run(source);
@@ -417,15 +417,15 @@ test("assert checks the Bool value space rather than a same-spelled constructor"
 });
 test("each expectation has its own actual and expected output", () => {
   const r = run(
-    'test "Outputs"\n legacy expect 1 result 1 :: Expression\n expect :Widget result Widget :: TitleCaseSymbol\nend',
+    'test "Outputs"\n legacy expect 1 result 1 :: Expression\n expect :Widget result Widget :: UpperCamelSymbol\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.deepEqual(
     r.checks.map((c) => c.actual),
-    ["1 :: Expression", "Widget :: TitleCaseSymbol"],
+    ["1 :: Expression", "Widget :: UpperCamelSymbol"],
   );
   assert.deepEqual(
     r.checks.map((c) => c.expected),
-    ["1 :: Expression", "Widget :: TitleCaseSymbol"],
+    ["1 :: Expression", "Widget :: UpperCamelSymbol"],
   );
 });

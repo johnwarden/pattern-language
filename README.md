@@ -9,11 +9,11 @@ interpreter/compiler. The TypeScript implementation is the bootstrap reference.
 
 ## Design and implementation status
 
-The revised value model extends beyond the bootstrap. All **126 source cases run**:
-**227 assertions pass (70 legacy)** and **116 todo assertions fail as expected**.
+The revised value model extends beyond the bootstrap. All **127 source cases run**:
+**247 assertions pass (70 legacy)** and **116 todo assertions fail as expected**.
 A fulfilled todo fails the suite and requests removal of its marker. All 76
 playground examples share this corpus. TypeScript retains host/API/DOM checks. The complete verification gate passes
-729 tests, with no skipped cases; build and type checking also pass.
+730 tests, with no skipped cases; build and type checking also pass.
 
 | Intended contract | Current bootstrap |
 | --- | --- |
@@ -96,7 +96,7 @@ from `tests/examples/`.
 
 ```text
 test "Current and future literal types"
-  expect :Widget result Widget :: TitleCaseSymbol
+  expect :Widget result Widget :: UpperCamelSymbol
   legacy expect 5 result 5 :: Expression
   todo expect 5 result 5 :: Rational
 end
@@ -135,8 +135,13 @@ surface. `just check` is the full CI gate.
 
 ## Run the current bootstrap
 
+Word symbols use the ASCII classes LowerCamelSymbol, UpperCamelSymbol and
+UpperSnakeSymbol. One- and two-letter upper-snake words need a trailing underscore:
+PORT is upper snake, with port / Port as its camel equivalents. Unicode strings are unchanged. The
+possible constant-binding role of upper snake remains a separate design choice.
+
 Node 24 or later executes the TypeScript directly. Programs and REPL entries print
-annotated values, for example `Widget :: TitleCaseSymbol`; --parse prints syntax:
+annotated values, for example `Widget :: UpperCamelSymbol`; --parse prints syntax:
 
 ```sh
 just run demo.pattern

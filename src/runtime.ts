@@ -585,10 +585,12 @@ export class Interpreter {
       String: (v: Value): boolean =>
         v.kind === "literal" && typeof v.value === "string",
       Symbol: (v: Value): boolean => v.kind === "symbol",
-      SentenceCaseSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "SentenceCaseSymbol",
-      TitleCaseSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "TitleCaseSymbol",
+      LowerCamelSymbol: (v: Value): boolean =>
+        v.kind === "symbol" && symbolCategory(v.name) === "LowerCamelSymbol",
+      UpperCamelSymbol: (v: Value): boolean =>
+        v.kind === "symbol" && symbolCategory(v.name) === "UpperCamelSymbol",
+      UpperSnakeSymbol: (v: Value): boolean =>
+        v.kind === "symbol" && symbolCategory(v.name) === "UpperSnakeSymbol",
       PunctuationSymbol: (v: Value): boolean =>
         v.kind === "symbol" && symbolCategory(v.name) === "PunctuationSymbol",
       Expression: (_v: Value): boolean => true,
@@ -636,9 +638,12 @@ export class Interpreter {
       this.primitives.set(name, scope.bindings.get(name) as TypeValue);
     }
     const symbol = this.unionType(
-      ["SentenceCaseSymbol", "TitleCaseSymbol", "PunctuationSymbol"].map(
-        (name) => this.primitives.get(name)!,
-      ),
+      [
+        "LowerCamelSymbol",
+        "UpperCamelSymbol",
+        "UpperSnakeSymbol",
+        "PunctuationSymbol",
+      ].map((name) => this.primitives.get(name)!),
     );
     symbol.name = "Symbol";
     scope.bindings.set("Symbol", symbol);

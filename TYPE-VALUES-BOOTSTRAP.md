@@ -283,7 +283,7 @@ category types remain subject to the general refinement serialization gap.
 
 ## Intrinsic symbols and disjoint type unions
 
-SentenceCaseSymbol, TitleCaseSymbol and PunctuationSymbol are intrinsic classes.
+LowerCamelSymbol, UpperCamelSymbol and PunctuationSymbol are intrinsic classes.
 Symbol is their prelude union. A bare symbol literal receives its natural class;
 its immediate context can interpret it, while a stored typed variable cannot be
 silently converted to a different space. unionType A | B normalizes to UnionType(A,B).

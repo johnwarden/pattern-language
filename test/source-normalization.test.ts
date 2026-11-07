@@ -37,19 +37,17 @@ test("CRLF normalization is one pass and preserves other CR characters", () => {
   assert.equal(block.value, "a\nb");
 });
 
-test("identifier NFC applies to bindings, symbols, labels and interpolation names", () => {
-  assert.equal(run("café = 3\ncafe\u0301"), "3");
-  assert.equal(run(":café == :cafe\u0301"), "True");
-  assert.equal(run('café = "Jo"\n$"Hello, $cafe\u0301"'), '"Hello, Jo"');
-  assert.equal(run("Rect(café: value) = Rect(cafe\u0301: 3)\nvalue"), "3");
-  assert.equal(run("x\u0301 = 2\nx\u0301"), "2");
-  assert.throws(
-    () => parseExpression("{café: 1,cafe\u0301: 2}"),
-    (error: unknown) =>
-      error instanceof LanguageError &&
-      error.diagnostic.code === "E_DUPLICATE_LABEL",
-  );
-  assert.equal(tokenize("cafe\u0301")[0].text, "café");
+test("word symbols are ASCII while Unicode strings retain their contents", () => {
+  for (const source of [
+    "café",
+    "cafe\u0301",
+    ":café",
+    "Rect(café: 3)",
+    '$"Hello, $cafe\u0301"',
+  ])
+    assert.throws(() => parseSurface(source), /ASCII/);
+  assert.equal(tokenize("fooBar")[0].text, "fooBar");
+  assert.equal(run("'café'"), '"café"');
 });
 
 test("NFC never changes literal string content", () => {
@@ -62,7 +60,7 @@ test("NFC never changes literal string content", () => {
 
 test("normalized-source diagnostics keep correct line and column positions", () => {
   assert.throws(
-    () => new Interpreter().run("\uFEFFcafe\u0301 = 1\r\nmissing"),
+    () => new Interpreter().run("\uFEFFname = 1\r\nmissing"),
     (error: unknown) =>
       error instanceof LanguageError &&
       error.diagnostic.primary?.line === 2 &&

@@ -1,0 +1,23 @@
+test "ASCII word symbol classes"
+  expect :a result a :: LowerCamelSymbol
+  expect :ab result ab :: LowerCamelSymbol
+  expect :aB result aB :: LowerCamelSymbol
+  expect :aBc result aBc :: LowerCamelSymbol
+  expect :abC result abC :: LowerCamelSymbol
+  expect :abCd result abCd :: LowerCamelSymbol
+  expect :A result A :: UpperCamelSymbol
+  expect :Ab result Ab :: UpperCamelSymbol
+  expect :AB result AB :: UpperCamelSymbol
+  expect :ABc result ABc :: UpperCamelSymbol
+  expect :AbC result AbC :: UpperCamelSymbol
+  expect :AbCd result AbCd :: UpperCamelSymbol
+  expect :A_ result A_ :: UpperSnakeSymbol
+  expect :AB_ result AB_ :: UpperSnakeSymbol
+  expect :A_B result A_B :: UpperSnakeSymbol
+  expect :A_BC result A_BC :: UpperSnakeSymbol
+  expect :AB_C result AB_C :: UpperSnakeSymbol
+  expect :AB_CD result AB_CD :: UpperSnakeSymbol
+
+  expect :PORT result PORT :: UpperSnakeSymbol
+  expect :ERR_FILE_NOT_FOUND result ERR_FILE_NOT_FOUND :: UpperSnakeSymbol
+end

@@ -309,7 +309,7 @@ test("version-three drafts keep their source and upgrade only the untouched defa
   assert.equal(app.el("result").textContent, "");
   assert.match(app.el("status").textContent!, /disjoint syntax/);
   app.click("run");
-  assert.equal(app.el("result").textContent, "a :: SentenceCaseSymbol");
+  assert.equal(app.el("result").textContent, "a :: LowerCamelSymbol");
   app.dom.window.close();
 });
 test("a corrupt saved draft is not overwritten during mounting", () => {

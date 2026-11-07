@@ -71,12 +71,12 @@ already defined abstract-call semantics, never a source-visible overload generat
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. **All 126 source cases execute**, with
-**227 passing assertions (70 legacy)** and **116 todo expected failures**. The corpus
+The reference is TypeScript prototype 0.2. **All 127 source cases execute**, with
+**247 passing assertions (70 legacy)** and **116 todo expected failures**. The corpus
 includes 76 playground examples, 14 other conformance cases, nine migrated binding/
 default cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
 separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 729 tests with no skips, plus build/type checks.
+verification gate passes 730 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -110,7 +110,7 @@ ASCII symbol, nonempty-list, typed macro, expected-DSL and setup-alternative con
 [WHITESPACE.md](design/WHITESPACE.md) specifies significant whitespace and mandatory
 explicit layout termination, including shared string/if terminator ownership.
 
-- Implement ASCII LowerCamelSymbol / UpperCamelSymbol / UpperSnakeSymbol classes;
+- Implemented ASCII LowerCamelSymbol / UpperCamelSymbol / UpperSnakeSymbol classes;
   preserve the disambiguation table, defer Unicode casing and UpperSnake binding roles.
 - Add actionable grammar diagnostics with found input, expected form and locations.
 - Extend the shared tree/value/pattern/serialization adapters with distinct postfix
@@ -176,7 +176,7 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 126 cases run, including C01–C27. The corpus has 227 passing assertions (70
+All 127 cases run, including C01–C27. The corpus has 247 passing assertions (70
 legacy) and 116 todo expected failures. The Widget observation is already an ordinary
 passing contract. C03's supported Float32 designation and C19's empty/singleton rest
 checks have no todo. C27 remains exploratory. Current bootstrap observations are

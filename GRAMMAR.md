@@ -97,9 +97,11 @@ typed values. Precision families, canonical numeric spelling and rounding edges 
 provisional; IEEE special identities remain deferred. The current parser's ordinary
 number literals still use its bootstrap JS-backed model.
 
-Input removes one leading BOM and normalizes CRLF to LF in one pass. Identifiers
-have NFC identity; string contents are not Unicode-normalized. The fuller identifier
-specification remains deferred.
+Input removes one leading BOM and normalizes CRLF to LF in one pass. Word symbols
+are ASCII LowerCamelSymbol, UpperCamelSymbol or UpperSnakeSymbol. One- and two-letter
+upper-snake words end in _: PORT is upper snake; A_ and AB_ distinguish the short cases. Unicode
+identifier casing and digit-boundary conversion rules remain deferred; string
+contents remain Unicode and are not Unicode-normalized.
 
 Ordinary symbolic literals have intrinsic symbol interpretations. The proposed reserved
 PrimitiveType vocabulary and the decision whether Code rejects redundant primitive
@@ -151,7 +153,7 @@ assertion rows. It is distinct from ordinary value-returning Code bodies:
 
 ```text
 test "Current and future primitives"
-  expect :Widget result Widget :: TitleCaseSymbol
+  expect :Widget result Widget :: UpperCamelSymbol
   legacy expect 5 result 5 :: Expression
   todo expect 5 result 5 :: Rational
 end

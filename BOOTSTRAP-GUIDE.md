@@ -430,9 +430,9 @@ not functions: each arm selects a subset of the scrutinee, binds its captures, a
 evaluates its expression. They share the matcher, without argument construction or
 an independently callable function value. Grouped layout must
 consume all source lines. Ambiguous alternatives propagate as errors rather than
-ordinary mismatches. Identifiers use strict camelCase or TitleCase (single-letter
-type parameters are allowed); acronym runs and underscores are rejected except
-for the wildcard and positional pseudo-names.
+ordinary mismatches. Word symbols use ASCII lower camel, upper camel or upper
+snake. UpperSnake one- and two-letter names require a trailing underscore; underscores
+otherwise separate uppercase words. _ and positional pseudo-names remain reserved.
 
 The shared pattern compiler records which source positions introduce captures,
 including labeled shorthand and positional rest. Declaration validation, accessors,
@@ -931,7 +931,7 @@ inside a test; assertion modifiers cannot be applied to an entire test.
 
 ```text
 test "Current and future primitives"
-  expect :Widget result Widget :: TitleCaseSymbol
+  expect :Widget result Widget :: UpperCamelSymbol
   legacy expect 5 result 5 :: Expression
   todo expect 5 result 5 :: Rational
 end
@@ -957,7 +957,7 @@ expected-type expressions, which resolve before the subject runs. Once pack/type
 checks agree, expected values are interpreted as canonical data, never executed
 to obtain an answer. Actual and expected observed types must be equal; matching a
 payload under a broader type is insufficient. Widget is the correct data spelling
-for the result of :Widget in TitleCaseSymbol. A quoted expected :Widget is rejected
+for the result of :Widget in UpperCamelSymbol. A quoted expected :Widget is rejected
 rather than silently reinterpreted. Bootstrap Expression values keep their existing
 printing rules and are explicitly legacy where their behavior is expected to change.
 
@@ -970,7 +970,7 @@ An empty-return assertion can bind () to the call, then return True. Ordinary pa
 shape and label rules remain covered by host tests. There is no results expectation
 or separate value/type keyword pair. Errors still use expect subject error "reason".
 
-All 126 cases execute: 227 assertions pass (70 legacy) and 116 todos fail as expected.
+All 127 cases execute: 247 assertions pass (70 legacy) and 116 todos fail as expected.
 All 76 playground examples remain standalone programs, with setup and optional final return packs included in their
 editable source. The build embeds source without running it to regenerate expected
 answers. Actual controls exercise every option from fresh/restored sessions, and
@@ -978,7 +978,7 @@ saved drafts retain their storage identity. A bounded source-only reader stores
 future spellings, but execution still uses ordinary parsing. This does not implement
 future types or code.evaluate. See [the suite specification](design/TEST-SUITE.md).
 
-Program and REPL output both use annotated display, for example `Widget :: TitleCaseSymbol`.
+Program and REPL output both use annotated display, for example `Widget :: UpperCamelSymbol`.
 --parse still prints surface syntax. Empty results print (). Every result in a
 multi-result pack is annotated, retaining labels.
 
@@ -987,9 +987,9 @@ grammar, readValue uses the canonical data reader, and call invokes source opera
 with explicit successive packs. These are host APIs alongside evaluateCode; none
 installs source-language eval or a JavaScript escape.
 
-Source now removes one initial BOM, normalizes CRLF to LF once, and NFC-normalizes
-identifier tokens before lookup. String contents receive no Unicode normalization.
-Full identifier rules remain separate work; the string/quotation specification is implemented.
+Source removes one initial BOM and normalizes CRLF to LF once. Word symbols are
+ASCII; Unicode identifier capitalization is deferred. String contents remain Unicode
+and receive no Unicode normalization. The string/quotation specification is implemented.
 
 ## Recursive groups and typed-code inspection
 
@@ -1023,7 +1023,7 @@ records the accepted no-free-variable representation and its remaining mechanism
 ```text
 x = :a
 x
-# a :: SentenceCaseSymbol
+# a :: LowerCamelSymbol
 
 def MathExp unionType Symbol | Number
 (a :: MathExp) = :a
@@ -1031,7 +1031,7 @@ toString(MathExp)(a)
 # "a"
 ```
 
-Symbol is the prelude union of SentenceCaseSymbol, TitleCaseSymbol and
+Symbol is the prelude union of LowerCamelSymbol, UpperCamelSymbol and
 PunctuationSymbol. UnionType members must have disjoint syntax; overlap and
 unsupported proofs reject. Union parsing selects the unique concrete member,
 including in fields/lists, and printing omits redundant union annotations.
