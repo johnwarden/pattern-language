@@ -1,5 +1,9 @@
 # Surface syntax and interpretation boundaries
 
+Accepted extensions and their implementation boundaries are specified in
+[SURFACE-EXTENSIONS.md](design/SURFACE-EXTENSIONS.md). The explicit-delimiter policy
+and survey of significant whitespace are in [WHITESPACE.md](design/WHITESPACE.md).
+
 Updated 7 November 2026. This records shared surface contracts and planned language
 forms. [GRAMMAR-BOOTSTRAP.md](GRAMMAR-BOOTSTRAP.md) is the complete reference for the
 unchanged current parser. Proposed type/generic/numeric forms below are not
