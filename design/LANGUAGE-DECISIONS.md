@@ -231,6 +231,7 @@ test "C04 structured values need a concrete interpretation"
       r = (Rect(2, 2) :: Rectangle)
       Rectangle
     )
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
@@ -238,6 +239,7 @@ test "C04 structured values need a concrete interpretation"
     x = Rect(2, 2)
     x
   error "no concrete interpretation established for Rect(2,2)"
+  end
 end
 ```
 
@@ -252,6 +254,7 @@ test "C05 types are structural values"
     t = Rectangle
     u = concrete Rect(Rational, Rational)
     (t == u)
+  end
 
   todo assert
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
@@ -260,6 +263,7 @@ test "C05 types are structural values"
     assert ((t == u))
     type Box<T> concrete Box(T)
     (Box<String> == (concrete Box(String)))
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
@@ -285,6 +289,7 @@ test "C05 types are structural values"
       Box(text) = b
       String
     )
+  end
 end
 ```
 
@@ -301,6 +306,7 @@ test "C06 equal spellings can belong to different concrete spaces"
     stopped = (:Red :: TicketStatus)
     (red == stopped)
   error "incomparable concrete spaces"
+  end
 end
 ```
 
@@ -314,6 +320,7 @@ test "C07 refinement evidence preserves the base value"
     def keep(x :: NonZero) x
     x = 0.5
     (nonZero(x))
+  end
 
   todo assert
     nonZero = n -> (n != 0)
@@ -323,6 +330,7 @@ test "C07 refinement evidence preserves the base value"
     assert ((nonZero(x)))
     (n :: NonZero) = x
     (n == x)
+  end
 
   todo expect
     nonZero = n -> (n != 0)
@@ -346,6 +354,7 @@ test "C07 refinement evidence preserves the base value"
       assert ((n == x))
       NonZero
     )
+  end
 end
 ```
 
@@ -366,6 +375,7 @@ test "C08 todo assert supplies no refinement evidence"
     end
     unchecked(1)
   error "refinement evidence is missing in unchecked"
+  end
 end
 ```
 
@@ -380,6 +390,7 @@ test "C09 base and refinement overloads overlap"
     def choose(x :: NonZero) "refined"
     choose(1)
   error "overlapping base and refinement overload domains"
+  end
 end
 ```
 
@@ -409,6 +420,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+  end
 
   todo expect
     nonZero = n -> (n != 0)
@@ -432,6 +444,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+  end
 
   todo expect
     nonZero = n -> (n != 0)
@@ -455,6 +468,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+  end
 end
 ```
 
@@ -486,6 +500,7 @@ test "C11 projection is one explicit concrete boundary"
       match s (r :: Rational)
       Rational
     )
+  end
 
   todo expect
     small = n -> (n == 0)
@@ -498,6 +513,7 @@ test "C11 projection is one explicit concrete boundary"
     (direct :: Rational) = w
     direct
   error "ordinary binding does not unwrap Wrapped"
+  end
 
   todo expect
     small = n -> (n == 0)
@@ -510,6 +526,7 @@ test "C11 projection is one explicit concrete boundary"
     match w (direct :: Rational)
     direct
   error "the immediate base of Wrapped is Small"
+  end
 
   todo expect
     small = n -> (n == 0)
@@ -522,6 +539,7 @@ test "C11 projection is one explicit concrete boundary"
     def consume(x :: Rational) x
     consume(w)
   error "dispatch does not unwrap Wrapped"
+  end
 end
 ```
 
@@ -555,6 +573,7 @@ test "C12 designation is recursive only when unambiguous"
       end
       String
     )
+  end
 
   todo expect
     type Option<T> concrete T | :None
@@ -569,6 +588,7 @@ test "C12 designation is recursive only when unambiguous"
     (ambiguous :: Option<Option<String>>) = :None
     ambiguous
   error "None has more than one designation path"
+  end
 
   todo expect
     type Option<T> concrete T | :None
@@ -586,6 +606,7 @@ test "C12 designation is recursive only when unambiguous"
     end
     extract("Hello" :: Option<String>)
   error "String extraction is not guaranteed for every Option<String>"
+  end
 end
 ```
 
@@ -609,6 +630,7 @@ test "C13 abstract union retains overlapping numeric members"
       (b :: EitherFloat) = float64(0.5)
       Float32
     )
+  end
 
   todo expect
     type EitherFloat abstract Float32 | Float64
@@ -624,6 +646,7 @@ test "C13 abstract union retains overlapping numeric members"
       (b :: EitherFloat) = float64(0.5)
       Float64
     )
+  end
 
   todo assert
     type EitherFloat abstract Float32 | Float64
@@ -631,6 +654,7 @@ test "C13 abstract union retains overlapping numeric members"
     (b :: EitherFloat) = float64(0.5)
     text = toString(EitherFloat)(a)
     (parse(EitherFloat)(text) == a)
+  end
 end
 ```
 
@@ -646,6 +670,7 @@ test "C14 unambiguous is a separate grammar requirement"
     type Token unambiguous abstract Rational | String
     (n :: Token) = 0.5
     (parse(Token)(toString(Token)(n)) == n)
+  end
 
   todo expect
     type Token unambiguous abstract Rational | String
@@ -654,6 +679,7 @@ test "C14 unambiguous is a separate grammar requirement"
     type Bad unambiguous abstract Float32 | Float64
     Bad
   error "the same numeric spelling admits more than one interpretation"
+  end
 end
 ```
 
@@ -673,6 +699,7 @@ test "C15 facet intersection preserves concrete identity and fields"
     card = ({width: 0.5, height: 1, color: "blue"} :: Card)
     (view :: ColoredRectangle) = card
     (view == card)
+  end
 
   todo expect
     type Card concrete {width: Float32, height: Float32, color: String}
@@ -696,6 +723,7 @@ test "C15 facet intersection preserves concrete identity and fields"
       assert ((view == card))
       Card
     )
+  end
 end
 ```
 
@@ -715,6 +743,7 @@ test "C16 declarations own accessor products"
       r = (Rect(2, 3) :: Rectangle)
       Rational
     )
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
@@ -722,6 +751,7 @@ test "C16 declarations own accessor products"
     t = concrete Rect(width :: Rational, height :: Rational)
     t
   error "ordinary type construction cannot declare captures/accessors"
+  end
 end
 ```
 
@@ -747,6 +777,7 @@ test "C17 defaults belong to bindings and explicit factories"
       end
       Rectangle
     )
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
@@ -755,6 +786,7 @@ test "C17 defaults belong to bindings and explicit factories"
     end
     (Rect(2, 3) :: Rectangle)
   error "required color field is absent"
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
@@ -764,6 +796,7 @@ test "C17 defaults belong to bindings and explicit factories"
     type Invalid concrete Rect(color: String = "black")
     Invalid
   error "defaults are forbidden in type descriptions"
+  end
 end
 ```
 
@@ -781,6 +814,7 @@ test "C18 equivalent independently named descriptors interoperate"
       (Some("hello") :: Optional<String>)
     )
     (produced == independent)
+  end
 
   todo expect
     produced = (
@@ -828,6 +862,7 @@ test "C18 equivalent independently named descriptors interoperate"
       )
       String
     )
+  end
 end
 ```
 
@@ -847,6 +882,7 @@ test "C19 horizontal rest remains a typed positional list"
       def copy(xs... :: Float32*) ([xs...] :: Float32*)
       Float32*
     )
+  end
 
   expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
@@ -858,6 +894,7 @@ test "C19 horizontal rest remains a typed positional list"
       def copy(xs... :: Float32*) ([xs...] :: Float32*)
       Float32*
     )
+  end
 
   todo expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
@@ -875,6 +912,7 @@ test "C19 horizontal rest remains a typed positional list"
       Packet(first, rest... :: Float32*, color: c, **) = packet
       Float32*
     )
+  end
 
   todo expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
@@ -892,6 +930,7 @@ test "C19 horizontal rest remains a typed positional list"
       Packet(first, rest... :: Float32*, color: c, **) = packet
       String
     )
+  end
 end
 ```
 
@@ -929,6 +968,7 @@ test "C20 row capture and spreading are mirror images"
       rows = x.cells
       Float32**
     )
+  end
 
   todo assert
     type Matrix concrete [
@@ -945,6 +985,7 @@ test "C20 row capture and spreading are mirror images"
       ...
     ] :: Matrix)
     (y == x)
+  end
 
   todo expect
     type Matrix concrete [
@@ -992,6 +1033,7 @@ test "C20 row capture and spreading are mirror images"
       ] :: Matrix)
       Float32**
     )
+  end
 
   todo expect
     type Matrix concrete [
@@ -1039,6 +1081,7 @@ test "C20 row capture and spreading are mirror images"
       ] :: Matrix)
       Float32**
     )
+  end
 
   todo assert
     type Matrix concrete [
@@ -1061,6 +1104,7 @@ test "C20 row capture and spreading are mirror images"
       ()
     ] :: Matrix)
     (empty != oneEmptyRow)
+  end
 end
 ```
 
@@ -1098,6 +1142,7 @@ test "C21 vertical-only capture is a list of items"
       end
       String*
     )
+  end
 end
 ```
 
@@ -1131,6 +1176,7 @@ test "C22 keyword remainder retains its record field types"
       john = ({name: "John", id: 5, age: 48} :: PersonRecord)
       AgeInfo
     )
+  end
 end
 ```
 
@@ -1146,6 +1192,7 @@ test "C23 supported global typed text preserves value identity"
     text = toString(Rectangle)(r)
     restored = parse(Rectangle)(text)
     (restored == r)
+  end
 
   todo assert
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
@@ -1154,6 +1201,7 @@ test "C23 supported global typed text preserves value identity"
     restored = parse(Rectangle)(text)
     assert ((restored == r))
     (toString(Rectangle)(restored) == text)
+  end
 end
 ```
 
@@ -1177,6 +1225,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+  end
 
   todo expect
     def combine(x, y)(z) (x, y, z)
@@ -1192,6 +1241,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+  end
 
   todo expect
     def combine(x, y)(z) (x, y, z)
@@ -1207,6 +1257,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+  end
 
   todo expect
     def combine(x, y)(z) (x, y, z)
@@ -1217,6 +1268,7 @@ test "C24 applications preserve complete successive packs"
     x = ("a", "b")
     x
   error "one capture cannot consume two positional results"
+  end
 end
 ```
 
@@ -1235,6 +1287,7 @@ test "C25 infix operators retain equal precedence"
       def select(a)(b) b
       String
     )
+  end
 end
 ```
 
@@ -1259,6 +1312,7 @@ test "C26 todo assertions execute in isolated scopes"
   expect
     futureLocal()
   error "E_UNBOUND_NAME"
+  end
 
   expect marker result 1 :: Rational
 end
@@ -1275,10 +1329,12 @@ test "C27 candidate Code rejection of redundant primitive quotation"
   todo expect
     :5
   error "primitive quotation is not a Code form"
+  end
 
   todo expect
     :Bool
   error "primitive quotation is not a Code form"
+  end
 end
 ```
 
