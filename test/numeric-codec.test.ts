@@ -10,20 +10,27 @@ import { equal, single } from "../src/values.ts";
  *   0.1 == 0f0.1                                 False   (exact values; pin)
  *   syntaxTree(0.1) == syntaxTree(0f0.1)         True    (silent collapse)
  *   syntaxExpression(syntaxTree(0.1)) == 0.1     False   (round-trip is 0f)
- *   (Code$` $(0.1)) == (Code` 0.1)               True    (do not todo; already true)
+ *   (Code$` $(0.1)) == (Code` 0.1)               True    (live observation; not a contract)
  *   evaluateCode(quote 0.1) vs splice of 0.1     0.1 vs 0x1.999999999999Ap-4
- *   syntaxTree(0x20000000000001)                 NumberLiteral(9007199254740992)
+ *   evaluateCode(splice of 0x20000000000001)     9007199254740992
  *   1 / 3                                        E_VALUE_SERIALIZATION
  *
  * Forbidden: silent collapse, and equal Code that evaluates differently.
+ * Code splice==quote for 0.1 is not an ordinary contract: later honest
+ * inequality or E_VALUE_SERIALIZATION must remain allowed. Splice eval of
+ * 0.1 and of 0x20000000000001 is tracked as expected-failure todos below.
+ *
  * Acceptable adapter outcomes (Jonathan): exact preservation through the codec,
  * or explicit E_VALUE_SERIALIZATION. Do not invent 1/3 fraction spelling, and
  * do not assume NumberLiteral grows a spelling field until that schema choice
  * is decided.
  *
- * Known-bug invariants that currently fail are source `todo` assertions in
- * tests/numeric/codec.test (must fail today; a success asks to remove todo).
- * This host file only pins paths that already hold.
+ * Known-bug syntaxTree invariants that currently fail are source `todo`
+ * assertions in tests/numeric/codec.test. Host splice-eval todos use the same
+ * contract: LanguageError or a failed check is an expected failure; unexpected
+ * success fails with "This assertion now passes; remove todo." Host exceptions
+ * are not swallowed. Node `{ todo: true }` is not used (a later pass would stay
+ * green).
  */
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const quoteEval = (source: string) => {
@@ -31,6 +38,20 @@ const quoteEval = (source: string) => {
   return displayResults(
     interpreter.evaluateCode(single(interpreter.run(source))),
   );
+};
+
+/** Source-suite todo: the check must fail today. */
+const todo = (name: string, fn: () => void) => {
+  test(name, () => {
+    try {
+      fn();
+    } catch (error) {
+      if (error instanceof LanguageError) return;
+      if (error instanceof assert.AssertionError) return;
+      throw error;
+    }
+    assert.fail("This assertion now passes; remove todo.");
+  });
 };
 
 test("exact 0.1 is a different Rational from 0f0.1", () => {
@@ -78,6 +99,10 @@ test("Float64-exact Code splice evaluates the same as the quoted literal", () =>
   assert.equal(displayResults(interpreter.evaluateCode(spliced)), "0.5");
 });
 
-test("Code splice of 0.1 compares equal to the exact source quote", () => {
-  assert.equal(run("(Code$` $(0.1)) == (Code` 0.1)"), "True");
+todo("Code splice of 0.1 evaluates as exact 0.1", () => {
+  assert.equal(quoteEval("Code$` $(0.1)"), "0.1");
+});
+
+todo("Code splice of 0x20000000000001 evaluates exactly", () => {
+  assert.equal(quoteEval("Code$` $(0x20000000000001)"), "9007199254740993");
 });
