@@ -9,15 +9,11 @@ interpreter/compiler. The TypeScript implementation is the bootstrap reference.
 
 ## Design and implementation status
 
-The revised value model extends beyond the bootstrap. **130 source cases run** on
-this layout branch: **249 assertions pass (67 legacy)** and **103 todo assertions
-fail as expected**. C01–C03 in `tests/specification/primitives.test` do not parse
-here (that file is owned by the concurrent Rational stream and still needs inner
-`end`). A fulfilled todo fails the suite and requests removal of its marker. All 76
-playground examples share this corpus. TypeScript retains host/API/DOM checks. Host
-verification on this branch passes **748 tests**, with no skipped cases; build and
-type checking also pass. Full `just test-language` still reports the primitives.test
-parse failure.
+The revised value model extends beyond the bootstrap. All **133 source cases run**:
+**255 assertions pass (70 legacy)** and **117 todo assertions fail as expected**.
+A fulfilled todo fails the suite and requests removal of its marker. All 76
+playground examples share this corpus. TypeScript retains host/API/DOM checks. The complete verification gate passes
+751 tests, with no skipped cases; build and type checking also pass.
 
 | Intended contract | Current bootstrap |
 | --- | --- |
