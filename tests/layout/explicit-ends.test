@@ -55,6 +55,65 @@ test "A final end can close a string and its surrounding if"
   assert parse(Code)(source) .matches Code
 end
 
+test "A nested block with its own aligned end is valid"
+  main = x ->
+    f = y ->
+      y
+    end
+    f(x)
+  end
+
+  expect main(3) result 3 :: Expression
+end
+
+test "Parentheses are not an implicit-dedent escape for a layout block"
+  source = '
+    main = x ->
+      f = y ->
+        y
+      (x)
+    end
+    main
+  end
+
+  expect parse(Code)(source) error "E_BLOCK_END"
+end
+
+test "Grouped parentheses still close without end"
+  f = (
+    1
+  )
+  expect f result 1 :: Expression
+end
+
+test "A match block requires an aligned end"
+  source = '
+    match 1
+      1 -> 2
+      _ -> 0
+  end
+
+  expect parse(Code)(source) error "E_BLOCK_END"
+end
+
+test "A match block with an aligned end is valid"
+  expect
+    match 1
+      1 -> 2
+      _ -> 0
+    end
+  result 2 :: Expression
+  end
+end
+
+test "A closed expectation under a test does not borrow the test end"
+  expect
+    4
+  result
+    4 :: Expression
+  end
+end
+
 test "Removing required infix spaces is an error"
   expect parse(Code)("a+b") error "infix operators require spaces"
 end

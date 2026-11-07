@@ -1,16 +1,27 @@
 test "Tight postfix suffixes wrap one character at a time"
-  assert parse(Code)("Int**") .matches Code
-  assert parse(Code)("String?*^!") .matches Code
-  assert parse(Code)("Int+") .matches Code
-  assert parse(Code)("Int*+") .matches Code
+  assert (parse(Code)("Int**") == parse(Code)("*(*(Int))"))
+  assert (parse(Code)("String?*^!") == parse(Code)("!(^(*(?(String))))"))
+  assert (parse(Code)("Int+") == parse(Code)("+(Int)"))
+  assert (parse(Code)("Int*+") == parse(Code)("+(*(Int))"))
+  expect syntaxTree(:(Int**)) result Apply(Name("*", False), [Field("_1", Apply(Name("*", False), [Field("_1", Name("Int", False))]))]) :: SyntaxNode
+  legacy expect toString(Code)(parse(Code)("Int**")) result "*(*(Int))" :: Expression
+  todo expect toString(Code)(parse(Code)("Int**")) result "*(*(Int))" :: String
 end
 
 test "Tight plus is a suffix; spaced plus remains infix"
   expect parse(Code)("a+b") error "infix operators require spaces"
   assert parse(Code)("a + b") .matches Code
   assert parse(Code)("T * U") .matches Code
+  expect (2 * 3) result 6 :: Expression
+  expect (2 + 3) result 5 :: Expression
 end
 
 test "Bare keyword-rest ** is not rewritten by the suffix rule"
   assert parse(Code)("Rect(w, h, **)") .matches Code
+end
+
+test "Postfix plus does not evaluate as a nonempty-list type"
+  expect Int+ error "E_NO_METHOD"
+  expect ()! error "E_RESERVED_OPERATOR"
+  expect ([1, 2] :: Int*) result [1, 2] :: Int*
 end

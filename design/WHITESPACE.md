@@ -85,9 +85,13 @@ inside a sidefix form stops at that form's clause keyword and may share the
 form's final `end`.
 
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
-indentation changes, an expectation borrowing its test's end, and the shared
-string/if terminator. Required infix spacing remains an ordinary check. The cases
-parse source without running println or requiring code.evaluate.
+indentation changes, an expectation borrowing its test's end, a closed nested
+inner end, grouped parentheses versus a layout block, match termination, a
+closed expect/result under Test layout forms, and the shared string/if
+terminator. Required infix spacing remains an ordinary check. The cases parse
+source without running println or requiring code.evaluate. Host
+test/layout-ends.test.ts also covers a shared string stopping at a custom
+`otherwise` clause.
 
 Tight postfix punctuation is one suffix character: T* is a wrap, T * U is infix,
 T** is (T*)*, and T+ parses as the same suffix wrap. tests/layout/postfix-suffixes.test
