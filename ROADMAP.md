@@ -103,6 +103,32 @@ rewrite their current observations as if all target changes were shipped.
 
 ## Milestones
 
+### Accepted surface and test-runner work
+
+[SURFACE-EXTENSIONS.md](design/SURFACE-EXTENSIONS.md) records the accepted postfix,
+ASCII symbol, nonempty-list, typed macro, expected-DSL and setup-alternative contracts.
+[WHITESPACE.md](design/WHITESPACE.md) specifies significant whitespace and mandatory
+explicit layout termination, including shared string/if terminator ownership.
+
+- Implement ASCII LowerCamelSymbol / UpperCamelSymbol / UpperSnakeSymbol classes;
+  preserve the disambiguation table, defer Unicode casing and UpperSnake binding roles.
+- Add actionable grammar diagnostics with found input, expected form and locations.
+- Extend the shared tree/value/pattern/serialization adapters with distinct postfix
+  expressions. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
+  from the nearest suffix outward. Type-name/head rules apply to every suffix.
+- Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
+  and replace TestFileContent's first/tail workaround once common repetition supports it.
+- Implement explicit layout end ownership and migrate source/host fixtures together.
+  Reject missing inner ends; clause continuations belong to one grammar form, not
+  unrelated statements. Support strings ending at a dedented clause and a final
+  end shared with their containing form. Keep EOF rejection and existing string data.
+- Add legacy/todo setup alternatives from the same incoming scope; do not allow
+  duplicate-name failures or leaked bindings to mask a fulfilled todo.
+
+These are focused slices, not new completed milestones. Postfix value identity and
+transport must be coherent across all common adapters before its syntax is shipped.
+Environment-aware macros belong to 6/7; expected DSL elaboration belongs to 5b.
+
 ### 1–4. Bootstrap foundations — implemented within the boundary above
 
 1. Structural matching/storage/text: exact constructed fields, independent openness,
@@ -195,6 +221,10 @@ merely to satisfy a future assertion.
 
 ### 5b. Grow Body into interpreted Code grammar
 
+Propagate expected grammars through bindings, calls and returns, allowing unquoted
+DSL forms with normally evaluated field expressions. Keep literal keywords quoted
+in grammar patterns and unquoted in grammar-directed data text. Reject ambiguity.
+
 Define useful Code categories as ordinary pattern/grammar types over one stated
 surface representation. Extend the bounded source grammar with functions, control
 forms, matching and complete bodies. Freeze the public raw-tree/typed-code/descriptor
@@ -221,6 +251,13 @@ closed callables transfer independently of host environment identity. Then move 
 execution into the language while preserving the same corpus and assertion modifier semantics.
 
 ### 6. Separate elaboration/preparation from runtime execution
+
+Registered macros consume values of grammar types through expandMacro(env)(form).
+Registration remains explicit; Code categories beyond sidefix may be registered.
+Expose a read-only preparation environment, preserve hygiene/spans, and validate
+contextual constraints after structural selection without predicate-based fallback.
+Environment-dependent refinements require milestone 7's type queries and remain
+preparation-only until portable environment/predicate identity is specified.
 
 Expand registered macros once during preparation, including uncalled function bodies.
 Resolve lexical macro/type dependencies and enforce required-known values. Ordinary
