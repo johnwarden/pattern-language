@@ -26,13 +26,21 @@ try {
     else paths.push(arg);
   }
   const files = collectTestFiles(paths.length ? paths : undefined);
-  const tests = loadTests(files);
-  if (!tests.length) throw new Error("no .test files found");
+  const tests = [];
   let failures = 0,
     passed = 0,
     assertions = 0,
     legacy = 0,
     expectedFailures = 0;
+  for (const [name, source] of Object.entries(files)) {
+    try {
+      tests.push(...loadTests({ [name]: source }));
+    } catch (error) {
+      console.error(renderDiagnostic(error));
+      if (!list) failures++;
+    }
+  }
+  if (!tests.length && !failures) throw new Error("no .test files found");
   for (const value of tests) {
     if (list) {
       const counts = value.steps
