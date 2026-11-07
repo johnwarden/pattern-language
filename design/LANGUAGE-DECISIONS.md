@@ -193,6 +193,7 @@ test "C02 exact Rational literal meanings"
   todo assert
     assert ((0f0.1 != 0.1))
     (0xFp8 == 0b1111p8)
+  end
 end
 ```
 
@@ -209,10 +210,12 @@ test "C03 exact designation differs from rounding"
   todo expect
     (0.1 :: Float32)
   error "not exactly representable as Float32"
+  end
 
   todo expect
     (0.5 :: Int16)
   error "not an integer"
+  end
 end
 ```
 
