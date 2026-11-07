@@ -9,6 +9,7 @@ test "C19 horizontal rest remains a typed positional list"
       def copy(xs... :: Float32*) ([xs...] :: Float32*)
       Float32*
     )
+
   expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
     copy(0.5)
@@ -19,6 +20,7 @@ test "C19 horizontal rest remains a typed positional list"
       def copy(xs... :: Float32*) ([xs...] :: Float32*)
       Float32*
     )
+
   todo expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
@@ -35,6 +37,7 @@ test "C19 horizontal rest remains a typed positional list"
       Packet(first, rest... :: Float32*, color: c, **) = packet
       Float32*
     )
+
   todo expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
@@ -80,6 +83,7 @@ test "C20 row capture and spreading are mirror images"
       rows = x.cells
       Float32**
     )
+
   todo assert
     type Matrix concrete [
       cells... :: Float32**
@@ -95,6 +99,7 @@ test "C20 row capture and spreading are mirror images"
       ...
     ] :: Matrix)
     (y == x)
+
   todo expect
     type Matrix concrete [
       cells... :: Float32**
@@ -141,6 +146,7 @@ test "C20 row capture and spreading are mirror images"
       ] :: Matrix)
       Float32**
     )
+
   todo expect
     type Matrix concrete [
       cells... :: Float32**
@@ -187,6 +193,7 @@ test "C20 row capture and spreading are mirror images"
       ] :: Matrix)
       Float32**
     )
+
   todo assert
     type Matrix concrete [
       cells... :: Float32**

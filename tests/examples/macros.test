@@ -4,45 +4,43 @@ test "Macro-generated local grammar"
     install answer
     answer 42
   end
+
   legacy expect demo() result 42 :: Expression
   todo expect demo() result 42 :: Rational
 end
 
 test "Sidefix macro: choose"
   macro (:choose (c :: Expression) (a :: Expression) (b :: Expression)) Code$` if ($(c)) ($(a)) else ($(b))
+
   legacy expect
     choose True 42 (1 / 0)
-  result
-    42 :: Expression
+  result 42 :: Expression
+
   todo expect
     choose True 42 (1 / 0)
-  result
-    42 :: Rational
+  result 42 :: Rational
 end
 
 test "Code function versus registered macro"
   def twiceCode(e) Code$` $(e) + $(e)
   macro (:twice (e :: Expression)) twiceCode(e)
-  (observed1, observed2) =
-    (twiceCode(2 + 3), (twice (2 + 3)))
-  end
-  expect observed1 result (5 + 5) :: Code
-  legacy expect observed2 result 10 :: Expression
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  expect twiceCode(2 + 3) result (5 + 5) :: Code
+  legacy expect ((twice (2 + 3))) result 10 :: Expression
+  (twiceCode(2 + 3), ((twice (2 + 3))))
 end
 
 test "Sidefix macro: unless"
   macro (:unless (c :: Expression) (v :: Body))
     Code$` if ($(c)) 0 else ($(v))
   end
+
   expect
     unless False
       x = 3 :: Int
       x + 1
     end
-  result
-    4 :: Int
+  result 4 :: Int
 end
 
 test "Typed Code: recursive for each macro"
@@ -68,11 +66,8 @@ test "Typed Code: recursive for each macro"
 
   code = expandFor([:x .:in [1, 2, 3], :y .:in [4, 5, 6]], :(x * y))
   value = for each(x .in [1, 2, 3], y .in [4, 5, 6]) x * y
-  (observed1, observed2) =
-    (code, value)
-  end
-  expect observed1 result (each([1, 2, 3])(x -> each([4, 5, 6])(y -> x * y))) :: Code
-  legacy expect observed2 result [[4, 5, 6], [8, 10, 12], [12, 15, 18]] :: Expression
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  expect code result (each([1, 2, 3])(x -> each([4, 5, 6])(y -> x * y))) :: Code
+  legacy expect value result [[4, 5, 6], [8, 10, 12], [12, 15, 18]] :: Expression
+  (code, value)
 end

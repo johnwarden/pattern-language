@@ -169,6 +169,13 @@ check, while all cases execute; todo markers are removed from already-fulfilled 
 
 ## Result-annotation refactor
 
+The source suite follows the author's direct-check style: numbered observation
+captures are removed, meaningful bindings stay near their uses, and sections/tests
+have blank-line separation. Actual multiple returns retain descriptive captures.
+The assertions and canonical expected payloads are unchanged. Legacy inventory
+subjects and C01–C27 excerpts follow the rewritten subjects; the 76 playground
+programs still use the same source cases and direct final result packs.
+
 The suite uses expect subject result value :: Type. Separate value/type clauses
 and the results pack form were removed. Fifty-seven pack expectations were split:
 each call is destructured once, then each capture has its own result check or

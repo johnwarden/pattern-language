@@ -11,6 +11,7 @@ test "C04 structured values need a concrete interpretation"
       r = (Rect(2, 2) :: Rectangle)
       Rectangle
     )
+
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
     r = (Rect(2, 2) :: Rectangle)
@@ -25,6 +26,7 @@ test "C05 types are structural values"
     t = Rectangle
     u = concrete Rect(Rational, Rational)
     (t == u)
+
   todo assert
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     t = Rectangle
@@ -32,6 +34,7 @@ test "C05 types are structural values"
     assert ((t == u))
     type Box<T> concrete Box(T)
     (Box<String> == (concrete Box(String)))
+
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     t = Rectangle

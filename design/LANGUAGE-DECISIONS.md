@@ -189,8 +189,7 @@ test "C02 exact Rational literal meanings"
   todo expect 0.1 result 0.1 :: Rational
   todo expect 0f0.5 result 0.5 :: Rational
   todo expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
-  todo assert
-    (0f0.1 != 0.1)
+  todo assert (0f0.1 != 0.1)
   todo assert
     assert ((0f0.1 != 0.1))
     (0xFp8 == 0b1111p8)
@@ -210,6 +209,7 @@ test "C03 exact designation differs from rounding"
   todo expect
     (0.1 :: Float32)
   error "not exactly representable as Float32"
+
   todo expect
     (0.5 :: Int16)
   error "not an integer"
@@ -232,6 +232,7 @@ test "C04 structured values need a concrete interpretation"
       r = (Rect(2, 2) :: Rectangle)
       Rectangle
     )
+
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
     r = (Rect(2, 2) :: Rectangle)
@@ -252,6 +253,7 @@ test "C05 types are structural values"
     t = Rectangle
     u = concrete Rect(Rational, Rational)
     (t == u)
+
   todo assert
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     t = Rectangle
@@ -259,6 +261,7 @@ test "C05 types are structural values"
     assert ((t == u))
     type Box<T> concrete Box(T)
     (Box<String> == (concrete Box(String)))
+
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     t = Rectangle
@@ -312,6 +315,7 @@ test "C07 refinement evidence preserves the base value"
     def keep(x :: NonZero) x
     x = 0.5
     (nonZero(x))
+
   todo assert
     nonZero = n -> (n != 0)
     type NonZero refinement Rational .where nonZero
@@ -320,6 +324,7 @@ test "C07 refinement evidence preserves the base value"
     assert ((nonZero(x)))
     (n :: NonZero) = x
     (n == x)
+
   todo expect
     nonZero = n -> (n != 0)
     type NonZero refinement Rational .where nonZero
@@ -405,6 +410,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+
   todo expect
     nonZero = n -> (n != 0)
     type NonZero refinement Rational .where nonZero
@@ -427,6 +433,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+
   todo expect
     nonZero = n -> (n != 0)
     type NonZero refinement Rational .where nonZero
@@ -480,6 +487,7 @@ test "C11 projection is one explicit concrete boundary"
       match s (r :: Rational)
       Rational
     )
+
   todo expect
     small = n -> (n == 0)
     smaller = n -> True
@@ -491,6 +499,7 @@ test "C11 projection is one explicit concrete boundary"
     (direct :: Rational) = w
     direct
   error "ordinary binding does not unwrap Wrapped"
+
   todo expect
     small = n -> (n == 0)
     smaller = n -> True
@@ -502,6 +511,7 @@ test "C11 projection is one explicit concrete boundary"
     match w (direct :: Rational)
     direct
   error "the immediate base of Wrapped is Small"
+
   todo expect
     small = n -> (n == 0)
     smaller = n -> True
@@ -546,6 +556,7 @@ test "C12 designation is recursive only when unambiguous"
       end
       String
     )
+
   todo expect
     type Option<T> concrete T | :None
     (outer :: Option<Option<String>>) = "Hello"
@@ -559,6 +570,7 @@ test "C12 designation is recursive only when unambiguous"
     (ambiguous :: Option<Option<String>>) = :None
     ambiguous
   error "None has more than one designation path"
+
   todo expect
     type Option<T> concrete T | :None
     (outer :: Option<Option<String>>) = "Hello"
@@ -598,6 +610,7 @@ test "C13 abstract union retains overlapping numeric members"
       (b :: EitherFloat) = float64(0.5)
       Float32
     )
+
   todo expect
     type EitherFloat abstract Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
@@ -612,6 +625,7 @@ test "C13 abstract union retains overlapping numeric members"
       (b :: EitherFloat) = float64(0.5)
       Float64
     )
+
   todo assert
     type EitherFloat abstract Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
@@ -633,6 +647,7 @@ test "C14 unambiguous is a separate grammar requirement"
     type Token unambiguous abstract Rational | String
     (n :: Token) = 0.5
     (parse(Token)(toString(Token)(n)) == n)
+
   todo expect
     type Token unambiguous abstract Rational | String
     (n :: Token) = 0.5
@@ -659,6 +674,7 @@ test "C15 facet intersection preserves concrete identity and fields"
     card = ({width: 0.5, height: 1, color: "blue"} :: Card)
     (view :: ColoredRectangle) = card
     (view == card)
+
   todo expect
     type Card concrete {width: Float32, height: Float32, color: String}
     type Rectangular abstract {width: Float32, height: Float32, **}
@@ -700,6 +716,7 @@ test "C16 declarations own accessor products"
       r = (Rect(2, 3) :: Rectangle)
       Rational
     )
+
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     r = (Rect(2, 3) :: Rectangle)
@@ -731,6 +748,7 @@ test "C17 defaults belong to bindings and explicit factories"
       end
       Rectangle
     )
+
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
     def rectangle(w :: Float32, h :: Float32, color: String = "black")
@@ -738,6 +756,7 @@ test "C17 defaults belong to bindings and explicit factories"
     end
     (Rect(2, 3) :: Rectangle)
   error "required color field is absent"
+
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
     def rectangle(w :: Float32, h :: Float32, color: String = "black")
@@ -763,6 +782,7 @@ test "C18 equivalent independently named descriptors interoperate"
       (Some("hello") :: Optional<String>)
     )
     (produced == independent)
+
   todo expect
     produced = (
       type Option<T> concrete :None | Some(T)
@@ -828,6 +848,7 @@ test "C19 horizontal rest remains a typed positional list"
       def copy(xs... :: Float32*) ([xs...] :: Float32*)
       Float32*
     )
+
   expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
     copy(0.5)
@@ -838,6 +859,7 @@ test "C19 horizontal rest remains a typed positional list"
       def copy(xs... :: Float32*) ([xs...] :: Float32*)
       Float32*
     )
+
   todo expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
@@ -854,6 +876,7 @@ test "C19 horizontal rest remains a typed positional list"
       Packet(first, rest... :: Float32*, color: c, **) = packet
       Float32*
     )
+
   todo expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
@@ -907,6 +930,7 @@ test "C20 row capture and spreading are mirror images"
       rows = x.cells
       Float32**
     )
+
   todo assert
     type Matrix concrete [
       cells... :: Float32**
@@ -922,6 +946,7 @@ test "C20 row capture and spreading are mirror images"
       ...
     ] :: Matrix)
     (y == x)
+
   todo expect
     type Matrix concrete [
       cells... :: Float32**
@@ -968,6 +993,7 @@ test "C20 row capture and spreading are mirror images"
       ] :: Matrix)
       Float32**
     )
+
   todo expect
     type Matrix concrete [
       cells... :: Float32**
@@ -1014,6 +1040,7 @@ test "C20 row capture and spreading are mirror images"
       ] :: Matrix)
       Float32**
     )
+
   todo assert
     type Matrix concrete [
       cells... :: Float32**
@@ -1120,6 +1147,7 @@ test "C23 supported global typed text preserves value identity"
     text = toString(Rectangle)(r)
     restored = parse(Rectangle)(text)
     (restored == r)
+
   todo assert
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
     r = (Rect(2, 3) :: Rectangle)
@@ -1150,6 +1178,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+
   todo expect
     def combine(x, y)(z) (x, y, z)
     partial = combine("a", "b")
@@ -1164,6 +1193,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+
   todo expect
     def combine(x, y)(z) (x, y, z)
     partial = combine("a", "b")
@@ -1178,6 +1208,7 @@ test "C24 applications preserve complete successive packs"
       (a, b, c) = partial("c")
       String
     )
+
   todo expect
     def combine(x, y)(z) (x, y, z)
     partial = combine("a", "b")
@@ -1217,18 +1248,19 @@ The first subject denotes `2 * (3 + 4)`. Each ascription is grouped explicitly s
 ```text
 test "C26 todo assertions execute in isolated scopes"
   marker = 1
-  todo assert
-    FuturePredicate(FutureValue)
+
+  todo assert FuturePredicate(FutureValue)
   todo expect FutureSubject() result FutureExpected() :: FutureType
   todo expect
     marker = 2
     def futureLocal() 99
     missing()
-  result
-    0 :: Expression
+  result 0 :: Expression
+
   expect
     futureLocal()
   error "E_UNBOUND_NAME"
+
   legacy expect marker result 1 :: Expression
   todo expect marker result 1 :: Rational
 end
@@ -1245,6 +1277,7 @@ test "C27 candidate Code rejection of redundant primitive quotation"
   todo expect
     :5
   error "primitive quotation is not a Code form"
+
   todo expect
     :Bool
   error "primitive quotation is not a Code form"

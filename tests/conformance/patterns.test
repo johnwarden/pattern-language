@@ -1,28 +1,28 @@
 test "independent captures"
   Pair(x, y) = Pair(1, 2)
-  (observed1, observed2) =
-    (x, y)
-  end
-  legacy expect observed1 result 1 :: Expression
-  todo expect observed1 result 1 :: Rational
-  legacy expect observed2 result 2 :: Expression
-  todo expect observed2 result 2 :: Rational
-  # Inspect the captured return values.
-  (observed1, observed2)
+
+  legacy expect x result 1 :: Expression
+  todo expect x result 1 :: Rational
+  legacy expect y result 2 :: Expression
+  todo expect y result 2 :: Rational
+  (x, y)
 end
 
 test "list rest empty"
   def copy(xs... :: Int*) [xs...] :: Int*
+
   expect copy() result [] :: Int*
 end
 
 test "list rest singleton"
   def copy(xs... :: Int*) [xs...] :: Int*
+
   expect copy(1) result [1] :: Int*
 end
 
 test "single pattern grouping"
   (x) = 1
+
   legacy expect x result 1 :: Expression
   todo expect x result 1 :: Rational
 end
