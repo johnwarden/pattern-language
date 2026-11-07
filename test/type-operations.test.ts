@@ -26,7 +26,7 @@ test("where and matches have no reserved surface syntax", () => {
     const line = tree.lines[0];
     assert.equal(line.kind, "sequence");
     if (line.kind === "sequence") assert.equal(line.items.length, 3);
-    assert.throws(() => run(`a ${name} b`), /does not match the grammar/);
+    assert.throws(() => run(`a ${name} b`), /expected.*registered sidefix/);
   }
   assert.equal(run("where = 7\nmatches = 9\n(where,matches)"), "(7, 9)");
 });

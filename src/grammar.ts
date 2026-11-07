@@ -501,6 +501,21 @@ export class Grammar {
     }
   }
   /** Runtime staging: accept each form before reading the next, with nested bodies deferred. */
+  private describeForm(input: Syntax): string | undefined {
+    const first = input.kind === "sequence" ? input.items[0] : input;
+    const name =
+      first?.kind === "symbol" ? this.keywords.get(first.name) : undefined;
+    const pattern = name && this.ruleSyntax.get(name);
+    if (!pattern) return;
+    return (
+      "incomplete or invalid " +
+      name +
+      "; expected grammar " +
+      pattern.map(normal).join(" ") +
+      "; found " +
+      normal(input)
+    );
+  }
   elaborate(
     n: Extract<Syntax, { kind: "block" }>,
     accept: (form: Syntax) => Syntax | void,
@@ -511,6 +526,7 @@ export class Grammar {
       read: (items, pos) => this.readForm(items, pos, matcher),
       accept,
       finish: (lines) => validateLanguageBlock(lines, repl),
+      describe: (input) => this.describeForm(input),
     });
   }
   private blockBody(
@@ -522,6 +538,7 @@ export class Grammar {
       read: (items, pos) => this.readForm(items, pos, matcher),
       accept: (line) => this.registerDefinition(line),
       finish: (lines) => validateLanguageBlock(lines, repl),
+      describe: (input) => this.describeForm(input),
     });
   }
   registerDefinition(line: Syntax): void {

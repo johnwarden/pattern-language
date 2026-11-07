@@ -1,4 +1,4 @@
-import { LanguageError, operator, isName } from "./syntax.ts";
+import { LanguageError, operator, isName, normal } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import type { Match } from "./pattern.ts";
 
@@ -8,6 +8,8 @@ export interface BlockElaboration {
   /** Runs before the next form is recognized; may extend the scoped grammar. */
   accept(form: Syntax): Syntax | void;
   finish?(forms: Syntax[]): void;
+  /** Context supplied by the active grammar, including user-defined forms. */
+  describe?(input: Syntax): string | undefined;
 }
 
 /** Interpret surface lines in order, allowing clauses to cross line boundaries. */
@@ -28,11 +30,22 @@ export function elaborateBlock(
     const matches = context
       .read(items, pos)
       .filter((match) => match.end > pos && boundaries.has(match.end));
-    if (matches.length !== 1)
+    if (matches.length !== 1) {
+      const end = [...boundaries].find((boundary) => boundary > pos)!;
+      const input: Syntax = {
+        kind: "sequence",
+        items: items.slice(pos, end).map((f) => f.value),
+      };
+      const found = normal(input);
       throw new LanguageError(
-        matches.length ? "ambiguous form" : "form does not match the grammar",
+        matches.length
+          ? "ambiguous form: " + found
+          : (context.describe?.(input) ??
+              "expected a complete expression or registered sidefix grammar form; found " +
+                found),
         items[pos].value.span,
       );
+    }
     const match = matches[0];
     if (match.fields.length !== 1)
       throw new LanguageError(

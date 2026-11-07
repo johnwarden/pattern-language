@@ -77,6 +77,6 @@ test("elaboration rejects non-progressing recognizers", () => {
         ],
         accept() {},
       }),
-    /does not match/,
+    /expected.*registered sidefix/,
   );
 });
