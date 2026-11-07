@@ -29,6 +29,15 @@ the old error conditions. The source corpus also checks exact full packs.
 
 ## Retained and deferred coverage
 
+[The legacy inventory](LEGACY-ASSERTIONS.md) accounts for every remaining legacy
+assertion. Of the original 139, 69 are now ordinary checks: defaults, concrete
+accessor results, structural equality/round trips and pack distinctions were not
+obsolete behavior. Arithmetic/rest/default examples now establish concrete types
+when their purpose does not depend on raw Expression fallback. Forty-five new
+todo assertions accompany settled changes, giving 48 paired legacy assertions.
+The remaining 22 have explicit unresolved decisions, checked against the corpus.
+No failing placeholder is substituted for an unspecified target result.
+
 | Area | Current home and reason |
 | --- | --- |
 | Pattern metadata, compiler captures, hygiene and cross-context grammar maps | test/pattern-bindings.test.ts; mixed language/host invariants are retained intact |
@@ -167,7 +176,7 @@ predicate assertion. Empty returns use an explicit destructuring assertion. Host
 coverage retains exact complete-pack label/arity observations rather than assuming
 separate checks prove every pack property.
 
-The same 126 cases execute, with 227 passing assertions (139 legacy) and 71 todo
+The same 126 cases execute, with 227 passing assertions (70 legacy) and 116 todo
 expected failures. Higher assertion counts reflect split checks, not additional
 language features. All 76 examples remain runnable; final ordinary packs expose
 already captured results. Strict type/data checks and assertion-level modifiers are

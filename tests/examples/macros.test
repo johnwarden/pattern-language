@@ -5,6 +5,7 @@ test "Macro-generated local grammar"
     answer 42
   end
   legacy expect demo() result 42 :: Expression
+  todo expect demo() result 42 :: Rational
 end
 
 test "Sidefix macro: choose"
@@ -13,6 +14,10 @@ test "Sidefix macro: choose"
     choose True 42 (1 / 0)
   result
     42 :: Expression
+  todo expect
+    choose True 42 (1 / 0)
+  result
+    42 :: Rational
 end
 
 test "Code function versus registered macro"
@@ -21,7 +26,7 @@ test "Code function versus registered macro"
   (observed1, observed2) =
     (twiceCode(2 + 3), (twice (2 + 3)))
   end
-  legacy expect observed1 result (5 + 5) :: Code
+  expect observed1 result (5 + 5) :: Code
   legacy expect observed2 result 10 :: Expression
   # Inspect the captured return values.
   (observed1, observed2)
@@ -31,13 +36,13 @@ test "Sidefix macro: unless"
   macro (:unless (c :: Expression) (v :: Body))
     Code$` if ($(c)) 0 else ($(v))
   end
-  legacy expect
+  expect
     unless False
-      x = 3
+      x = 3 :: Int
       x + 1
     end
   result
-    4 :: Expression
+    4 :: Int
 end
 
 test "Typed Code: recursive for each macro"
@@ -66,7 +71,7 @@ test "Typed Code: recursive for each macro"
   (observed1, observed2) =
     (code, value)
   end
-  legacy expect observed1 result (each([1, 2, 3])(x -> each([4, 5, 6])(y -> x * y))) :: Code
+  expect observed1 result (each([1, 2, 3])(x -> each([4, 5, 6])(y -> x * y))) :: Code
   legacy expect observed2 result [[4, 5, 6], [8, 10, 12], [12, 15, 18]] :: Expression
   # Inspect the captured return values.
   (observed1, observed2)

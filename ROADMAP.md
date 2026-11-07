@@ -72,11 +72,11 @@ already defined abstract-call semantics, never a source-visible overload generat
 ## What is implemented now
 
 The reference is TypeScript prototype 0.2. **All 126 source cases execute**, with
-**227 passing assertions (139 legacy)** and **71 todo expected failures**. The corpus
+**227 passing assertions (70 legacy)** and **116 todo expected failures**. The corpus
 includes 76 playground examples, 14 other conformance cases, nine migrated binding/
 default cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
 separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 725 tests with no skips, plus build/type checks.
+verification gate passes 729 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -150,8 +150,8 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 126 cases run, including C01–C27. The corpus has 227 passing assertions (139
-legacy) and 71 todo expected failures. The Widget observation is already an ordinary
+All 126 cases run, including C01–C27. The corpus has 227 passing assertions (70
+legacy) and 116 todo expected failures. The Widget observation is already an ordinary
 passing contract. C03's supported Float32 designation and C19's empty/singleton rest
 checks have no todo. C27 remains exploratory. Current bootstrap observations are
 explicitly legacy where they depend on raw Expression behavior.
@@ -166,6 +166,12 @@ corpus, including their shared setup and optional displayed return pack. CLI pro
 [TEST-MIGRATION.md](design/TEST-MIGRATION.md) maps coverage. **5a.2 is next**: implement
 approved value-model slices, remove fulfilled todo markers and explicitly retire
 legacy assertions as their compatibility requirements end.
+
+Every remaining legacy assertion is accounted for in
+[LEGACY-ASSERTIONS.md](design/LEGACY-ASSERTIONS.md): 48 have executable same-subject
+todo replacements, and 22 await a stated design decision. Stable checks are ordinary
+assertions. The inventory is checked against the suite, and companion todos do not
+remove supported playground programs.
 
 ### 5a.2. Align the bootstrap with the revised value model — staged after suite support
 

@@ -118,6 +118,8 @@ expect subject result expected :: Type, assert, and expect subject error "reason
 Expected results are data, not expressions to execute. Todo assertions run and must
 fail; an unexpected success requires removing todo. Legacy assertions must pass
 until explicitly retired. Do not generate expected values from current outputs.
+Pair each legacy assertion with a same-subject todo, or record the unresolved
+replacement in design/LEGACY-ASSERTIONS.md. Supported behavior uses ordinary checks.
 
 Use the common pattern compiler/matcher and source schemas. Preserve complete
 argument-pack semantics and canonical printing, including spaces after commas.

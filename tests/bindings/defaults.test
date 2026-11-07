@@ -14,8 +14,10 @@ test "Declarations cannot rewrite symbolic construction"
   (observed1, observed2) =
     (Rect(2, 3), Rectangle(2, 3))
   end
-  legacy expect observed1 result Rect(2, 3) :: Expression
-  legacy expect observed2 result Rectangle(2, 3) :: Expression
+  legacy expect Rect(2, 3) result Rect(2, 3) :: Expression
+  todo expect Rect(2, 3) error "no concrete interpretation established"
+  legacy expect Rectangle(2, 3) result Rectangle(2, 3) :: Expression
+  todo expect Rectangle(2, 3) error "no concrete interpretation established"
   (observed3, observed4) =
     (Rect(2, 3) .matches (type Plain), Rect(2, 3) .matches (type Rectangle))
   end
@@ -28,13 +30,14 @@ test "Declarations cannot rewrite symbolic construction"
 end
 
 test "Destructuring defaults bind captures without adding fields"
-  raw = Rect(2, 3)
+  def Plain type Rect(Int, Int)
+  raw = Rect(2, 3) :: Plain
   Rect(w, h, color: c :: String = "black") = raw
   (observed1, observed2) =
     (raw, c)
   end
-  legacy expect observed1 result Rect(2, 3) :: Expression
-  legacy expect observed2 result "black" :: String
+  expect observed1 result Rect(2, 3) :: Plain
+  expect observed2 result "black" :: String
   (size: Int, color: String = "black") = (size: 3)
   (observed3, observed4) =
     (size, color)
@@ -44,19 +47,21 @@ test "Destructuring defaults bind captures without adding fields"
 end
 
 test "Named and anonymous parameter defaults share binding semantics"
+  def Plain type R()
   def f(R(color: String = "black")) color
-  raw = R()
+  raw = R() :: Plain
   (observed1, observed2) =
     (f(raw), raw)
   end
-  legacy expect observed1 result "black" :: String
-  legacy expect observed2 result R() :: Expression
+  expect observed1 result "black" :: String
+  expect observed2 result R() :: Plain
   g = (color: c :: String = "black") -> c
   expect g() result "black" :: String
 end
 
 test "Match defaults preserve the scrutinee"
-  raw = R()
+  def Plain type R()
+  raw = R() :: Plain
   color =
     match raw
       R(color: c :: String = "black") -> c
@@ -65,8 +70,8 @@ test "Match defaults preserve the scrutinee"
   (observed1, observed2) =
     (raw, color)
   end
-  legacy expect observed1 result R() :: Expression
-  legacy expect observed2 result "black" :: String
+  expect observed1 result R() :: Plain
+  expect observed2 result "black" :: String
   # Inspect the captured return values.
   (observed1, observed2)
 end

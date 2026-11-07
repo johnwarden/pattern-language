@@ -27,7 +27,7 @@ export interface TestCase {
   fileValue: Value;
   body: Syntax;
   steps: TestStep[];
-  /** Executable editor source for one non-todo expectation and its setup. */
+  /** Executable editor source for supported checks/output, excluding todo operands. */
   source: string;
   program: boolean;
 }
@@ -334,19 +334,16 @@ class TestReader {
         );
       ids.add(id);
       const steps = this.steps(body);
-      const assertions = steps.filter(isAssertion);
-      const output = steps.at(-1)?.kind === "output";
+      // A future assertion accompanies an executable example; it is not part of
+      // that example's program. Todo-only cases still have no runnable example.
+      const supported = steps.filter((step) => step.mode !== "todo");
+      const assertions = supported.filter(isAssertion);
+      const output = supported.at(-1)?.kind === "output";
       const singleProgram =
-        assertions.length === 1 &&
-        assertions[0] === steps.at(-1) &&
-        assertions[0].mode !== "todo";
-      const program =
-        singleProgram ||
-        (output &&
-          assertions.length > 0 &&
-          assertions.every((s) => s.mode !== "todo"));
+        assertions.length === 1 && assertions[0] === supported.at(-1);
+      const program = singleProgram || (output && assertions.length > 0);
       const source = program
-        ? steps
+        ? supported
             .filter((step) =>
               output ? step.kind === "setup" || step.kind === "output" : true,
             )
