@@ -1,7 +1,7 @@
 test "An indented function cannot terminate at EOF"
   source = "def f(x)\n  x"
 
-  todo expect parse(Code)(source) error "E_BLOCK_END"
+  expect parse(Code)(source) error "E_BLOCK_END"
 end
 
 test "A nested block needs its own aligned end"
@@ -14,7 +14,7 @@ test "A nested block needs its own aligned end"
     end
   end
 
-  todo expect parse(Code)(source) error "E_BLOCK_END"
+  expect parse(Code)(source) error "E_BLOCK_END"
 
   moved = '
     main = do
@@ -25,7 +25,7 @@ test "A nested block needs its own aligned end"
     end
   end
 
-  todo expect parse(Code)(moved) error "E_BLOCK_END"
+  expect parse(Code)(moved) error "E_BLOCK_END"
 end
 
 test "An expectation cannot borrow its enclosing test's end"
@@ -39,7 +39,7 @@ test "An expectation cannot borrow its enclosing test's end"
     end
   end
 
-  todo expect parse(Code)(source) error "E_BLOCK_END"
+  expect parse(Code)(source) error "E_BLOCK_END"
 end
 
 test "A final end can close a string and its surrounding if"
@@ -52,7 +52,7 @@ test "A final end can close a string and its surrounding if"
     s
   end
 
-  todo assert parse(Code)(source) .matches Code
+  assert parse(Code)(source) .matches Code
 end
 
 test "Removing required infix spaces is an error"

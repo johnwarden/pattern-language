@@ -1,5 +1,6 @@
 import { LanguageError, normal, syntaxKey } from "./syntax.ts";
-import { parseSurface } from "./parser.ts";
+import { parseSurface, type LayoutForms } from "./parser.ts";
+import { Grammar, DEFAULT_GRAMMAR } from "./grammar.ts";
 import type { Syntax } from "./syntax.ts";
 import {
   valSymbol,
@@ -13,8 +14,14 @@ import { typeData } from "./type-data.ts";
 import { primitiveNames } from "./primitive-names.ts";
 
 /** Remove only the program reader's outer wrapper, never a quoted block itself. */
+let codeLayoutForms: LayoutForms | undefined;
+function forms(): LayoutForms {
+  return (codeLayoutForms ??= new Grammar(DEFAULT_GRAMMAR).layoutForms());
+}
 export function readCode(source: string): Syntax {
-  let tree = parseSurface(source, "serialized code");
+  let tree = parseSurface(source, "serialized code", {
+    layoutForms: forms(),
+  });
   if (tree.kind === "block" && tree.lines.length === 1) {
     tree = tree.lines[0];
     if (tree.kind === "sequence" && tree.items.length === 1)

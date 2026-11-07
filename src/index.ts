@@ -6,6 +6,7 @@ export {
 } from "./runtime.ts";
 export { Grammar, DEFAULT_GRAMMAR } from "./grammar.ts";
 export { parseSurface, parseExpression } from "./parser.ts";
+export type { ParseSurfaceOptions, LayoutForms } from "./parser.ts";
 export { normal, LanguageError } from "./syntax.ts";
 export { Matcher, Mismatch } from "./pattern.ts";
 export type { Syntax, Field } from "./syntax.ts";

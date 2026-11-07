@@ -338,7 +338,9 @@ export class Interpreter {
     sourceName = "program",
   ): Field<Value>[] {
     return this.transaction((env) => {
-      const tree = parseSurface(source, sourceName);
+      const tree = parseSurface(source, sourceName, {
+        layoutForms: this.grammar.layoutForms(),
+      });
       return this.evaluateBlock(tree, env, false, mode === "repl");
     });
   }

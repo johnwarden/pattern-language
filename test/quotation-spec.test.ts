@@ -167,7 +167,7 @@ test("sidefix data uses the same outer interpolation pass through a Code field",
   const i = new Interpreter();
   i.run("def QuotedTest type (:test (name :: String) (code :: Code))", "repl");
   const source =
-    'name = "Jim"\nt = QuotedTest$`\n  test "staging"\n    name = "Jo"\n    $"Hello, $$name"\nend\nt.code';
+    'name = "Jim"\nt = QuotedTest$`\n  test "staging"\n    name = "Jo"\n    $"Hello, $$name"\n  end\nend\nt.code';
   assert.equal(
     displayResults(i.evaluateCode(single(i.run(source)))),
     '"Hello, Jo"',

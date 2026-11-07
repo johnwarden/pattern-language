@@ -15,10 +15,12 @@ test "Sidefix macro: choose"
   legacy expect
     choose True 42 (1 / 0)
   result 42 :: Expression
+  end
 
   todo expect
     choose True 42 (1 / 0)
   result 42 :: Rational
+  end
 end
 
 test "Code function versus registered macro"
@@ -41,6 +43,7 @@ test "Sidefix macro: unless"
       x + 1
     end
   result 4 :: Int
+  end
 end
 
 test "Typed Code: recursive for each macro"

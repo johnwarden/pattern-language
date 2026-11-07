@@ -11,6 +11,7 @@ test "C04 structured values need a concrete interpretation"
       r = (Rect(2, 2) :: Rectangle)
       Rectangle
     )
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
@@ -18,6 +19,7 @@ test "C04 structured values need a concrete interpretation"
     x = Rect(2, 2)
     x
   error "no concrete interpretation established for Rect(2,2)"
+  end
 end
 
 test "C05 types are structural values"
@@ -26,6 +28,7 @@ test "C05 types are structural values"
     t = Rectangle
     u = concrete Rect(Rational, Rational)
     (t == u)
+  end
 
   todo assert
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
@@ -34,6 +37,7 @@ test "C05 types are structural values"
     assert ((t == u))
     type Box<T> concrete Box(T)
     (Box<String> == (concrete Box(String)))
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
@@ -59,6 +63,7 @@ test "C05 types are structural values"
       Box(text) = b
       String
     )
+  end
 end
 
 test "C06 equal spellings can belong to different concrete spaces"
@@ -69,4 +74,5 @@ test "C06 equal spellings can belong to different concrete spaces"
     stopped = (:Red :: TicketStatus)
     (red == stopped)
   error "incomparable concrete spaces"
+  end
 end

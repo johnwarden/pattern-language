@@ -1,5 +1,11 @@
 import { Interpreter } from "./runtime.ts";
-import { parseSurface, parseTestSource } from "./parser.ts";
+import {
+  layoutFormsFromBlock,
+  mergeLayoutForms,
+  parseSurface,
+  parseTestSource,
+} from "./parser.ts";
+import { DEFAULT_GRAMMAR, Grammar } from "./grammar.ts";
 import { normal, LanguageError } from "./syntax.ts";
 import type { Field, Syntax, Span } from "./syntax.ts";
 import { dataSyntax, codeSource } from "./syntax-values.ts";
@@ -59,6 +65,11 @@ export interface TestReport {
 }
 const problem = (message: string, tree?: Syntax, code = "E_TEST_EXPECTATION") =>
   new LanguageError(message, tree?.span, { code, phase: "parse" });
+const codeLayoutForms = new Grammar(DEFAULT_GRAMMAR).layoutForms();
+const testLayoutForms = mergeLayoutForms(
+  codeLayoutForms,
+  layoutFormsFromBlock(parseSurface(TEST_SCHEMA, "test schema")),
+);
 const asType = (value: Value): TypeValue => {
   const raw = unwrap(value);
   if (raw.kind !== "type")
@@ -344,7 +355,9 @@ class TestReader {
     return result;
   }
   file(file: string, source: string): TestCase[] {
-    const tree = parseTestSource(source, file);
+    const tree = parseTestSource(source, file, {
+      layoutForms: testLayoutForms,
+    });
     if (tree.kind !== "block" || !tree.lines.length)
       throw problem(
         "a .test file requires one or more test blocks",
@@ -431,7 +444,11 @@ export function loadTests(files: Record<string, string>): TestCase[] {
 
 function execute(interpreter: Interpreter, tree: Syntax): Field<Value>[] {
   // The source-only reader must not make unsupported syntax executable.
-  parseSurface(testSourceText(tree), tree.span?.source?.name ?? "test subject");
+  parseSurface(
+    testSourceText(tree),
+    tree.span?.source?.name ?? "test subject",
+    { layoutForms: codeLayoutForms },
+  );
   const codeType = asType(single(interpreter.run("Code")));
   const block =
     tree.kind === "block"
@@ -461,7 +478,9 @@ function expectedData(
   const canonical = scalarString(
     single(interpreter.call("toString", singleton(type), singleton(value))),
   );
-  const printed = normal(one(parseSurface(canonical)));
+  const printed = normal(
+    one(parseSurface(canonical, "program", { layoutForms: codeLayoutForms })),
+  );
   if (text !== printed)
     throw problem(
       "expected values use data syntax; write " +
@@ -480,6 +499,7 @@ function expectedResult(
   parseSurface(
     testSourceText(step.expected!),
     step.expected!.span?.source?.name ?? "expected result",
+    { layoutForms: codeLayoutForms },
   );
   return {
     value: step.expected!,

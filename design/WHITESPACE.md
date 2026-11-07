@@ -78,16 +78,13 @@ fixity and literal-content distinctions visible in the grammar.
 
 ## Bootstrap boundary
 
-The current layout reader still accepts implicit dedent for some blocks, including
-test expectation operands. Its explicit-end check is currently limited to indented
-typed quotes. The strict ownership rule above is an implementation milestone, not
-a claim that these cases already reject. The existing host suite must be migrated
-with the reader; a test-only wrapper or a hardcoded list of clause keywords would
-not satisfy this requirement.
+Layout-introduced blocks require an aligned `end`. Clause continuations come from
+the active grammar's sidefix keywords, not a hardcoded `else` list. A missing
+closure is `E_BLOCK_END`. Indented typed quotes still use `E_QUOTE_END`. A string
+inside a sidefix form stops at that form's clause keyword and may share the
+form's final `end`.
 
-The executable future contracts in tests/layout/explicit-ends.test cover EOF,
-missing nested terminators, indentation changes, an expectation borrowing its
-test's end, and the shared string/if terminator. E_BLOCK_END is the specified
-diagnostic for a missing layout closure. These remain todo assertions until the
-reader owns each terminator explicitly; required infix spacing already passes.
-The cases parse source without running println or requiring code.evaluate.
+tests/layout/explicit-ends.test covers EOF, missing nested terminators,
+indentation changes, an expectation borrowing its test's end, and the shared
+string/if terminator. Required infix spacing remains an ordinary check. The cases
+parse source without running println or requiring code.evaluate.
