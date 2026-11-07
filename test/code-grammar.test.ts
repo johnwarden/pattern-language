@@ -228,6 +228,17 @@ test("facet inspection interprets captures without rewriting Code", () => {
     ),
     "True",
   );
+  assert.throws(
+    () =>
+      run(
+        "def NumericCall type :f(x :: Float32,**)\nc = Code` f(1.2345678912)\n(p :: NumericCall) = c",
+      ),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /exactly representable|expected Float32|expected NumericCall/.test(
+        e.message,
+      ),
+  );
 });
 
 test("Code scalar patterns and scoped facet accessors use the shared matcher", () => {

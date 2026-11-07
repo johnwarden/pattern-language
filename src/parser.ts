@@ -809,8 +809,10 @@ export function parseSurface(source: string, sourceName = "program"): Syntax {
   return readSurface(source, sourceName);
 }
 /** Source-only reader for future specifications, not executable Code.
- * Numeric spellings remain inert NumericSource data; angles are structural packs.
- * The test runner reparses active operands with the ordinary language reader.
+ * This specification reader still materializes numeric spellings as NumericSource
+ * data and angles as structural packs. Ordinary parseSurface / execution interprets
+ * those spellings as exact Rational values; the test runner reparses active operands
+ * with the ordinary language reader.
  */
 export function parseTestSource(
   source: string,

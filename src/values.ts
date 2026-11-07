@@ -186,6 +186,23 @@ export function isExactFloat32(r: Rational): boolean {
   const back = float32ToRational(x);
   return back.n * r.d === back.d * r.n;
 }
+export function isExactFloat64(r: Rational): boolean {
+  const x = rationalToNumber(r);
+  if (!Number.isFinite(x)) return false;
+  const back = float64ToRational(x);
+  return back.n * r.d === back.d * r.n;
+}
+/** NumberLiteral still stores a JS Float payload; keep the exact Float64 bits when the Rational is representable, plus the source spelling for print. */
+export function rationalLiteralParts(r: Rational): {
+  value: number;
+  spelling: string;
+} {
+  const spelling = formatRational(r);
+  const x = rationalToNumber(r);
+  if (Number.isFinite(x) && isExactFloat64(r)) return { value: x, spelling };
+  const asNumber = Number(spelling);
+  return { value: asNumber, spelling };
+}
 export function compareRationals(a: Rational, b: Rational): number {
   const left = a.n * b.d,
     right = b.n * a.d;

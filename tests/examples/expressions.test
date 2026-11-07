@@ -35,8 +35,8 @@ end
 
 test "Function block"
   def f(x :: Int)
-    y = x ^ 2
-    y + 1
+    y = x ^ (2 :: Int)
+    y + (1 :: Int)
   end
 
   expect f(3) result 10 :: Int

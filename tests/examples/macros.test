@@ -33,7 +33,7 @@ test "Sidefix macro: unless"
   expect
     unless False
       x = 3 :: Int
-      x + 1
+      x + (1 :: Int)
     end
   result 4 :: Int
 end

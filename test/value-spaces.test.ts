@@ -157,14 +157,14 @@ test("refinement failures and arithmetic mismatches report errors", () => {
 test("a failed refinement does not suppress a different union alternative", () => {
   assert.equal(
     run(
-      "def Small (type Int) .where (x -> x < 5)\ndef Choice type Small | :Other\n:Other :: Choice",
+      "def Small (type Int) .where (x -> x < (5 :: Int))\ndef Choice type Small | :Other\n:Other :: Choice",
     ),
     ":Other",
   );
   assert.throws(
     () =>
       run(
-        "def Small (type Int) .where (x -> x < 5)\ndef Large (type Int) .where (x -> x >= 5)\ndef Choice UnionType(type Small,type Large)\n9 :: Choice",
+        "def Small (type Int) .where (x -> x < (5 :: Int))\ndef Large (type Int) .where (x -> x >= (5 :: Int))\ndef Choice UnionType(type Small,type Large)\n9 :: Choice",
       ),
     /same concrete space/,
   );

@@ -103,6 +103,10 @@ test("row reconstruction retains numeric interpretation through serialization", 
     ),
     '([[3.140000104904175, 1]], "[\\n  (3.140000104904175, 1)\\n]", True)',
   );
+  rejects(
+    "def Matrix type [\n xs... :: Float32**\n ...\n]\n(m :: Matrix) = [\n 3.14, 1\n]",
+    "E_PATTERN_MISMATCH",
+  );
 });
 
 test("the playground Body case uses the published source grammar", () => {

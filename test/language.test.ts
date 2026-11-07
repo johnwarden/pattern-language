@@ -152,6 +152,32 @@ const failures: [string, string, RegExp][] = [
     "def R type :Rect(w :: Int)\ndef S type :Rect(w :: Int)\nr = (Rect(3) :: R) :: S\nr.w",
     /same structural identity/,
   ],
+  [
+    "interpretation equality original Int/Rational",
+    "def R type :Rect(w :: Int)\nr = Rect(3) :: R\nr == Rect(3)",
+    /different concrete types cannot be compared/,
+  ],
+  [
+    "mixed Int plus unannotated Rational",
+    "(3 :: Int) + 1",
+    /same concrete numeric type/,
+  ],
+  ["inexact Float designation", "0.1 :: Float", /not exactly representable as Float/],
+  [
+    "inexact Number designation",
+    "0.1 :: Number",
+    /not exactly representable as Float/,
+  ],
+  [
+    "mixed Float32 plus unannotated Rational",
+    "float32(0.5) + 0.5",
+    /same concrete numeric type/,
+  ],
+  [
+    "mixed Float32 equals unannotated Rational",
+    "float32(0.5) == 0.5",
+    /different concrete types cannot be compared/,
+  ],
   ["nonproductive recursion", "def Loop type Loop\n1 :: Loop", /nonproductive/],
   ["program final binding", "x = 1", /must end with a result/],
   [
@@ -650,7 +676,7 @@ test("callable variables compete with accessor methods", () => {
 
 test("direct calls select the only matching callable across namespaces", () => {
   assert.equal(
-    run('def f(x :: Number) x + 1\nf = (x :: String) -> x\n(f(2),f("hi"))'),
+    run('def f(x :: Number) x + (1 :: Number)\nf = (x :: String) -> x\n(f(2),f("hi"))'),
     '(3, "hi")',
   );
   assert.equal(run("def f(x) x + 1\nf = 99\n(f,f(2))"), "(99, 3)");

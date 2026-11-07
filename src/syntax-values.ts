@@ -8,7 +8,7 @@ import {
   syntaxOrigins,
   concreteSpace,
   isRational,
-  formatRational,
+  rationalLiteralParts,
 } from "./values.ts";
 import type { Value } from "./values.ts";
 import { typeData } from "./type-data.ts";
@@ -137,15 +137,11 @@ export function dataSyntax(value: Value): Syntax {
     return { kind: "symbol", name: v.name, quoted: false };
   if (v.kind === "literal") {
     if (isRational(v.value)) {
-      const spelling = formatRational(v.value);
-      const asNumber = Number(spelling);
+      const parts = rationalLiteralParts(v.value);
       return {
         kind: "literal",
-        value:
-          Number.isFinite(asNumber) && String(asNumber) === spelling
-            ? asNumber
-            : 0,
-        spelling,
+        value: parts.value,
+        spelling: parts.spelling,
       };
     }
     return { kind: "literal", value: v.value };
@@ -179,15 +175,16 @@ export function literalSyntax(value: Value): Syntax {
   let expression: Syntax;
   if (raw.kind === "literal") {
     if (isRational(raw.value)) {
-      const spelling = formatRational(raw.value);
-      const negative = spelling.startsWith("-");
-      const body = spelling.slice(negative ? 1 : 0);
-      const asNumber = Number(body);
+      const magnitude =
+        raw.value.n < 0n
+          ? { n: -raw.value.n, d: raw.value.d }
+          : raw.value;
+      const parts = rationalLiteralParts(magnitude);
+      const negative = raw.value.n < 0n;
       const node: Syntax = {
         kind: "literal",
-        value:
-          Number.isFinite(asNumber) && String(asNumber) === body ? asNumber : 0,
-        spelling: body,
+        value: parts.value,
+        spelling: parts.spelling,
       };
       expression = negative
         ? {

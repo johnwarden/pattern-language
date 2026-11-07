@@ -14,7 +14,7 @@ import {
   syntaxOrigins,
   equal,
   isRational,
-  formatRational,
+  rationalLiteralParts,
   parseNumericSpelling,
   valRational,
   float64ToRational,
@@ -240,15 +240,11 @@ export function valueText(
     if (v.kind === "type") return typeSyntax(v, root && expandRootType);
     if (v.kind === "literal") {
       if (isRational(v.value)) {
-        const spelling = formatRational(v.value);
-        const asNumber = Number(spelling);
+        const parts = rationalLiteralParts(v.value);
         return {
           kind: "literal",
-          value:
-            Number.isFinite(asNumber) && String(asNumber) === spelling
-              ? asNumber
-              : 0,
-          spelling,
+          value: parts.value,
+          spelling: parts.spelling,
         };
       }
       return { kind: "literal", value: v.value };

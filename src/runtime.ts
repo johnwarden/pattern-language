@@ -81,10 +81,11 @@ import {
   asRational,
   integerValue,
   isExactFloat32,
+  isExactFloat64,
+  rationalLiteralParts,
   parseNumericSpelling,
   rationalFromSyntax,
   rationalToNumber,
-  formatRational,
   isRational,
   addRationals,
   subRationals,
@@ -588,11 +589,11 @@ export class Interpreter {
       Rational: (v: Value): boolean => !!asRational(v),
       Number: (v: Value): boolean => {
         const r = asRational(v);
-        return !!r && Number.isFinite(rationalToNumber(r));
+        return !!r && isExactFloat64(r);
       },
       Num: (v: Value): boolean => {
         const r = asRational(v);
-        return !!r && Number.isFinite(rationalToNumber(r));
+        return !!r && isExactFloat64(r);
       },
       Int: (v: Value): boolean => {
         const r = asRational(v);
@@ -627,16 +628,15 @@ export class Interpreter {
         v.kind === "symbol" && ["True", "False"].includes(v.name),
       Float: (v: Value): boolean => {
         const r = asRational(v);
-        return !!r && Number.isFinite(rationalToNumber(r));
+        return !!r && isExactFloat64(r);
       },
       Float64: (v: Value): boolean => {
         const r = asRational(v);
-        return !!r && Number.isFinite(rationalToNumber(r));
+        return !!r && isExactFloat64(r);
       },
       Float32: (v: Value): boolean => {
         const r = asRational(v);
-        if (!r) return false;
-        return Number.isFinite(Math.fround(rationalToNumber(r)));
+        return !!r && isExactFloat32(r);
       },
       Int64: (v: Value): boolean => {
         const r = asRational(v);
@@ -821,7 +821,6 @@ export class Interpreter {
           name,
           [1, 1],
           ([a, b]) => {
-            [a, b] = this.alignNumeric(a, b);
             const space = concreteSpace(a) ?? concreteSpace(b);
             const other = concreteSpace(b);
             if (
@@ -871,7 +870,6 @@ export class Interpreter {
       scope.bindings.set(
         name,
         this.native(name, [1, 1], ([a, b]) => {
-          [a, b] = this.alignNumeric(a, b);
           const c =
             name === "==" || name === "!=" ? equal(a, b) : compare(a, b);
           const yes =
@@ -1356,20 +1354,16 @@ export class Interpreter {
               const magnitude = asRational(raw);
               const negative = !!magnitude && magnitude.n < 0n;
               if (negative) {
-                const abs = formatRational({
+                const parts = rationalLiteralParts({
                   n: -magnitude.n,
                   d: magnitude.d,
                 });
-                const asNumber = Number(abs);
                 literal = apply(
                   symbol("negate"),
                   packOf({
                     kind: "literal",
-                    value:
-                      Number.isFinite(asNumber) && String(asNumber) === abs
-                        ? asNumber
-                        : 0,
-                    spelling: abs,
+                    value: parts.value,
+                    spelling: parts.spelling,
                   }),
                 );
               }
@@ -3458,21 +3452,21 @@ export class Interpreter {
   private ascribeRational(value: Value): Field<Value>[] {
     return this.check(this.primitives.get("Rational")!, value);
   }
-  private alignNumeric(a: Value, b: Value): [Value, Value] {
-    const sa = concreteSpace(a),
-      sb = concreteSpace(b);
-    const carveout = (t: TypeValue | undefined) =>
-      !!t?.numeric && t.numeric !== "rational";
-    if (sa && sb && typeIdentity(sa) !== typeIdentity(sb)) {
-      if (sa.numeric === "rational" && carveout(sb))
-        return [single(this.check(sb, a)), b];
-      if (sb.numeric === "rational" && carveout(sa))
-        return [a, single(this.check(sa, b))];
-    } else if (sa && !sb && carveout(sa) && asRational(b))
-      return [a, single(this.check(sa, b))];
-    else if (sb && !sa && carveout(sb) && asRational(a))
-      return [single(this.check(sb, a)), b];
-    return [a, b];
+  private requireExactNumericDesignation(type: TypeValue, value: Value) {
+    const numeric = type.numeric ?? type.baseType?.numeric;
+    if (numeric !== "float32" && numeric !== "float64") return;
+    const target = type.baseType ?? type;
+    const prior = concreteSpace(value);
+    if (prior && typeIdentity(prior) === typeIdentity(target)) return;
+    const r = asRational(value);
+    if (!r) return;
+    const exact =
+      numeric === "float32" ? isExactFloat32(r) : isExactFloat64(r);
+    if (!exact)
+      throw new LanguageError(
+        "not exactly representable as " +
+          (numeric === "float32" ? "Float32" : target.name),
+      );
   }
   private numericPayload(type: TypeValue, value: Value): Value {
     const r = asRational(value);
@@ -3482,12 +3476,16 @@ export class Interpreter {
       return valLiteral(Math.fround(rationalToNumber(r)));
     }
     if (type.numeric === "int64") {
-      if (!r || r.d !== 1n)
-        throw new LanguageError("expected a number");
+      if (!r || r.d !== 1n) throw new LanguageError("expected a number");
       return valLiteral(Number(r.n));
     }
-    if (type.numeric === "float64")
-      return r ? valLiteral(rationalToNumber(r)) : unwrap(value);
+    if (type.numeric === "float64") {
+      if (!r || !isExactFloat64(r))
+        throw new LanguageError(
+          "not exactly representable as " + (type.baseType ?? type).name,
+        );
+      return valLiteral(rationalToNumber(r));
+    }
     if (type.numeric === "rational") {
       if (!r) throw new LanguageError("expected a number");
       return valRational(r.n, r.d);
@@ -3495,6 +3493,7 @@ export class Interpreter {
     return unwrap(value);
   }
   private check(type: TypeValue, value: Value, env?: Scope): Field<Value>[] {
+    this.requireExactNumericDesignation(type, value);
     try {
       return this.interpretMatch(
         this.typePattern(type, !!env),
