@@ -38,8 +38,7 @@ end
 test "Named result capture"
   (x, foo: String) = (1, foo: "bar")
 
-  legacy expect x result 1 :: Expression
-  todo expect x result 1 :: Rational
+  expect x result 1 :: Rational
   expect foo result "bar" :: String
   (x, foo)
 end

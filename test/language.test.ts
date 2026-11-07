@@ -76,7 +76,7 @@ const cases: [string, string, string][] = [
   ],
   [
     "interpretation equality",
-    "def R type :Rect(w :: Int)\nr = Rect(3) :: R\nr == Rect(3)",
+    "def R type :Rect(w :: Int)\nr = Rect(3) :: R\nr == (Rect(3) :: R)",
     "True",
   ],
   ["structural ordering", "Rect(1,2) < Rect(1,3)", "True"],

@@ -132,8 +132,10 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
       kind = "op";
       text = c;
     } else if (
-      options.specification &&
-      /^(?:0[fFxXbB]|[0-9][0-9_]*_)/.test(source.slice(i))
+      (options.specification
+        ? /^(?:0[fFxXbB]|[0-9][0-9_]*_)/
+        : /^(?:0[fFxXbB])/)
+        .test(source.slice(i))
     ) {
       const digits = "[0-9](?:_?[0-9])*";
       const hex = "[0-9a-fA-F](?:_?[0-9a-fA-F])*";

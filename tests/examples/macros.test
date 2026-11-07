@@ -5,18 +5,13 @@ test "Macro-generated local grammar"
     answer 42
   end
 
-  legacy expect demo() result 42 :: Expression
-  todo expect demo() result 42 :: Rational
+  expect demo() result 42 :: Rational
 end
 
 test "Sidefix macro: choose"
   macro (:choose (c :: Expression) (a :: Expression) (b :: Expression)) Code$` if ($(c)) ($(a)) else ($(b))
 
-  legacy expect
-    choose True 42 (1 / 0)
-  result 42 :: Expression
-
-  todo expect
+  expect
     choose True 42 (1 / 0)
   result 42 :: Rational
 end
@@ -26,7 +21,7 @@ test "Code function versus registered macro"
   macro (:twice (e :: Expression)) twiceCode(e)
 
   expect twiceCode(2 + 3) result (5 + 5) :: Code
-  legacy expect ((twice (2 + 3))) result 10 :: Expression
+  expect ((twice (2 + 3))) result 10 :: Rational
   (twiceCode(2 + 3), ((twice (2 + 3))))
 end
 

@@ -41,7 +41,12 @@ export type Syntax =
     }
   | { kind: "template"; parts: TextPart[]; reader?: Syntax; span?: Span }
   | { kind: "symbol"; name: string; quoted: boolean; span?: Span }
-  | { kind: "literal"; value: string | number; span?: Span }
+  | {
+      kind: "literal";
+      value: string | number;
+      spelling?: string;
+      span?: Span;
+    }
   | { kind: "apply"; head: Syntax; body: Field<Syntax>[]; span?: Span }
   | { kind: "pack"; body: Field<Syntax>[]; span?: Span }
   | { kind: "sequence"; items: Syntax[]; span?: Span }
@@ -277,7 +282,7 @@ export function normal(n: Syntax, indent = 0): string {
     case "symbol":
       return (n.quoted ? ":" : "") + n.name;
     case "literal": {
-      if (typeof n.value === "number") return String(n.value);
+      if (typeof n.value === "number") return n.spelling ?? String(n.value);
       return stringSource(n.value, indent);
     }
     case "pack":

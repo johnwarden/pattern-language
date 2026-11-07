@@ -284,7 +284,7 @@ test("nested type boundaries round trip with their concrete interpretations", ()
   assert.equal(
     displayResults(
       second.run(
-        "t = parse(Type)(text)\n(x :: t) = (Circle(1.2) :: (type :Circle(Float32)))\n(parse(t)(toString(t)(x)) == x,toString(Type)(t) == text)",
+        "t = parse(Type)(text)\n(x :: t) = (Circle(0.5) :: (type :Circle(Float32)))\n(parse(t)(toString(t)(x)) == x,toString(Type)(t) == text)",
       ),
     ),
     "(True, True)",

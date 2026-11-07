@@ -7,6 +7,8 @@ import {
   unwrap,
   syntaxOrigins,
   concreteSpace,
+  isRational,
+  formatRational,
 } from "./values.ts";
 import type { Value } from "./values.ts";
 import { typeData } from "./type-data.ts";
@@ -133,7 +135,21 @@ export function dataSyntax(value: Value): Syntax {
   if (v.kind === "type") return dataSyntax(typeData(v));
   if (v.kind === "symbol")
     return { kind: "symbol", name: v.name, quoted: false };
-  if (v.kind === "literal") return { kind: "literal", value: v.value };
+  if (v.kind === "literal") {
+    if (isRational(v.value)) {
+      const spelling = formatRational(v.value);
+      const asNumber = Number(spelling);
+      return {
+        kind: "literal",
+        value:
+          Number.isFinite(asNumber) && String(asNumber) === spelling
+            ? asNumber
+            : 0,
+        spelling,
+      };
+    }
+    return { kind: "literal", value: v.value };
+  }
   if (v.kind === "term")
     return {
       kind: "apply",
@@ -161,16 +177,35 @@ export function literalSyntax(value: Value): Syntax {
   const pack = (node: Syntax) => [{ label: "_1", value: node }];
   const quoted = (node: Syntax): Syntax => ({ kind: "quote", value: node });
   let expression: Syntax;
-  if (raw.kind === "literal")
-    expression =
-      typeof raw.value === "number" && raw.value < 0
+  if (raw.kind === "literal") {
+    if (isRational(raw.value)) {
+      const spelling = formatRational(raw.value);
+      const negative = spelling.startsWith("-");
+      const body = spelling.slice(negative ? 1 : 0);
+      const asNumber = Number(body);
+      const node: Syntax = {
+        kind: "literal",
+        value:
+          Number.isFinite(asNumber) && String(asNumber) === body ? asNumber : 0,
+        spelling: body,
+      };
+      expression = negative
         ? {
             kind: "apply",
             head: { kind: "symbol", name: "negate", quoted: false },
-            body: pack({ kind: "literal", value: -raw.value }),
+            body: pack(node),
           }
-        : { kind: "literal", value: raw.value };
-  else if (raw.kind === "symbol")
+        : node;
+    } else
+      expression =
+        typeof raw.value === "number" && raw.value < 0
+          ? {
+              kind: "apply",
+              head: { kind: "symbol", name: "negate", quoted: false },
+              body: pack({ kind: "literal", value: -raw.value }),
+            }
+          : { kind: "literal", value: raw.value };
+  } else if (raw.kind === "symbol")
     expression = { kind: "symbol", name: raw.name, quoted: true };
   else if (raw.kind === "type") expression = quoted(dataSyntax(typeData(raw)));
   else if (raw.kind === "code") expression = quoted(raw.tree);

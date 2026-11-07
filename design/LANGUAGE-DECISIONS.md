@@ -173,8 +173,7 @@ test "C01 intrinsic primitive values"
   expect True result True :: Bool
   legacy expect "hello" result "hello" :: Expression
   todo expect "hello" result "hello" :: String
-  legacy expect 5 result 5 :: Expression
-  todo expect 5 result 5 :: Rational
+  expect 5 result 5 :: Rational
   expect :Widget result Widget :: UpperCamelSymbol
   legacy expect Bool result Bool :: Type
   todo expect Bool result Bool :: PrimitiveType
@@ -186,13 +185,11 @@ end
 
 ```text
 test "C02 exact Rational literal meanings"
-  todo expect 0.1 result 0.1 :: Rational
-  todo expect 0f0.5 result 0.5 :: Rational
-  todo expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
-  todo assert (0f0.1 != 0.1)
-  todo assert
-    assert ((0f0.1 != 0.1))
-    (0xFp8 == 0b1111p8)
+  expect 0.1 result 0.1 :: Rational
+  expect 0f0.5 result 0.5 :: Rational
+  expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
+  assert (0f0.1 != 0.1)
+  assert (0xFp8 == 0b1111p8)
 end
 ```
 
@@ -203,10 +200,10 @@ No halfway, overflow or nonfinite behavior is specified by this case.
 ```text
 test "C03 exact designation differs from rounding"
   expect (0.5 :: Float32) result 0.5 :: Float32
-  todo expect float32(0.5) result 0.5 :: Float32
+  expect float32(0.5) result 0.5 :: Float32
   todo expect (0f0.5 :: Decimal32) result 0.5 :: Decimal32
   todo expect (0f0.1 :: Float64) result 0f0.1 :: Float64
-  todo expect
+  expect
     (0.1 :: Float32)
   error "not exactly representable as Float32"
 
@@ -1261,8 +1258,7 @@ test "C26 todo assertions execute in isolated scopes"
     futureLocal()
   error "E_UNBOUND_NAME"
 
-  legacy expect marker result 1 :: Expression
-  todo expect marker result 1 :: Rational
+  expect marker result 1 :: Rational
 end
 ```
 

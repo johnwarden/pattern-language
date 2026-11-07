@@ -41,7 +41,7 @@ test("CLI recursively finds .test files and reports multiple cases and expected 
     for (const group of ["a", "b"]) mkdirSync(join(dir, group));
     writeFileSync(
       join(dir, "a", "same.test"),
-      'test "Value"\n todo assert missing()\n expect 4 result 4 :: Expression\nend\ntest "Future"\n todo assert missing()\nend',
+      'test "Value"\n todo assert missing()\n expect 4 result 4 :: Rational\nend\ntest "Future"\n todo assert missing()\nend',
     );
     writeFileSync(
       join(dir, "b", "same.test"),
@@ -69,9 +69,9 @@ test("CLI recursively finds .test files and reports multiple cases and expected 
 test("CLI success and failure exit codes reflect active outcomes", () =>
   temporary((dir) => {
     const file = join(dir, "case.test");
-    writeFileSync(file, 'test "Value"\n expect 4 result 4 :: Expression\nend');
+    writeFileSync(file, 'test "Value"\n expect 4 result 4 :: Rational\nend');
     assert.equal(invoke(file).status, 0);
-    writeFileSync(file, 'test "Value"\n expect 4 result 5 :: Expression\nend');
+    writeFileSync(file, 'test "Value"\n expect 4 result 5 :: Rational\nend');
     const failure = invoke(file);
     assert.equal(failure.status, 1);
     assert.match(failure.stdout, /comparison: expected 5/);

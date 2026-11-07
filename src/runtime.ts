@@ -68,6 +68,7 @@ import {
   singleton,
   valSymbol,
   valLiteral,
+  valRational,
   display,
   displayResults,
   equal,
@@ -77,6 +78,20 @@ import {
   inspectResults,
   syntaxOrigins,
   textValue,
+  asRational,
+  integerValue,
+  isExactFloat32,
+  parseNumericSpelling,
+  rationalFromSyntax,
+  rationalToNumber,
+  formatRational,
+  isRational,
+  addRationals,
+  subRationals,
+  mulRationals,
+  divRationals,
+  remRationals,
+  powRationals,
 } from "./values.ts";
 import type {
   Value,
@@ -570,18 +585,29 @@ export class Interpreter {
   private builtins(): Scope {
     const scope = new Scope();
     for (const [name, predicate] of Object.entries({
-      Number: (v: Value): boolean =>
-        v.kind === "literal" &&
-        typeof v.value === "number" &&
-        Number.isFinite(v.value),
-      Num: (v: Value): boolean =>
-        v.kind === "literal" &&
-        typeof v.value === "number" &&
-        Number.isFinite(v.value),
-      Int: (v: Value): boolean =>
-        v.kind === "literal" &&
-        typeof v.value === "number" &&
-        Number.isSafeInteger(v.value),
+      Rational: (v: Value): boolean => !!asRational(v),
+      Number: (v: Value): boolean => {
+        const r = asRational(v);
+        return !!r && Number.isFinite(rationalToNumber(r));
+      },
+      Num: (v: Value): boolean => {
+        const r = asRational(v);
+        return !!r && Number.isFinite(rationalToNumber(r));
+      },
+      Int: (v: Value): boolean => {
+        const r = asRational(v);
+        if (r)
+          return (
+            r.d === 1n &&
+            r.n >= BigInt(Number.MIN_SAFE_INTEGER) &&
+            r.n <= BigInt(Number.MAX_SAFE_INTEGER)
+          );
+        return (
+          v.kind === "literal" &&
+          typeof v.value === "number" &&
+          Number.isSafeInteger(v.value)
+        );
+      },
       String: (v: Value): boolean =>
         v.kind === "literal" && typeof v.value === "string",
       Symbol: (v: Value): boolean => v.kind === "symbol",
@@ -599,22 +625,33 @@ export class Interpreter {
       Type: (v: Value): boolean => !!this.materializeType(v),
       Bool: (v: Value): boolean =>
         v.kind === "symbol" && ["True", "False"].includes(v.name),
-      Float: (v: Value): boolean =>
-        v.kind === "literal" &&
-        typeof v.value === "number" &&
-        Number.isFinite(v.value),
-      Float64: (v: Value): boolean =>
-        v.kind === "literal" &&
-        typeof v.value === "number" &&
-        Number.isFinite(v.value),
-      Float32: (v: Value): boolean =>
-        v.kind === "literal" &&
-        typeof v.value === "number" &&
-        Number.isFinite(Math.fround(v.value)),
-      Int64: (v: Value): boolean =>
-        v.kind === "literal" &&
-        typeof v.value === "number" &&
-        Number.isSafeInteger(v.value),
+      Float: (v: Value): boolean => {
+        const r = asRational(v);
+        return !!r && Number.isFinite(rationalToNumber(r));
+      },
+      Float64: (v: Value): boolean => {
+        const r = asRational(v);
+        return !!r && Number.isFinite(rationalToNumber(r));
+      },
+      Float32: (v: Value): boolean => {
+        const r = asRational(v);
+        if (!r) return false;
+        return Number.isFinite(Math.fround(rationalToNumber(r)));
+      },
+      Int64: (v: Value): boolean => {
+        const r = asRational(v);
+        if (r)
+          return (
+            r.d === 1n &&
+            r.n >= BigInt(Number.MIN_SAFE_INTEGER) &&
+            r.n <= BigInt(Number.MAX_SAFE_INTEGER)
+          );
+        return (
+          v.kind === "literal" &&
+          typeof v.value === "number" &&
+          Number.isSafeInteger(v.value)
+        );
+      },
     })) {
       const numericKind = ["Number", "Num", "Float", "Float64"].includes(name)
         ? "float64"
@@ -622,7 +659,9 @@ export class Interpreter {
           ? "int64"
           : name === "Float32"
             ? "float32"
-            : undefined;
+            : name === "Rational"
+              ? "rational"
+              : undefined;
       scope.bindings.set(name, {
         kind: "type",
         name,
@@ -739,10 +778,25 @@ export class Interpreter {
     reservedAction.test = () => true;
     scope.functions.set("!", [reservedAction]);
     const numeric = (v: Value): number => {
-      v = unwrap(v);
-      if (v.kind !== "literal" || typeof v.value !== "number")
-        throw new LanguageError("expected a number");
-      return v.value;
+      const r = asRational(v);
+      if (!r) throw new LanguageError("expected a number");
+      const n = rationalToNumber(r);
+      if (!Number.isFinite(n)) throw new LanguageError("expected a number");
+      return n;
+    };
+    const exactOps: Record<
+      string,
+      (
+        a: NonNullable<ReturnType<typeof asRational>>,
+        b: NonNullable<ReturnType<typeof asRational>>,
+      ) => NonNullable<ReturnType<typeof asRational>>
+    > = {
+      "+": addRationals,
+      "-": subRationals,
+      "*": mulRationals,
+      "/": divRationals,
+      "%": remRationals,
+      "^": powRationals,
     };
     const checked = (n: number) => {
       if (
@@ -767,6 +821,7 @@ export class Interpreter {
           name,
           [1, 1],
           ([a, b]) => {
+            [a, b] = this.alignNumeric(a, b);
             const space = concreteSpace(a) ?? concreteSpace(b);
             const other = concreteSpace(b);
             if (
@@ -792,6 +847,16 @@ export class Interpreter {
                 throw new LanguageError("string size limit exceeded");
               return valLiteral(a.value + b.value);
             }
+            if (!space || space.numeric === "rational") {
+              const left = asRational(a),
+                right = asRational(b);
+              if (!left || !right) throw new LanguageError("expected a number");
+              const result = exactOps[name](left, right);
+              const value = valRational(result.n, result.d);
+              return space
+                ? this.check(space, value)
+                : single(this.ascribeRational(value));
+            }
             let result = op(numeric(a), numeric(b));
             if (space?.numeric === "int64" && name === "/")
               result = Math.trunc(result);
@@ -806,6 +871,7 @@ export class Interpreter {
       scope.bindings.set(
         name,
         this.native(name, [1, 1], ([a, b]) => {
+          [a, b] = this.alignNumeric(a, b);
           const c =
             name === "==" || name === "!=" ? equal(a, b) : compare(a, b);
           const yes =
@@ -826,8 +892,16 @@ export class Interpreter {
     scope.bindings.set(
       "negate",
       this.native("negate", [1], ([v]) => {
-        const value = checked(-numeric(v)),
-          space = concreteSpace(v);
+        const space = concreteSpace(v);
+        if (!space || space.numeric === "rational") {
+          const r = asRational(v);
+          if (!r) throw new LanguageError("expected a number");
+          const value = valRational(-r.n, r.d);
+          return space
+            ? this.check(space, value)
+            : single(this.ascribeRational(value));
+        }
+        const value = checked(-numeric(v));
         return space ? this.check(space, value) : value;
       }),
     );
@@ -846,6 +920,17 @@ export class Interpreter {
           );
         }),
       );
+    scope.bindings.set(
+      "float32",
+      this.native("float32", [1], ([v]) => {
+        const r = asRational(v);
+        if (!r) throw new LanguageError("expected a number");
+        const n = Math.fround(rationalToNumber(r));
+        if (!Number.isFinite(n))
+          throw new LanguageError("result exceeds safe numeric range");
+        return this.check(this.primitives.get("Float32")!, valLiteral(n));
+      }),
+    );
     scope.bindings.set(
       "isInt64",
       this.native("isInt64", [1], ([v]) =>
@@ -945,23 +1030,20 @@ export class Interpreter {
           throw new LanguageError(
             "String requires a list of Unicode code points",
           );
-        const numbers = value.body.map((f) => unwrap(f.value));
+        const numbers = value.body.map((f) => integerValue(f.value));
         if (
           numbers.some(
-            (v) =>
-              v.kind !== "literal" ||
-              typeof v.value !== "number" ||
-              !Number.isInteger(v.value) ||
-              v.value < 0 ||
-              v.value > 0x10ffff ||
-              (v.value >= 0xd800 && v.value <= 0xdfff),
+            (n) =>
+              n === undefined ||
+              !Number.isInteger(n) ||
+              n < 0 ||
+              n > 0x10ffff ||
+              (n >= 0xd800 && n <= 0xdfff),
           )
         )
           throw new LanguageError("String requires Unicode code points");
         return valLiteral(
-          numbers
-            .map((v) => String.fromCodePoint((v as { value: number }).value))
-            .join(""),
+          numbers.map((n) => String.fromCodePoint(n as number)).join(""),
         );
       }),
     ]);
@@ -1271,17 +1353,29 @@ export class Interpreter {
               const space = concreteSpace(value);
               const raw = unwrap(value);
               let literal = dataSyntax(raw);
-              const negative =
-                raw.kind === "literal" &&
-                typeof raw.value === "number" &&
-                raw.value < 0;
-              if (negative)
+              const magnitude = asRational(raw);
+              const negative = !!magnitude && magnitude.n < 0n;
+              if (negative) {
+                const abs = formatRational({
+                  n: -magnitude.n,
+                  d: magnitude.d,
+                });
+                const asNumber = Number(abs);
                 literal = apply(
                   symbol("negate"),
-                  packOf({ kind: "literal", value: -raw.value }),
+                  packOf({
+                    kind: "literal",
+                    value:
+                      Number.isFinite(asNumber) && String(asNumber) === abs
+                        ? asNumber
+                        : 0,
+                    spelling: abs,
+                  }),
                 );
-              if (!space)
-                return negative
+              }
+              if (!space || space.numeric === "rational")
+                return negative ||
+                  (raw.kind === "literal" && isRational(raw.value))
                   ? {
                       kind: "code" as const,
                       type: syntaxType,
@@ -1391,7 +1485,14 @@ export class Interpreter {
     }
     if (n.kind === "block") return this.evaluateBlock(n, env);
     if (n.kind === "pack") return this.evaluateFields(n.body, env);
-    if (n.kind === "literal") return singleton(valLiteral(n.value));
+    if (n.kind === "literal") {
+      if (typeof n.value === "number") {
+        const r = rationalFromSyntax(n);
+        if (!r) throw new LanguageError("malformed numeric source literal", n.span);
+        return this.ascribeRational(valRational(r.n, r.d));
+      }
+      return singleton(valLiteral(n.value));
+    }
     if (n.kind === "symbol") {
       if (n.quoted) return singleton(this.symbolValue(n.name));
       const primitive = primitiveNames.get(n.name);
@@ -1609,12 +1710,27 @@ export class Interpreter {
         head: valSymbol(n.head.name),
         body: this.evaluateFields(n.body, env),
       });
-    if (n.head.kind === "symbol" && n.head.quoted)
+    if (n.head.kind === "symbol" && n.head.quoted) {
+      if (n.head.name === "NumericSource") {
+        const args = this.evaluateFields(n.body, env);
+        const spelling = unwrap(args[0]?.value);
+        if (
+          args.length !== 1 ||
+          spelling.kind !== "literal" ||
+          typeof spelling.value !== "string"
+        )
+          throw new LanguageError("malformed numeric source literal", n.span);
+        const r = parseNumericSpelling(spelling.value);
+        if (!r)
+          throw new LanguageError("malformed numeric source literal", n.span);
+        return this.ascribeRational(valRational(r.n, r.d));
+      }
       return singleton({
         kind: "term",
         head: valSymbol(n.head.name),
         body: this.evaluateFields(n.body, env),
       });
+    }
     const lookup = lexicalScopes.get(n.head) ?? env;
     const methods =
       n.head.kind === "symbol" && !n.head.quoted
@@ -3234,7 +3350,8 @@ export class Interpreter {
             return (
               type.transparent ||
               !prior ||
-              typeIdentity(prior) === typeIdentity(type.baseType ?? type)
+              typeIdentity(prior) === typeIdentity(type.baseType ?? type) ||
+              (prior.numeric === "rational" && type.numeric !== "rational")
             );
           },
           pattern: type.pattern(),
@@ -3310,14 +3427,7 @@ export class Interpreter {
                 label: e.label,
                 value: {
                   kind: "view",
-                  base:
-                    type.numeric === "float32"
-                      ? valLiteral(
-                          Math.fround(
-                            (unwrap(e.value) as { value: number }).value,
-                          ),
-                        )
-                      : unwrap(e.value),
+                  base: this.numericPayload(type, e.value),
                   views,
                   space: type.baseType ?? type,
                 },
@@ -3344,6 +3454,45 @@ export class Interpreter {
         valSymbol(value ? "True" : "False"),
       ),
     );
+  }
+  private ascribeRational(value: Value): Field<Value>[] {
+    return this.check(this.primitives.get("Rational")!, value);
+  }
+  private alignNumeric(a: Value, b: Value): [Value, Value] {
+    const sa = concreteSpace(a),
+      sb = concreteSpace(b);
+    const carveout = (t: TypeValue | undefined) =>
+      !!t?.numeric && t.numeric !== "rational";
+    if (sa && sb && typeIdentity(sa) !== typeIdentity(sb)) {
+      if (sa.numeric === "rational" && carveout(sb))
+        return [single(this.check(sb, a)), b];
+      if (sb.numeric === "rational" && carveout(sa))
+        return [a, single(this.check(sa, b))];
+    } else if (sa && !sb && carveout(sa) && asRational(b))
+      return [a, single(this.check(sa, b))];
+    else if (sb && !sa && carveout(sb) && asRational(a))
+      return [single(this.check(sb, a)), b];
+    return [a, b];
+  }
+  private numericPayload(type: TypeValue, value: Value): Value {
+    const r = asRational(value);
+    if (type.numeric === "float32") {
+      if (!r || !isExactFloat32(r))
+        throw new LanguageError("not exactly representable as Float32");
+      return valLiteral(Math.fround(rationalToNumber(r)));
+    }
+    if (type.numeric === "int64") {
+      if (!r || r.d !== 1n)
+        throw new LanguageError("expected a number");
+      return valLiteral(Number(r.n));
+    }
+    if (type.numeric === "float64")
+      return r ? valLiteral(rationalToNumber(r)) : unwrap(value);
+    if (type.numeric === "rational") {
+      if (!r) throw new LanguageError("expected a number");
+      return valRational(r.n, r.d);
+    }
+    return unwrap(value);
   }
   private check(type: TypeValue, value: Value, env?: Scope): Field<Value>[] {
     try {

@@ -1,6 +1,6 @@
 import type { Pattern } from "./pattern.ts";
 import type { Value, TypeValue } from "./values.ts";
-import { unwrap, equal } from "./values.ts";
+import { unwrap, equal, asRational } from "./values.ts";
 import { LanguageError } from "./syntax.ts";
 import { symbolCategory } from "./lexical.ts";
 
@@ -18,7 +18,7 @@ const some = (answers: Answer[]): Answer =>
     : answers.includes("unknown")
       ? "unknown"
       : "no";
-const numeric = new Set(["int64", "float32", "float64"]);
+const numeric = new Set(["int64", "float32", "float64", "rational"]);
 const symbols = new Set([
   "Symbol",
   "LowerCamelSymbol",
@@ -38,12 +38,17 @@ export function patternOverlap(left: P, right: P): Answer {
   function primitiveAccept(name: string, raw: Value): boolean | undefined {
     const value = unwrap(raw);
     if (name === "Any" || name === "Expression" || name === "Body") return true;
-    if (numeric.has(name))
-      return (
-        value.kind === "literal" &&
-        typeof value.value === "number" &&
-        (name !== "int64" || Number.isSafeInteger(value.value))
-      );
+    if (numeric.has(name)) {
+      const r = asRational(value);
+      if (!r) return false;
+      if (name === "int64")
+        return (
+          r.d === 1n &&
+          r.n >= BigInt(Number.MIN_SAFE_INTEGER) &&
+          r.n <= BigInt(Number.MAX_SAFE_INTEGER)
+        );
+      return true;
+    }
     if (name === "String")
       return value.kind === "literal" && typeof value.value === "string";
     if (name === "Bool")

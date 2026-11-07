@@ -173,7 +173,7 @@ test("example grammar stays separate from the saved custom draft across remounts
   );
   restored.click("run");
   assert.equal(restored.el("error").textContent, "");
-  assert.equal(restored.el("result").textContent, "1 :: Expression");
+  assert.equal(restored.el("result").textContent, "1 :: Rational");
   restored.dom.window.close();
 });
 test("program Run displays concrete and meta-type annotations", () => {
@@ -215,9 +215,9 @@ test("REPL replays committed history without running current draft", () => {
   const saved = a.dom.window.localStorage.getItem(key)!;
   a.dom.window.close();
   const b = mount(saved);
-  assert.equal(b.el("result").textContent, "9 :: Expression");
+  assert.equal(b.el("result").textContent, "9 :: Rational");
   b.click("run");
-  assert.equal(b.el("result").textContent, "10 :: Expression");
+  assert.equal(b.el("result").textContent, "10 :: Rational");
   b.dom.window.close();
 });
 test("Parse and Run reject the same invalid block", () => {
@@ -238,7 +238,7 @@ test("Run honors editable grammar", () => {
   );
   a.edit("source", "when True 1 else 2");
   a.click("run");
-  assert.equal(a.el("result").textContent, "1 :: Expression");
+  assert.equal(a.el("result").textContent, "1 :: Rational");
   a.dom.window.close();
 });
 test("blocked storage has an honest fallback", () => {
@@ -357,7 +357,7 @@ test("user macros survive a saved REPL session and Parse does not register them 
   restored.edit("source", "answer 42");
   restored.click("run");
   assert.equal(restored.el("error").textContent, "");
-  assert.equal(restored.el("result").textContent, "42 :: Expression");
+  assert.equal(restored.el("result").textContent, "42 :: Rational");
   restored.dom.window.close();
 });
 
@@ -368,7 +368,7 @@ test("Run stages generated grammar while Parse form stays non-executing", () => 
     "macro (:install Args()) Code` macro (:answer (x :: Expression)) Code$` $(x)\n(install Args())\nanswer 42",
   );
   click("run");
-  assert.equal(el("result").textContent, "42 :: Expression");
+  assert.equal(el("result").textContent, "42 :: Rational");
   assert.equal(el("status").textContent, "Evaluated");
   dom.window.close();
 });
