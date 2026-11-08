@@ -30,6 +30,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | L8 | Author instruction on 8 November: parse directly into Expression; Expression number literals are exact Rationals; get rid of the lasting syntax-tree layer. This supersedes any pending public `NumberLiteral(Float)` redesign. Distinct postfix punctuation application is a separate smaller item, not blocked on full parser migration. |
 | W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
 | L9 | Author ruling on 9 November 2026, 12:01 Madrid: no special logic for absent option values; `None` is an ordinary symbol. Value text prints `None`; `:None` is only the code form where an unquoted name would bind. |
+| L10 | Author ruling on 9 November 2026, 12:39 Madrid: every ordinary symbol prints bare in value text; colon quotation is only for code where a bare name would bind. Remove the `Number` alias/type until its definition is decided. Primitive names (`True`, `False`, `Rational`, `String`, `Float64`, …) are not ordinary symbols; quoted forms such as `:True` / `:Rational` / `:Number` are rejected. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -56,7 +57,7 @@ Different source expressions may evaluate to the same value without being the sa
 
 P proposes self-evaluating `PrimitiveType`, including `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`, with `Type` no longer a reserved primitive atom. This vocabulary is recorded as the proposed primitive representation, not a completed metatype specification. Int/Float families are intended to be definable fixed-precision types rather than primitive numeric atoms.
 
-A proposes rejecting redundant `:5` and quoted primitive atoms in Code while permitting their raw syntax in the Expression parsing domain. R2 notes that preserving primitive values under quotation would also be coherent. **The prohibition itself has not been finally chosen.** Ordinary symbolic quotation, raw colon quotation, explicit typed interpolation and separation of quotation from execution otherwise remain unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved Symbols,” AR; R2.
+Quoted primitive *names* in expression syntax are rejected (L10 / D20): `:True`, `:Rational`, and `:Number` are not ordinary symbols. Redundant numeric quotation such as `:5` remains an exploratory Code-form candidate (C27); it is not decided here. Ordinary symbolic quotation, raw colon quotation of non-primitive names, explicit typed interpolation and separation of quotation from execution otherwise remain unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved Symbols,” AR; R2; L10.
 
 ### D03. Structured runtime values require concrete interpretation — confirmed; parse into Expression
 
@@ -385,29 +386,58 @@ or harness errors. C08 independently records the future evidence requirement.
 
 ### C27 — candidate lexical prohibition on redundant primitive quotation
 
-**Exploratory expectation only, awaiting the author's lexical choice.** It must
-not be integrated as a confirmed decision. Todo candidates: `:5` and `:Bool` are
-not Code forms. No corresponding expected result is assigned for raw Expression
-computation, which may be omitted entirely.
+Quoted primitive *names* are confirmed rejected in expression syntax (D20):
+`:Bool` is `E_QUOTED_PRIMITIVE`. Redundant numeric quotation `:5` remains an
+exploratory Code-form candidate, not a confirmed decision. No corresponding
+expected result is assigned for raw Expression computation of `:5`, which may
+be omitted entirely.
 
 ### D19. Symbol value text is unquoted; colon quotation is a code form — confirmed 9 November 2026
 
-There is no special printer or absent-option rule. `None` is an ordinary TitleCase
-symbol. Value text, including `toString`, is the name itself: `toString` of `None`
-is `"None"`. The quoted form `:None` is required in *code*, where an unquoted
-`None` would be read as a bound or type name, and in type-pattern descriptors for
-the same reason (`Type(:None | String)`). Source still writes `a = :None :: Int?`.
+There is no special printer or absent-option rule. Ordinary symbols print as the
+name itself in value text, including lowercase and punctuation: `toString` of
+`None` is `"None"`, of `:Widget` is `"Widget"`, of `:foo` is `"foo"`. Colon
+quotation is a *code* form, used where a bare name would be read as a bound
+name, type name, or layout keyword (`:None`, `:Black`, `:foo`, `:result`). Value
+text quotes only those layout-keyword names whose bare spelling would be read as
+a grammar form (`:test`, `:expect`), not TitleCase or primitive-alias special
+cases. Type-pattern descriptors keep the same code split
+(`Type(:None | String)`). Source still writes `a = :None :: Int?`.
 
-The same split applies to other TitleCase symbols: code `:Black` / `:Widget`,
-value text `Black` / `Widget`. Primitive aliases still quote in value text:
-unquoted `Number` decodes as the Float type, so a `:Number` member prints
-`":Number"`. `toString(Expression)` and other code-domain text keep
-`:MissingType` / `:None`, because that text is code. Lowercase and punctuation
-still quote in data text so they are not read as captures, layout keywords, or
-operators. Union `::` tags stay the reconstruction rule (D07): keep
-the tag only when untagged text would not reconstruct the same member/value.
-Unique `None` in `String?` needs no tag; inner absence in `String??` still prints
-a `::` tag so parse reconstructs the inner member. **Source:** L9.
+`toString(Expression)` and other code-domain text keep `:MissingType` / `:None` /
+`:foo`, because that text is code. Printing has no TitleCase, alias, or
+primitive-name special cases: a name that is a primitive is a primitive symbol
+(D20), not an ordinary symbol that needs quoting. Union `::` tags stay the
+reconstruction rule (D07): keep the tag only when untagged text would not
+reconstruct the same member/value. Unique `None` in `String?` needs no tag;
+inner absence in `String??` still prints a `::` tag so parse reconstructs the
+inner member. **Sources:** L9, L10.
+
+### D20. Primitive names are not ordinary symbols; Number is withdrawn — confirmed 9 November 2026
+
+In expression syntax, `True`, `False`, `Rational`, `String`, `Float64`, `Int`,
+and the other primitive atoms are primitive symbols, a different type from
+ordinary symbols. Quoted forms such as `:True`, `:Rational`, and `:Number` are
+rejected (`E_QUOTED_PRIMITIVE`): they do not produce an `UpperCamelSymbol`.
+Unquoted `True` remains the boolean; unquoted `Int` remains the Int type.
+`:None` is still an ordinary symbol; `None` is not a primitive.
+
+The `Number` alias/type is removed until its definition is decided. Do not treat
+bootstrap `Number`→Float as the numeric-family contract; GRAMMAR.md's sketch
+`type Number abstract Float32 | Float64` remains an open item, not an
+implementation. Tests that designated or unioned `Number` now use `Float`.
+
+Type-description tags such as PrimitiveTag's `:Int` / `:String` remain pattern
+data in the type-schema bootstrap; that is not expression-level ordinary-symbol
+construction. Quoted primitive *applications* such as `:String([65])` stay type-
+description constructors, not `:String` the symbol.
+
+Not decided here: whether the primitive-symbol type is named or inspectable
+(`PrimitiveType` remains proposed in D02); whether `:(Int)` quote-of-a-name
+should be the same error; whether type-schema PrimitiveTag spelling should
+move off colon-quoted primitive names; whether layout-keyword constructors
+(`test`, `expect`) should print as layout forms instead of quoting in value
+text. **Source:** L10.
 
 ## Remaining and deferred items
 
@@ -423,7 +453,7 @@ a `::` tag so parse reconstructs the inner member. **Source:** L9.
 | Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |
 | Specialization | **Deferred optimization only.** No source-visible generated overload semantics. |
 | First-class overload sets | **Unaccepted proposal.** No approved bare-name callable-value behavior change. |
-| Numeric aliases/families, rounding edge policies and canonical spelling | **Provisional.** Do not infer these from isolated draft typos or examples. |
+| Numeric aliases/families, rounding edge policies and canonical spelling | **Provisional.** `Number` is withdrawn from the bootstrap (D20) until membership vs alias is decided; do not infer a definition from old Float-alias tests. |
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
 | Test DSL modifiers | Implemented assertion-level todo/legacy execution and reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
@@ -436,8 +466,9 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | Decision | Named cases / coverage |
 | --- | --- |
 | D01 application, packs, precedence | C24, C25; runtime packs remain distinct from generic parameters in C05 |
-| D02 primitives and quotation | C01; C27 is an **unaccepted lexical candidate**, not confirmed behavior |
-| D19 symbol value text vs code quotation | C01 Widget already uses unquoted value text; Option/`None` in types, postfix, nested-option and concrete-union specs |
+| D02 primitives and quotation | C01; quoted primitive *names* confirmed in D20; C27 `:5` remains an unaccepted numeric-quotation candidate |
+| D19 symbol value text vs code quotation | C01 Widget already uses unquoted value text; Option/`None` in types, postfix, nested-option and concrete-union specs; lowercase value text in types/grammars examples |
+| D20 primitive symbols vs ordinary symbols; Number withdrawn | C01 `:Widget` vs `True`; C27 `:Bool`; types examples reject `:True` / `:Number` |
 | D03 mandatory interpretation / parse into Expression | C04, C05; first-class Expression *value* computation remains optional; SyntaxNode numeric A/B superseded |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |

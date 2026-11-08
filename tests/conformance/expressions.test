@@ -42,7 +42,7 @@ test "no eager execution"
 end
 
 test "parameter interpretation"
-  def Rectangle type :Rect(w :: Number, h :: Number)
+  def Rectangle type :Rect(w :: Float, h :: Float)
   def area(r :: Rectangle) r.w * r.h
 
   expect area(Rect(3, 4)) result 12 :: Float

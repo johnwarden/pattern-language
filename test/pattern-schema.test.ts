@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { Interpreter, displayResults } from "../src/index.ts";
+import { Interpreter, displayResults, LanguageError } from "../src/index.ts";
 import { TYPE_SCHEMA } from "../src/type-schema.ts";
 const run = (s: string) => displayResults(new Interpreter().run(s));
 const schema = readFileSync(
@@ -28,9 +28,15 @@ test("language schema gates descriptor shapes without consulting the user scope"
     () => run("def ordinaryHead(h) True\nType(:|(:A,:B))"),
     /invalid type-description shape/,
   );
-  // Explicit Apply describes a literal reserved head without ambiguity.
+  // Explicit Apply describes a literal reserved head without evaluating a
+  // quoted primitive name as an ordinary symbol (D20).
+  assert.throws(
+    () => run("Literal(:String)"),
+    (e: unknown) =>
+      e instanceof LanguageError && e.diagnostic.code === "E_QUOTED_PRIMITIVE",
+  );
   assert.equal(
-    run("Type(Apply(Literal(:String),Fields(:A))) == (type :String(:A))"),
+    run("Type(Apply(Literal(:Box),Fields(:A))) == (type :Box(:A))"),
     "True",
   );
 });

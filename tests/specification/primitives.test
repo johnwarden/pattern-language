@@ -3,6 +3,13 @@ test "C01 intrinsic primitive values"
   expect "hello" result "hello" :: String
   expect 5 result 5 :: Rational
   expect :Widget result Widget :: UpperCamelSymbol
+  expect :foo result foo :: LowerCamelSymbol
+  expect
+    :True
+  error "E_QUOTED_PRIMITIVE"
+  expect
+    :Number
+  error "E_QUOTED_PRIMITIVE"
   legacy expect Bool result Bool :: Type
   todo expect Bool result Bool :: PrimitiveType
   todo expect PrimitiveType result PrimitiveType :: PrimitiveType

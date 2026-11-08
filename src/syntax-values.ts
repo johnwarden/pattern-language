@@ -19,7 +19,7 @@ import {
 import type { Rational } from "./rational.ts";
 import type { Value } from "./values.ts";
 import { typeData } from "./type-data.ts";
-import { primitiveNames } from "./primitive-names.ts";
+import { primitiveNames, isCanonicalAtom } from "./primitive-names.ts";
 
 /** Remove only the program reader's outer wrapper, never a quoted block itself. */
 let codeLayoutForms: LayoutForms | undefined;
@@ -220,7 +220,11 @@ export function literalSyntax(value: Value): Syntax {
         : node;
     }
   } else if (raw.kind === "symbol")
-    expression = { kind: "symbol", name: raw.name, quoted: true };
+    expression = {
+      kind: "symbol",
+      name: raw.name,
+      quoted: !isCanonicalAtom(raw.name),
+    };
   else if (raw.kind === "type") expression = quoted(dataSyntax(typeData(raw)));
   else if (raw.kind === "code") expression = quoted(raw.tree);
   else if (raw.kind === "pack") {

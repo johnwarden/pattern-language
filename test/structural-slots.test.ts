@@ -13,7 +13,7 @@ import { single, unwrap, valLiteral } from "../src/values.ts";
 
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const full =
-  'def Colored type :Rect(Number,Number,color: String)\ndef Rectangular type :Rect(w :: Number,h :: Number,**)\nr = Rect(2,3,color: "black") :: Colored\n';
+  'def Colored type :Rect(Float,Float,color: String)\ndef Rectangular type :Rect(w :: Float,h :: Float,**)\nr = Rect(2,3,color: "black") :: Colored\n';
 const rejects = (source: string, code: string) =>
   assert.throws(
     () => run(source),
@@ -164,7 +164,7 @@ test("every abstract field and container element needs a concrete interpretation
 test("canonical text includes annotations only at abstract positions", () => {
   assert.equal(
     run(
-      "def Box type :Box(Any,n: Number)\nb = Box(3 :: Int,n: 4) :: Box\ntoString(Box)(b)",
+      "def Box type :Box(Any,n: Float)\nb = Box(3 :: Int,n: 4) :: Box\ntoString(Box)(b)",
     ),
     '"Box(3 :: Int, n: 4)"',
   );
@@ -196,7 +196,7 @@ test("open type patterns are abstract facets and preserve the complete concrete 
     '(Rect(2, 3, color: "black"), 2, 3, True, "Rect(2, 3, color: \\"black\\") :: Type(Rect(Float, Float, color: String))")',
   );
   rejects(
-    'def Rectangular type :Rect(w :: Number,h :: Number,**)\n(p :: Rectangular) = Rect(2,3,color: "black")\np',
+    'def Rectangular type :Rect(w :: Float,h :: Float,**)\n(p :: Rectangular) = Rect(2,3,color: "black")\np',
     "E_CONCRETE_TYPE_REQUIRED",
   );
 });
@@ -292,7 +292,7 @@ test("abstract order is total inside a common domain but concrete cross-space co
     ),
     "(False, True, True)",
   );
-  rejects("(1 :: Int) == (1 :: Number)", "E_INCOMPARABLE_TYPES");
+  rejects("(1 :: Int) == (1 :: Float)", "E_INCOMPARABLE_TYPES");
 });
 
 test("closed serialization rejects extra labels in a fresh environment", () => {
@@ -335,7 +335,7 @@ test("concrete meta-type slots unbox abstract storage and omit redundant annotat
 
 test("recursive facets preserve concrete children and survive descriptor reconstruction", () => {
   const source =
-    'def Full type :Nil | :Cons(Number,Full,meta: String)\ndef Sequence type :Nil | :Cons(first :: Number,next :: Sequence,**)\nr = Cons(2,:Nil,meta: "x") :: Full\n';
+    'def Full type :Nil | :Cons(Float,Full,meta: String)\ndef Sequence type :Nil | :Cons(first :: Float,next :: Sequence,**)\nr = Cons(2,:Nil,meta: "x") :: Full\n';
   assert.equal(
     run(
       source +

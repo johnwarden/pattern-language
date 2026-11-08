@@ -2,7 +2,6 @@
 export const primitiveNames = new Map([
   ["Rational", "Rational"],
   ["Float", "Float"],
-  ["Number", "Float"],
   ["Float64", "Float64"],
   ["Float32", "Float32"],
   ["Int", "Int"],
@@ -19,20 +18,15 @@ export const primitiveNames = new Map([
   ["Type", "Type"],
 ]);
 export const constantNames = new Set(["True", "False"]);
+/** Withdrawn spellings that must not become ordinary symbols either. */
+export const withdrawnPrimitiveNames = new Set(["Number", "Num"]);
 export const isSelfEvaluating = (name: string): boolean =>
   primitiveNames.has(name) || constantNames.has(name);
 export const isCanonicalAtom = (name: string): boolean =>
   constantNames.has(name) || primitiveNames.get(name) === name;
-
-/** Value text of a TitleCase symbol is the name itself (`None`, `Widget`).
- * Primitive type names and aliases still quote: unquoted `Number` decodes as
- * the Float type, not the symbol. Colon quotation is otherwise a code form.
- * Lowercase and punctuation still quote in value text so they are not read as
- * captures, layout keywords, or operators.
- */
-export const isUnquotedValueSymbol = (name: string): boolean =>
-  isCanonicalAtom(name) ||
-  (/^\p{Lu}[\p{L}\p{M}\p{N}]*$/u.test(name) && !primitiveNames.has(name));
+/** Quoted `:True` / `:Int` / `:Number` are not ordinary symbols. */
+export const isReservedPrimitiveSpelling = (name: string): boolean =>
+  isSelfEvaluating(name) || withdrawnPrimitiveNames.has(name);
 
 /** Bootstrap syntax domains are defaults that source grammars may replace lexically. */
 export const bootstrapTypeNames = new Set(["Expression", "Body"]);

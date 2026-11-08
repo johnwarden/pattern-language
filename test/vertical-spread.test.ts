@@ -172,7 +172,7 @@ test("direct binding destructuring extracts a nested Body without resolving free
       bodyGrammar +
         "b = DestructuringBinding`\n (a,b) =\n  y = 2\n  z = 3\n  (y * z,y)\n end\nend\n((first :: LowerCamelSymbol,second :: LowerCamelSymbol) := (body :: Body)) = b\n(first,second,toString(type [_... :: Binding*])(body.bindings))",
     ),
-    '(:a, :b, "[y = 2, z = 3]")',
+    '(a, b, "[y = 2, z = 3]")',
   );
 });
 

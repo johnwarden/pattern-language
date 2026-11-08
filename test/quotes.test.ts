@@ -14,7 +14,7 @@ test("head-only and whole-expression quotation remain distinct", () => {
     run("def f(x) 2 * x\nb = :f(1)\nc = :(f(1))\n(b == c,b)"),
     "(True, f(1))",
   );
-  assert.equal(run("x = 3\n(:Box(x),:(Box(x)))"), "(Box(3), Box(:x))");
+  assert.equal(run("x = 3\n(:Box(x),:(Box(x)))"), "(Box(3), Box(x))");
 });
 test("typed quote blocks expand macro templates with explicit interpolation", () => {
   assert.equal(

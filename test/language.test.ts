@@ -56,12 +56,12 @@ const cases: [string, string, string][] = [
   ],
   [
     "field accessor",
-    "def Rectangle type :Rect(w :: Number,h :: Number)\nr = Rect(3,4) :: Rectangle\nr.w",
+    "def Rectangle type :Rect(w :: Float,h :: Float)\nr = Rect(3,4) :: Rectangle\nr.w",
     "3",
   ],
   [
     "field function",
-    "def Rectangle type :Rect(w :: Number,h :: Number)\nr = Rect(3,4) :: Rectangle\nw(r)",
+    "def Rectangle type :Rect(w :: Float,h :: Float)\nr = Rect(3,4) :: Rectangle\nw(r)",
     "3",
   ],
   [
@@ -80,7 +80,7 @@ const cases: [string, string, string][] = [
     "True",
   ],
   ["structural ordering", "Rect(1,2) < Rect(1,3)", "True"],
-  ["quoted symbol", "v = :f\nv", ":f"],
+  ["quoted symbol", "v = :f\nv", "f"],
   [
     "pattern union",
     "def S type :Rect(Int,Int) | :Circle(Int)\nCircle(2) :: S",
@@ -168,9 +168,9 @@ const failures: [string, string, RegExp][] = [
     /not exactly representable as Float/,
   ],
   [
-    "inexact Number designation",
+    "withdrawn Number type",
     "0.1 :: Number",
-    /not exactly representable as Float/,
+    /unbound/,
   ],
   [
     "mixed Float32 plus unannotated Rational",
@@ -641,7 +641,7 @@ test("defined functions and accessors are not values", () => {
     "def f(x) x\nf",
     "def f(x) x\ndef use(x) x\nuse(f)",
     "def f(x) x\ndef make() f\nmake()",
-    "def Rectangle type :Rect(w :: Number,h :: Number)\nw",
+    "def Rectangle type :Rect(w :: Float,h :: Float)\nw",
     "toString",
   ])
     assert.throws(() => run(source), /cannot be used as a value/);
@@ -649,7 +649,7 @@ test("defined functions and accessors are not values", () => {
 
 test("callable variables compete with accessor methods", () => {
   const setup =
-    "def Rectangle type :Rect(w :: Number,h :: Number)\nr = Rect(3,4) :: Rectangle\nw = (r :: Rectangle) -> r.h\n";
+    "def Rectangle type :Rect(w :: Float,h :: Float)\nr = Rect(3,4) :: Rectangle\nw = (r :: Rectangle) -> r.h\n";
   for (const call of ["w(r)", "r.w"]) {
     assert.throws(
       () => run(setup + call),
@@ -666,7 +666,7 @@ test("callable variables compete with accessor methods", () => {
 test("direct calls select the only matching callable across namespaces", () => {
   assert.equal(
     run(
-      'def f(x :: Number) x + (1 :: Number)\nf = (x :: String) -> x\n(f(2),f("hi"))',
+      'def f(x :: Float) x + (1 :: Float)\nf = (x :: String) -> x\n(f(2),f("hi"))',
     ),
     '(3, "hi")',
   );

@@ -208,7 +208,7 @@ test("required fields, exactness and ambiguity reject consistently across bindin
   for (const [spec, value] of [
     ["Box(n :: Int,color: c :: String,**)", "Box(3,extra: 7)"],
     ["Box(n :: Int)", "Box(3,extra: 7)"],
-    ["(Box(n :: Int) | Box(n :: Number))", "Box(3)"],
+    ["(Box(n :: Int) | Box(n :: Float))", "Box(3)"],
   ]) {
     for (const source of contexts(spec, value, "n"))
       assert.throws(() => run(source));

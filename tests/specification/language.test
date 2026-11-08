@@ -91,7 +91,7 @@ test "C27 candidate Code rejection of redundant primitive quotation"
     :5
   error "primitive quotation is not a Code form"
 
-  todo expect
+  expect
     :Bool
-  error "primitive quotation is not a Code form"
+  error "E_QUOTED_PRIMITIVE"
 end

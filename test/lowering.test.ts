@@ -81,7 +81,7 @@ test("final binding and declarations cannot be lowered as a definition-free prog
 });
 test("lowered blocks keep named type interpretation and accessors", () => {
   const i = new Interpreter();
-  i.run("def Rectangle type :Rect(w :: Number,h :: Number)", "repl");
+  i.run("def Rectangle type :Rect(w :: Float,h :: Float)", "repl");
   assert.equal(
     displayResults(
       i.runCore(compile(i, "r = Rect(3,4) :: Rectangle\n(r.w,w(r))")),
@@ -91,7 +91,7 @@ test("lowered blocks keep named type interpretation and accessors", () => {
 });
 test("a macro may produce binding-shaped data without executing a binding", () => {
   const i = new Interpreter();
-  assert.equal(displayResults(i.run("data = :(x = 1)\ndata")), ":x = 1");
+  assert.equal(displayResults(i.run("data = :(x = 1)\ndata")), "x = 1");
   assert.throws(() => i.run("x"), /unbound name/);
 });
 

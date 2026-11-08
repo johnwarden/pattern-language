@@ -1,4 +1,4 @@
-def Rectangle type :Rect(w :: Number,h :: Number)
+def Rectangle type :Rect(w :: Float,h :: Float)
 def area(r :: Rectangle) r.w * r.h
 
 def Vector(t :: Type) type [values... :: t*]

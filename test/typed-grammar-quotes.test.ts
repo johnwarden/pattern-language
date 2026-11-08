@@ -43,7 +43,7 @@ test("ExpectedOutput stores a raw type expression without resolving or materiali
     run(
       expected + "o = ExpectedOutput` missing(x) :: Unknown(T)\n(o.e,o.type)",
     ),
-    "(missing(:x), Unknown(T))",
+    "(missing(x), Unknown(T))",
   );
   assert.equal(
     run(
@@ -66,16 +66,16 @@ test("a DSL typed quote returns the same interpreted value as explicit ascriptio
   assert.equal(
     i.inspect(
       i.run(
-        "def MathExp type Symbol | Number | :sum(a :: MathExp,b :: MathExp) | :product(a :: MathExp,b :: MathExp)\na = MathExp` sum(foo,bar)\nb = :sum(:foo,:bar) :: MathExp\n(a,a == b)",
+        "def MathExp type Symbol | Float | :sum(a :: MathExp,b :: MathExp) | :product(a :: MathExp,b :: MathExp)\na = MathExp` sum(foo,bar)\nb = :sum(:foo,:bar) :: MathExp\n(a,a == b)",
       ),
     ),
-    "(sum(:foo, :bar) :: MathExp, True :: Bool)",
+    "(sum(foo, bar) :: MathExp, True :: Bool)",
   );
 });
 test("recursive symbolic operators in application heads are structural, not type modifiers", () => {
   assert.equal(
     run(
-      "def MathExp type Symbol | Number | ((a :: MathExp) :+ (b :: MathExp)) | ((a :: MathExp) :* (b :: MathExp))\na = MathExp` (1 + foo) * 3\nb = ((1 :+ :foo) :* 3) :: MathExp\na == b",
+      "def MathExp type Symbol | Float | ((a :: MathExp) :+ (b :: MathExp)) | ((a :: MathExp) :* (b :: MathExp))\na = MathExp` (1 + foo) * 3\nb = ((1 :+ :foo) :* 3) :: MathExp\na == b",
     ),
     "True",
   );
@@ -88,7 +88,7 @@ test("ordinary sidefix types quote and destructure without installing a Code key
       decl +
         'v = Entry` test "one" expect missing(x)\n(:test name :: String :expect value :: Expression) = v\n(name,value)',
     ),
-    '("one", missing(:x))',
+    '("one", missing(x))',
   );
   assert.throws(
     () => run(decl + 'test "one" expect 3'),
@@ -133,7 +133,7 @@ test("typed quote interpolation is explicit evaluation and grammar matching reje
 test("type pattern bodies remain opaque while nested type forms remain valid", () => {
   assert.equal(
     run("def O type O(type :: Expression)\nv = O(:x) :: O\nv.type"),
-    ":x",
+    "x",
   );
   assert.equal(run("type type Int"), "Int");
   const grammar = readFileSync(

@@ -28,8 +28,9 @@ UpperCamelSymbol values through a different quoting route.
 The proposed primitive vocabulary includes self-evaluating PrimitiveType, with Bool
 and PrimitiveType as its values. The complete metatype and redundant primitive-quote
 policy remain provisional. Nonprimitive numeric types should be definable carveouts.
-The bootstrap's Int == :Int/cache convention is not silently adopted as the final
-relationship between a type value and arbitrary quoted syntax.
+Quoted primitive names such as `:Int` are rejected in expression syntax (D20).
+The old Int == :Int/cache convention is not the relationship between a type value
+and quoted syntax.
 
 An explicitly interpreted Expression descriptor, if exposed, need not equal the result
 of evaluating it. Whether runtime Expression computation exists, and the exact public

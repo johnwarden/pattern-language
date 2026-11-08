@@ -1,8 +1,12 @@
 import { DEFAULT_PRELUDE } from "./prelude.ts";
 import { postfixMethodName } from "./syntax.ts";
-import { bootstrapTypeNames } from "./primitive-names.ts";
 import { punctuation, symbolCategory } from "./lexical.ts";
-import { primitiveNames, constantNames } from "./primitive-names.ts";
+import {
+  primitiveNames,
+  constantNames,
+  bootstrapTypeNames,
+  isReservedPrimitiveSpelling,
+} from "./primitive-names.ts";
 import {
   runtimeDependency,
   requireAvailable,
@@ -625,10 +629,6 @@ export class Interpreter {
     const scope = new Scope();
     for (const [name, predicate] of Object.entries({
       Rational: (v: Value): boolean => !!asRational(v),
-      Number: (v: Value): boolean => {
-        const r = asRational(v);
-        return !!r && isExactFloat64(r);
-      },
       Num: (v: Value): boolean => {
         const r = asRational(v);
         return !!r && isExactFloat64(r);
@@ -691,7 +691,7 @@ export class Interpreter {
         );
       },
     })) {
-      const numericKind = ["Number", "Num", "Float", "Float64"].includes(name)
+      const numericKind = ["Num", "Float", "Float64"].includes(name)
         ? "float64"
         : ["Int", "Int64"].includes(name)
           ? "int64"
@@ -728,11 +728,10 @@ export class Interpreter {
     symbol.name = "Symbol";
     scope.bindings.set("Symbol", symbol);
     this.primitives.set("Symbol", symbol);
-    // Canonical primitive atoms have fixed language meanings. Number remains a
-    // source alias for Float, rather than another user type declaration.
+    // Canonical primitive atoms have fixed language meanings. Number/Num are
+    // withdrawn until a numeric-family definition is decided (ROADMAP).
     for (const alias of ["Num", "Number", "Int64"])
       scope.bindings.delete(alias);
-    scope.bindings.set("Number", scope.bindings.get("Float")!);
     for (const name of constantNames)
       scope.bindings.set(name, this.boolean(name === "True"));
     for (const [name, value] of scope.bindings) {
@@ -1484,6 +1483,8 @@ export class Interpreter {
         (x) => single(this.evaluate(this.grammar.resolve(x), env), "unquote"),
         this.expansionDepth > 0,
       );
+      if (value.kind === "symbol" && isReservedPrimitiveSpelling(value.name))
+        throw this.quotedPrimitive(value.name, n.span);
       return singleton(
         value.kind === "symbol" ? this.symbolValue(value.name) : value,
       );
@@ -1538,7 +1539,11 @@ export class Interpreter {
       return this.ascribeRational(valRational(r.n, r.d));
     }
     if (n.kind === "symbol") {
-      if (n.quoted) return singleton(this.symbolValue(n.name));
+      if (n.quoted) {
+        if (isReservedPrimitiveSpelling(n.name))
+          throw this.quotedPrimitive(n.name, n.span);
+        return singleton(this.symbolValue(n.name));
+      }
       const primitive = primitiveNames.get(n.name);
       if (
         primitive &&
@@ -2837,7 +2842,7 @@ export class Interpreter {
                 code: "E_UNBOUND_TYPE",
                 phase: "declaration",
                 notes: [
-                  "Quote literal tags with a colon. The numeric prelude names are Int, Number, and Float32.",
+                  "Quote literal tags with a colon. The numeric prelude names are Int, Float, and Float32.",
                 ],
               });
             return literalPattern(valSymbol(n.name));
@@ -3698,6 +3703,13 @@ export class Interpreter {
         };
       },
     };
+  }
+  private quotedPrimitive(name: string, span?: Syntax["span"]): LanguageError {
+    return new LanguageError(
+      "quoted " + name + " is not a symbol; " + name + " is a primitive",
+      span,
+      { code: "E_QUOTED_PRIMITIVE", phase: "evaluate" },
+    );
   }
   private symbolValue(name: string): Value {
     const category = symbolCategory(name);

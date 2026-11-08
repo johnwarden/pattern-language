@@ -1,5 +1,5 @@
 test "DSL: Infix syntax and distinct argument packs"
-  def Atom unionType Number | String | Symbol
+  def Atom unionType Float | String | Symbol
   def Application type
     (head :: ValueExpr)(args... :: ValueExpr*)
   end
@@ -43,7 +43,7 @@ end
 
 test "DSL: Recursive expression grammar"
   # One numeric space until numeric literals distinguish Int from Float.
-  def Atom unionType Number | String | Symbol
+  def Atom unionType Float | String | Symbol
   def Application type
     (head :: ValueExpr)(args... :: ValueExpr*)
   end
@@ -114,7 +114,7 @@ test "Test DSL with typed Code"
 end
 
 test "DSL: Symbols and unannotated unions"
-  def MathExp unionType Symbol | Number
+  def MathExp unionType Symbol | Float
   (a :: MathExp) = :a
   text = toString(MathExp)(a)
 
@@ -138,7 +138,7 @@ test "Vertical spreading: Inspect a nested Body"
   def Product type
     (left :: ValueExpression) :* (right :: ValueExpression)
   end
-  def ValueExpression unionType Number | String | Symbol | Sum | Product
+  def ValueExpression unionType Float | String | Symbol | Sum | Product
   def FunctionSignature type
     (name :: LowerCamelSymbol)(parameters... :: Pattern*)
   end

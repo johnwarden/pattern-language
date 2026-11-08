@@ -14,7 +14,7 @@ const incomparable = (source: string) =>
 test("type identity excludes declaration and capture names", () => {
   assert.equal(
     run(
-      "a = type :Rect(w :: Number,h :: Number)\nb = type :Rect(width :: Number,height :: Number)\na == b",
+      "a = type :Rect(w :: Float,h :: Float)\nb = type :Rect(width :: Float,height :: Float)\na == b",
     ),
     "True",
   );
@@ -91,19 +91,19 @@ test("a subset preserves its base concrete space", () => {
   );
 });
 test("numeric spaces have explicit conversion and different arithmetic", () => {
-  incomparable("x = 10 :: Number\ny = 10 :: Int\nx == y");
+  incomparable("x = 10 :: Float\ny = 10 :: Int\nx == y");
   assert.equal(
     run(
-      "x = 10 :: (Number .where (n -> isInt64(n)))\ny = 10 :: Int\nx.toInt == y",
+      "x = 10 :: (Float .where (n -> isInt64(n)))\ny = 10 :: Int\nx.toInt == y",
     ),
     "True",
   );
   assert.equal(run("x = 5 :: Int\ny = 2 :: Int\nx / y"), "2");
-  assert.equal(run("x = 5 :: Number\ny = 2 :: Number\nx / y"), "2.5");
-  incomparable("(1 :: Float32) == (1 :: Number)");
+  assert.equal(run("x = 5 :: Float\ny = 2 :: Float\nx / y"), "2.5");
+  incomparable("(1 :: Float32) == (1 :: Float)");
 });
 test("typed arithmetic preserves identity", () => {
-  incomparable("x = 1 :: Int\ny = 2 :: Int\nz = x + y\nz == (3 :: Number)");
+  incomparable("x = 1 :: Int\ny = 2 :: Int\nz = x + y\nz == (3 :: Float)");
 });
 test("type-producing blocks keep recursive self references alive", () => {
   assert.equal(
@@ -159,11 +159,11 @@ test("ordinary type values reject binding defaults", () => {
 });
 test("refinement failures and arithmetic mismatches report errors", () => {
   assert.throws(
-    () => run("10.5 :: (Number .where (n -> isInt64(n)))"),
+    () => run("10.5 :: (Float .where (n -> isInt64(n)))"),
     /subset/,
   );
-  incomparable("(1 :: Number) + (2 :: Int)");
-  assert.equal(run("(1 :: Number) .matches (type Int)"), "False");
+  incomparable("(1 :: Float) + (2 :: Int)");
+  assert.equal(run("(1 :: Float) .matches (type Int)"), "False");
 });
 test("a failed refinement does not suppress a different union alternative", () => {
   assert.equal(

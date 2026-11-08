@@ -46,7 +46,7 @@ test "Optional labeled defaults"
 end
 
 test "Type fields and ignored captures"
-  def Rectangle type :Rect(width :: Number, height :: Number)
+  def Rectangle type :Rect(width :: Float, height :: Float)
   r = Rect(3, 4) :: Rectangle
   Rect(_, h) = r
 
@@ -66,7 +66,7 @@ test "Inspect a pattern union"
 end
 
 test "Local and global type text"
-  def Rectangle type :Rect(width :: Number, height :: Number)
+  def Rectangle type :Rect(width :: Float, height :: Float)
   t = type Rectangle
   local = toStringLocal(Type)(t)
   global = toString(Type)(t)
@@ -89,10 +89,10 @@ test "Mutually recursive mathematical expression types"
   def Product type
     (a :: MathExp) :* (b :: MathExp)
   end
-  def MathExp UnionType(Sum, Product, Symbol, Number)
-  (one :: MathExp) = 1 :: Number
-  (two :: MathExp) = 2 :: Number
-  (three :: MathExp) = 3 :: Number
+  def MathExp UnionType(Sum, Product, Symbol, Float)
+  (one :: MathExp) = 1 :: Float
+  (two :: MathExp) = 2 :: Float
+  (three :: MathExp) = 3 :: Float
   (sum :: MathExp) = (one :+ two) :: Sum
   expression = (sum :* three) :: Product
   text = toString(Product)(expression)
@@ -117,8 +117,8 @@ test "Named types and local accessors"
 end
 
 test "A union of type values"
-  def Circle type :Circle(Number)
-  def Square type :Square(Number)
+  def Circle type :Circle(Float)
+  def Square type :Square(Float)
   shape = UnionType(type Circle, type Square)
 
   expect shape result UnionType(Type(Circle(Float)), Type(Square(Float))) :: Type
@@ -136,15 +136,30 @@ test "Option factory with ()"
   (toString(Option(Int))(a), b, Option(Int))
 end
 
-test "Primitive aliases stay quoted in symbol value text"
-  def Choice type :Number | :None
-  x = :Number :: Choice
-  y = :None :: Choice
+test "Quoted primitive names are not symbols"
+  expect
+    :True
+  error "E_QUOTED_PRIMITIVE"
+  expect
+    :Rational
+  error "E_QUOTED_PRIMITIVE"
+  expect
+    :Number
+  error "E_QUOTED_PRIMITIVE"
+end
 
-  expect toString(Choice)(x) result ":Number" :: String
+test "All symbols print bare in value text"
+  def Choice type :yes | :None | :Widget
+  x = :yes :: Choice
+  y = :None :: Choice
+  z = :Widget :: Choice
+
+  expect toString(Choice)(x) result "yes" :: String
   expect toString(Choice)(y) result "None" :: String
-  expect x result :Number :: Choice
+  expect toString(Choice)(z) result "Widget" :: String
+  expect x result yes :: Choice
   expect y result None :: Choice
+  expect z result Widget :: Choice
   assert parse(Choice)(toString(Choice)(x)) == x
   assert parse(Choice)(toStringLocal(Choice)(x)) == x
 end
@@ -161,7 +176,7 @@ end
 
 test "Types use ordinary value equality"
   cached = Int
-  tree = :Int
+  tree = Int
   value = 3 :: tree
 
   assert cached == tree
@@ -174,7 +189,7 @@ test "Types use ordinary value equality"
 end
 
 test "Picture: named shape type"
-  def Rectangle type :Rectangle(w :: Number, h :: Number)
+  def Rectangle type :Rectangle(w :: Float, h :: Float)
   def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle)
   p = Picture(color: :Black, shape: Rectangle(3, 4)) :: Picture
 
@@ -273,7 +288,7 @@ test "Type normalization and wrappers"
 end
 
 test "Types as ordinary values"
-  def Rectangle type :Rect(width :: Number, height :: Number)
+  def Rectangle type :Rect(width :: Float, height :: Float)
   t = Type(Rect(Float, Float))
   Type(pattern) = t
 
@@ -331,7 +346,7 @@ test "Overlapping unions and narrowing"
 end
 
 test "Numeric spaces and conversion"
-  (x :: Number .where (n -> isInt64(n))) = 10
+  (x :: Float .where (n -> isInt64(n))) = 10
   (y :: Int) = 10
 
   assert x.toInt == y

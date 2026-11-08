@@ -149,8 +149,8 @@ test("holes interpret sidefix code using the active lexical grammar", () => {
 });
 test("colon quotes are raw; quoting an application head still evaluates its arguments", () => {
   assert.equal(run("x = 3\n:Box(x)"), "Box(3)");
-  assert.equal(run("x = 3\n:(Box(x))"), "Box(:x)");
-  assert.equal(run("x = 3\n:(Box($x))"), "Box($(:x))");
+  assert.equal(run("x = 3\n:(Box(x))"), "Box(x)");
+  assert.equal(run("x = 3\n:(Box($x))"), "Box($(x))");
   assert.equal(run("x = 3\nCode` $x + 1"), "$(x) + 1");
   assert.equal(run("x = 3\nCode$` $x + 1"), "3 + 1");
 });
@@ -191,14 +191,14 @@ test("typed interpolation retains tree structure, pack boundaries and grammar ch
   );
   assert.equal(
     run(
-      "def MathExp type Symbol | Number | :sum(MathExp,MathExp)\nx = MathExp` sum(a,b)\nMathExp$` sum($x,c)",
+      "def MathExp type Symbol | Float | :sum(MathExp,MathExp)\nx = MathExp` sum(a,b)\nMathExp$` sum($x,c)",
     ),
-    "sum(sum(:a, :b), :c)",
+    "sum(sum(a, b), c)",
   );
   assert.throws(
     () =>
       run(
-        'def MathExp type Symbol | Number | :sum(MathExp,MathExp)\nx = "bad" :: String\nMathExp$` $x',
+        'def MathExp type Symbol | Float | :sum(MathExp,MathExp)\nx = "bad" :: String\nMathExp$` $x',
       ),
     /expected|different concrete/,
   );

@@ -65,7 +65,7 @@ test "Typed expression quotes"
 end
 
 test "Typed parse / toString round-trip"
-  def Rectangle type :Rect(width :: Number, height :: Number)
+  def Rectangle type :Rect(width :: Float, height :: Float)
   value = Rect(3, 4) :: Rectangle
   text = toString(Rectangle)(value)
 

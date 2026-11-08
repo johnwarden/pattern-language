@@ -5,7 +5,7 @@ import { single, unwrap } from "../src/values.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const recursive = "def A type :End | :A(B)\ndef B type :B(A)\n";
 const math =
-  "def Sum type\n  (a :: MathExp) :+ (b :: MathExp)\nend\ndef Product type\n  (a :: MathExp) :* (b :: MathExp)\nend\ndef MathExp UnionType(Sum,Product,Symbol,Number)\n";
+  "def Sum type\n  (a :: MathExp) :+ (b :: MathExp)\nend\ndef Product type\n  (a :: MathExp) :* (b :: MathExp)\nend\ndef MathExp UnionType(Sum,Product,Symbol,Float)\n";
 
 test("consecutive function definitions form a mutually recursive lexical group", () => {
   assert.equal(
@@ -36,7 +36,7 @@ test("mutually recursive constructor and parameterized types complete before val
 });
 test("recursive UnionType preserves concrete members and has portable finite syntax", () => {
   assert.equal(
-    run(math + "(x :: MathExp) = 1 :: Number\n(x :: Number) == (1 :: Number)"),
+    run(math + "(x :: MathExp) = 1 :: Float\n(x :: Float) == (1 :: Float)"),
     "True",
   );
   for (const name of ["MathExp", "Sum", "Product"]) {
@@ -142,7 +142,7 @@ test("raw colon data is not renamed by macro hygiene", () => {
     run(
       "n = 5\nmacro :make Args() Code$` (x -> :(Box(x,$n)))\nf = make Args()\nf(1)",
     ),
-    "Box(:x, 5)",
+    "Box(x, 5)",
   );
 });
 test("named macro helpers bind their own parameters; defaults still see outer dependencies", () => {

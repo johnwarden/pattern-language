@@ -10,7 +10,7 @@ test("compiled types compare as their ordinary value trees, including nested val
     ),
     "(True, True, False)",
   );
-  assert.equal(run("Int == :Int"), "True");
+  assert.throws(() => run("Int == :Int"), /E_QUOTED_PRIMITIVE|quoted Int/);
   assert.equal(
     run("UnionType(Int,String) == :(UnionType(Int,String))"),
     "True",
@@ -20,7 +20,6 @@ test("compiled types compare as their ordinary value trees, including nested val
 
 test("equal trees have equal global text regardless of compiled caches", () => {
   for (const expression of [
-    "Int",
     "Type(Rect(Float))",
     "UnionType(Int,String)",
   ]) {
@@ -28,23 +27,23 @@ test("equal trees have equal global text regardless of compiled caches", () => {
       run(
         "a = " +
           expression +
-          "\nb = :" +
+          "\nb = :(" +
           expression +
-          "\n(a == b,toString(Expression)(a) == toString(Expression)(b),parse(Expression)(toString(Expression)(b)) == b)",
+          ")\n(a == b,toString(Expression)(a) == toString(Expression)(b),parse(Expression)(toString(Expression)(b)) == b)",
       ),
       "(True, True, True)",
     );
   }
-  assert.equal(
-    run("b = :Int\nparse(Expression)(toString(Expression)(b)) == b"),
-    "True",
+  assert.throws(
+    () => run("b = :Int\nparse(Expression)(toString(Expression)(b)) == b"),
+    /E_QUOTED_PRIMITIVE|quoted Int/,
   );
 });
 
 test("ordinary type trees work in type positions without a preexisting matcher", () => {
   assert.equal(
     run(
-      "t = :Int\n(x :: t) = 3\n(t .matches (type Type),x .matches t,parse(t)(toString(t)(x)) == x)",
+      "t = Int\n(x :: t) = 3\n(t .matches (type Type),x .matches t,parse(t)(toString(t)(x)) == x)",
     ),
     "(True, True, True)",
   );
@@ -52,11 +51,11 @@ test("ordinary type trees work in type positions without a preexisting matcher",
     run("def factory() :(Type(Rect(Int)))\ndef R factory()\nRect(3) :: R"),
     "Rect(3)",
   );
-  assert.equal(run("t = :Int\nr = t .where (n -> n > (0 :: Int))\n1 :: r"), "1");
-  assert.equal(run("def accept(t :: Type) 1 .matches t\naccept(:Int)"), "True");
+  assert.equal(run("t = Int\nr = t .where (n -> n > (0 :: Int))\n1 :: r"), "1");
+  assert.equal(run("def accept(t :: Type) 1 .matches t\naccept(Int)"), "True");
   assert.equal(
     run(
-      "def L(t :: Type) type :Nil | :Cons(t,L(t))\nt = :Int\nCons(1,:Nil) :: L(t)",
+      "def L(t :: Type) type :Nil | :Cons(t,L(t))\nt = Int\nCons(1,:Nil) :: L(t)",
     ),
     "Cons(1, Nil)",
   );
@@ -64,7 +63,7 @@ test("ordinary type trees work in type positions without a preexisting matcher",
 
 test("invalid type-shaped data is not compiled or silently normalized by matching", () => {
   assert.equal(
-    run("(:(Primitive(Bogus)) .matches (type Type),:Int .matches (type Type))"),
+    run("(:(Primitive(Bogus)) .matches (type Type),Int .matches (type Type))"),
     "(False, True)",
   );
   assert.equal(

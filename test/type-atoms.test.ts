@@ -28,14 +28,14 @@ test("Boolean constants and native predicates have a known Bool result type", ()
     ),
     "(True :: Bool, False :: Bool, False :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool)",
   );
-  assert.equal(i.inspect(i.run(":True")), ":True :: UpperCamelSymbol");
+  rejects(":True", "E_QUOTED_PRIMITIVE");
 });
 
 test("primitive names evaluate as type values in ordinary expressions", () => {
   const i = new Interpreter();
   assert.equal(i.inspect(i.run("r = Int\nr")), "Int :: Type");
   assert.equal(
-    run("(Int == (type Int),Float == Number,Bool == (type Bool))"),
+    run("(Int == (type Int),Float == (type Float),Bool == (type Bool))"),
     "(True, True, True)",
   );
   rejects("x = Foo\nx", "E_UNBOUND_NAME");
@@ -257,7 +257,6 @@ test("language constants self-evaluate independently of lexical storage", () => 
 
 test("equal compiled and raw type trees have equal canonical strings", () => {
   for (const expression of [
-    "Int",
     "Type(Rect(Float,Float))",
     "Type(Int)",
     "UnionType(Int,String)",
@@ -266,11 +265,12 @@ test("equal compiled and raw type trees have equal canonical strings", () => {
       run(
         "a = " +
           expression +
-          "\nb = :" +
+          "\nb = :(" +
           expression +
-          "\n(a == b,toString(Expression)(a) == toString(Expression)(b))",
+          ")\n(a == b,toString(Expression)(a) == toString(Expression)(b))",
       ),
       "(True, True)",
     );
   }
+  rejects(":Int", "E_QUOTED_PRIMITIVE");
 });

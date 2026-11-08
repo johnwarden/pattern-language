@@ -206,7 +206,7 @@ test("ordinary patterns inspect application syntax in Code", () => {
     run(
       "c = Code` f(1)\n(function :: Symbol)(argument) = c\n(function,argument)",
     ),
-    "(:f, 1)",
+    "(f, 1)",
   );
 });
 

@@ -97,7 +97,7 @@ test "Overlapping numeric and constructor unions construct"
 
   expect
     def A type :X(Int)
-    def B type :X(Number)
+    def B type :X(Float)
     UnionType(A, B)
   result UnionType(Type(X(Float)), Type(X(Int))) :: Type
 
@@ -123,8 +123,8 @@ test "Concrete duplicate alternatives still reject"
 end
 
 test "Overlapping abstract facet members retain spaces"
-  def Colored type :Rect(Number, Number, color: String)
-  def Rectangular type :Rect(w :: Number, h :: Number, **)
+  def Colored type :Rect(Float, Float, color: String)
+  def Rectangular type :Rect(w :: Float, h :: Float, **)
 
   expect UnionType(type Rectangular, type Colored) result UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
 end

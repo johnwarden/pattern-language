@@ -97,7 +97,7 @@ Argument-pack patterns permit extra labels. Constructed-value patterns are exact
 collect only positional values. For example Rect(w,rest...,color: c,**) still requires
 color. Labels requested by a binding pattern are required unless defaulted. Bare captures are lowercase (or reserved positional names). Explicit `T :: Type` also captures a TitleCase type-valued name; bare `T` is a reference, never an inferred capture. Labels and rest captures remain lowercase, with `_` for ignoring a capture in bindings,
 parameters, and match patterns. Duplicate names on one matching path are errors.
-In type definitions a field may specify `Number` or `w :: Number`. An unannotated
+In type definitions a field may specify `Float` or `w :: Float`. An unannotated
 named capture leaves its type to inference; it never implicitly means Any. Until
 inference is implemented, type definitions require explicit capture types,
 including rest captures. Binding, parameter, and match captures may remain
@@ -323,7 +323,7 @@ as a value. Use a closure, for example `n -> isInt64(n)`.
 ```text
 def Option(T :: Type) type :None | Some(T)
 def NoInt Option(Int) .where (v -> v .matches :None)
-(x :: Number .where (n -> isInt64(n))) = 10
+(x :: Float .where (n -> isInt64(n))) = 10
 ```
 
 `value .matches pattern` means `matches(value)(pattern)`. A type value supplies

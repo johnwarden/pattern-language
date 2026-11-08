@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Interpreter, displayResults } from "../src/index.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
-const expression = `def Atom unionType Number | String | Symbol
+const expression = `def Atom unionType Float | String | Symbol
 def Application type
   (head :: ValueExpr)(args... :: ValueExpr*)
 end
@@ -33,7 +33,7 @@ test("surface symbols have intrinsic concrete classes", () => {
 test("quoted symbol atoms and self-evaluating type values retain their identities in Any", () => {
   assert.equal(
     run(
-      "(symbol :: Any) = :Int\n(typeValue :: Any) = Int\nsymbol == typeValue",
+      "(symbol :: Any) = :Widget\n(typeValue :: Any) = Int\nsymbol == typeValue",
     ),
     "False",
   );
@@ -53,7 +53,7 @@ test("unannotated raw union values select and retain exactly one concrete member
   const i = new Interpreter();
   assert.equal(
     i.inspect(
-      i.run("def MathExp unionType Symbol | Number\n(a :: MathExp) = :a\na"),
+      i.run("def MathExp unionType Symbol | Float\n(a :: MathExp) = :a\na"),
     ),
     "a :: LowerCamelSymbol",
   );
@@ -73,7 +73,7 @@ test("union text and union container text omit redundant concrete tags", () => {
   );
   assert.equal(
     run(
-      'def U unionType Symbol | Number\n(x :: U) = :foo\n(toString(U)(x),parse(U)("foo") == x)',
+      'def U unionType Symbol | Float\n(x :: U) = :foo\n(toString(U)(x),parse(U)("foo") == x)',
     ),
     '("foo", True)',
   );

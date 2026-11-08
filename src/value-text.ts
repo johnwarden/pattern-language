@@ -2,7 +2,7 @@ import {
   primitiveNames,
   isSelfEvaluating,
   isCanonicalAtom,
-  isUnquotedValueSymbol,
+  isReservedPrimitiveSpelling,
 } from "./primitive-names.ts";
 import { parseExpression } from "./parser.ts";
 import { syntaxData, codeSource } from "./syntax-values.ts";
@@ -27,21 +27,32 @@ import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
 
 const singleton = (value: Syntax) => [{ label: "_1", value }];
-const symbolClasses = [
-  "LowerCamelSymbol",
-  "UpperCamelSymbol",
-  "UpperSnakeSymbol",
-  "PunctuationSymbol",
-];
-/** Expression/Code/Body text is code: quote names that would otherwise bind.
- * Data text (Option, Color, …) prints TitleCase symbols unquoted (`None`).
+/** Names the default grammar reads as layout keywords, not as this symbol. */
+const layoutKeywords = new Set([
+  "def",
+  "macro",
+  "type",
+  "unionType",
+  "if",
+  "else",
+  "match",
+  "end",
+  "test",
+  "expect",
+  "assert",
+  "todo",
+  "legacy",
+  "result",
+  "error",
+]);
+/** Value text prints ordinary symbols bare. Colon quotation is a code form,
+ * used when a bare name would bind, and for layout keywords whose bare name
+ * would be read as a grammar form rather than this symbol.
  */
 function quoteValueSymbol(name: string, expected?: TypeValue): boolean {
-  if (expected && symbolClasses.includes(expected.name))
-    return isSelfEvaluating(name);
   if (expected && ["Expression", "Code", "Body"].includes(expected.name))
     return !isCanonicalAtom(name);
-  return !isUnquotedValueSymbol(name);
+  return layoutKeywords.has(name);
 }
 const reserved = new Set([
   "Type",
@@ -554,10 +565,21 @@ export function parseValueText(
       return valRational(parsed.n, parsed.d);
     }
     if (n.kind === "quote") return decode(n.value, pattern);
-    if (n.kind === "symbol")
+    if (n.kind === "symbol") {
+      if (n.quoted && isReservedPrimitiveSpelling(n.name) && !pattern)
+        throw new LanguageError(
+          "quoted " +
+            n.name +
+            " is not a symbol; " +
+            n.name +
+            " is a primitive",
+          n.span,
+          { code: "E_QUOTED_PRIMITIVE", phase: "parse" },
+        );
       return !n.quoted && primitiveNames.has(n.name)
         ? domain.type(sym(primitiveNames.get(n.name)!))
         : sym(n.name);
+    }
     if (n.kind === "block" && !pattern && allowLayout) return syntaxData(n);
     if (n.kind === "block" && n.lines.length === 1)
       return decode(n.lines[0], pattern);
@@ -586,7 +608,7 @@ export function parseValueText(
         head: sym("Literal"),
         body: singleton(positional(n, 1)[0]).map((f) => ({
           ...f,
-          value: decode(f.value),
+          value: decode(f.value, pattern),
         })),
       };
     if (pattern && n.head.kind === "symbol" && n.head.name === "String")
@@ -696,8 +718,11 @@ export function parseValueText(
             return fail("Node requires a head and a braced argument body", n);
           return {
             kind: "term",
-            head: decode(head),
-            body: body.body.map((f) => ({ ...f, value: decode(f.value) })),
+            head: decode(head, pattern),
+            body: body.body.map((f) => ({
+              ...f,
+              value: decode(f.value, pattern),
+            })),
           };
         }
         if (

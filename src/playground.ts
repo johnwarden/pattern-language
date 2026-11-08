@@ -27,7 +27,7 @@ T .where predicate      → where(T)(predicate)
 value .matches pattern  → matches(value)(pattern)
 
 # Subsets keep their base type's concrete space
-Number .where (n -> isInt64(n))
+Float .where (n -> isInt64(n))
 # Type T? is T | :None; T* and T^ remain postfix trees
 1 :: Int?
 Int*

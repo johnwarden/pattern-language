@@ -1,5 +1,5 @@
 test "Capture accessors"
-  def Rectangle type :Rect(w :: Number, h :: Number)
+  def Rectangle type :Rect(w :: Float, h :: Float)
   r = Rect(3, 4) :: Rectangle
 
   expect r.w result 3 :: Float
@@ -54,7 +54,7 @@ test "Patterns as values"
 end
 
 test "Picture: nested pattern captures"
-  def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle(w :: Number, h :: Number))
+  def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle(w :: Float, h :: Float))
   p = Picture(color: :Red, shape: Rectangle(3, 4)) :: Picture
 
   expect p.color result Red :: (type :Red | :Black)

@@ -420,7 +420,7 @@ test("assertions require a positional Bool result and preserve ordinary operator
 
 test("assert checks the Bool value space rather than a same-spelled constructor", () => {
   const r = run(
-    'test "Not Bool"\n def Flag type :True | :False\n flag = :True :: Flag\n assert flag\nend',
+    'test "Not Bool"\n def Flag type :Yes | :No\n flag = :Yes :: Flag\n assert flag\nend',
   );
   assert.equal(r.passed, false);
   assert.match(r.message, /requires Bool/);
