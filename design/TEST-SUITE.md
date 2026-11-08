@@ -38,6 +38,8 @@ def ResultExpectation type (:expect (subject :: Expression) :result (result :: E
 
 The result delimiter is required. There are no value/type keyword clauses or results
 pack expectations. Multiple expect lines describe distinct scalar observations.
+Parse-error checks use `:expect :parse (source :: String) :error (reason :: String)`
+so malformed inner source stays inside a string; see Parse-error expectations below.
 
 ## Expected data and annotations
 
@@ -142,8 +144,9 @@ decision in [LEGACY-ASSERTIONS.md](LEGACY-ASSERTIONS.md). A corpus check rejects
 unaccounted legacy assertions and stale unresolved entries. Stable semantics belong
 in ordinary assertions even when their setup still uses bootstrap declarations.
 
-The same modifiers apply to expect subject error "reason". An E_ string matches a
-subject diagnostic code exactly; another string matches its message by substring.
+The same modifiers apply to expect subject error "reason" and to expect parse
+error "reason". An E_ string matches a subject diagnostic code exactly; another
+string matches its message by substring.
 Finding the expected error satisfies an error assertion, so it is an unexpected
 success when that assertion is todo. Setup, fixture, malformed source and host
 exceptions are never swallowed by todo. All assertions run after ordinary check
@@ -158,6 +161,51 @@ grammar changes and proof facts cannot flow to later assertions. A subject-local
 name does not escape into its expected-type operand. The static proof checker is
 future work; test assertions do not add its facts to setup.
 
+## Parse-error expectations
+
+Malformed program text cannot be a live `expect` subject: the outer `.test` file
+would fail to parse. `ParseErrorExpectation` is an ordinary test-grammar form:
+
+```text
+def ParseErrorExpectation type (:expect :parse (source :: String) :error (reason :: String))
+```
+
+`parse` is a quoted keyword in that chain, not a test-name special case. Todo and
+legacy variants exist. The source operand is a String, usually a block quote so
+the bad text is data. The quote may stop at the form's `error` clause (the same
+held-quote layout as quoted `if`/`else`):
+
+```text
+test "infix"
+  expect parse '
+    x + 
+  error "Missing second argument to infix operation"
+end
+```
+
+The runner evaluates that string, then parses the payload with the case's
+`Interpreter.parse` after committed setup. A preceding `macro` can install user
+grammar for the inner parse. Finding the expected error passes; a successful parse
+fails with “the subject succeeded.” Parse-error cases are not playground examples.
+
+`parse(Code)(text)` remains the typed Code reader and uses the default Code tree
+grammar, not session macros. Use `expect parse` when the point is program parse
+failure, including layout `E_BLOCK_END`.
+
+Escaped strings (`"if True\n  1\n\t2\nend"`) are valid String operands when the
+inner text cannot be a prefix-consistent block quote (mixed tab/space payloads
+inside a space-indented test file).
+
+A spaced infix operator with no right operand reports “Missing second argument to
+infix operation”. Tight `a+b` still reports that infix operators require spaces
+on both sides.
+
+Live subjects in the outer file are parsed with Code plus Test layout forms.
+Clause keywords that exist only on a replaced `Grammar` object (`otherwise`
+instead of `else`, `probe`/`then` before a session `macro` has been parsed into
+a later entry) cannot appear as live outer syntax. Quote them for parse-error
+checks; keep host `parseSurface` / sequential `Interpreter.parse` for those APIs.
+
 ## Future contracts and coverage
 
 Source-only adapters store provisional angle packs, extended numeric spellings,
@@ -166,7 +214,7 @@ authoritative, and ordinary parsing still checks every executed operand. Storage
 adapters cannot accidentally make an unsupported future form pass. Malformed files
 reject even if their assertions would have been todo.
 
-All 128 cases execute: 249 assertions pass (70 legacy) and 117 todos fail as expected.
+All 145 cases execute: 286 assertions pass (54 legacy) and 95 todos fail as expected.
 The 27 reviewed C01–C27 cases use the same grammar and stay synchronized with the
 decision record. Supported contracts carry no todo; C27 remains an exploratory
 lexical candidate. Fifty-seven former complete-pack expectations were split into

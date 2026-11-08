@@ -90,7 +90,9 @@ When trunk moves: rebase remaining **non-parked** feature/`cursor/*` PRs. Skip P
 
 The TypeScript implementation is the bootstrap reference. Read ROADMAP.md and the
 relevant specification before changing language semantics. Future contracts in the
-suite are not evidence that their language features are implemented.
+suite are not evidence that their language features are implemented. When a merge
+is authorized, it is squash then fast-forward onto trunk (no merge commits); this
+agent does not merge unless Jonathan says so for that PR.
 
 Commands are `just` recipes. Run `just check` before claiming done (on a laptop, `direnv exec . just check`). Secrets only via `secrets.sh` in the recipes that need them. Never make direnv exec the only documented way; cloud VMs have no direnv.
 

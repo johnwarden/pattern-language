@@ -931,6 +931,10 @@ The runner recursively scans tests/**/*.test. Files contain one or more named te
 blocks, organized by broad subdirectory. The ordinary schema in examples/test-schema.pattern
 requires a first Test row and permits a repeated Test* tail. Shared setup belongs
 inside a test; assertion modifiers cannot be applied to an entire test.
+`expect parse` plus a quoted string checks program parse failure without making the
+outer file illegal; see [design/TEST-SUITE.md](design/TEST-SUITE.md). Ratified layout
+rules (`end` ownership, mixed tab/space prefixes, quoted branches) are in
+[design/WHITESPACE.md](design/WHITESPACE.md).
 
 ```text
 test "Current and future primitives"

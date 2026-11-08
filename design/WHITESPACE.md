@@ -1,5 +1,10 @@
 # Significant whitespace and explicit delimiters
 
+**Ratified layout contract.** Block and clause completeness come from the active
+surface grammar’s quoted keyword chains, not a hardcoded `assert`/`expect`/`else`
+list. Indentation is not a semantic delimiter. Parse failures of malformed inner
+source belong in [TEST-SUITE.md](TEST-SUITE.md) (`expect parse` of quoted text).
+
 Indentation makes structure readable. It must not be the sole evidence that an
 executable indented block has ended. Layout-introduced forms require an explicit
 aligned end. Dedentation alone cannot silently move statements between scopes.
@@ -125,9 +130,12 @@ form's final `end`. Dedentation alone is not a semantic delimiter.
 
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
 indentation changes, an expectation borrowing its test's end, an error clause
-completing without a preceding `end`, quoted if/else branches, mixed
-tab/space prefixes, and the shared string/if terminator.
-Required infix spacing remains an ordinary check. The cases parse source without
-running println or requiring code.evaluate. Host test/layout-ends.test.ts also
-covers user-defined probe/then versus hold. test/repl.test.ts covers
-grammar-driven REPL completeness.
+completing without a preceding `end`, quoted if/else branches, extra `end`
+compatibility, incomplete infix, and `expect parse` of quoted malformed source.
+tests/layout/indent-prefixes.test covers pure tabs, pure spaces, mixed prefixes,
+and quote-indent stripping. tests/layout/custom-grammar.test covers a session
+`macro` plus `expect parse` for `hold` without `end`. Required infix spacing
+remains an ordinary check. Host test/layout-ends.test.ts keeps Grammar-object
+`parseSurface` (including `:otherwise` vs `:else`) and sequential session macros
+for probe/then success. test/repl.test.ts covers grammar-driven REPL completeness.
+test/indent-prefix.test.ts keeps the prefix-relation unit checks.

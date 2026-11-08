@@ -1,35 +1,32 @@
 test "An indented function cannot terminate at EOF"
-  source = "def f(x)\n  x"
-
-  expect parse(Code)(source) error "E_BLOCK_END"
+  expect parse '
+    def f(x)
+      x
+  error "E_BLOCK_END"
 end
 
 test "A nested block needs its own aligned end"
-  source = '
-    main = do
-      f = do
-        println("a")
-      println("b")
-      f
+  expect parse '
+    main = x ->
+      f = y ->
+        y
+      x
     end
-  end
+    main
+  error "E_BLOCK_END"
 
-  expect parse(Code)(source) error "E_BLOCK_END"
-
-  moved = '
-    main = do
-      f = do
-        println("a")
-        println("b")
-      f
+  expect parse '
+    main = x ->
+      f = y ->
+        y
+        x
     end
-  end
-
-  expect parse(Code)(moved) error "E_BLOCK_END"
+    main
+  error "E_BLOCK_END"
 end
 
 test "An expectation cannot borrow its enclosing test's end"
-  source = '
+  expect parse '
     test "outer"
       expect
         def f(x: Int = (1 / 0)) x
@@ -37,22 +34,17 @@ test "An expectation cannot borrow its enclosing test's end"
       result
         8 :: Int
     end
-  end
-
-  expect parse(Code)(source) error "E_BLOCK_END"
+  error "E_BLOCK_END"
 end
 
 test "A final end can close a string and its surrounding if"
-  source = '
-    s = if True '
-      Hello, World!
-    else '
-      What is cooking?
-    end
-    s
+  s = if True '
+    Hello, World!
+  else '
+    What is cooking?
   end
 
-  assert parse(Code)(source) .matches Code
+  expect s result "Hello, World!" :: Expression
 end
 
 test "An error clause closes an indented subject without a preceding end"
@@ -83,13 +75,22 @@ test "Indentation around a completing clause does not change membership"
 end
 
 test "An indented operand without a later grammar clause needs end"
-  source = "hold\n  True"
-
-  expect parse(Code)(source) error "E_BLOCK_END"
+  expect parse '
+    hold
+      True
+  error "E_BLOCK_END"
 end
 
 test "Removing required infix spaces is an error"
-  expect parse(Code)("a+b") error "infix operators require spaces"
+  expect parse '
+    a+b
+  error "infix operators require spaces"
+end
+
+test "infix"
+  expect parse '
+    x + 
+  error "Missing second argument to infix operation"
 end
 
 test "An extra end after a complete inline clause is still accepted"
@@ -117,8 +118,4 @@ test "Quoted if/else branches share one end"
       there
     end
   result "there" :: Expression
-
-  source = "if 1 == 1 '\n    Hello\nelse '\n    there\nend"
-
-  assert parse(Code)(source) .matches Code
 end

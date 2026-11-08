@@ -543,7 +543,12 @@ class Reader {
           throw new LanguageError("expected .name", name);
       }
       const rhs = this.peek();
-      if (!rhs || name.end === rhs.start)
+      if (!rhs)
+        throw new LanguageError(
+          "Missing second argument to infix operation",
+          name,
+        );
+      if (name.end === rhs.start)
         throw new LanguageError(
           "infix operators require spaces on both sides",
           name,
