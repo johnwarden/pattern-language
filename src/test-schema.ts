@@ -12,24 +12,18 @@ def ResultExpectation type (:expect (subject :: Expression) :result (result :: E
 def stepParts(e :: ResultExpectation) ("result","check",e.subject,e.result.expected,e.result.expectedType)
 def ErrorExpectation type (:expect (subject :: Expression) :error (reason :: String))
 def stepParts(e :: ErrorExpectation) ("error","check",e.subject,e.reason)
-def ParseErrorExpectation type (:expect :parse (source :: String) :error (reason :: String))
-def stepParts(e :: ParseErrorExpectation) ("parse-error","check",e.source,e.reason)
 def Assertion type (:assert (condition :: Expression))
 def stepParts(e :: Assertion) ("assert","check",e.condition)
 def LegacyResultExpectation type (:legacy :expect (subject :: Expression) :result (result :: ExpectedResult))
 def stepParts(e :: LegacyResultExpectation) ("result","legacy",e.subject,e.result.expected,e.result.expectedType)
 def LegacyErrorExpectation type (:legacy :expect (subject :: Expression) :error (reason :: String))
 def stepParts(e :: LegacyErrorExpectation) ("error","legacy",e.subject,e.reason)
-def LegacyParseErrorExpectation type (:legacy :expect :parse (source :: String) :error (reason :: String))
-def stepParts(e :: LegacyParseErrorExpectation) ("parse-error","legacy",e.source,e.reason)
 def LegacyAssertion type (:legacy :assert (condition :: Expression))
 def stepParts(e :: LegacyAssertion) ("assert","legacy",e.condition)
 def TodoResultExpectation type (:todo :expect (subject :: Expression) :result (result :: ExpectedResult))
 def stepParts(e :: TodoResultExpectation) ("result","todo",e.subject,e.result.expected,e.result.expectedType)
 def TodoErrorExpectation type (:todo :expect (subject :: Expression) :error (reason :: String))
 def stepParts(e :: TodoErrorExpectation) ("error","todo",e.subject,e.reason)
-def TodoParseErrorExpectation type (:todo :expect :parse (source :: String) :error (reason :: String))
-def stepParts(e :: TodoParseErrorExpectation) ("parse-error","todo",e.source,e.reason)
 def TodoAssertion type (:todo :assert (condition :: Expression))
 def stepParts(e :: TodoAssertion) ("assert","todo",e.condition)
 def LegacySetup type (:legacy (statement :: Expression))
@@ -41,15 +35,12 @@ TestFileContent
 export const TEST_STEP_TYPES = [
   "ResultExpectation",
   "ErrorExpectation",
-  "ParseErrorExpectation",
   "Assertion",
   "LegacyResultExpectation",
   "LegacyErrorExpectation",
-  "LegacyParseErrorExpectation",
   "LegacyAssertion",
   "TodoResultExpectation",
   "TodoErrorExpectation",
-  "TodoParseErrorExpectation",
   "TodoAssertion",
 ] as const;
 export const TEST_SETUP_TYPES = ["LegacySetup", "TodoSetup"];

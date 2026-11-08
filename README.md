@@ -17,8 +17,8 @@ Build and type checking also pass.
 | Intended contract | Current bootstrap |
 | --- | --- |
 | Concrete construction, identity-preserving refinements and abstract views | Structural types, subset checks, abstract slots and facets; revised boundary rules still need integration |
-| Numeric literals denote exact Rational values; `0f` is a Float64-rounded Rational | JavaScript-backed Int/Float/Float32; Number aliases Float |
-| General abstract unions; unambiguous grammars are a separate requirement | All union members must pass the current disjoint-syntax check |
+| Numeric literals denote exact Rational values; `0f` is a Float64-rounded Rational | Exact Rational literals, `0f`, and Float32/Float64 converters; IEEE payload `toString` still uses JS decimals |
+| General abstract unions; unambiguous grammars are a separate requirement | Overlapping `UnionType` members are allowed; `unambiguous` is unimplemented |
 | Named type declarations register accessors; plain type construction is capture-free | `def ... type ...` and existing type-expression accessor products |
 | Structured values need an established concrete interpretation | Raw Expression compatibility values are still allowed |
 | Refinement requirements use evidence; projection crosses one explicit boundary | Runtime subset machinery; no complete proof checker |

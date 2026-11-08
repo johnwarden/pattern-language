@@ -34,17 +34,11 @@ test "Quoted if/else branches use the same prefix relation"
 end
 
 test "Incompatible tab and space prefixes reject"
-  expect parse "if True\n  1\n\t2\nend"
-  error "inconsistent indentation"
-
-  expect parse "'\n  x\n\ty\nend"
-  error "indentation prefix"
+  expect parse(Code)("if True\n  1\n\t2\nend") error "inconsistent indentation"
+  expect parse(Code)("'\n  x\n\ty\nend") error "indentation prefix"
 end
 
 test "An extra end after a complete mixed-prefix clause is an error"
-  expect parse "if True\n\t1\nelse 2\nend"
-  error "E_UNEXPECTED_END"
-
-  expect parse "if True\n \t1\nelse 2\nend"
-  error "E_UNEXPECTED_END"
+  expect parse(Code)("if True\n\t1\nelse 2\nend") error "E_UNEXPECTED_END"
+  expect parse(Code)("if True\n \t1\nelse 2\nend") error "E_UNEXPECTED_END"
 end

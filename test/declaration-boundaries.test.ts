@@ -147,14 +147,6 @@ test("failed submissions roll back generic declaration products", () => {
   assert.equal(displayResults(interpreter.run("v = V(2) :: V(Int)\nv.x")), "2");
 });
 
-test("primitive atoms use canonical names and Number is an alias for Float", () => {
-  assert.equal(
-    run("(type Int,type Number,type Float32)"),
-    "(Int, Float, Float32)",
-  );
-  for (const alias of ["Num", "Float64", "Int64"])
-    rejects("type " + alias, "E_UNBOUND_TYPE");
-});
 
 test("nested constructor patterns retain accessors without completing fields", () => {
   assert.equal(

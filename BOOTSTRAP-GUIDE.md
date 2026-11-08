@@ -932,7 +932,7 @@ The runner recursively scans tests/**/*.test. Files contain one or more named te
 blocks, organized by broad subdirectory. The ordinary schema in examples/test-schema.pattern
 requires a first Test row and permits a repeated Test* tail. Shared setup belongs
 inside a test; assertion modifiers cannot be applied to an entire test.
-`expect parse` plus a quoted string checks program parse failure without making the
+`expect parse(Code)(text) error` checks program parse failure without making the
 outer file illegal; see [design/TEST-SUITE.md](design/TEST-SUITE.md). Ratified layout
 rules (`end` ownership, mixed tab/space prefixes, quoted branches) are in
 [design/WHITESPACE.md](design/WHITESPACE.md).
@@ -978,7 +978,6 @@ An empty-return assertion can bind () to the call, then return True. Ordinary pa
 shape and label rules remain covered by host tests. There is no results expectation
 or separate value/type keyword pair. Errors still use expect subject error "reason".
 
-All 128 cases execute: 249 assertions pass (70 legacy) and 117 todos fail as expected.
 All 76 playground examples remain standalone programs, with setup and optional final return packs included in their
 editable source. The build embeds source without running it to regenerate expected
 answers. Actual controls exercise every option from fresh/restored sessions, and
@@ -1013,9 +1012,12 @@ def MathExp UnionType(Sum,Product,Symbol,Number)
 MathExp
 ```
 
-UnionType retains member spaces and requires disjoint syntax. MathExp positions
-interpret their unique member without explicit annotations. The mutualTypes playground example constructs
-and round-trips a nested mathematical value with those annotations.
+UnionType retains member spaces and may overlap. Union-typed values omit `::`
+when untagged printed text designates a unique member, and keep it only when
+that text is ambiguous or would parse as a different value.
+MathExp positions interpret their unique member without explicit annotations.
+The mutualTypes playground example constructs and round-trips a nested
+mathematical value with those annotations.
 
 Code's public recursive schema is also bound as SyntaxNode. Inspecting Code shows
 TreeGrammar(SyntaxNode); inspecting a type value expands its root definition and
@@ -1040,11 +1042,12 @@ toString(MathExp)(a)
 ```
 
 Symbol is the prelude union of LowerCamelSymbol, UpperCamelSymbol and
-PunctuationSymbol. UnionType members must have disjoint syntax; overlap and
-unsupported proofs reject. Union parsing selects the unique concrete member,
-including in fields/lists, and printing omits redundant union annotations.
-Facet/Any reconstruction tags remain explicit. The current overlapping Int/Float,
-Int?/String? and list unions are invalid rather than resolved by branch priority.
+PunctuationSymbol. UnionType members may overlap; unannotated text that fits more
+than one member is ambiguous. Union-typed values keep `::` only when the untagged
+printed text would not reconstruct exactly the same member and value. Omit the tag
+when printed text designates a unique member; keep it when that text is ambiguous
+or would parse as a different value, e.g. Float64 `0.1` vs Rational `1/10`.
+Facet/Any reconstruction tags remain explicit.
 See simpleExpressionUnion and unannotatedUnion in the playground. The smaller
 Full Code grammar and executable nested test suites remain next work;
 [the design notes](design/UNION-GRAMMARS.md) distinguish them from this fix.

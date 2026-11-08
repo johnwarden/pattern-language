@@ -20,9 +20,14 @@ const bare = (v: Value): Value =>
   v.kind === "view" ? bare(v.base) : v.kind === "slot" ? bare(v.value) : v;
 const primitiveNames: Record<string, string> = {
   rational: "Rational",
+  Rational: "Rational",
   float64: "Float",
+  Float: "Float",
+  Float64: "Float64",
   float32: "Float32",
+  Float32: "Float32",
   int64: "Int",
+  Int: "Int",
   String: "String",
   Bool: "Bool",
   Symbol: "Symbol",

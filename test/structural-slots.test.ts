@@ -285,13 +285,6 @@ test("concrete Type cannot disguise an open constraint", () => {
   );
 });
 
-test("overlapping abstract members reject before matching", () => {
-  assert.throws(
-    () => run(full + "UnionType(type Rectangular,type Colored)"),
-    /overlapping syntax/,
-  );
-  assert.throws(() => run("def Bad type :A | :A\n0"), /ambiguous/);
-});
 
 test("abstract order is total inside a common domain but concrete cross-space comparison still fails", () => {
   assert.equal(

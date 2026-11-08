@@ -243,12 +243,17 @@ name. Runtime Expression and automatic descriptor decoding remain optional/unset
 
 The current bootstrap has structural descriptors, abstract slots/facets, runtime
 subsets, canonical typed-text support, recursive groups and typed Body inspection.
-Ordinary numeric literals are exact Rationals; Int/Float/Float32 remain concrete
-carveouts of representable Rationals (with JS payloads in this bootstrap). It still
-rejects syntax-overlapping UnionType members, admits raw Expression compatibility
-values, installs accessor products under the old type forms, and lacks the revised
-evidence/projection checker. These are implementation facts, not new accepted
-constraints. Details are in
+Ordinary numeric literals are exact Rationals; Int/Float/Float32/Float64 remain
+concrete carveouts of representable Rationals (with JS payloads in this bootstrap).
+General `UnionType` members may overlap. Union-typed values keep their `::` tag
+only when ambiguous: when the untagged printed text would not reconstruct exactly
+the same member and value. Omit the tag when printed text designates a unique
+member. Keep it when that text is ambiguous or would parse as a different value,
+e.g. Float64 `0.1` vs Rational `1/10`. Untagged `toString(Float64)` of that payload
+remains JS decimal and is not a claimed round-trip spelling. The bootstrap still
+admits raw Expression compatibility values, installs accessor products under the
+old type forms, and lacks the revised evidence/projection checker. These are
+implementation facts, not new accepted constraints. Details are in
 [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md).
 
 [The roadmap](ROADMAP.md) schedules alignment. [The decision record](design/LANGUAGE-DECISIONS.md)
@@ -257,6 +262,5 @@ how all cases execute. Assertions can be ordinary, legacy (must pass until retir
 or todo (must fail; a pass demands removal of todo). These are assertion modifiers,
 not alternate kinds of test or value. Every value expectation checks the observed
 result type as well as value identity. No assertion grants proof facts to another.
-The suite has 128 executing cases, 249 passing assertions (70 legacy), and 117 todo
-expected failures. Those outcomes do not implement the revised evidence or projection
-checker. Program CLI output uses the annotated REPL display.
+The suite does not implement the revised evidence or projection checker. Program
+CLI output uses the annotated REPL display.

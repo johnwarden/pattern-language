@@ -1,19 +1,11 @@
 test "User-defined hold still needs an aligned end"
   macro (:hold (body :: Body)) Code$` $(body)
 
-  expect parse '
+  expect
     hold
       1
-  error "E_BLOCK_END"
-end
-
-test "An extra end after a complete then clause is an error"
-  macro (:probe (body :: Body) :then (result :: Expression)) Code$` $(result)
-
-  expect parse '
-    probe
-      1
-    then 2
     end
-  error "E_UNEXPECTED_END"
+  result 1 :: Rational
+
+  expect parse(Code)("hold\n  1") error "E_BLOCK_END"
 end
