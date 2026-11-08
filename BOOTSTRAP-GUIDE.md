@@ -1011,7 +1011,9 @@ def MathExp UnionType(Sum,Product,Symbol,Number)
 MathExp
 ```
 
-UnionType retains member spaces and may overlap; unique spellings omit tags.
+UnionType retains member spaces and may overlap. Union-typed values omit `::`
+when untagged printed text designates a unique member, and keep it only when
+that text is ambiguous or would parse as a different value.
 MathExp positions interpret their unique member without explicit annotations.
 The mutualTypes playground example constructs and round-trips a nested
 mathematical value with those annotations.
@@ -1040,10 +1042,11 @@ toString(MathExp)(a)
 
 Symbol is the prelude union of LowerCamelSymbol, UpperCamelSymbol and
 PunctuationSymbol. UnionType members may overlap; unannotated text that fits more
-than one member is ambiguous. Unique printed spellings omit tags; overlapping
-numeric members keep existing `::`. Facet/Any reconstruction tags remain explicit.
-IEEE Float64 payload text still prints JS decimals, so `float64(0.1)` is not a
-unique EitherFloat spelling.
+than one member is ambiguous. Union-typed values keep `::` only when the untagged
+printed text would not reconstruct exactly the same member and value. Omit the tag
+when printed text designates a unique member; keep it when that text is ambiguous
+or would parse as a different value, e.g. Float64 `0.1` vs Rational `1/10`.
+Facet/Any reconstruction tags remain explicit.
 See simpleExpressionUnion and unannotatedUnion in the playground. The smaller
 Full Code grammar and executable nested test suites remain next work;
 [the design notes](design/UNION-GRAMMARS.md) distinguish them from this fix.

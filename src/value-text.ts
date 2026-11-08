@@ -107,8 +107,9 @@ export function valueText(
         const a = concreteSpace(original),
           b = concreteSpace(reconstructed);
         if (a && b && typeIdentity(a) === typeIdentity(b)) {
-          // Overlapping union members keep `::` unless the printed spelling
-          // designates; live IEEE bits are not a unique spelling.
+          // Keep `::` when untagged printed text would not reconstruct the
+          // same member and value (ambiguous, or a different value such as
+          // Float64 0.1 vs Rational 1/10).
           if (
             !(
               original.kind === "slot" &&
@@ -186,7 +187,7 @@ export function valueText(
     if (v.kind === "slot") {
       const code = unwrap(v.value);
       if (code.kind === "code") return syntax(code);
-      // Unique printed spellings omit tags; overlapping members keep existing `::`.
+      // Omit `::` when untagged printed text designates a unique member.
       if (v.type.unionMembers && concreteSpace(v) && implicit.has(v))
         return parseExpression(
           valueText(v.value, domain, concreteSpace(v)),

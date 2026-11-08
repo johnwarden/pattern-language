@@ -27,14 +27,45 @@ test "Overlapping UnionType keeps Float32 and Float64 identities"
   assert parse(EitherFloat)(toString(EitherFloat)(a)) == a
 end
 
-test "Tagged reconstruction keeps :: for inexact Float64 decimals"
-  def EitherFloat UnionType(type Float32, type Float64)
-  (c :: EitherFloat) = float64(0.1)
-  text = toString(EitherFloat)(c)
+test "Union text omits :: when untagged print reconstructs the same member and value"
+  def Unique UnionType(type Int, type String)
+  (x :: Unique) = 3 :: Int
+  omitted = toString(Unique)(x)
 
-  legacy expect text result "0.1 :: Float64" :: Expression
-  todo expect text result "0.1 :: Float64" :: String
-  assert parse(EitherFloat)(text) == c
+  legacy expect omitted result "3" :: Expression
+  todo expect omitted result "3" :: String
+  assert parse(Unique)(omitted) == x
+
+  def Mixed UnionType(type Int, type Float)
+  (y :: Mixed) = 0.5 :: Float
+  uniqueFloat = toString(Mixed)(y)
+
+  legacy expect uniqueFloat result "0.5" :: Expression
+  todo expect uniqueFloat result "0.5" :: String
+  assert parse(Mixed)(uniqueFloat) == y
+end
+
+test "Union text keeps :: when untagged print is ambiguous or a different value"
+  def EitherFloat UnionType(type Float32, type Float64)
+  (a :: EitherFloat) = float32(0.5)
+  (c :: EitherFloat) = float64(0.1)
+  ambiguous = toString(EitherFloat)(a)
+  differentValue = toString(EitherFloat)(c)
+
+  legacy expect ambiguous result "0.5 :: Float32" :: Expression
+  todo expect ambiguous result "0.5 :: Float32" :: String
+  legacy expect differentValue result "0.1 :: Float64" :: Expression
+  todo expect differentValue result "0.1 :: Float64" :: String
+  assert parse(EitherFloat)(ambiguous) == a
+  assert parse(EitherFloat)(differentValue) == c
+
+  expect
+    parse(EitherFloat)("0.5")
+  error "E_AMBIGUOUS_PATTERN"
+
+  expect
+    parse(EitherFloat)("0.1")
+  error "E_PATTERN_MISMATCH"
 end
 
 test "Unannotated overlapping numeric values stay ambiguous"

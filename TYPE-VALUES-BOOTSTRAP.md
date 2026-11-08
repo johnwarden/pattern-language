@@ -208,8 +208,9 @@ atoms inside quoted expression trees. Parsing global data is inert: it never cal
 functions, installs declarations or evaluates interpolation. Primitive atoms resolve
 against the fixed language vocabulary, not user lexical bindings.
 
-Unique union spellings omit :: tags; overlapping members keep existing `::`.
-Facet/Any positions serialize the concrete type explicitly. Abstract slots
+Union-typed values omit `::` when untagged printed text designates a unique
+member, and keep it only when that text is ambiguous or would parse as a
+different value. Facet/Any positions serialize the concrete type explicitly. Abstract slots
 do not add a structural annotation node to value identity.
 
 ```text
@@ -219,9 +220,9 @@ do not add a structural annotation node to value identity.
 ```
 
 Source expression :: T requires concrete/refinement T. Abstract domains belong in
-binding/parameter/match constraints. Unique union spellings reconstruct without
-tags; overlapping members keep `::`. Facet/Any parsing still requires a concrete
-:: tag.
+binding/parameter/match constraints. Untagged union text reconstructs when it
+designates a unique member and value; otherwise `::` stays. Facet/Any parsing
+still requires a concrete :: tag.
 
 Open facets retain every original field and the original concrete member descriptor.
 Their required fields must exist. Facets, concrete types, nested abstract fields,

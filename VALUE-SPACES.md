@@ -230,10 +230,11 @@ The current bootstrap has structural descriptors, abstract slots/facets, runtime
 subsets, canonical typed-text support, recursive groups and typed Body inspection.
 Ordinary numeric literals are exact Rationals; Int/Float/Float32/Float64 remain
 concrete carveouts of representable Rationals (with JS payloads in this bootstrap).
-General `UnionType` members may overlap; reconstruction uses existing concrete `::`
-tags. Unique-spelling omission follows printed numeric text, not live IEEE bits.
-`toString(EitherFloat)(float64(0.1))` therefore keeps `:: Float64` so parse does not
-read untagged `0.1` as Rational 1/10. Untagged `toString(Float64)` of that payload
+General `UnionType` members may overlap. Union-typed values keep their `::` tag
+only when ambiguous: when the untagged printed text would not reconstruct exactly
+the same member and value. Omit the tag when printed text designates a unique
+member. Keep it when that text is ambiguous or would parse as a different value,
+e.g. Float64 `0.1` vs Rational `1/10`. Untagged `toString(Float64)` of that payload
 remains JS decimal and is not a claimed round-trip spelling. The bootstrap still
 admits raw Expression compatibility values, installs accessor products under the
 old type forms, and lacks the revised evidence/projection checker. These are
