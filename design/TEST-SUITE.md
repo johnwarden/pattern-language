@@ -190,7 +190,7 @@ fails with “the subject succeeded.” Parse-error cases are not playground exa
 
 `parse(Code)(text)` remains the typed Code reader and uses the default Code tree
 grammar, not session macros. Use `expect parse` when the point is program parse
-failure, including layout `E_BLOCK_END`.
+failure, including layout `E_BLOCK_END` and extra-`end` `E_UNEXPECTED_END`.
 
 Escaped strings (`"if True\n  1\n\t2\nend"`) are valid String operands when the
 inner text cannot be a prefix-consistent block quote (mixed tab/space payloads
@@ -214,7 +214,6 @@ authoritative, and ordinary parsing still checks every executed operand. Storage
 adapters cannot accidentally make an unsupported future form pass. Malformed files
 reject even if their assertions would have been todo.
 
-All 145 cases execute: 286 assertions pass (54 legacy) and 95 todos fail as expected.
 The 27 reviewed C01–C27 cases use the same grammar and stay synchronized with the
 decision record. Supported contracts carry no todo; C27 remains an exploratory
 lexical candidate. Fifty-seven former complete-pack expectations were split into

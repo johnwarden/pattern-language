@@ -20,7 +20,7 @@ const pad = (text: string) =>
     .join("\n");
 function sample(body: string, clause: string, mode: AssertionMode = "check") {
   return loadTests({
-    "sample.test": `test "Sample"\n  ${mode === "check" ? "" : mode + " "}expect\n${pad(body)}\n  ${clause}\n  end\nend`,
+    "sample.test": `test "Sample"\n  ${mode === "check" ? "" : mode + " "}expect\n${pad(body)}\n  ${clause}\nend`,
   })[0];
 }
 const run = (source: string) => runTest(loadTests({ "case.test": source })[0]);
@@ -399,7 +399,7 @@ test("every assertion runs after failures; expected failures are not passes", ()
 test("setup is shared only within its case, while individual subjects remain isolated", () => {
   const cases = loadTests({
     "scope.test":
-      'test "Setup"\n  def Box type Box(Int)\n  x = 3 :: Int\n  expect (Box(x) :: Box) result Box(3) :: Box\n  expect\n    x = 9 :: Int\n    x\n  result 9 :: Int\n  end\n  expect x result 3 :: Int\nend\ntest "Fresh"\n  expect x error "E_UNBOUND_NAME"\nend',
+      'test "Setup"\n  def Box type Box(Int)\n  x = 3 :: Int\n  expect (Box(x) :: Box) result Box(3) :: Box\n  expect\n    x = 9 :: Int\n    x\n  result 9 :: Int\n  expect x result 3 :: Int\nend\ntest "Fresh"\n  expect x error "E_UNBOUND_NAME"\nend',
   });
   for (const t of cases) {
     const r = runTest(t);

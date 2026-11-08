@@ -181,6 +181,12 @@ function blockEndError(span?: Span, here?: Span): never {
     },
   );
 }
+function extraEndError(span: Span): never {
+  throw new LanguageError("end does not close a completed form", span, {
+    code: "E_UNEXPECTED_END",
+    phase: "parse",
+  });
+}
 interface Token extends Span {
   kind: string;
   text: string;
@@ -844,6 +850,7 @@ function layout(
         throw new LanguageError("inconsistent indentation", ts[0]);
       if (isEndLine(ts)) {
         if (!open) throw new LanguageError("end has no preceding block", ts[0]);
+        if (open.closed) extraEndError(ts[0]);
         i++;
         open = undefined;
         continue;

@@ -10,6 +10,9 @@ import {
 
 const isBlockEnd = (error: unknown) =>
   error instanceof LanguageError && error.diagnostic.code === "E_BLOCK_END";
+const isUnexpectedEnd = (error: unknown) =>
+  error instanceof LanguageError &&
+  error.diagnostic.code === "E_UNEXPECTED_END";
 
 test("clause keywords come from the active grammar object, not a hardcoded else list", () => {
   const otherwise = new Grammar(
@@ -99,6 +102,18 @@ end`,
       ),
     isBlockEnd,
   );
+  assert.throws(
+    () =>
+      parseSurface(
+        `probe
+  1
+then 2
+end`,
+        "program",
+        { layoutForms: forms },
+      ),
+    isUnexpectedEnd,
+  );
 });
 
 test("session macros make probe/then complete without end; hold still needs end", () => {
@@ -138,5 +153,16 @@ end`,
         "repl",
       ),
     isBlockEnd,
+  );
+  assert.throws(
+    () =>
+      i.parse(
+        `probe
+  1
+then 2
+end`,
+        "repl",
+      ),
+    isUnexpectedEnd,
   );
 });

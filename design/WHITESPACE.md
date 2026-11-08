@@ -31,7 +31,9 @@ A sidefix form may have several operands separated by clause keywords from the
 at the form's indent closes the previous indented operand; there is no `end`
 before that clause. `end` is required when the last remaining operand is still
 an unclosed indented body. Completing the grammar with an inline last operand
-does not invent a trailing `end`.
+does not invent a trailing `end`. A redundant `end` after that complete inline
+clause is `E_UNEXPECTED_END`; it cannot close the completed form or steal an
+enclosing block.
 
 ```text
 expect
@@ -124,14 +126,16 @@ grammar is complete. A blank line still force-submits whatever is pending.
 Layout-introduced blocks require an aligned `end` while that operand is still
 open. Clause continuations and form completeness come from the active grammar's
 quoted keyword chains, not a hardcoded `else`/`assert`/`expect` list. A missing
-closure is `E_BLOCK_END`. Indented typed quotes still use `E_QUOTE_END`. A string
+closure is `E_BLOCK_END`. A redundant `end` after a complete inline final clause
+is `E_UNEXPECTED_END`. Indented typed quotes still use `E_QUOTE_END`. A string
 inside a sidefix form stops at that form's clause keyword and may share the
 form's final `end`. Dedentation alone is not a semantic delimiter.
 
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
 indentation changes, an expectation borrowing its test's end, an error clause
 completing without a preceding `end`, quoted if/else branches, extra `end`
-compatibility, incomplete infix, and `expect parse` of quoted malformed source.
+after a complete inline clause, incomplete infix, and `expect parse` of quoted
+malformed source.
 tests/layout/indent-prefixes.test covers pure tabs, pure spaces, mixed prefixes,
 and quote-indent stripping. tests/layout/custom-grammar.test covers a session
 `macro` plus `expect parse` for `hold` without `end`. Required infix spacing

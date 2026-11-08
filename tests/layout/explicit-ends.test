@@ -93,13 +93,25 @@ test "infix"
   error "Missing second argument to infix operation"
 end
 
-test "An extra end after a complete inline clause is still accepted"
-  expect
+test "An extra end after a complete inline clause is an error"
+  expect parse '
     if True
       1
     else 2
     end
-  result 1 :: Rational
+  error "E_UNEXPECTED_END"
+end
+
+test "An extra end does not steal an enclosing block"
+  expect parse '
+    f = x ->
+      if True
+        1
+      else 2
+      end
+      x
+    end
+  error "E_UNEXPECTED_END"
 end
 
 test "Quoted if/else branches share one end"

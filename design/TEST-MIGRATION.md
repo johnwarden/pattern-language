@@ -57,7 +57,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Actual controls, sorting and old/new storage restoration | test/playground.test.ts; every executable example exercised through DOM controls |
 | Resource limits, staging rollback, build/schema synchronization | existing host tests; preserve their boundary observations |
 | Revised primitives, value spaces, proof evidence, projections, facets and spreads | tests/specification/*.test; C01–C27 execute assertion-level todos, C27 explicitly exploratory |
-| PR9 layout behavior (EOF/`end`/quoted clauses/mixed indent/incomplete infix) | tests/layout/*.test via live eval and `expect parse`; host keeps Grammar-object `parseSurface`, session-macro probe/then success, REPL completeness, and indent-prefix unit checks |
+| PR9 layout behavior (EOF/`end`/quoted clauses/mixed indent/incomplete infix/extra `end`) | tests/layout/*.test via live eval and `expect parse`; host keeps Grammar-object `parseSurface`, session-macro probe/then success, REPL completeness, and indent-prefix unit checks |
 | Parse-error harness (`expect parse` quoted payload, not outer-file parse) | test/test-suite.test.ts plus tests/layout/explicit-ends.test `infix` |
 
 No whole-file migration is claimed for candidate files outside the selected batch.

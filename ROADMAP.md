@@ -122,9 +122,10 @@ explicit layout termination, including shared string/if terminator ownership.
 - Implement explicit layout end ownership and migrate source/host fixtures together.
   Reject missing inner ends; clause continuations and form completeness come from
   the active surface grammar, not hardcoded keyword lists. Support strings ending
-  at a dedented clause and a final end shared with their containing form. Keep EOF
-  rejection and existing string data. The REPL submits a finished grammar form on
-  its last line.
+  at a dedented clause and a final end shared with their containing form. Reject a
+  redundant `end` after a complete inline final clause; that `end` cannot close the
+  completed form or steal an enclosing block. Keep EOF rejection and existing string
+  data. The REPL submits a finished grammar form on its last line.
 - Implemented legacy/todo setup alternatives from the same incoming scope; do not allow
   duplicate-name failures or leaked bindings to mask a fulfilled todo.
 

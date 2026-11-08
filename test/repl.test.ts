@@ -54,6 +54,21 @@ test("REPL does not evaluate a clause-bearing form before the grammar is complet
   assert.match(finished.submitted[0], /else 2/);
 });
 
+test("REPL reports an extra end after a complete inline clause", () => {
+  const i = new Interpreter();
+  const extra = `if True
+  1
+else 2
+end`;
+  assert.equal(ready(extra, i), true);
+  assert.throws(
+    () => i.parse(extra, "repl"),
+    (error: unknown) =>
+      error instanceof LanguageError &&
+      error.diagnostic.code === "E_UNEXPECTED_END",
+  );
+});
+
 test("REPL is ready after end, and a blank line still force-submits", () => {
   const i = new Interpreter();
   assert.equal(
@@ -84,6 +99,13 @@ test("user-defined grammar drives the same REPL completeness rule", () => {
   i.run("macro (:hold (body :: Body)) Code$` $(body)", "repl");
   assert.equal(ready("probe 1 then 2", i), true);
   assert.equal(ready("probe\n  1\nthen 2", i), true);
+  assert.equal(ready("probe\n  1\nthen 2\nend", i), true);
+  assert.throws(
+    () => i.parse("probe\n  1\nthen 2\nend", "repl"),
+    (error: unknown) =>
+      error instanceof LanguageError &&
+      error.diagnostic.code === "E_UNEXPECTED_END",
+  );
   assert.equal(ready("probe\n  1\n", i), false);
   assert.equal(ready("hold\n  1\n", i), false);
   assert.equal(ready("hold\n  1\nend", i), true);
