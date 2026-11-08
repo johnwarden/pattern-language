@@ -64,16 +64,16 @@ test("constructor heads stay tags while bare symbols need quotation", () => {
 test("ordinary argument packs specialize a function over a type value", () => {
   assert.equal(
     run(
-      "def nonZero(t :: Type)(n :: t) n != 0\n(nonZero(Int)(5),nonZero(Int)(0),nonZero(Float)(0.5))",
+      "def nonZero(t :: Type)(n :: t) n != (0 :: t)\n(nonZero(Int)(5),nonZero(Int)(0),nonZero(Float)(0.5))",
     ),
     "(True, False, True)",
   );
   assert.equal(
-    run("def nonZero(t :: Type)(n :: t) n != 0\nf = nonZero(Int)\nf(5)"),
+    run("def nonZero(t :: Type)(n :: t) n != (0 :: t)\nf = nonZero(Int)\nf(5)"),
     "True",
   );
   rejects(
-    'def nonZero(t :: Type)(n :: t) n != 0\nnonZero(Int)("five")',
+    'def nonZero(t :: Type)(n :: t) n != (0 :: t)\nnonZero(Int)("five")',
     "E_NO_METHOD",
   );
 });

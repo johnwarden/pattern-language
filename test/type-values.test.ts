@@ -138,7 +138,10 @@ test("typed value round trips retain nested concrete spaces and canonical labels
     ),
     "(True, True)",
   );
-  assert.equal(run("x = negate(5)\nparse(Int)(toString(Int)(x)) == x"), "True");
+  assert.equal(
+    run("x = negate(5 :: Int)\nparse(Int)(toString(Int)(x)) == x"),
+    "True",
+  );
 });
 
 test("global text does not depend on names; local aliases resolve in the caller scope", () => {
@@ -284,10 +287,16 @@ test("nested type boundaries round trip with their concrete interpretations", ()
   assert.equal(
     displayResults(
       second.run(
-        "t = parse(Type)(text)\n(x :: t) = (Circle(1.2) :: (type :Circle(Float32)))\n(parse(t)(toString(t)(x)) == x,toString(Type)(t) == text)",
+        "t = parse(Type)(text)\n(x :: t) = (Circle(0.5) :: (type :Circle(Float32)))\n(parse(t)(toString(t)(x)) == x,toString(Type)(t) == text)",
       ),
     ),
     "(True, True)",
+  );
+  assert.throws(
+    () => run("def Circle type :Circle(Float32)\nCircle(1.2) :: Circle"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /exactly representable|expected Circle/.test(e.message),
   );
 });
 

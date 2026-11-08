@@ -5,8 +5,8 @@ supported behavior as ordinary expect/assert checks. When the replacement is
 settled, put an executable todo for the same subject beside the legacy assertion.
 Each still has its own required outcome: legacy must pass and todo must fail.
 
-The source suite retains 70 legacy assertions: 48 have a same-subject todo and
-22 are listed below because their exact replacement is not yet specified. A host
+The source suite retains 54 legacy assertions: 33 have a same-subject todo and
+21 are listed below because their exact replacement is not yet specified. A host
 check verifies this inventory against every legacy assertion in tests/**/*.test.
 Adding a blanket failing placeholder is not a replacement specification.
 
@@ -42,7 +42,6 @@ ordinary assertion if the intended result is already implemented.
 | `examples/grammars#dsl-tests-with-explicit-value-and-type` | `type(expected(t))` | D03 / milestone 5b: concrete representation of a raw grammar operand. |
 | `examples/grammars#test-dsl-with-typed-code` | `e(expected(check(t)))` | D03 / milestone 5b: numeric syntax in a raw expected operand versus evaluated numeric identity. |
 | `examples/grammars#test-dsl-with-typed-code` | `type(expected(check(t)))` | D02/D03: reserved primitive names in raw syntax versus evaluated type values. |
-| `examples/macros#code-function-versus-registered-macro` | `twice (2 + 3)` | D04: arithmetic over default exact literals is optional; default arithmetic/result rules are not specified. |
 | `examples/macros#typed-code-recursive-for-each-macro` | `value` | D03 / milestone 5b: inferred concrete result spaces for unannotated nested lists and empty branches. |
 | `examples/quotation#quoted-expression-values` | `b` | D03 / milestone 5b: whether runtime raw syntax is exposed and its concrete type. |
 | `examples/types#canonical-type-alternatives` | `toString(Type)(a)` | Type-value representation: final public descriptor text; structural equality and round trips remain ordinary assertions. |

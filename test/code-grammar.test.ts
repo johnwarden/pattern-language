@@ -224,9 +224,20 @@ test("Code categories are source-defined subsets of the existing space", () => {
 test("facet inspection interprets captures without rewriting Code", () => {
   assert.equal(
     run(
-      "def NumericCall type :f(x :: Float32,**)\nc = Code` f(1.2345678912)\n(p :: NumericCall) = c\np == c",
+      "def NumericCall type :f(x :: Float32,**)\nc = Code` f(0.5)\n(p :: NumericCall) = c\np == c",
     ),
     "True",
+  );
+  assert.throws(
+    () =>
+      run(
+        "def NumericCall type :f(x :: Float32,**)\nc = Code` f(1.2345678912)\n(p :: NumericCall) = c",
+      ),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /exactly representable|expected Float32|expected NumericCall/.test(
+        e.message,
+      ),
   );
 });
 

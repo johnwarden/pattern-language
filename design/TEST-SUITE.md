@@ -175,7 +175,7 @@ retained, with printer string fixtures changed only for the requested comma spac
 [TEST-MIGRATION.md](TEST-MIGRATION.md) records the coverage boundaries.
 
 Program and REPL output use the same annotated printer. --parse prints surface syntax.
-Full Code interpretation, the source evaluator, revised numeric types and static
+Full Code interpretation, the source evaluator, remaining numeric families and static
 proof checking remain later milestones. GitHub is the project source of truth; CI
 runs type checking, build, host tests and the complete source suite without application
 secrets and with read-only repository permissions.

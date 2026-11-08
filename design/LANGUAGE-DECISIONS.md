@@ -56,7 +56,7 @@ Decimal, hexadecimal and binary spellings denote exact values. `0f` first select
 
 Explicit converters such as `float32` and `float64` return their fixed-precision typed values. Exact designation must not silently round: `0.1 :: Float32` fails, whereas an explicit converter may round. Finite fixed-precision types are concrete carveouts of representable Rational values with their own operations. Cross-space operations/conversions must be explicit; base arithmetic is not inherited merely because a Rational representation exists.
 
-Default short type names, the Number union's exact membership, complete format families, ties/overflow policies, integer wrap/check policies, numeric separators and canonical numeric spelling remain to be finalized. Hexadecimal canonical output and nearest-ties-to-even are proposals, not ratified here. Rational runtime arithmetic may be omitted; literal representation, equality and projection still require a defined model. **Sources:** P, N, K “Refinement Type vs Carveouts,” AR “0f” and “Rationals and IEEE Floats.”
+Default short type names, the Number union's exact membership, complete format families, ties/overflow policies, integer wrap/check policies, numeric separators and canonical numeric spelling remain to be finalized. Hexadecimal canonical output and nearest-ties-to-even are proposals, not ratified here. Rational runtime arithmetic may be omitted; literal representation, equality and projection still require a defined model. Non-dyadic exact results such as `1/3` keep their internal Rational value; they currently have no ratified source spelling, so formatting reports `E_VALUE_SERIALIZATION` rather than inventing a fraction form. **Sources:** P, N, K “Refinement Type vs Carveouts,” AR “0f” and “Rationals and IEEE Floats.”
 
 ### D05. Structural descriptor identity remains the rule — confirmed/retained
 
@@ -173,8 +173,7 @@ test "C01 intrinsic primitive values"
   expect True result True :: Bool
   legacy expect "hello" result "hello" :: Expression
   todo expect "hello" result "hello" :: String
-  legacy expect 5 result 5 :: Expression
-  todo expect 5 result 5 :: Rational
+  expect 5 result 5 :: Rational
   expect :Widget result Widget :: UpperCamelSymbol
   legacy expect Bool result Bool :: Type
   todo expect Bool result Bool :: PrimitiveType
@@ -186,13 +185,11 @@ end
 
 ```text
 test "C02 exact Rational literal meanings"
-  todo expect 0.1 result 0.1 :: Rational
-  todo expect 0f0.5 result 0.5 :: Rational
-  todo expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
-  todo assert (0f0.1 != 0.1)
-  todo assert
-    assert ((0f0.1 != 0.1))
-    (0xFp8 == 0b1111p8)
+  expect 0.1 result 0.1 :: Rational
+  expect 0f0.5 result 0.5 :: Rational
+  expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
+  assert (0f0.1 != 0.1)
+  assert (0xFp8 == 0b1111p8)
 end
 ```
 
@@ -203,12 +200,14 @@ No halfway, overflow or nonfinite behavior is specified by this case.
 ```text
 test "C03 exact designation differs from rounding"
   expect (0.5 :: Float32) result 0.5 :: Float32
-  todo expect float32(0.5) result 0.5 :: Float32
+  expect float32(0.5) result 0.5 :: Float32
   todo expect (0f0.5 :: Decimal32) result 0.5 :: Decimal32
   todo expect (0f0.1 :: Float64) result 0f0.1 :: Float64
-  todo expect
+  expect
     (0.1 :: Float32)
   error "not exactly representable as Float32"
+  expect (0.5 .matches Float32) result True :: Bool
+  expect (0.1 .matches Float32) result False :: Bool
 
   todo expect
     (0.5 :: Int16)
@@ -1261,8 +1260,7 @@ test "C26 todo assertions execute in isolated scopes"
     futureLocal()
   error "E_UNBOUND_NAME"
 
-  legacy expect marker result 1 :: Expression
-  todo expect marker result 1 :: Rational
+  expect marker result 1 :: Rational
 end
 ```
 

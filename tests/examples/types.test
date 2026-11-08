@@ -133,7 +133,7 @@ test "Option factory with ()"
 end
 
 test "Type arguments use ordinary packs"
-  def nonZero(T :: Type)(n :: T) n != 0
+  def nonZero(T :: Type)(n :: T) n != (0 :: T)
 
   assert nonZero(Int)(5)
 
@@ -237,7 +237,7 @@ end
 
 test "Type factory · ordinary calls"
   def restrict(base)(predicate) base .where predicate
-  small = restrict(type Int)(n -> n < 5)
+  small = restrict(type Int)(n -> n < (5 :: Int))
 
   expect 3 :: small result 3 :: Int
 end

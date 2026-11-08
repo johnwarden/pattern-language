@@ -32,18 +32,26 @@ test("where and matches have no reserved surface syntax", () => {
 });
 
 test("refinement is an ordinary call that can be partially applied and wrapped", () => {
-  assert.equal(run("small = (type Int) .where (x -> x < 5)\n3 :: small"), "3");
   assert.equal(
-    run("restrict = where(type Int)\nsmall = restrict(x -> x < 5)\n3 :: small"),
+    run("small = (type Int) .where (x -> x < (5 :: Int))\n3 :: small"),
     "3",
   );
   assert.equal(
     run(
-      "def refine(base)(p) base .where p\ndef Small refine(type Int)(x -> x < 5)\n3 :: Small",
+      "restrict = where(type Int)\nsmall = restrict(x -> x < (5 :: Int))\n3 :: small",
     ),
     "3",
   );
-  assert.equal(run("def Small where(type Int)(x -> x < 5)\n3 :: Small"), "3");
+  assert.equal(
+    run(
+      "def refine(base)(p) base .where p\ndef Small refine(type Int)(x -> x < (5 :: Int))\n3 :: Small",
+    ),
+    "3",
+  );
+  assert.equal(
+    run("def Small where(type Int)(x -> x < (5 :: Int))\n3 :: Small"),
+    "3",
+  );
   errorCode("where((type Int),x -> True)", "E_NO_METHOD");
 });
 
@@ -59,7 +67,7 @@ test("computed type aliases preserve recursive identity", () => {
 
 test("refinement predicates are lexical closures and never create accessors", () => {
   const source =
-    "def lessThan(limit) x -> x < limit\ndef Small (type Int) .where lessThan(5)\n";
+    "def lessThan(limit) x -> x < limit\ndef Small (type Int) .where lessThan(5 :: Int)\n";
   assert.equal(run(source + "3 :: Small"), "3");
   assert.throws(() => run(source + "5 :: Small"), /subset/);
   errorCode(

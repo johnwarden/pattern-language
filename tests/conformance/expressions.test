@@ -6,21 +6,19 @@ test "dot is function call"
   def b(x) y -> x + y
   a = 1 :: Int
 
-  expect a .b 2 result 3 :: Int
+  expect a .b (2 :: Int) result 3 :: Int
 end
 
 test "empty call"
   def f() 42
 
-  legacy expect f() result 42 :: Expression
-  todo expect f() result 42 :: Rational
+  expect f() result 42 :: Rational
 end
 
 test "explicit named function parameter"
   def f(x, foo: y) y
 
-  legacy expect f(1, foo: 2) result 2 :: Expression
-  todo expect f(1, foo: 2) result 2 :: Rational
+  expect f(1, foo: 2) result 2 :: Rational
 end
 
 test "multiple packs"
@@ -33,8 +31,7 @@ end
 test "no eager execution"
   def f() (1 / 0)
 
-  legacy expect 7 result 7 :: Expression
-  todo expect 7 result 7 :: Rational
+  expect 7 result 7 :: Rational
 end
 
 test "parameter interpretation"
@@ -51,6 +48,5 @@ end
 test "single grouping"
   x = (1)
 
-  legacy expect x result 1 :: Expression
-  todo expect x result 1 :: Rational
+  expect x result 1 :: Rational
 end

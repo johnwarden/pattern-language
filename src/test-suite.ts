@@ -3,7 +3,15 @@ import { parseSurface, parseTestSource } from "./parser.ts";
 import { normal, LanguageError } from "./syntax.ts";
 import type { Field, Syntax, Span } from "./syntax.ts";
 import { dataSyntax, codeSource } from "./syntax-values.ts";
-import { single, singleton, unwrap, equal, observedType } from "./values.ts";
+import {
+  single,
+  singleton,
+  unwrap,
+  equal,
+  observedType,
+  parseNumericSpelling,
+  formatRational,
+} from "./values.ts";
 import type { Value, TypeValue } from "./values.ts";
 import type { Pattern } from "./pattern.ts";
 import { renderDiagnostic } from "./diagnostics.ts";
@@ -456,12 +464,18 @@ function expectedData(
   type: TypeValue,
   interpreter: Interpreter,
 ): Value {
-  const text = normal(one(tree));
+  const sourceText = testSourceText(tree).trim();
+  const text = parseNumericSpelling(sourceText)
+    ? sourceText
+    : normal(one(tree));
   const value = interpreter.readValue(type, text, true);
   const canonical = scalarString(
     single(interpreter.call("toString", singleton(type), singleton(value))),
   );
-  const printed = normal(one(parseSurface(canonical)));
+  const numeric = parseNumericSpelling(canonical);
+  const printed = numeric
+    ? formatRational(numeric)
+    : normal(one(parseSurface(canonical)));
   if (text !== printed)
     throw problem(
       "expected values use data syntax; write " +

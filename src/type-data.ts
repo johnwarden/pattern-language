@@ -1,5 +1,5 @@
 import { primitiveNames as primitiveAtoms } from "./primitive-names.ts";
-import { compare } from "./values.ts";
+import { compare, isRational, integerValue } from "./values.ts";
 import { LanguageError, canonicalFields } from "./syntax.ts";
 import type { Pattern } from "./pattern.ts";
 import type { TypeValue, Value } from "./values.ts";
@@ -19,6 +19,7 @@ export const term = (name: string, ...values: Value[]): Value => ({
 const bare = (v: Value): Value =>
   v.kind === "view" ? bare(v.base) : v.kind === "slot" ? bare(v.value) : v;
 const primitiveNames: Record<string, string> = {
+  rational: "Rational",
   float64: "Float",
   float32: "Float32",
   int64: "Int",
@@ -209,7 +210,8 @@ export function typeDescription(
             body.kind === "term" &&
             body.body.length === 1 &&
             body.body[0].value.kind === "literal" &&
-            typeof body.body[0].value.value === "number";
+            (typeof body.body[0].value.value === "number" ||
+              isRational(body.body[0].value.value));
           if (
             literalHead &&
             headValue.kind === "symbol" &&
@@ -316,7 +318,10 @@ export function descriptionKey(v: Value): string {
   const key = (v: Value): unknown => {
     v = bare(v);
     if (v.kind === "symbol") return ["symbol", v.name];
-    if (v.kind === "literal") return ["literal", v.value];
+    if (v.kind === "literal")
+      return isRational(v.value)
+        ? ["literal", "rational", v.value.n.toString(), v.value.d.toString()]
+        : ["literal", v.value];
     if (v.kind === "type") return key(typeData(v));
     if (v.kind === "term" || v.kind === "pack")
       return [
@@ -355,8 +360,12 @@ export function descriptionPattern(
   const scope = new DescriptionScope<TypeValue>();
   // Constructor arity, positional packs, flags and reference-index shape have
   // already been checked by the executable schema. This pass interprets them.
-  const number = (v: Value): number =>
-    (bare(v) as Extract<Value, { kind: "literal" }>).value as number;
+  const number = (v: Value): number => {
+    const n = integerValue(bare(v) as Value);
+    if (n === undefined)
+      throw new LanguageError("invalid structural type description");
+    return n;
+  };
   const args = (v: Extract<Value, { kind: "term" }>): Value[] =>
     v.body.map((f) => f.value);
   function fields(

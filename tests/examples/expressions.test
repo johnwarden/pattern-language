@@ -35,8 +35,8 @@ end
 
 test "Function block"
   def f(x :: Int)
-    y = x ^ 2
-    y + 1
+    y = x ^ (2 :: Int)
+    y + (1 :: Int)
   end
 
   expect f(3) result 10 :: Int
@@ -74,8 +74,7 @@ end
 test "Ignore named results"
   x = (1, foo: "bar")
 
-  legacy expect x result 1 :: Expression
-  todo expect x result 1 :: Rational
+  expect x result 1 :: Rational
 end
 
 test "Narrow an abstract slot"
@@ -178,8 +177,7 @@ end
 test "Extra named arguments"
   def f(x) x
 
-  legacy expect f(1, foo: "bar") result 1 :: Expression
-  todo expect f(1, foo: "bar") result 1 :: Rational
+  expect f(1, foo: "bar") result 1 :: Rational
 end
 
 test "Open structural facet"
@@ -235,11 +233,7 @@ test "User-defined if"
   )
   end
 
-  legacy expect
-    if True 42 else (1 / 0)
-  result 42 :: Expression
-
-  todo expect
+  expect
     if True 42 else (1 / 0)
   result 42 :: Rational
 end
