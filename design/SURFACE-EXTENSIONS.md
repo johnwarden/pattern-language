@@ -6,10 +6,50 @@ tracked in ROADMAP.md; examples here do not imply that the bootstrap implements 
 ## Postfix expressions and type names
 
 Postfix application is a distinct surface-tree form, alongside ordinary application
-and sidefix sequences. Every postfix punctuation symbol uses the same type-name /
-constructor-head rule. A bare name resolves its type binding; a constructor head
-retains its symbol identity. No colon is needed just because a head is punctuation.
-Type definitions, quotation, binding patterns and match patterns share this tree.
+and sidefix sequences. It is not prefix/infix `Apply` and is not blocked on
+parse-into-Expression (see ROADMAP.md). Every postfix punctuation symbol uses the
+same type-name / constructor-head rule. A bare name resolves its type binding; a
+constructor head retains its symbol identity. No colon is needed just because a
+head is punctuation. Type definitions, quotation, binding patterns and match
+patterns share this tree.
+
+Authoritative sample (comparison is the bound `x` / `y`; `foo` / `bar` in the
+informal sketch were unbound):
+
+```text
+def PostfixAt type (String)@
+def PrefixAt type @(String)
+(x :: PostfixAt) = "foo"@
+(y :: PrefixAt) = @("bar")
+expect
+  x == y
+error "Can't compare types"
+match x
+  (s :: String)@ -> s
+end
+expect s result "foo" :: String
+match y
+  @(t :: String) -> t
+end
+expect t result "bar" :: String
+```
+
+`"foo"@` and `@("bar")` are distinct constructions. Matching the corresponding
+patterns yields the String payloads. A host `Syntax` postfix node, if present, is
+temporary adapter debt; do not freeze a public `SyntaxNode` Postfix variant.
+
+Tight suffix characters already recognized for type modifiers (`* ? ! ^`) follow
+the same one-character wrap rule. Whether postfix `Int*` / `String?` remain the
+same Type values as prefix `*(Int)` / `?(Int)` (today's Option/List/error
+`modifiedType` interpretation) or become incomparable constructions like
+`PostfixAt` vs `PrefixAt` is **not decided here**. Do not invent a split. `T+`
+nonempty-list meaning remains later work.
+
+Other punctuation (`$ = / +` and similar) stays prefix/infix until listed as a
+suffix. `@` is postfix.
+
+The Question/`String?` sketch below is the unresolved Option/List identity
+question, not the `@` contract, and is not implemented by treating `?` as `@`:
 
 ```text
 type Question String?
