@@ -2,7 +2,7 @@
 
 **Integrated 7 November 2026. This specifies design direction, not implementation status.**
 
-This is the integrated decision record authorized by the author. Confirmed and retained rules are the intended contract; passages explicitly marked proposed or deferred keep that status. The 27 cases C01–C27 execute through the test DSL, with assertion-level todo and legacy modifiers. Expected failures record future contracts; supported assertions already pass normally. This does not claim conformance with all of the future language semantics. [TEST-SUITE.md](TEST-SUITE.md) defines the runner contract; the [roadmap](../ROADMAP.md) tracks the language work separately.
+This is the integrated decision record authorized by the author. Confirmed and retained rules are the intended contract; passages explicitly marked proposed or deferred keep that status. Named cases C01–C27 live in [tests/specification](../tests/specification) and execute through the test DSL, with assertion-level todo and legacy modifiers. Those `.test` files are the executable specs; this document explains the decisions with focused examples and does not have to match them byte-for-byte. Expected failures record future contracts; supported assertions already pass normally. This does not claim conformance with all of the future language semantics. [TEST-SUITE.md](TEST-SUITE.md) defines the runner contract; the [roadmap](../ROADMAP.md) tracks the language work separately.
 
 ## Status and sources
 
@@ -153,1175 +153,210 @@ for another assertion. The static evidence checker is future work, independent o
 the host test DSL. Expected values are data; their exact observed types, canonical
 spelling and complete pack boundaries are checked rather than only their payloads.
 
-The cases below are **executed design specifications**, not claims that every future
-rule is implemented. Supported assertions are ordinary checks, retained bootstrap
-observations are legacy, and unfinished contracts carry todo. In particular Widget
-already has UpperCamelSymbol, so that expectation is not todo. Numeric cases assume
-the proposed exact Rational model and finite numeric vocabulary only as future
-contracts. Provisional type/angle/qualifier spellings do not become approved language
-features just because their failing assertions are stored and attempted. C27 remains
-an exploratory lexical candidate. Each individual subject/expected-type block repeats
-any needed future setup in an isolated scope; unavailable future types are not installed
-in shared setup merely to allow an assertion to be recorded.
+Named cases C01–C27 are the executable specs in [tests/specification](../tests/specification).
+The examples below explain each decision; they are not complete tests and need not
+match those files byte-for-byte. Supported assertions already pass as ordinary
+checks, retained bootstrap observations are legacy, and unfinished contracts carry
+todo. In particular Widget already has UpperCamelSymbol, so that expectation is not
+todo. Numeric cases assume the proposed exact Rational model and finite numeric
+vocabulary only as future contracts. Provisional type/angle/qualifier spellings do
+not become approved language features just because their failing assertions are
+stored and attempted. C27 remains an exploratory lexical candidate. Each executable
+subject repeats any needed future setup in an isolated scope; unavailable future
+types are not installed in shared setup merely to allow an assertion to be recorded.
 
 ### C01 — intrinsic primitive values
 
 Confirmed direction; the PrimitiveType spelling/self-description is P's proposed vocabulary.
-
-```text
-test "C01 intrinsic primitive values"
-  expect True result True :: Bool
-  legacy expect "hello" result "hello" :: Expression
-  todo expect "hello" result "hello" :: String
-  expect 5 result 5 :: Rational
-  expect :Widget result Widget :: UpperCamelSymbol
-  legacy expect Bool result Bool :: Type
-  todo expect Bool result Bool :: PrimitiveType
-  todo expect PrimitiveType result PrimitiveType :: PrimitiveType
-end
-```
+Live: `True :: Bool`, `5 :: Rational`, `:Widget :: UpperCamelSymbol`. Legacy still
+treats `"hello"` as Expression and `Bool` as Type. Todo: `"hello" :: String`,
+`Bool :: PrimitiveType`, and `PrimitiveType :: PrimitiveType`.
 
 ### C02 — exact literals, including Float64-rounded Rational literals
 
-```text
-test "C02 exact Rational literal meanings"
-  expect 0.1 result 0.1 :: Rational
-  expect 0f0.5 result 0.5 :: Rational
-  expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
-  assert (0f0.1 != 0.1)
-  assert (0xFp8 == 0b1111p8)
-end
-```
-
+Live. `0.1` and `0f0.5` are Rational; `0f0.1` is the Float64-rounded Rational
+`0x1.999999999999Ap-4`, distinct from `0.1`. Hex/binary `0xFp8 == 0b1111p8`.
 No halfway, overflow or nonfinite behavior is specified by this case.
 
 ### C03 — exact designation and explicit typed conversion
 
-```text
-test "C03 exact designation differs from rounding"
-  expect (0.5 :: Float32) result 0.5 :: Float32
-  expect float32(0.5) result 0.5 :: Float32
-  todo expect (0f0.5 :: Decimal32) result 0.5 :: Decimal32
-  todo expect (0f0.1 :: Float64) result 0f0.1 :: Float64
-  expect
-    (0.1 :: Float32)
-  error "not exactly representable as Float32"
-  expect (0.5 .matches Float32) result True :: Bool
-  expect (0.1 .matches Float32) result False :: Bool
-
-  todo expect
-    (0.5 :: Int16)
-  error "not an integer"
-end
-```
+Live: `0.5 :: Float32` and `float32(0.5)` succeed; `0.1 :: Float32` errors because
+it is not exactly representable; `.matches Float32` is True for `0.5` and False
+for `0.1`. Todo: `0f0.5 :: Decimal32`, `0f0.1 :: Float64`, and `0.5 :: Int16`.
 
 ### C04 — structured values require interpretation
 
-```text
-test "C04 structured values need a concrete interpretation"
-  todo expect
-    type Rectangle concrete Rect(w :: Float32, h :: Float32)
-    r = (Rect(2, 2) :: Rectangle)
-    r
-  result
-    (
-      Rect(2, 2)
-    ) :: (
-      type Rectangle concrete Rect(w :: Float32, h :: Float32)
-      r = (Rect(2, 2) :: Rectangle)
-      Rectangle
-    )
-  end
-
-  todo expect
-    type Rectangle concrete Rect(w :: Float32, h :: Float32)
-    r = (Rect(2, 2) :: Rectangle)
-    x = Rect(2, 2)
-    x
-  error "no concrete interpretation established for Rect(2,2)"
-end
-```
-
+Todo. `Rect(2, 2) :: Rectangle` can succeed once `type Rectangle concrete Rect(...)`
+is available; a bare `x = Rect(2, 2)` must still error with no concrete interpretation.
 The first annotation supplies context. The second binding deliberately supplies none.
 
 ### C05 — ordinary capture-free type values and a type factory
 
-```text
-test "C05 types are structural values"
-  todo assert
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    t = Rectangle
-    u = concrete Rect(Rational, Rational)
-    (t == u)
-  end
-
-  todo assert
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    t = Rectangle
-    u = concrete Rect(Rational, Rational)
-    assert ((t == u))
-    type Box<T> concrete Box(T)
-    (Box<String> == (concrete Box(String)))
-  end
-
-  todo expect
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    t = Rectangle
-    u = concrete Rect(Rational, Rational)
-    assert ((t == u))
-    type Box<T> concrete Box(T)
-    assert ((Box<String> == (concrete Box(String))))
-    b = (Box("hello") :: Box<String>)
-    Box(text) = b
-    text
-  result
-    (
-      "hello"
-    ) :: (
-      type Rectangle concrete Rect(w :: Rational, h :: Rational)
-      t = Rectangle
-      u = concrete Rect(Rational, Rational)
-      assert ((t == u))
-      type Box<T> concrete Box(T)
-      assert ((Box<String> == (concrete Box(String))))
-      b = (Box("hello") :: Box<String>)
-      Box(text) = b
-      String
-    )
-  end
-end
-```
-
+Todo. A named `type Rectangle concrete Rect(w :: Rational, h :: Rational)` equals
+the capture-free `concrete Rect(Rational, Rational)`. `Box<String>` equals
+`concrete Box(String)`, and `Box("hello") :: Box<String>` destructures to `"hello"`.
 This does not compare an Expression-typed descriptor with a type, or decide bare-family membership.
 
 ### C06 — alternative sets determine concrete identity
 
-```text
-test "C06 equal spellings can belong to different concrete spaces"
-  todo expect
-    type PrimaryColor concrete :Red | :Green | :Blue
-    type TicketStatus concrete :Red | :Green
-    red = (:Red :: PrimaryColor)
-    stopped = (:Red :: TicketStatus)
-    (red == stopped)
-  error "incomparable concrete spaces"
-end
-```
+Todo. `:Red :: PrimaryColor` and `:Red :: TicketStatus` are incomparable concrete
+spaces even though the source spelling `:Red` overlaps.
 
 ### C07 — where evidence preserves identity and permits a sole refined function
 
-```text
-test "C07 refinement evidence preserves the base value"
-  todo assert
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def keep(x :: NonZero) x
-    x = 0.5
-    (nonZero(x))
-  end
-
-  todo assert
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def keep(x :: NonZero) x
-    x = 0.5
-    assert ((nonZero(x)))
-    (n :: NonZero) = x
-    (n == x)
-  end
-
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def keep(x :: NonZero) x
-    x = 0.5
-    assert ((nonZero(x)))
-    (n :: NonZero) = x
-    assert ((n == x))
-    keep(n)
-  result
-    (
-      0.5
-    ) :: (
-      nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
-      def keep(x :: NonZero) x
-      x = 0.5
-      assert ((nonZero(x)))
-      (n :: NonZero) = x
-      assert ((n == x))
-      NonZero
-    )
-  end
-end
-```
-
-The expectation retains the NonZero qualification; `n == x` demonstrates that refinement adds no new concrete space beyond Rational. This case does not choose how a REPL distinguishes displayed guarantees from concrete identity, or require refinements to print only their base type.
+Todo. After `nonZero(0.5)` succeeds, `(n :: NonZero) = 0.5` keeps the same value:
+`n == x`, and `keep(n)` returns `0.5 :: NonZero`. The expectation retains the
+NonZero qualification; refinement adds no new concrete space beyond Rational.
+This case does not choose how a REPL distinguishes displayed guarantees from
+concrete identity, or require refinements to print only their base type.
 
 ### C08 — isolated assertions grant no evidence to another subject
 
-The static evidence model remains future work. The unchecked function has no assertion establishing its required refinement; a separate test assertion cannot grant it a fact.
-
-```text
-test "C08 todo assert supplies no refinement evidence"
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def keep(x :: NonZero) x
-    def unchecked(x :: Rational)
-      keep(x)
-    end
-    unchecked(1)
-  error "refinement evidence is missing in unchecked"
-end
-```
+The static evidence model remains future work. The unchecked function has no
+assertion establishing its required refinement; a separate test assertion cannot
+grant it a fact. Todo: `unchecked(1)` errors because refinement evidence is missing
+inside `unchecked`.
 
 ### C09 — overlapping base/refinement overloads do not gain priority
 
-```text
-test "C09 base and refinement overloads overlap"
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def choose(x :: Rational) "base"
-    def choose(x :: NonZero) "refined"
-    choose(1)
-  error "overlapping base and refinement overload domains"
-end
-```
+Todo. `def choose(x :: Rational)` together with `def choose(x :: NonZero)` is
+rejected: overlapping base and refinement overload domains. No predicate-dispatch
+priority.
 
 ### C10 — unrelated overload domains and explicit branch evidence
 
-```text
-test "C10 unrelated domains can coexist"
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def choose(x :: NonZero) "number"
-    def choose(x :: String) "string"
-    def checked(x :: Rational)
-      if nonZero(x) choose(x) else "zero"
-    end
-    checked(1)
-  result
-    (
-      "number"
-    ) :: (
-      nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
-      def choose(x :: NonZero) "number"
-      def choose(x :: String) "string"
-      def checked(x :: Rational)
-        if nonZero(x) choose(x) else "zero"
-      end
-      String
-    )
-  end
-
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def choose(x :: NonZero) "number"
-    def choose(x :: String) "string"
-    def checked(x :: Rational)
-      if nonZero(x) choose(x) else "zero"
-    end
-    checked(0)
-  result
-    (
-      "zero"
-    ) :: (
-      nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
-      def choose(x :: NonZero) "number"
-      def choose(x :: String) "string"
-      def checked(x :: Rational)
-        if nonZero(x) choose(x) else "zero"
-      end
-      String
-    )
-  end
-
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def choose(x :: NonZero) "number"
-    def choose(x :: String) "string"
-    def checked(x :: Rational)
-      if nonZero(x) choose(x) else "zero"
-    end
-    choose("hello")
-  result
-    (
-      "string"
-    ) :: (
-      nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
-      def choose(x :: NonZero) "number"
-      def choose(x :: String) "string"
-      def checked(x :: Rational)
-        if nonZero(x) choose(x) else "zero"
-      end
-      String
-    )
-  end
-end
-```
-
-The conditional explicitly checks the predicate; overload selection does not run it speculatively.
+Todo. `choose` on `NonZero` versus `String` can coexist. `checked(x :: Rational)`
+must branch on `nonZero(x)` before calling `choose`; `checked(1)` is `"number"`,
+`checked(0)` is `"zero"`, `choose("hello")` is `"string"`. The conditional
+explicitly checks the predicate; overload selection does not run it speculatively.
 
 ### C11 — explicit projection crosses one boundary only
 
+Todo. `Wrapped` over `Small` over `Rational` needs two explicit matches:
+
 ```text
-test "C11 projection is one explicit concrete boundary"
-  todo expect
-    small = n -> (n == 0)
-    smaller = n -> True
-    type Small concrete Rational .where small
-    type Wrapped concrete Small .where smaller
-    (w :: Wrapped) = 0
-    match w (s :: Small)
-    match s (r :: Rational)
-    r
-  result
-    (
-      0
-    ) :: (
-      small = n -> (n == 0)
-      smaller = n -> True
-      type Small concrete Rational .where small
-      type Wrapped concrete Small .where smaller
-      (w :: Wrapped) = 0
-      match w (s :: Small)
-      match s (r :: Rational)
-      Rational
-    )
-  end
-
-  todo expect
-    small = n -> (n == 0)
-    smaller = n -> True
-    type Small concrete Rational .where small
-    type Wrapped concrete Small .where smaller
-    (w :: Wrapped) = 0
-    match w (s :: Small)
-    match s (r :: Rational)
-    (direct :: Rational) = w
-    direct
-  error "ordinary binding does not unwrap Wrapped"
-
-  todo expect
-    small = n -> (n == 0)
-    smaller = n -> True
-    type Small concrete Rational .where small
-    type Wrapped concrete Small .where smaller
-    (w :: Wrapped) = 0
-    match w (s :: Small)
-    match s (r :: Rational)
-    match w (direct :: Rational)
-    direct
-  error "the immediate base of Wrapped is Small"
-
-  todo expect
-    small = n -> (n == 0)
-    smaller = n -> True
-    type Small concrete Rational .where small
-    type Wrapped concrete Small .where smaller
-    (w :: Wrapped) = 0
-    match w (s :: Small)
-    match s (r :: Rational)
-    def consume(x :: Rational) x
-    consume(w)
-  error "dispatch does not unwrap Wrapped"
-end
+match w (s :: Small)
+match s (r :: Rational)
+r    # 0 :: Rational
 ```
+
+Ordinary binding `(direct :: Rational) = w`, a match that skips Small, and
+`consume(w)` for `def consume(x :: Rational)` must not unwrap Wrapped.
 
 ### C12 — recursive designation, nested absence and guaranteed extraction
 
-```text
-test "C12 designation is recursive only when unambiguous"
-  todo expect
-    type Option<T> concrete T | :None
-    (outer :: Option<Option<String>>) = "Hello"
-    text = match outer
-      (inner :: Option<String>) -> match inner
-        (s :: String) -> s
-        :None -> "inner absent"
-      end
-      :None -> "outer absent"
-    end
-    text
-  result
-    (
-      "Hello"
-    ) :: (
-      type Option<T> concrete T | :None
-      (outer :: Option<Option<String>>) = "Hello"
-      text = match outer
-        (inner :: Option<String>) -> match inner
-          (s :: String) -> s
-          :None -> "inner absent"
-        end
-        :None -> "outer absent"
-      end
-      String
-    )
-  end
-
-  todo expect
-    type Option<T> concrete T | :None
-    (outer :: Option<Option<String>>) = "Hello"
-    text = match outer
-      (inner :: Option<String>) -> match inner
-        (s :: String) -> s
-        :None -> "inner absent"
-      end
-      :None -> "outer absent"
-    end
-    (ambiguous :: Option<Option<String>>) = :None
-    ambiguous
-  error "None has more than one designation path"
-
-  todo expect
-    type Option<T> concrete T | :None
-    (outer :: Option<Option<String>>) = "Hello"
-    text = match outer
-      (inner :: Option<String>) -> match inner
-        (s :: String) -> s
-        :None -> "inner absent"
-      end
-      :None -> "outer absent"
-    end
-    def extract(x :: Option<String>)
-      match x (s :: String)
-      s
-    end
-    extract("Hello" :: Option<String>)
-  error "String extraction is not guaranteed for every Option<String>"
-end
-```
-
-This case deliberately uses an **unwrapped** optional representation, `concrete T | :None`, to exercise direct typed branch projection without silently stripping a Some constructor. C18 separately uses a tagged `:None | Some(T)` representation. The last error concerns the declared input domain of `extract`, not the particular known argument at one call site. A multi-arm consumer can handle absence explicitly.
+Todo. Unique designation `(outer :: Option<Option<String>>) = "Hello"` is allowed
+for unwrapped `concrete T | :None`. Nested `:None` is rejected when it has more
+than one designation path. Single-arm `extract` on `Option<String>` is not
+guaranteed for every Option; a multi-arm consumer can handle absence explicitly.
+This case deliberately uses an **unwrapped** optional representation to exercise
+direct typed branch projection without silently stripping a Some constructor.
+C18 separately uses a tagged `:None | Some(T)` representation.
 
 ### C13 — a general union admits overlapping spellings
 
-```text
-test "C13 abstract union retains overlapping numeric members"
-  todo expect
-    type EitherFloat abstract Float32 | Float64
-    (a :: EitherFloat) = float32(0.5)
-    (b :: EitherFloat) = float64(0.5)
-    a
-  result
-    (
-      0.5
-    ) :: (
-      type EitherFloat abstract Float32 | Float64
-      (a :: EitherFloat) = float32(0.5)
-      (b :: EitherFloat) = float64(0.5)
-      Float32
-    )
-  end
-
-  todo expect
-    type EitherFloat abstract Float32 | Float64
-    (a :: EitherFloat) = float32(0.5)
-    (b :: EitherFloat) = float64(0.5)
-    b
-  result
-    (
-      0.5
-    ) :: (
-      type EitherFloat abstract Float32 | Float64
-      (a :: EitherFloat) = float32(0.5)
-      (b :: EitherFloat) = float64(0.5)
-      Float64
-    )
-  end
-
-  todo assert
-    type EitherFloat abstract Float32 | Float64
-    (a :: EitherFloat) = float32(0.5)
-    (b :: EitherFloat) = float64(0.5)
-    text = toString(EitherFloat)(a)
-    (parse(EitherFloat)(text) == a)
-  end
-end
-```
-
-The text must retain enough information to reconstruct Float32; no exact descriptor spelling is approved here.
+Todo. `type EitherFloat abstract Float32 | Float64` keeps each member's concrete
+identity: `float32(0.5)` stays Float32, `float64(0.5)` stays Float64.
+`parse(EitherFloat)(toString(EitherFloat)(a)) == a` must reconstruct Float32.
+The text must retain enough information; no exact descriptor spelling is approved here.
 
 ### C14 — unambiguous grammar requirements are separate
 
-The qualifier spelling and certification diagnostics are provisional.
-
-```text
-test "C14 unambiguous is a separate grammar requirement"
-  todo assert
-    type Token unambiguous abstract Rational | String
-    (n :: Token) = 0.5
-    (parse(Token)(toString(Token)(n)) == n)
-  end
-
-  todo expect
-    type Token unambiguous abstract Rational | String
-    (n :: Token) = 0.5
-    assert ((parse(Token)(toString(Token)(n)) == n))
-    type Bad unambiguous abstract Float32 | Float64
-    Bad
-  error "the same numeric spelling admits more than one interpretation"
-end
-```
-
-C13 remains legal without the additional requirement.
+The qualifier spelling and certification diagnostics are provisional. Todo:
+`type Token unambiguous abstract Rational | String` can round-trip `0.5`;
+`type Bad unambiguous abstract Float32 | Float64` errors because the same numeric
+spelling admits more than one interpretation. C13 remains legal without the
+additional requirement.
 
 ### C15 — facets and their intersection preserve the complete member
 
-The `abstract A & B` spelling records the proposed facet-combination recipe.
-
-```text
-test "C15 facet intersection preserves concrete identity and fields"
-  todo assert
-    type Card concrete {width: Float32, height: Float32, color: String}
-    type Rectangular abstract {width: Float32, height: Float32, **}
-    type Colored abstract {color: String, **}
-    type ColoredRectangle abstract Rectangular & Colored
-    card = ({width: 0.5, height: 1, color: "blue"} :: Card)
-    (view :: ColoredRectangle) = card
-    (view == card)
-  end
-
-  todo expect
-    type Card concrete {width: Float32, height: Float32, color: String}
-    type Rectangular abstract {width: Float32, height: Float32, **}
-    type Colored abstract {color: String, **}
-    type ColoredRectangle abstract Rectangular & Colored
-    card = ({width: 0.5, height: 1, color: "blue"} :: Card)
-    (view :: ColoredRectangle) = card
-    assert ((view == card))
-    view
-  result
-    (
-      {width: 0.5, height: 1, color: "blue"}
-    ) :: (
-      type Card concrete {width: Float32, height: Float32, color: String}
-      type Rectangular abstract {width: Float32, height: Float32, **}
-      type Colored abstract {color: String, **}
-      type ColoredRectangle abstract Rectangular & Colored
-      card = ({width: 0.5, height: 1, color: "blue"} :: Card)
-      (view :: ColoredRectangle) = card
-      assert ((view == card))
-      Card
-    )
-  end
-end
-```
+The `abstract A & B` spelling records the proposed facet-combination recipe. Todo:
+a `Card` value viewed as `ColoredRectangle` (`Rectangular & Colored`) remains the
+same Card, including fields neither facet names. Intersection preserves the
+complete member, not a merged record.
 
 ### C16 — accessor installation belongs to a declaration
 
-```text
-test "C16 declarations own accessor products"
-  todo expect
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    r = (Rect(2, 3) :: Rectangle)
-    r.w
-  result
-    (
-      2
-    ) :: (
-      type Rectangle concrete Rect(w :: Rational, h :: Rational)
-      r = (Rect(2, 3) :: Rectangle)
-      Rational
-    )
-  end
-
-  todo expect
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    r = (Rect(2, 3) :: Rectangle)
-    t = concrete Rect(width :: Rational, height :: Rational)
-    t
-  error "ordinary type construction cannot declare captures/accessors"
-end
-```
-
-No case assumes that two equal local declarations are either permitted or forbidden; that policy is still pending.
+Todo. `r.w` works after `type Rectangle concrete Rect(w :: Rational, h :: Rational)`.
+`t = concrete Rect(width :: Rational, height :: Rational)` cannot declare
+captures/accessors. No case assumes that two equal local declarations are either
+permitted or forbidden; that policy is still pending.
 
 ### C17 — ordinary factories keep defaults out of types
 
-```text
-test "C17 defaults belong to bindings and explicit factories"
-  todo expect
-    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
-    def rectangle(w :: Float32, h :: Float32, color: String = "black")
-      (Rect(w, h, color: color) :: Rectangle)
-    end
-    rectangle(2, 3)
-  result
-    (
-      Rect(2, 3, color: "black")
-    ) :: (
-      type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
-      def rectangle(w :: Float32, h :: Float32, color: String = "black")
-        (Rect(w, h, color: color) :: Rectangle)
-      end
-      Rectangle
-    )
-  end
-
-  todo expect
-    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
-    def rectangle(w :: Float32, h :: Float32, color: String = "black")
-      (Rect(w, h, color: color) :: Rectangle)
-    end
-    (Rect(2, 3) :: Rectangle)
-  error "required color field is absent"
-
-  todo expect
-    type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
-    def rectangle(w :: Float32, h :: Float32, color: String = "black")
-      (Rect(w, h, color: color) :: Rectangle)
-    end
-    type Invalid concrete Rect(color: String = "black")
-    Invalid
-  error "defaults are forbidden in type descriptions"
-end
-```
+Todo. A factory `rectangle(w, h, color: String = "black")` may default `color`;
+`Rect(2, 3) :: Rectangle` still errors if required `color` is absent;
+`type Invalid concrete Rect(color: String = "black")` is forbidden.
 
 ### C18 — independent scopes interoperate structurally
 
-```text
-test "C18 equivalent independently named descriptors interoperate"
-  todo assert
-    produced = (
-      type Option<T> concrete :None | Some(T)
-      (Some("hello") :: Option<String>)
-    )
-    independent = (
-      type Optional<T> concrete :None | Some(T)
-      (Some("hello") :: Optional<String>)
-    )
-    (produced == independent)
-  end
-
-  todo expect
-    produced = (
-      type Option<T> concrete :None | Some(T)
-      (Some("hello") :: Option<String>)
-    )
-    independent = (
-      type Optional<T> concrete :None | Some(T)
-      (Some("hello") :: Optional<String>)
-    )
-    assert ((produced == independent))
-    consumed = (
-      type LocalOption<T> concrete :None | Some(T)
-      def read(x :: LocalOption<String>)
-        match x
-          Some(s) -> s
-          :None -> "absent"
-        end
-      end
-      read(produced)
-    )
-    consumed
-  result
-    (
-      "hello"
-    ) :: (
-      produced = (
-        type Option<T> concrete :None | Some(T)
-        (Some("hello") :: Option<String>)
-      )
-      independent = (
-        type Optional<T> concrete :None | Some(T)
-        (Some("hello") :: Optional<String>)
-      )
-      assert ((produced == independent))
-      consumed = (
-        type LocalOption<T> concrete :None | Some(T)
-        def read(x :: LocalOption<String>)
-          match x
-            Some(s) -> s
-            :None -> "absent"
-          end
-        end
-        read(produced)
-      )
-      String
-    )
-  end
-end
-```
-
-These are isolated lexical blocks, not a new source-module syntax. The consumer imports no producer accessor bundle.
+Todo. Isolated blocks can declare `Option` and `Optional` with equivalent
+`:None | Some(T)` descriptors; `Some("hello")` values compare equal. A third
+local type can `match`/`read` the producer value without importing its accessor
+bundle. These are isolated lexical blocks, not a new source-module syntax.
 
 ### C19 — horizontal captures retain positional-only list semantics
 
-```text
-test "C19 horizontal rest remains a typed positional list"
-  expect
-    def copy(xs... :: Float32*) ([xs...] :: Float32*)
-    copy()
-  result
-    (
-      []
-    ) :: (
-      def copy(xs... :: Float32*) ([xs...] :: Float32*)
-      Float32*
-    )
-  end
-
-  expect
-    def copy(xs... :: Float32*) ([xs...] :: Float32*)
-    copy(0.5)
-  result
-    (
-      [0.5]
-    ) :: (
-      def copy(xs... :: Float32*) ([xs...] :: Float32*)
-      Float32*
-    )
-  end
-
-  todo expect
-    def copy(xs... :: Float32*) ([xs...] :: Float32*)
-    type Packet concrete Packet(Float32, Float32, color: String, note: String)
-    packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
-    Packet(first, rest... :: Float32*, color: c, **) = packet
-    rest
-  result
-    (
-      [1]
-    ) :: (
-      def copy(xs... :: Float32*) ([xs...] :: Float32*)
-      type Packet concrete Packet(Float32, Float32, color: String, note: String)
-      packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
-      Packet(first, rest... :: Float32*, color: c, **) = packet
-      Float32*
-    )
-  end
-
-  todo expect
-    def copy(xs... :: Float32*) ([xs...] :: Float32*)
-    type Packet concrete Packet(Float32, Float32, color: String, note: String)
-    packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
-    Packet(first, rest... :: Float32*, color: c, **) = packet
-    c
-  result
-    (
-      "blue"
-    ) :: (
-      def copy(xs... :: Float32*) ([xs...] :: Float32*)
-      type Packet concrete Packet(Float32, Float32, color: String, note: String)
-      packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
-      Packet(first, rest... :: Float32*, color: c, **) = packet
-      String
-    )
-  end
-end
-```
-
-Labels are not consumed by the positional capture. Independent `...`/`**` openness retains the original pack/constructed distinction.
+Live: `copy()` is `[] :: Float32*` and `copy(0.5)` is `[0.5] :: Float32*`.
+Todo: `Packet(first, rest... :: Float32*, color: c, **)` collects only remaining
+positions into `rest`; labels such as `color` are not consumed by the positional
+capture. Independent `...`/`**` openness retains the original pack/constructed distinction.
 
 ### C20 — horizontal plus vertical capture/spread has two dimensions
 
 Capture dimensions are retained; mirrored vertical spreading is R's proposed extension.
-
-```text
-test "C20 row capture and spreading are mirror images"
-  todo expect
-    type Matrix concrete [
-      cells... :: Float32**
-      ...
-    ]
-    x = ([
-      0.5, 1
-      2, 4
-    ] :: Matrix)
-    rows = x.cells
-    rows
-  result
-    (
-      [[0.5, 1], [2, 4]]
-    ) :: (
-      type Matrix concrete [
-        cells... :: Float32**
-        ...
-      ]
-      x = ([
-        0.5, 1
-        2, 4
-      ] :: Matrix)
-      rows = x.cells
-      Float32**
-    )
-  end
-
-  todo assert
-    type Matrix concrete [
-      cells... :: Float32**
-      ...
-    ]
-    x = ([
-      0.5, 1
-      2, 4
-    ] :: Matrix)
-    rows = x.cells
-    y = ([
-      rows...
-      ...
-    ] :: Matrix)
-    (y == x)
-  end
-
-  todo expect
-    type Matrix concrete [
-      cells... :: Float32**
-      ...
-    ]
-    x = ([
-      0.5, 1
-      2, 4
-    ] :: Matrix)
-    rows = x.cells
-    y = ([
-      rows...
-      ...
-    ] :: Matrix)
-    assert ((y == x))
-    empty = ([
-    ] :: Matrix)
-    oneEmptyRow = ([
-      ()
-    ] :: Matrix)
-    empty.cells
-  result
-    (
-      []
-    ) :: (
-      type Matrix concrete [
-        cells... :: Float32**
-        ...
-      ]
-      x = ([
-        0.5, 1
-        2, 4
-      ] :: Matrix)
-      rows = x.cells
-      y = ([
-        rows...
-        ...
-      ] :: Matrix)
-      assert ((y == x))
-      empty = ([
-      ] :: Matrix)
-      oneEmptyRow = ([
-        ()
-      ] :: Matrix)
-      Float32**
-    )
-  end
-
-  todo expect
-    type Matrix concrete [
-      cells... :: Float32**
-      ...
-    ]
-    x = ([
-      0.5, 1
-      2, 4
-    ] :: Matrix)
-    rows = x.cells
-    y = ([
-      rows...
-      ...
-    ] :: Matrix)
-    assert ((y == x))
-    empty = ([
-    ] :: Matrix)
-    oneEmptyRow = ([
-      ()
-    ] :: Matrix)
-    oneEmptyRow.cells
-  result
-    (
-      [[]]
-    ) :: (
-      type Matrix concrete [
-        cells... :: Float32**
-        ...
-      ]
-      x = ([
-        0.5, 1
-        2, 4
-      ] :: Matrix)
-      rows = x.cells
-      y = ([
-        rows...
-        ...
-      ] :: Matrix)
-      assert ((y == x))
-      empty = ([
-      ] :: Matrix)
-      oneEmptyRow = ([
-        ()
-      ] :: Matrix)
-      Float32**
-    )
-  end
-
-  todo assert
-    type Matrix concrete [
-      cells... :: Float32**
-      ...
-    ]
-    x = ([
-      0.5, 1
-      2, 4
-    ] :: Matrix)
-    rows = x.cells
-    y = ([
-      rows...
-      ...
-    ] :: Matrix)
-    assert ((y == x))
-    empty = ([
-    ] :: Matrix)
-    oneEmptyRow = ([
-      ()
-    ] :: Matrix)
-    (empty != oneEmptyRow)
-  end
-end
-```
-
-The annotation is `Float32**`, not `Float32*`. It describes the aggregate capture. Row widths need not be equal without a separate constraint.
+Todo. `cells... :: Float32**` over repeated rows is `[[0.5, 1], [2, 4]]`, not
+`Float32*`. Spreading those rows rebuilds the same Matrix. Zero rows `[]` differ
+from one empty row `[()]`. The annotation describes the aggregate capture. Row
+widths need not be equal without a separate constraint.
 
 ### C21 — vertical repetition alone adds one list layer
 
-```text
-test "C21 vertical-only capture is a list of items"
-  todo expect
-    type TodoList concrete :todo
-      todos :: String*
-      ...
-    end
-    items = TodoList`
-      todo
-        "first"
-        "second"
-      end
-    end
-    items.todos
-  result
-    (
-      ["first", "second"]
-    ) :: (
-      type TodoList concrete :todo
-        todos :: String*
-        ...
-      end
-      items = TodoList`
-        todo
-          "first"
-          "second"
-        end
-      end
-      String*
-    )
-  end
-end
-```
+Todo. A vertically repeated `todos :: String*` field is `["first", "second"] :: String*`,
+one list layer, not a nested matrix.
 
 ### C22 — keyword remainder is a typed record
 
-**Proposal, not an implemented or fully spelled feature.** The `rest**: {**}` capture syntax follows R's sketch and still needs grammar approval.
-
-```text
-test "C22 keyword remainder retains its record field types"
-  todo expect
-    type PersonRecord concrete {name: String, id: Int64, age: Int8}
-    type Person abstract {name: String, id: Int64, **}
-    type AgeInfo concrete {age: Int8}
-    def extra(person :: Person)
-      {name: name, id: id, rest**: {**}} = person
-      rest
-    end
-    john = ({name: "John", id: 5, age: 48} :: PersonRecord)
-    extra(john)
-  result
-    (
-      {age: 48}
-    ) :: (
-      type PersonRecord concrete {name: String, id: Int64, age: Int8}
-      type Person abstract {name: String, id: Int64, **}
-      type AgeInfo concrete {age: Int8}
-      def extra(person :: Person)
-        {name: name, id: id, rest**: {**}} = person
-        rest
-      end
-      john = ({name: "John", id: 5, age: 48} :: PersonRecord)
-      AgeInfo
-    )
-  end
-end
-```
-
-This corrects R's inconsistent id-width example. It makes no claim that specialization is required to give `rest` a descriptor or that its shape is always statically known. Keyword spread spelling is not settled by this capture example.
+**Proposal, not an implemented or fully spelled feature.** The `rest**: {**}`
+capture syntax follows R's sketch and still needs grammar approval. Todo sketch:
+destructuring `{name, id, rest**: {**}}` from a Person view of a PersonRecord
+yields `{age: 48}` at the remaining record type. This corrects R's inconsistent
+id-width example. It makes no claim that specialization is required to give
+`rest` a descriptor or that its shape is always statically known. Keyword spread
+spelling is not settled by this capture example.
 
 ### C23 — canonical typed text remains a value round trip
 
-```text
-test "C23 supported global typed text preserves value identity"
-  todo assert
-    type Rectangle concrete Rect(w :: Float32, h :: Float32)
-    r = (Rect(2, 3) :: Rectangle)
-    text = toString(Rectangle)(r)
-    restored = parse(Rectangle)(text)
-    (restored == r)
-  end
-
-  todo assert
-    type Rectangle concrete Rect(w :: Float32, h :: Float32)
-    r = (Rect(2, 3) :: Rectangle)
-    text = toString(Rectangle)(r)
-    restored = parse(Rectangle)(text)
-    assert ((restored == r))
-    (toString(Rectangle)(restored) == text)
-  end
-end
-```
-
-This does not choose a constructedBy decoder or a raw Expression/type equality policy.
+Todo. `parse(Rectangle)(toString(Rectangle)(r)) == r` and the printed text is
+stable. This does not choose a constructedBy decoder or a raw Expression/type
+equality policy.
 
 ### C24 — whole-pack application and result consumption remain intact
 
-```text
-test "C24 applications preserve complete successive packs"
-  todo expect
-    def combine(x, y)(z) (x, y, z)
-    partial = combine("a", "b")
-    (a, b, c) = partial("c")
-    a
-  result
-    (
-      "a"
-    ) :: (
-      def combine(x, y)(z) (x, y, z)
-      partial = combine("a", "b")
-      (a, b, c) = partial("c")
-      String
-    )
-  end
-
-  todo expect
-    def combine(x, y)(z) (x, y, z)
-    partial = combine("a", "b")
-    (a, b, c) = partial("c")
-    b
-  result
-    (
-      "b"
-    ) :: (
-      def combine(x, y)(z) (x, y, z)
-      partial = combine("a", "b")
-      (a, b, c) = partial("c")
-      String
-    )
-  end
-
-  todo expect
-    def combine(x, y)(z) (x, y, z)
-    partial = combine("a", "b")
-    (a, b, c) = partial("c")
-    c
-  result
-    (
-      "c"
-    ) :: (
-      def combine(x, y)(z) (x, y, z)
-      partial = combine("a", "b")
-      (a, b, c) = partial("c")
-      String
-    )
-  end
-
-  todo expect
-    def combine(x, y)(z) (x, y, z)
-    partial = combine("a", "b")
-    (a, b, c) = partial("c")
-    def empty() ()
-    () = empty()
-    x = ("a", "b")
-    x
-  error "one capture cannot consume two positional results"
-end
-```
+Todo. `combine("a", "b")` is a partial waiting for `(z)`; `partial("c")` unpacks
+to `"a"`, `"b"`, `"c"`. `x = ("a", "b")` cannot feed one capture from two
+positional results. Empty `()` remains an empty pack.
 
 ### C25 — equal precedence and right associativity are preserved
 
-```text
-test "C25 infix operators retain equal precedence"
-  todo expect ((2 :: Float64) * (3 :: Float64) + (4 :: Float64)) result 14 :: Float64
-  todo expect
-    def select(a)(b) b
-    ("left" .select "right")
-  result
-    (
-      "right"
-    ) :: (
-      def select(a)(b) b
-      String
-    )
-  end
-end
-```
-
-The first subject denotes `2 * (3 + 4)`. Each ascription is grouped explicitly so the test does not accidentally change its tree.
+Todo. `(2 :: Float64) * (3 :: Float64) + (4 :: Float64)` denotes `2 * (3 + 4)`
+and is `14 :: Float64`. `("left" .select "right")` is `"right"`. Each ascription
+is grouped explicitly so the example does not accidentally change its tree.
 
 ### C26 — todo assertions execute without leaking local state
 
-**Implemented assertion-level policy.** Unknown future operands are attempted, and failed subjects cannot change the surrounding case scope.
-
-```text
-test "C26 todo assertions execute in isolated scopes"
-  marker = 1
-
-  todo assert FuturePredicate(FutureValue)
-  todo expect FutureSubject() result FutureExpected() :: FutureType
-  todo expect
-    marker = 2
-    def futureLocal() 99
-    missing()
-  result 0 :: Expression
-
-  expect
-    futureLocal()
-  error "E_UNBOUND_NAME"
-
-  expect marker result 1 :: Rational
-end
-```
-
-Discovery reads source only; running the case attempts each assertion. The local declaration is absent afterward and marker remains 1. Todo does not hide setup or harness errors. C08 independently records the future evidence requirement.
+**Implemented assertion-level policy.** Unknown future operands are attempted, and
+failed subjects cannot change the surrounding case scope. `marker = 1` stays 1
+after a todo that binds `marker = 2` and `def futureLocal()`; later
+`futureLocal()` is unbound. Discovery reads source only. Todo does not hide setup
+or harness errors. C08 independently records the future evidence requirement.
 
 ### C27 — candidate lexical prohibition on redundant primitive quotation
 
-**Exploratory expectation only, awaiting the author's lexical choice.** It must not be integrated as a confirmed decision.
-
-```text
-test "C27 candidate Code rejection of redundant primitive quotation"
-  todo expect
-    :5
-  error "primitive quotation is not a Code form"
-
-  todo expect
-    :Bool
-  error "primitive quotation is not a Code form"
-end
-```
-
-No corresponding expected result is assigned for raw Expression computation, which may be omitted entirely.
+**Exploratory expectation only, awaiting the author's lexical choice.** It must
+not be integrated as a confirmed decision. Todo candidates: `:5` and `:Bool` are
+not Code forms. No corresponding expected result is assigned for raw Expression
+computation, which may be omitted entirely.
 
 ## Remaining and deferred items
 

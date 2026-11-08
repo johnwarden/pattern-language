@@ -214,9 +214,10 @@ authoritative, and ordinary parsing still checks every executed operand. Storage
 adapters cannot accidentally make an unsupported future form pass. Malformed files
 reject even if their assertions would have been todo.
 
-The 27 reviewed C01–C27 cases use the same grammar and stay synchronized with the
-decision record. Supported contracts carry no todo; C27 remains an exploratory
-lexical candidate. Fifty-seven former complete-pack expectations were split into
+Named cases C01–C27 live in `tests/specification` and use the same grammar.
+The decision record explains them with focused examples; the `.test` files are
+authoritative and need not match that document byte-for-byte. Supported contracts
+carry no todo; C27 remains an exploratory lexical candidate. Fifty-seven former complete-pack expectations were split into
 scalar checks or an explicit empty-pack assertion. Payloads and type checks were
 retained, with printer string fixtures changed only for the requested comma spacing.
 [TEST-MIGRATION.md](TEST-MIGRATION.md) records the coverage boundaries.

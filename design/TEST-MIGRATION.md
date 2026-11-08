@@ -180,7 +180,7 @@ The source suite follows the author's direct-check style: numbered observation
 captures are removed, meaningful bindings stay near their uses, and sections/tests
 have blank-line separation. Actual multiple returns retain descriptive captures.
 The assertions and canonical expected payloads are unchanged. Legacy inventory
-subjects and C01–C27 excerpts follow the rewritten subjects; the 76 playground
+subjects were rewritten in place; C01–C27 remain in `tests/specification`. The 76 playground
 programs still use the same source cases and direct final result packs.
 
 The suite uses expect subject result value :: Type. Separate value/type clauses
@@ -197,6 +197,6 @@ already captured results. Strict type/data checks and assertion-level modifiers 
 unchanged. Canonical printer goldens were adjusted only for comma spacing, preserving
 literal string contents and canonical round-trip checks.
 
-The reviewed C01–C27 excerpts match their .test sources. All source tests, schema
+C01–C27 execute from `tests/specification`. All source tests, schema
 projections, CLI/DOM checks and documentation use result annotations. GitHub is the
 source of truth, with read-only, credential-free CI and required host boundaries.
