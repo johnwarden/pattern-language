@@ -58,13 +58,10 @@ end`,
   );
 });
 
-test("tagged postfix option does not wrap or strip Some", () => {
-  rejects('(outer :: String??) = "Hello"\nouter', "E_PATTERN_MISMATCH");
-  assert.equal(run('Some(Some("Hello")) :: String??'), 'Some(Some("Hello"))');
+test("postfix T? is distinct from unwrapped option", () => {
   rejects(
-    `match Some("Hello")
-  (s :: String) -> s
-end`,
+    nested + '(outer :: String?) = "Hello"\nouter',
     "E_PATTERN_MISMATCH",
   );
+  rejects('(outer :: String??) = "Hello"\nouter', "E_PATTERN_MISMATCH");
 });

@@ -279,8 +279,6 @@ export class Interpreter {
   private inlineTypeDepth = 0;
   private parsingDataDepth = 0;
   private interpretingDepth = 0;
-  /** Match arms may select one unique union member; bindings and dispatch may not. */
-  private matchProjectionDepth = 0;
   private types = new Map<string, TypeValue>();
   private primitives = new Map<string, TypeValue>();
   private definitionProducts = new WeakMap<TypeValue, TypeDefinition>();
@@ -1636,9 +1634,7 @@ export class Interpreter {
             validatePatternCaptures([{ kind: "pack", body: pair[0] }]);
             let matched: Match<Value>;
             try {
-              matched = this.withMatchProjection(() =>
-                this.matchParameters(pair[0], values, env),
-              );
+              matched = this.matchParameters(pair[0], values, env, true);
             } catch (e) {
               if (e instanceof Mismatch) continue;
               throw e;
@@ -2201,8 +2197,6 @@ export class Interpreter {
     }
   }
   private invoke(fn: Value, args: Field<Value>[], env?: Scope): Field<Value>[] {
-    if (this.matchProjectionDepth)
-      return this.withoutMatchProjection(() => this.invoke(fn, args, env));
     this.tick();
     fn = unwrap(fn);
     if (fn.kind === "symbol" || fn.kind === "term")
@@ -2387,8 +2381,13 @@ export class Interpreter {
     patterns: Field<Syntax>[],
     values: Field<Value>[],
     env: Scope,
+    allowProjection = false,
   ): Match<Value> {
-    const pattern = this.compiler(env, false).fields(patterns);
+    // Projection is a property of this compiled pattern, not interpreter-wide
+    // match state. Dispatch, defaults and bindings keep the default false.
+    const pattern = this.compiler(env, false, 0, allowProjection).fields(
+      patterns,
+    );
     return this.interpretMatch(pattern, values);
   }
   private interpretMatch(
@@ -2406,6 +2405,7 @@ export class Interpreter {
     env: Scope,
     typeMode: boolean,
     dimensions = 0,
+    allowProjection = false,
   ): PatternCompiler<Value> {
     const lookup = (n: Syntax) =>
       lexicalScopes.get(n) ??
@@ -2424,7 +2424,7 @@ export class Interpreter {
             );
           type = type.element;
         }
-        return this.typePattern(type, !typeMode);
+        return this.typePattern(type, !typeMode, allowProjection);
       } finally {
         if (typeMode) this.inlineTypeDepth--;
       }
@@ -2459,7 +2459,9 @@ export class Interpreter {
               head: literalPattern(valSymbol("syntaxSequence")),
               body: positionalPattern(
                 n.items.map((x) =>
-                  this.compiler(env, typeMode, depth).compile(x),
+                  this.compiler(env, typeMode, depth, allowProjection).compile(
+                    x,
+                  ),
                 ),
               ),
             };
@@ -2495,7 +2497,9 @@ export class Interpreter {
               let value: Value;
               value = single(this.evaluate(n, env), "type factory");
               const type = this.materializeType(value);
-              return type ? this.typePattern(type, !typeMode) : undefined;
+              return type
+                ? this.typePattern(type, !typeMode, allowProjection)
+                : undefined;
             }
             if (
               typeMode &&
@@ -2511,24 +2515,28 @@ export class Interpreter {
         allowIgnoredCaptures: !typeMode,
         requireCaptureTypes: typeMode,
         allowDefaults: !typeMode,
-        defaultValue: (n) =>
-          this.withoutMatchProjection(() =>
-            single(this.evaluate(n, env), "default value"),
-          ),
+        defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {
           if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
           // Application heads are structural patterns, not unary type-factory
           // calls: the head of (a :* b) is the partial tree *(a).
           if (n.kind === "apply" && !binary(n, "::") && !binary(n, "|")) {
-            const compiler = this.compiler(env, typeMode, depth);
+            const compiler = this.compiler(
+              env,
+              typeMode,
+              depth,
+              allowProjection,
+            );
             return {
               kind: "node",
               head: compiler.domain.head(n.head, depth),
               body: compiler.fields(n.body, false),
             };
           }
-          return this.compiler(env, typeMode, depth).compile(n);
+          return this.compiler(env, typeMode, depth, allowProjection).compile(
+            n,
+          );
         },
         annotation: reference,
         repeatedElement: (n, dimensions = 0) => reference(n, dimensions + 1),
@@ -2554,7 +2562,7 @@ export class Interpreter {
             return pack.body.map((e) => {
               const type = this.materializeType(e.value);
               if (!type) throw new LanguageError("expected type argument");
-              return this.typePattern(type, !typeMode);
+              return this.typePattern(type, !typeMode, allowProjection);
             });
           }
           return undefined;
@@ -3282,6 +3290,7 @@ export class Interpreter {
   private typePattern(
     type: TypeValue,
     requireConcrete = false,
+    allowProjection = false,
   ): Pattern<Value> {
     return {
       kind: "ref",
@@ -3304,7 +3313,11 @@ export class Interpreter {
           localCaptures: true,
           input: (v) => {
             const space = concreteSpace(v);
-            if (space && this.uniqueMatchUnionMember(space, v, type))
+            if (
+              allowProjection &&
+              space &&
+              this.uniqueMatchUnionMember(space, v, type)
+            )
               return v.kind === "view" ? v.base : unwrap(v);
             if (type.transparent) return v;
             const raw = unwrap(v),
@@ -3359,7 +3372,7 @@ export class Interpreter {
               !prior ||
               typeIdentity(prior) === typeIdentity(type.baseType ?? type) ||
               (prior.numeric === "rational" && type.numeric !== "rational") ||
-              this.uniqueMatchUnionMember(prior, v, type)
+              (allowProjection && this.uniqueMatchUnionMember(prior, v, type))
             );
           },
           pattern: type.pattern(),
@@ -3552,46 +3565,26 @@ export class Interpreter {
     if (!union || union.choices.length < 2) return;
     return union.choices;
   }
-  private withMatchProjection<T>(body: () => T): T {
-    this.matchProjectionDepth++;
-    try {
-      return body();
-    } finally {
-      this.matchProjectionDepth--;
-    }
-  }
-  private withoutMatchProjection<T>(body: () => T): T {
-    const depth = this.matchProjectionDepth;
-    this.matchProjectionDepth = 0;
-    try {
-      return body();
-    } finally {
-      this.matchProjectionDepth = depth;
-    }
-  }
   private uniqueMatchUnionMember(
     prior: TypeValue,
     value: Value,
     target: TypeValue,
   ): boolean {
-    if (!this.matchProjectionDepth) return false;
     const choices = this.immediateUnionChoices(prior);
     if (!choices) return false;
     const payload = value.kind === "view" ? value.base : unwrap(value);
     const hits: TypeValue[] = [];
     let constructorHit = false;
-    this.withoutMatchProjection(() => {
-      for (const choice of choices) {
-        try {
-          this.interpretMatch(choice, singleton(payload));
-          const member = this.typeFromChoice(choice);
-          if (member) hits.push(member);
-          else constructorHit = true;
-        } catch (error) {
-          if (!(error instanceof Mismatch)) throw error;
-        }
+    for (const choice of choices) {
+      try {
+        this.interpretMatch(choice, singleton(payload));
+        const member = this.typeFromChoice(choice);
+        if (member) hits.push(member);
+        else constructorHit = true;
+      } catch (error) {
+        if (!(error instanceof Mismatch)) throw error;
       }
-    });
+    }
     return (
       !constructorHit &&
       hits.length === 1 &&

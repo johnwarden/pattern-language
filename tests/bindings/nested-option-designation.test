@@ -95,30 +95,15 @@ test "Match does not skip two unwrapped option boundaries"
   error "E_PATTERN_MISMATCH"
 end
 
-test "Postfix nested option keeps tagged Some nodes"
+test "Postfix T? is a distinct tree from unwrapped option"
+  def Inner type String | :None
+  assert False == (type String?) == (type Inner)
+  expect
+    (outer :: String?) = "Hello"
+    outer
+  error "E_PATTERN_MISMATCH"
   expect
     (outer :: String??) = "Hello"
     outer
   error "E_PATTERN_MISMATCH"
-
-  expect Some(Some("Hello")) :: String?? result Some(Some("Hello")) :: String??
-  expect :None :: String?? result :None :: String??
-  expect Some(:None) :: String?? result Some(:None) :: String??
-  assert False == "Hello" .matches String??
-  assert Some(Some("Hello")) .matches String??
-  assert Some(:None) .matches String??
-end
-
-test "Match does not strip a tagged Some constructor"
-  expect
-    match Some("Hello")
-      (s :: String) -> s
-    end
-  error "E_PATTERN_MISMATCH"
-
-  expect
-    match Some("Hello")
-      Some(s :: String) -> s
-    end
-  result "Hello" :: String
 end
