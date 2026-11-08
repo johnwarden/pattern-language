@@ -52,7 +52,8 @@ consumer. See the roadmap for what would establish those claims.
 
 Types are ordinary values, and all applications use argument packs. There is no
 angle-bracket application or generic AST node. Primitive Int, Float, Float32, Bool,
-String, Symbol, Any, Expression, Body and Type are self-evaluating language atoms.
+String, ReservedSymbol, Any, Expression, Body and Type are self-evaluating language
+atoms. `Symbol` is a prelude union, not a reserved primitive.
 There is no `Number` alias; that name is withdrawn until its definition is decided.
 Other bare names resolve their bindings;
 Foo is an error when unbound, :Foo is a symbol, and Foo(1) uses a constructor tag.
@@ -834,8 +835,9 @@ See [TYPE-VALUES.md](TYPE-VALUES.md) for examples and explicit limits.
 ## One value equality
 
 Primitive names are `ReservedSymbol` values: `Int` inspects as
-`Int :: ReservedSymbol`, and `:Int` is rejected. `type Int` is the Int type.
-`:(Int)` is the quoted Code expression `Int`. Type(Int) has
+`Int :: ReservedSymbol`, and `:Int` is rejected. `ReservedSymbol` is disjoint
+from `UpperCamelSymbol`. `type Int` is the Int type.
+`:(Int)` is the quoted Code expression `Int`, not the `Int` value. Type(Int) has
 a distinct wrapped tree. Their compiled
 matchers are caches and do not participate in comparison. Canonical uncached type
 trees work in annotations, generic calls, and matching, and have the same global
@@ -1056,8 +1058,9 @@ toString(MathExp)(a)
 # "a"
 ```
 
-Symbol is the prelude union of LowerCamelSymbol, UpperCamelSymbol and
-PunctuationSymbol. UnionType members must have disjoint syntax; overlap and
+Symbol is the prelude union of LowerCamelSymbol, UpperCamelSymbol,
+UpperSnakeSymbol and PunctuationSymbol; it is not reserved, and ReservedSymbol
+is not a member. UnionType members must have disjoint syntax; overlap and
 unsupported proofs reject. Union parsing selects the unique concrete member,
 including in fields/lists, and printing omits redundant union annotations.
 Facet/Any reconstruction tags remain explicit. The current overlapping Int/Float,

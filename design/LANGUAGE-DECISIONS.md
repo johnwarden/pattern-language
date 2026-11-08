@@ -32,6 +32,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | L9 | Author ruling on 9 November 2026, 12:01 Madrid: no special logic for absent option values; `None` is an ordinary symbol. Value text prints `None`; `:None` is only the code form where an unquoted name would bind. |
 | L10 | Author ruling on 9 November 2026, 12:39 Madrid: every ordinary symbol prints bare in value text; colon quotation is only for code where a bare name would bind. Remove the `Number` alias/type until its definition is decided. Primitive names (`True`, `False`, `Rational`, `String`, `Float64`, …) are not ordinary symbols; quoted forms such as `:True` / `:Rational` / `:Number` are rejected. |
 | L11 | Author ruling on 9 November 2026, 13:02–13:04 Madrid: no layout-keyword quoting in value text; parse value text against the expected type's own grammar. Primitive names are `ReservedSymbol` values. Type-schema PrimitiveTag is the reserved symbol itself (`Int`, not `:Int`). `:(Int)` is a quoted expression; only `:Int` is `E_QUOTED_PRIMITIVE`. `Number` will later be an abstract union of fixed-width number types; keep it removed. |
+| L12 | Author clarification on 9 November 2026 on PR #31: keep values distinct from the expressions that evaluate to them. `ReservedSymbol` is disjoint from `UpperCamelSymbol`. `Symbol` is not reserved; it is an ordinary abstract union in the prelude. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -54,11 +55,18 @@ boundaries. **Source:** W9.
 
 ### D02. Primitive values and syntax are distinct levels — confirmed direction; lexical details proposed
 
-Different source expressions may evaluate to the same value without being the same syntax tree. Primitive values have intrinsic concrete interpretations: ordinary strings are String, booleans are Bool, numeric literals are Rational, and ordinary quoted symbols have their intrinsic symbol classes. A reserved primitive atom must not simultaneously become an ordinary UpperCamelSymbol merely because colon quotation was used.
+Values stay distinct from the expressions that evaluate to them. Distinct source
+expressions may compute the same value; source quotation/printing and value
+inspection keep those roles separate. Primitive values have intrinsic concrete
+interpretations: ordinary strings are String, booleans are Bool, numeric literals
+are Rational, and ordinary quoted symbols have their intrinsic symbol classes.
+`ReservedSymbol` is the category for primitive reserved symbols and is disjoint
+from `UpperCamelSymbol`: `Int` is not an ordinary UpperCamelSymbol because of its
+spelling. `Symbol` itself is not reserved.
 
 P proposes self-evaluating `PrimitiveType`, including `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`, with `Type` no longer a reserved primitive atom. This vocabulary is recorded as the proposed primitive representation, not a completed metatype specification. Int/Float families are intended to be definable fixed-precision types rather than primitive numeric atoms.
 
-Quoted primitive *names* in expression syntax are rejected (L10 / D20): `:True`, `:Rational`, and `:Number` are not ordinary symbols. `:(Int)` is legal: `:()` quotes an expression, so it is the quoted Code expression `Int`, not a symbol (L11). Redundant numeric quotation such as `:5` remains an exploratory Code-form candidate (C27); it is not decided here. Ordinary symbolic quotation, raw colon quotation of non-primitive names, explicit typed interpolation and separation of quotation from execution otherwise remain unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved Symbols,” AR; R2; L10; L11.
+Quoted primitive *names* in expression syntax are rejected (L10 / D20): `:True`, `:Rational`, and `:Number` are not ordinary symbols. `:(Int)` is legal: `:()` quotes an expression, so it is the quoted Code expression `Int`, not a symbol (L11). Redundant numeric quotation such as `:5` remains an exploratory Code-form candidate (C27); it is not decided here. Ordinary symbolic quotation, raw colon quotation of non-primitive names, explicit typed interpolation and separation of quotation from execution otherwise remain unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved Symbols,” AR; R2; L10; L11; L12.
 
 ### D03. Structured runtime values require concrete interpretation — confirmed; parse into Expression
 
@@ -199,9 +207,10 @@ types are not installed in shared setup merely to allow an assertion to be recor
 ### C01 — intrinsic primitive values
 
 Confirmed direction; the PrimitiveType spelling/self-description is P's proposed vocabulary.
-Live: `True :: Bool`, `5 :: Rational`, `:Widget :: UpperCamelSymbol`. Legacy still
-treats `"hello"` as Expression and `Bool` as Type. Todo: `"hello" :: String`,
-`Bool :: PrimitiveType`, and `PrimitiveType :: PrimitiveType`.
+Live: `True :: ReservedSymbol`, `5 :: Rational`, `:Widget :: UpperCamelSymbol`.
+`Int` is `ReservedSymbol`, not `UpperCamelSymbol`. `:Symbol` is an ordinary
+`UpperCamelSymbol`. Legacy still treats `Bool` as Type. Todo: `Bool :: PrimitiveType`,
+and `PrimitiveType :: PrimitiveType`.
 
 ### C02 — exact literals, including Float64-rounded Rational literals
 
@@ -406,12 +415,13 @@ not the default language layout forms. Type-pattern descriptors keep the same
 code split (`Type(:None | String)`). Source still writes `a = :None :: Int?`.
 
 `toString(Expression)` and other code-domain text keep `:MissingType` / `:None` /
-`:foo`, because that text is code. Printing has no TitleCase, alias, layout-
-keyword, or primitive-name special cases. Union `::` tags stay the
-reconstruction rule (D07): keep the tag only when untagged text would not
-reconstruct the same member/value. Unique `None` in `String?` needs no tag;
-inner absence in `String??` still prints a `::` tag so parse reconstructs the
-inner member. **Sources:** L9, L10, L11.
+`:foo`, because that text is code. Value inspection of `Int` is
+`Int :: ReservedSymbol`; `:(Int)` is the quoted expression, not that value.
+Printing has no TitleCase, alias, layout-keyword, or primitive-name special
+cases. Union `::` tags stay the reconstruction rule (D07): keep the tag only
+when untagged text would not reconstruct the same member/value. Unique `None`
+in `String?` needs no tag; inner absence in `String??` still prints a `::` tag
+so parse reconstructs the inner member. **Sources:** L9, L10, L11, L12.
 
 ### D20. Primitive names are ReservedSymbol; Number is withdrawn — confirmed 9 November 2026
 
@@ -421,12 +431,24 @@ are values of type `ReservedSymbol`, a primitive type like `String` or
 `expect True result True :: ReservedSymbol`. `type Int` is still the Int type
 (`Int :: Type`); `1 == 1` is still `True :: Bool`. Quoted forms such as
 `:True`, `:Rational`, and `:Number` are rejected (`E_QUOTED_PRIMITIVE`): they
-do not produce an `UpperCamelSymbol`. `:None` is still an ordinary symbol;
-`None` is not a primitive.
+do not produce an `UpperCamelSymbol`. `ReservedSymbol` is disjoint from
+`UpperCamelSymbol`: `Int .matches UpperCamelSymbol` is False. `:None` is still
+an ordinary symbol; `None` is not a primitive.
+
+`Symbol` is not reserved. The prelude defines it as the ordinary abstract union
+of the four intrinsic classes (`LowerCamelSymbol | UpperCamelSymbol |
+UpperSnakeSymbol | PunctuationSymbol`). That is the agreed symbol model, not a
+new member list or inspection format: `:foo` still inspects as
+`foo :: LowerCamelSymbol`, and `ReservedSymbol` is not a member. `:Symbol` is
+an ordinary `UpperCamelSymbol`. Type-schema `OrdinaryHead` is
+`Symbol | ReservedSymbol` (with `Type`/`String` still dedicated constructors);
+`Data` includes `ReservedSymbol` so `Literal(String)` stays valid. Neither
+change adds `ReservedSymbol` to `Symbol`.
 
 `:(Int)` is legal: `:()` quotes an expression, so it is the quoted Code
 expression `Int`, not a symbol. Only `:Int` (symbol quote of a primitive name)
-is `E_QUOTED_PRIMITIVE`.
+is `E_QUOTED_PRIMITIVE`. Value inspection and source quotation stay in their
+respective roles.
 
 The type description of a primitive is the reserved symbol itself (`Int`), not
 `:Int`. Drop the `Int == :Int` bootstrap convention. Quoted primitive heads are
@@ -438,7 +460,7 @@ union of fixed-width number types; do not restore it until that membership is
 written. Tests that designated or unioned `Number` now use `Float`.
 
 `PrimitiveType` remains proposed in D02 as a possible metatype; `ReservedSymbol`
-is the inspectable type of primitive *names*. **Sources:** L10, L11.
+is the inspectable type of primitive *names*. **Sources:** L10, L11, L12.
 
 ## Remaining and deferred items
 
@@ -469,7 +491,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D01 application, packs, precedence | C24, C25; runtime packs remain distinct from generic parameters in C05 |
 | D02 primitives and quotation | C01; quoted primitive *names* confirmed in D20; C27 `:5` remains an unaccepted numeric-quotation candidate |
 | D19 symbol value text vs code quotation | C01 Widget already uses unquoted value text; Option/`None` in types, postfix, nested-option and concrete-union specs; lowercase value text in types/grammars examples |
-| D20 ReservedSymbol vs ordinary symbols; Number withdrawn | C01 `Int`/`True` :: ReservedSymbol; C27 `:Bool`; types examples reject `:True` / `:Number`; `:(Int)` is a quoted expression |
+| D20 ReservedSymbol vs ordinary symbols; Number withdrawn | C01 `Int`/`True` :: ReservedSymbol; C27 `:Bool`; types examples reject `:True` / `:Number`; `:(Int)` is a quoted expression; ReservedSymbol disjoint from UpperCamelSymbol; Symbol is a prelude union |
 | D03 mandatory interpretation / parse into Expression | C04, C05; first-class Expression *value* computation remains optional; SyntaxNode numeric A/B superseded |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |

@@ -1,3 +1,5 @@
+import { symbolCategory } from "./lexical.ts";
+
 /** The language's self-evaluating atoms, independent of surface syntax. */
 export const primitiveNames = new Map([
   ["Rational", "Rational"],
@@ -7,7 +9,6 @@ export const primitiveNames = new Map([
   ["Int", "Int"],
   ["String", "String"],
   ["Bool", "Bool"],
-  ["Symbol", "Symbol"],
   ["LowerCamelSymbol", "LowerCamelSymbol"],
   ["UpperCamelSymbol", "UpperCamelSymbol"],
   ["UpperSnakeSymbol", "UpperSnakeSymbol"],
@@ -28,6 +29,11 @@ export const isCanonicalAtom = (name: string): boolean =>
 /** Quoted `:True` / `:Int` / `:Number` are not ordinary symbols. */
 export const isReservedPrimitiveSpelling = (name: string): boolean =>
   isSelfEvaluating(name) || withdrawnPrimitiveNames.has(name);
+/** Spelling class of an ordinary (non-reserved) symbol, if it has one. */
+export const ordinarySymbolCategory = (
+  name: string,
+): ReturnType<typeof symbolCategory> =>
+  isReservedPrimitiveSpelling(name) ? undefined : symbolCategory(name);
 
 /** Bootstrap syntax domains are defaults that source grammars may replace lexically. */
 export const bootstrapTypeNames = new Set(["Expression", "Body"]);

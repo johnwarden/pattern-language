@@ -30,7 +30,6 @@ const primitiveNames: Record<string, string> = {
   Int: "Int",
   String: "String",
   Bool: "Bool",
-  Symbol: "Symbol",
   LowerCamelSymbol: "LowerCamelSymbol",
   UpperCamelSymbol: "UpperCamelSymbol",
   UpperSnakeSymbol: "UpperSnakeSymbol",

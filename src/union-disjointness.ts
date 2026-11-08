@@ -2,7 +2,10 @@ import type { Pattern } from "./pattern.ts";
 import type { Value, TypeValue } from "./values.ts";
 import { unwrap, equal, asRational } from "./values.ts";
 import { LanguageError } from "./syntax.ts";
-import { symbolCategory } from "./lexical.ts";
+import {
+  isSelfEvaluating,
+  ordinarySymbolCategory,
+} from "./primitive-names.ts";
 
 type P = Pattern<Value>;
 type Answer = "yes" | "no" | "unknown";
@@ -39,6 +42,7 @@ const symbols = new Set([
   "UpperSnakeSymbol",
   "PunctuationSymbol",
   "Bool",
+  "ReservedSymbol",
 ]);
 const id = (p: Extract<P, { kind: "test" }>): unknown[] | undefined =>
   Array.isArray(p.identity) ? p.identity : undefined;
@@ -68,9 +72,16 @@ export function patternOverlap(left: P, right: P): Answer {
       return value.kind === "literal" && typeof value.value === "string";
     if (name === "Bool")
       return value.kind === "symbol" && ["True", "False"].includes(value.name);
-    if (name === "Symbol") return value.kind === "symbol";
+    if (name === "ReservedSymbol")
+      return value.kind === "symbol" && isSelfEvaluating(value.name);
+    if (name === "Symbol")
+      return (
+        value.kind === "symbol" && ordinarySymbolCategory(value.name) !== undefined
+      );
     if (name.endsWith("Symbol"))
-      return value.kind === "symbol" && symbolCategory(value.name) === name;
+      return (
+        value.kind === "symbol" && ordinarySymbolCategory(value.name) === name
+      );
     return;
   }
   function tests(
@@ -97,9 +108,10 @@ export function patternOverlap(left: P, right: P): Answer {
       return "yes";
     if (numeric.has(n) && numeric.has(m)) return "yes";
     if (symbols.has(n) && symbols.has(m)) {
-      if (n === "Symbol" || m === "Symbol") return "yes";
-      if (n === "Bool" || m === "Bool")
-        return [n, m].includes("UpperCamelSymbol") ? "yes" : "no";
+      if (n === "Symbol" || m === "Symbol") {
+        const other = n === "Symbol" ? m : n;
+        return other === "ReservedSymbol" || other === "Bool" ? "no" : "yes";
+      }
       return "no";
     }
     if (

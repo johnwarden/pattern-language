@@ -20,10 +20,13 @@ ordered first-match interpretation. Match-arm order is a different policy.
 
 ## Evaluation, primitive values and descriptions
 
-Distinct source syntax may evaluate to the same primitive. Numeric literals denote
+Values stay distinct from the expressions that evaluate to them. Distinct source
+syntax may evaluate to the same primitive; quotation/printing of source and
+inspection of values keep those roles separate. Numeric literals denote
 exact Rationals; ordinary strings, Bool values and symbolic values have intrinsic
 interpretations. Reserved primitive atoms cannot simultaneously become ordinary
-UpperCamelSymbol values through a different quoting route.
+UpperCamelSymbol values because of their spelling. `Symbol` is a prelude union,
+not a reserved primitive.
 
 The proposed primitive vocabulary includes self-evaluating PrimitiveType, with Bool
 and PrimitiveType as its values. The complete metatype and redundant primitive-quote

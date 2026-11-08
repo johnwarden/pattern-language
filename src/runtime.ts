@@ -1,12 +1,13 @@
 import { DEFAULT_PRELUDE } from "./prelude.ts";
 import { postfixMethodName } from "./syntax.ts";
-import { punctuation, symbolCategory } from "./lexical.ts";
+import { punctuation } from "./lexical.ts";
 import {
   primitiveNames,
   constantNames,
   bootstrapTypeNames,
   isReservedPrimitiveSpelling,
   isSelfEvaluating,
+  ordinarySymbolCategory,
 } from "./primitive-names.ts";
 import {
   runtimeDependency,
@@ -341,7 +342,7 @@ export class Interpreter {
     prelude = DEFAULT_PRELUDE,
   ) {
     this.grammar = new Grammar(grammar);
-    this.env = this.builtins();
+    this.env = this.builtins(schemaBootstrap);
     if (!schemaBootstrap) {
       const type = schema(CODE_SCHEMA).type;
       this.codeType = type;
@@ -663,7 +664,7 @@ export class Interpreter {
       },
     };
   }
-  private builtins(): Scope {
+  private builtins(schemaBootstrap = false): Scope {
     const scope = new Scope();
     for (const [name, predicate] of Object.entries({
       Rational: (v: Value): boolean => !!asRational(v),
@@ -687,15 +688,18 @@ export class Interpreter {
       },
       String: (v: Value): boolean =>
         v.kind === "literal" && typeof v.value === "string",
-      Symbol: (v: Value): boolean => v.kind === "symbol",
       LowerCamelSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "LowerCamelSymbol",
+        v.kind === "symbol" &&
+        ordinarySymbolCategory(v.name) === "LowerCamelSymbol",
       UpperCamelSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "UpperCamelSymbol",
+        v.kind === "symbol" &&
+        ordinarySymbolCategory(v.name) === "UpperCamelSymbol",
       UpperSnakeSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "UpperSnakeSymbol",
+        v.kind === "symbol" &&
+        ordinarySymbolCategory(v.name) === "UpperSnakeSymbol",
       PunctuationSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "PunctuationSymbol",
+        v.kind === "symbol" &&
+        ordinarySymbolCategory(v.name) === "PunctuationSymbol",
       Expression: (_v: Value): boolean => true,
       Body: (_v: Value): boolean => true,
       Any: (_v: Value): boolean => true,
@@ -757,17 +761,20 @@ export class Interpreter {
       });
       this.primitives.set(name, scope.bindings.get(name) as TypeValue);
     }
-    const symbol = this.unionType(
-      [
-        "LowerCamelSymbol",
-        "UpperCamelSymbol",
-        "UpperSnakeSymbol",
-        "PunctuationSymbol",
-      ].map((name) => this.primitives.get(name)!),
-    );
-    symbol.name = "Symbol";
-    scope.bindings.set("Symbol", symbol);
-    this.primitives.set("Symbol", symbol);
+    if (schemaBootstrap) {
+      // Schema evaluation skips the prelude, so install the same four-class
+      // Symbol union the prelude defines. Do not treat the name as reserved.
+      const symbol = this.unionType(
+        [
+          "LowerCamelSymbol",
+          "UpperCamelSymbol",
+          "UpperSnakeSymbol",
+          "PunctuationSymbol",
+        ].map((name) => this.primitives.get(name)!),
+      );
+      symbol.name = "Symbol";
+      scope.bindings.set("Symbol", symbol);
+    }
     // Canonical primitive atoms have fixed language meanings. Number/Num are
     // withdrawn until a numeric-family definition is decided (ROADMAP).
     for (const alias of ["Num", "Number", "Int64"])
@@ -1476,7 +1483,7 @@ export class Interpreter {
                 // callable names), not an ascribed expression around that atom.
                 if (
                   raw.kind === "symbol" &&
-                  symbolCategory(raw.name) === space.name
+                  ordinarySymbolCategory(raw.name) === space.name
                 )
                   return {
                     kind: "code" as const,
@@ -3800,7 +3807,7 @@ export class Interpreter {
     });
   }
   private symbolValue(name: string): Value {
-    const category = symbolCategory(name);
+    const category = ordinarySymbolCategory(name);
     if (!category) return valSymbol(name);
     const value = single(
       this.check(this.primitives.get(category)!, valSymbol(name)),

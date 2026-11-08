@@ -16,6 +16,21 @@ test "C01 intrinsic primitive values"
     :Number
   error "E_QUOTED_PRIMITIVE"
   expect :(Int) result Int :: Code
+  expect
+    Int == :(Int)
+  error "E_INCOMPARABLE_TYPES"
+  expect :Symbol result Symbol :: UpperCamelSymbol
+  expect Int .matches ReservedSymbol result True :: Bool
+  expect Int .matches UpperCamelSymbol result False :: Bool
+  expect Int .matches Symbol result False :: Bool
+  expect True .matches UpperCamelSymbol result False :: Bool
+  expect :Widget .matches UpperCamelSymbol result True :: Bool
+  expect :Widget .matches ReservedSymbol result False :: Bool
+  expect :Widget .matches Symbol result True :: Bool
+  expect :foo .matches Symbol result True :: Bool
+  expect
+    (type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)
+  result True :: Bool
   legacy expect
     type Bool
   result Bool :: Type

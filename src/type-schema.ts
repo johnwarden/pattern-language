@@ -11,7 +11,6 @@ def primitiveTag(s)
     "Int" -> True
     "Bool" -> True
     "String" -> True
-    "Symbol" -> True
     "LowerCamelSymbol" -> True
     "UpperCamelSymbol" -> True
     "UpperSnakeSymbol" -> True
@@ -47,12 +46,12 @@ def ordinaryHead(h)
   end
 end
 def OrdinaryHead
-  (type Symbol) .where (h -> ordinaryHead(h))
+  (type Symbol | ReservedSymbol) .where (h -> ordinaryHead(h))
 end
 def Index
   (type Int) .where (n -> n >= (0 :: Int))
 end
-def Data type Rational | String | Symbol | (head :: Data)(fields... :: Data*,**)
+def Data type Rational | String | Symbol | ReservedSymbol | (head :: Data)(fields... :: Data*,**)
 def FieldPattern(p :: Type) type p | Repeat(p)
 def FieldPack(p :: Type) type :Sequence(parts... :: p*) | :Fields(fields... :: FieldPattern(p)*,**) | :OpenFields(fields :: FieldPack(p),labels: Bool,positional: Bool)
 def notWildcard(s)

@@ -14,14 +14,15 @@ describes the implemented model; the drafts under design/ are not specifications
 ## Ordinary names and ordinary application
 
 Primitive type atoms are self-evaluating language values: Rational, Int, Float, Float32, Float64, Bool,
-String, Symbol, Expression, Body, Any, and Type. There is no Number alias;
+String, ReservedSymbol, Expression, Body, Any, and Type. `Symbol` is a prelude
+union of the intrinsic symbol classes, not a reserved primitive. There is no Number alias;
 global text uses Float. Int currently uses JavaScript-safe integers,
 Float uses finite Float64 arithmetic, and Float32 rounds explicitly.
 
 ```text
 r = Int
 r
-# Int :: Type in the REPL
+# Int :: ReservedSymbol in the REPL
 ```
 
 Other bare names resolve their lexical bindings. A bare unbound Foo is an error,
@@ -292,8 +293,9 @@ category types remain subject to the general refinement serialization gap.
 
 ## Intrinsic symbols and disjoint type unions
 
-LowerCamelSymbol, UpperCamelSymbol and PunctuationSymbol are intrinsic classes.
-Symbol is their prelude union. A bare symbol literal receives its natural class;
+LowerCamelSymbol, UpperCamelSymbol, UpperSnakeSymbol and PunctuationSymbol are
+intrinsic classes. Symbol is their prelude union; ReservedSymbol is disjoint from
+those classes. A bare ordinary symbol receives its natural class;
 its immediate context can interpret it, while a stored typed variable cannot be
 silently converted to a different space. unionType A | B normalizes to UnionType(A,B).
 Union members must be provably disjoint in the supported structural subset. Shared
