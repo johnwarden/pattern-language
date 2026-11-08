@@ -288,6 +288,9 @@ repetition/alternation and unrelated syntax additions are not prerequisites.
 
 Implement an evaluator in the language over a documented pure Code subset: literals,
 symbols, complete packs, application, bindings, functions, conditionals and matching.
+Evaluating `parse(Code)(":(Int)")` should yield `Int :: ReservedSymbol`. Ordinary
+quoted names such as `:Foo` become `:Foo :: QuotedSymbol` (Symbols only) once the
+full Code grammar exists; do not invent QuotedSymbol before that.
 Environments, primitive callable vocabulary and closed dependencies are explicit.
 Start a portable closed-callable subset without claiming general closure transport.
 An embedding adapter may handle external files/console; no source-language native

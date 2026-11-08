@@ -591,16 +591,23 @@ export class Interpreter {
   ): Field<Value>[] {
     this.parsingDataDepth++;
     try {
+      if (type.treeGrammar || type.baseType?.treeGrammar) {
+        const tree = readCode(text);
+        if (
+          this.codeType &&
+          typeIdentity(type) === typeIdentity(this.codeType)
+        )
+          this.rejectQuotedPrimitiveCode(tree);
+        return this.check(type, syntaxData(tree));
+      }
       return this.check(
         type,
-        type.treeGrammar || type.baseType?.treeGrammar
-          ? syntaxData(readCode(text))
-          : parseValueText(
-              text,
-              this.textDomain(env),
-              typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
-              this.layoutFormsFromPattern(type.pattern()),
-            ),
+        parseValueText(
+          text,
+          this.textDomain(env),
+          typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
+          this.layoutFormsFromPattern(type.pattern()),
+        ),
       );
     } finally {
       this.parsingDataDepth--;
@@ -3781,10 +3788,55 @@ export class Interpreter {
       },
     };
   }
+  private rejectQuotedPrimitiveCode(n: Syntax): void {
+    if (n.kind === "symbol") {
+      if (n.quoted && isReservedPrimitiveSpelling(n.name))
+        throw this.quotedPrimitive(n.name, n.span, "parse");
+      return;
+    }
+    if (n.kind === "literal") return;
+    if (n.kind === "quote") return this.rejectQuotedPrimitiveCode(n.value);
+    if (n.kind === "typedQuote") {
+      this.rejectQuotedPrimitiveCode(n.grammar);
+      this.rejectQuotedPrimitiveCode(n.value);
+      return;
+    }
+    if (n.kind === "template") {
+      if (n.reader) this.rejectQuotedPrimitiveCode(n.reader);
+      for (const part of n.parts)
+        if (part.kind === "hole") this.rejectQuotedPrimitiveCode(part.value);
+      return;
+    }
+    if (n.kind === "apply") {
+      this.rejectQuotedPrimitiveCode(n.head);
+      for (const field of n.body)
+        this.rejectQuotedPrimitiveCode(field.value);
+      return;
+    }
+    if (n.kind === "postfix")
+      return this.rejectQuotedPrimitiveCode(n.operand);
+    if (n.kind === "pack") {
+      for (const field of n.body)
+        this.rejectQuotedPrimitiveCode(field.value);
+      return;
+    }
+    if (n.kind === "sequence") {
+      for (const item of n.items) this.rejectQuotedPrimitiveCode(item);
+      return;
+    }
+    if (n.kind === "block") {
+      for (const line of n.lines) this.rejectQuotedPrimitiveCode(line);
+      return;
+    }
+    for (const item of n.items) this.rejectQuotedPrimitiveCode(item);
+    for (const capture of n.captures.values())
+      for (const field of capture.fields)
+        this.rejectQuotedPrimitiveCode(field.value);
+  }
   private quotedPrimitive(
     name: string,
     span?: Syntax["span"],
-    phase: "evaluate" | "declaration" = "evaluate",
+    phase: "evaluate" | "parse" | "declaration" = "evaluate",
   ): LanguageError {
     return new LanguageError(
       "quoted " + name + " is not a symbol; " + name + " is a primitive",

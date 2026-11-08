@@ -835,9 +835,9 @@ See [TYPE-VALUES.md](TYPE-VALUES.md) for examples and explicit limits.
 ## One value equality
 
 Primitive names are `ReservedSymbol` values: `Int` inspects as
-`Int :: ReservedSymbol`, and evaluating `:Int` is `E_QUOTED_PRIMITIVE`.
-`parse(Code)(":Int")` is the quote tree. `ReservedSymbol` is disjoint
-from `UpperCamelSymbol`. `type Int` is the Int type.
+`Int :: ReservedSymbol`. Evaluating `:Int` and `parse(Code)(":Int")` are
+`E_QUOTED_PRIMITIVE`. `parse(Code)(":(Int)")` succeeds. `ReservedSymbol` is
+disjoint from `UpperCamelSymbol`. `type Int` is the Int type.
 `:(Int)` is the quoted Code expression `Int`, not the `Int` value. Type(Int) has
 a distinct wrapped tree. Their compiled
 matchers are caches and do not participate in comparison. Canonical uncached type
