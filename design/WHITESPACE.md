@@ -143,8 +143,8 @@ remains an ordinary check. Host test/layout-ends.test.ts keeps Grammar-object
 `parseSurface` (including `:otherwise` vs `:else`) and sequential session macros
 for probe/then success. test/repl.test.ts covers grammar-driven REPL completeness.
 test/indent-prefix.test.ts keeps the prefix-relation unit checks.
-tests/layout/postfix-suffixes.test covers current suffix wrapping (`T*` / `T**`),
-spaced infix, keyword-rest `**`, ellipsis, and that prefix `+Int` / `+(Int)` are
-the same tree while tight `Int+` is not rewritten to prefix `+`. Host
-test/postfix-suffixes.test.ts keeps `syntaxKey` / `normal`. Distinct postfix
-application, including tight `Int+` as a postfix tree, remains later work.
+tests/specification/postfix-suffixes.test covers suffix wrap order (`T**` is
+`(T*)*`), spaced infix trees, that a pack field `**` is not a suffix on the
+previous field, and that prefix `+Int` / `+(Int)` are the same tree while tight
+`Int+` is not rewritten to prefix `+`. Distinct postfix application, including
+tight `Int+` as a postfix tree, remains later work.
