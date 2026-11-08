@@ -21,9 +21,37 @@ Making println("b") one level deeper must not repair this missing terminator and
 silently change when it runs. End alignment and ownership must be validated.
 The valid program puts an aligned end after the inner body.
 
-A sidefix form may have several indented operands separated by its own clause
-keywords. Its final end closes the whole form. Thus this expectation needs its
-own end; the enclosing test's end does not substitute for it:
+A sidefix form may have several operands separated by clause keywords from the
+**active surface grammar**, not a hardcoded assert/expect list. A clause keyword
+at the form's indent closes the previous indented operand; there is no `end`
+before that clause. `end` is required when the last remaining operand is still
+an unclosed indented body. Completing the grammar with an inline last operand
+does not invent a trailing `end`.
+
+```text
+expect
+  something
+error "error"
+```
+
+is one ErrorExpectation. The `error` clause comes from the test grammar, so no
+`end` stands between the subject and `error`. Adding or removing indentation
+around `something` must not change that membership: the same keywords written
+flat (`expect something` then `error "error"`) are the same form.
+
+```text
+assert
+  something
+end
+```
+
+needs the aligned `end` because `assert`'s grammar has no later clause to close
+the indented operand. A user-defined form with the same shape (`:hold (body ::
+Body)` vs `:probe (body :: Body) :then (result :: Expression)`) follows the same
+rule. Do not special-case assert or expect.
+
+When a later clause itself takes an indented operand, that operand still needs
+`end`. The enclosing test's `end` does not substitute:
 
 ```text
 expect
@@ -76,15 +104,24 @@ The goal is not to make every whitespace edit harmless. It is to reject accident
 block-scope changes that lack explicit closure, while keeping intentional row,
 fixity and literal-content distinctions visible in the grammar.
 
+The REPL treats a buffer as ready when the active grammar can parse it as a
+finished entry. It must not wait for an extra blank line after `end` or after a
+completing inline clause, and it must not run a clause-bearing form before that
+grammar is complete. A blank line still force-submits whatever is pending.
+
 ## Bootstrap boundary
 
-Layout-introduced blocks require an aligned `end`. Clause continuations come from
-the active grammar's sidefix keywords, not a hardcoded `else` list. A missing
+Layout-introduced blocks require an aligned `end` while that operand is still
+open. Clause continuations and form completeness come from the active grammar's
+quoted keyword chains, not a hardcoded `else`/`assert`/`expect` list. A missing
 closure is `E_BLOCK_END`. Indented typed quotes still use `E_QUOTE_END`. A string
 inside a sidefix form stops at that form's clause keyword and may share the
-form's final `end`.
+form's final `end`. Dedentation alone is not a semantic delimiter.
 
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
-indentation changes, an expectation borrowing its test's end, and the shared
-string/if terminator. Required infix spacing remains an ordinary check. The cases
-parse source without running println or requiring code.evaluate.
+indentation changes, an expectation borrowing its test's end, an error clause
+completing without a preceding `end`, and the shared string/if terminator.
+Required infix spacing remains an ordinary check. The cases parse source without
+running println or requiring code.evaluate. Host test/layout-ends.test.ts also
+covers user-defined probe/then versus hold. test/repl.test.ts covers
+grammar-driven REPL completeness.

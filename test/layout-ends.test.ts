@@ -6,7 +6,15 @@ import {
   LanguageError,
   parseSurface,
   Grammar,
+  TEST_SCHEMA,
+  loadTests,
+  runTest,
 } from "../src/index.ts";
+import {
+  layoutFormsFromBlock,
+  mergeLayoutForms,
+  parseTestSource,
+} from "../src/parser.ts";
 
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const parse = (source: string) => new Interpreter().parse(source);
@@ -61,6 +69,138 @@ else '
 end
 s`),
     displayResults(new Interpreter().run('"Hello, World!"')),
+  );
+});
+
+const testLayoutForms = mergeLayoutForms(
+  new Grammar().layoutForms(),
+  layoutFormsFromBlock(parseSurface(TEST_SCHEMA, "test schema")),
+);
+const probeHoldForms = mergeLayoutForms(
+  new Grammar().layoutForms(),
+  new Grammar(
+    "def Probe type :probe (body :: Body) :then (result :: Expression)\ndef Hold type :hold (body :: Body)",
+  ).layoutForms(),
+);
+
+test("an error clause from the test grammar completes without a preceding end", () => {
+  parseTestSource(
+    `test "error clause"
+  expect
+    missing()
+  error "E_UNBOUND_NAME"
+end`,
+    "error-clause.test",
+    { layoutForms: testLayoutForms },
+  );
+  const [closed] = loadTests({
+    "error-clause.test": `test "error clause"
+  expect
+    missing()
+  error "E_UNBOUND_NAME"
+end`,
+  });
+  const report = runTest(closed);
+  assert.equal(report.passed, true, report.message);
+  const [flat] = loadTests({
+    "flat-error.test": `test "flat error"
+  expect missing() error "E_UNBOUND_NAME"
+end`,
+  });
+  assert.equal(runTest(flat).passed, true);
+});
+
+test("an indented assert still needs an aligned end", () => {
+  parseTestSource(
+    `test "closed assert"
+  assert
+    True
+  end
+end`,
+    "closed-assert.test",
+    { layoutForms: testLayoutForms },
+  );
+  assert.throws(
+    () =>
+      parseTestSource(
+        `test "open assert"
+  assert
+    True
+end`,
+        "open-assert.test",
+        { layoutForms: testLayoutForms },
+      ),
+    isBlockEnd,
+  );
+});
+
+test("user-defined probe/then completes without end; hold still needs end", () => {
+  parseSurface(
+    `probe
+  1
+then 2`,
+    "program",
+    { layoutForms: probeHoldForms },
+  );
+  parseSurface(
+    `probe 1
+then 2`,
+    "program",
+    { layoutForms: probeHoldForms },
+  );
+  parseSurface(
+    `hold
+  1
+end`,
+    "program",
+    { layoutForms: probeHoldForms },
+  );
+  assert.throws(
+    () =>
+      parseSurface(
+        `hold
+  1`,
+        "program",
+        { layoutForms: probeHoldForms },
+      ),
+    isBlockEnd,
+  );
+  const i = new Interpreter();
+  i.run(
+    "macro (:probe (body :: Body) :then (result :: Expression)) Code$` $(result)",
+    "repl",
+  );
+  i.run("macro (:hold (body :: Body)) Code$` $(body)", "repl");
+  assert.equal(
+    displayResults(
+      i.run(
+        `probe
+  1
+then 2`,
+        "repl",
+      ),
+    ),
+    displayResults(i.run("probe 1 then 2", "repl")),
+  );
+  assert.equal(
+    displayResults(
+      i.run(
+        `hold
+  1 + 1
+end`,
+        "repl",
+      ),
+    ),
+    "2",
+  );
+  assert.throws(
+    () =>
+      i.parse(
+        `hold
+  1`,
+        "repl",
+      ),
+    isBlockEnd,
   );
 });
 

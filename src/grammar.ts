@@ -3,6 +3,7 @@ import { elaborateBlock, validateLanguageBlock } from "./elaboration.ts";
 import { PatternCompiler } from "./pattern-compiler.ts";
 import {
   addLayoutForm,
+  emptyLayoutForms,
   parseSurface,
   type LayoutForms,
 } from "./parser.ts";
@@ -724,7 +725,7 @@ export class Grammar {
   }
   /** Start keywords and extra clause keywords from this grammar's sidefix rules. */
   layoutForms(): LayoutForms {
-    const forms: LayoutForms = new Map();
+    const forms = emptyLayoutForms();
     for (const items of this.ruleSyntax.values()) addLayoutForm(forms, items);
     return forms;
   }

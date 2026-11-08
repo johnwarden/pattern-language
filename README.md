@@ -9,11 +9,11 @@ interpreter/compiler. The TypeScript implementation is the bootstrap reference.
 
 ## Design and implementation status
 
-The revised value model extends beyond the bootstrap. All **133 source cases run**:
-**255 assertions pass (70 legacy)** and **117 todo assertions fail as expected**.
+The revised value model extends beyond the bootstrap. All **138 source cases run**:
+**261 assertions pass (70 legacy)** and **117 todo assertions fail as expected**.
 A fulfilled todo fails the suite and requests removal of its marker. All 76
 playground examples share this corpus. TypeScript retains host/API/DOM checks. The complete verification gate passes
-751 tests, with no skipped cases; build and type checking also pass.
+767 tests, with no skipped cases; build and type checking also pass.
 
 | Intended contract | Current bootstrap |
 | --- | --- |
@@ -154,7 +154,7 @@ just run demo.pattern --parse
 just watch demo.pattern
 ```
 
-Submit a REPL entry with a blank line; `:quit` exits. Program blocks require a
+A finished grammar form runs on its last line; a blank line still submits. `:quit` exits. Program blocks require a
 final result pack, possibly empty. The REPL also accepts bindings and definitions;
 failed entries do not commit changes. Current type-factory syntax uses ordinary
 packs, for example `def List(T :: Type) ...`, not the proposed angle sugar.
