@@ -15,8 +15,7 @@ test "DSL: Infix syntax and distinct argument packs"
   assert infix == prefix
 
   assert False == (packed == successive)
-  legacy expect text result "a + b" :: Expression
-  todo expect text result "a + b" :: String
+  expect text result "a + b" :: String
 
   assert parse(ValueExpr)(text) == infix
 
@@ -58,14 +57,10 @@ test "DSL: Recursive expression grammar"
   expect expression result
     (a + b) :: Application
   end
-  legacy expect toString(ValueExpr)(head) result "+(a)" :: Expression
-  todo expect toString(ValueExpr)(head) result "+(a)" :: String
-  legacy expect toString(type [_... :: ValueExpr*])(args) result "[b]" :: Expression
-  todo expect toString(type [_... :: ValueExpr*])(args) result "[b]" :: String
-  legacy expect toString(ValueExpr)(operator) result "+" :: Expression
-  todo expect toString(ValueExpr)(operator) result "+" :: String
-  legacy expect toString(type [_... :: ValueExpr*])(left) result "[a]" :: Expression
-  todo expect toString(type [_... :: ValueExpr*])(left) result "[a]" :: String
+  expect toString(ValueExpr)(head) result "+(a)" :: String
+  expect toString(type [_... :: ValueExpr*])(args) result "[b]" :: String
+  expect toString(ValueExpr)(operator) result "+" :: String
+  expect toString(type [_... :: ValueExpr*])(left) result "[a]" :: String
   (expression, toString(ValueExpr)(head), toString(type [_... :: ValueExpr*])(args), toString(ValueExpr)(operator), toString(type [_... :: ValueExpr*])(left))
 end
 
@@ -87,8 +82,7 @@ test "DSL: Tests with explicit value and type"
 
   # Inspect the parts; the quoted calculation is never evaluated here.
   expect t.name result "An unevaluated calculation" :: String
-  legacy expect toString(Code)(t.code) result "(\n  (1 / 0)\n)" :: Expression
-  todo expect toString(Code)(t.code) result "(\n  (1 / 0)\n)" :: String
+  expect toString(Code)(t.code) result "(\n  (1 / 0)\n)" :: String
   legacy expect t.actual result :result :: Expression
   legacy expect t.expected.e result
     (:a + :b) :: Expression
@@ -125,8 +119,7 @@ test "DSL: Symbols and unannotated unions"
   text = toString(MathExp)(a)
 
   expect a result a :: LowerCamelSymbol
-  legacy expect text result "a" :: Expression
-  todo expect text result "a" :: String
+  expect text result "a" :: String
 
   assert parse(MathExp)(text) == a
 
@@ -172,11 +165,8 @@ test "Vertical spreading: Inspect a nested Body"
   expect first result a :: LowerCamelSymbol
   expect second result b :: LowerCamelSymbol
 
-  legacy expect toString(type [_... :: Binding*])(body.bindings) result "[y = 2, z = 3]" :: Expression
-
-  todo expect toString(type [_... :: Binding*])(body.bindings) result "[y = 2, z = 3]" :: String
-  legacy expect toString(type [_... :: ValueExpression*])(body.resultExpression) result "[y * z, y]" :: Expression
-  todo expect toString(type [_... :: ValueExpression*])(body.resultExpression) result "[y * z, y]" :: String
+  expect toString(type [_... :: Binding*])(body.bindings) result "[y = 2, z = 3]" :: String
+  expect toString(type [_... :: ValueExpression*])(body.resultExpression) result "[y * z, y]" :: String
 
   assert parse(Body)(toString(Body)(body)) == body
 

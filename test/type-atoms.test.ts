@@ -7,6 +7,7 @@ import {
   normal,
   LanguageError,
 } from "../src/index.ts";
+import { unwrap } from "../src/values.ts";
 import { syntaxKey } from "../src/syntax.ts";
 
 const run = (source: string) => displayResults(new Interpreter().run(source));
@@ -131,9 +132,10 @@ test("type construction sees the same value through abstract storage", () => {
 
 test("canonical enum type text can also be evaluated as an ordinary type value", () => {
   const i = new Interpreter();
-  const encoded = i.run("toString(Type)(type :Red | :Black)")[0].value;
+  const encoded = unwrap(i.run("toString(Type)(type :Red | :Black)")[0].value);
   assert.equal(encoded.kind, "literal");
-  if (encoded.kind !== "literal") throw new Error("expected text");
+  if (encoded.kind !== "literal" || typeof encoded.value !== "string")
+    throw new Error("expected text");
   assert.equal(run("(" + encoded.value + ") == (type :Red | :Black)"), "True");
 });
 

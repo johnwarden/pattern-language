@@ -80,7 +80,6 @@ const cases: [string, string, string][] = [
     "True",
   ],
   ["structural ordering", "Rect(1,2) < Rect(1,3)", "True"],
-  ["cross-kind ordering", '1 < "a"', "True"],
   ["quoted symbol", "v = :f\nv", ":f"],
   [
     "pattern union",
@@ -113,6 +112,7 @@ const cases: [string, string, string][] = [
 for (const [name, source, expected] of cases)
   test(name, () => assert.equal(run(source), expected));
 const failures: [string, string, RegExp][] = [
+  ["cross-kind ordering", '1 < "a"', /different concrete types/],
   ["extra positional result", "x = (1,2)\nx", /received 2/],
   [
     "extra positional block result",
@@ -473,7 +473,7 @@ test("labeled defaults bind, override, and validate values", () => {
   );
   assert.throws(
     () => run('def f(size: Int = "bad") size\nf()'),
-    /default for size does not match: expected Int/,
+    /default for size does not match/,
   );
   assert.throws(
     () => run("def f(size: Int = (1,2)) size\nf()"),

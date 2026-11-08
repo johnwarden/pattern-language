@@ -6,10 +6,8 @@ test "Abstract slots preserve identity"
   (y :: Int) = x
   assert x == y
 
-  legacy expect toString(Any)(x) result "3 :: Int" :: Expression
-  todo expect toString(Any)(x) result "3 :: Int" :: String
-  legacy expect toString(Int)(x) result "3" :: Expression
-  todo expect toString(Int)(x) result "3" :: String
+  expect toString(Any)(x) result "3 :: Int" :: String
+  expect toString(Int)(x) result "3" :: String
 
   ((n == x), (x == y), toString(Any)(x), toString(Int)(x))
 end
@@ -118,14 +116,7 @@ end
 test "Match"
   def Option type :None | Some(Int)
 
-  legacy expect
-    match Some(3) :: Option
-      :Some(v) -> v.toString
-      :None -> ""
-    end
-  result "3" :: Expression
-
-  todo expect
+  expect
     match Some(3) :: Option
       :Some(v) -> v.toString
       :None -> ""
@@ -146,16 +137,7 @@ test "Explicit primitive values"
 end
 
 test "Raw block preserves blank lines and dollars"
-  legacy expect
-    '
-      Quotes: " ' `
-      Dollars: $name $(anything)
-      Backslashes: \n
-
-    end
-  result "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: Expression
-
-  todo expect
+  expect
     '
       Quotes: " ' `
       Dollars: $name $(anything)
@@ -203,7 +185,7 @@ test "Open structural facet"
 
   assert p == r
   # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
-  legacy expect toString(Rectangular)(p) result "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: Expression
+  legacy expect toString(Rectangular)(p) result "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: String
 
   assert parse(Rectangular)(toString(Rectangular)(p)) == r
 
@@ -228,8 +210,7 @@ test "Abstract slots and ordering"
   expect a result 99 :: Int
   expect b result "0" :: String
   assert a < b
-  legacy expect toString(U)(a) result "99" :: Expression
-  todo expect toString(U)(a) result "99" :: String
+  expect toString(U)(a) result "99" :: String
 
   assert parse(U)(toString(U)(a)) == a
 

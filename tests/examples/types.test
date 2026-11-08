@@ -4,7 +4,7 @@ test "Canonical type alternatives"
 
   assert a == b
   # Legacy blocked: public descriptor text is still provisional; retain normalization and round-trip checks.
-  legacy expect toString(Type)(a) result "Type(:Black | :Red)" :: Expression
+  legacy expect toString(Type)(a) result "Type(:Black | :Red)" :: String
 
   assert parse(Type)(toString(Type)(a)) == b
 
@@ -32,7 +32,7 @@ test "Factory defaults and complete types"
   expect r result Rect(3, 4, color: :Black) :: Rectangle
   expect r.color result :Black :: Color
   # Legacy blocked: public descriptor text is still provisional.
-  legacy expect toString(Type)(type Rectangle) result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: Expression
+  legacy expect toString(Type)(type Rectangle) result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: String
 
   assert False == (:Rect(3, 4) .matches (type Rectangle))
   (r, r.color, toString(Type)(type Rectangle), :Rect(3, 4) .matches (type Rectangle))
@@ -71,10 +71,9 @@ test "Local and global type text"
   local = toStringLocal(Type)(t)
   global = toString(Type)(t)
 
-  legacy expect local result "Rectangle" :: Expression
-  todo expect local result "Rectangle" :: String
+  expect local result "Rectangle" :: String
   # Legacy blocked: local alias policy and global descriptor spelling are still provisional.
-  legacy expect global result "Type(Rect(Float, Float))" :: Expression
+  legacy expect global result "Type(Rect(Float, Float))" :: String
 
   assert parseLocal(Type)(local) == t
 
@@ -130,7 +129,7 @@ test "Option factory with ()"
   a = :None :: Option(Int)
   b = Some(5) :: Option(Int)
 
-  legacy expect toString(Option(Int))(a) result ":None" :: Expression
+  expect toString(Option(Int))(a) result ":None" :: String
   todo expect toString(Option(Int))(a) result "None" :: String
   expect b result Some(5) :: Option(Int)
   expect Option(Int) result Type(:None | Some(Int)) :: Type
@@ -194,7 +193,7 @@ test "Portable recursive type"
   restored = parse(Type)(text)
   value = Cons(5, :Nil) :: restored
   # Legacy blocked: public recursive descriptor text is still provisional.
-  legacy expect text result "Type(Recursive(:Nil | Cons(Int, Recur(0))))" :: Expression
+  legacy expect text result "Type(Recursive(:Nil | Cons(Int, Recur(0))))" :: String
 
   assert restored == t
 
@@ -269,7 +268,7 @@ test "Types as ordinary values"
 
   assert t == (type Rectangle)
   # Legacy blocked: public descriptor text is still provisional.
-  legacy expect toString(Type)(t) result "Type(Rect(Float, Float))" :: Expression
+  legacy expect toString(Type)(t) result "Type(Rect(Float, Float))" :: String
 
   ((Type(pattern) == t), (t == (type Rectangle)), toString(Type)(t))
 end
@@ -296,10 +295,8 @@ test "Inspect a typed code binding without evaluating it"
     end
   end
 
-  legacy expect patternText result "f" :: Expression
-  todo expect patternText result "f" :: String
-  legacy expect bodyText result "x -> x * 2" :: Expression
-  todo expect bodyText result "x -> x * 2" :: String
+  expect patternText result "f" :: String
+  expect bodyText result "x -> x * 2" :: String
   (patternText, bodyText)
 end
 

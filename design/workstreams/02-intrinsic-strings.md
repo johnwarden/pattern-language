@@ -1,8 +1,9 @@
 # Workstream 2: intrinsic String values
 
-Status: implementation handoff. This draft contains the work contract, not a
-String implementation. Claim the PR with an agent/session label before editing.
-Start from master in an independent checkout.
+Status: implementation complete, awaiting review. Ordinary runtime String
+literals and String-returning natives ascribe the String primitive. Quoted Code
+splices those values as string literals, matching Rational. PrimitiveType and
+public inspection/decoding remain unchosen.
 
 ## Accepted behavior
 

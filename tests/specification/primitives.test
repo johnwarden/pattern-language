@@ -1,12 +1,32 @@
 test "C01 intrinsic primitive values"
   expect True result True :: Bool
-  legacy expect "hello" result "hello" :: Expression
-  todo expect "hello" result "hello" :: String
+  expect "hello" result "hello" :: String
   expect 5 result 5 :: Rational
   expect :Widget result Widget :: UpperCamelSymbol
   legacy expect Bool result Bool :: Type
   todo expect Bool result Bool :: PrimitiveType
   todo expect PrimitiveType result PrimitiveType :: PrimitiveType
+end
+
+test "String operations keep intrinsic String identity"
+  expect "a" + "b" result "ab" :: String
+  expect toString(Rational)(0.1) result "0.1" :: String
+  s = "x"
+  expect s result "x" :: String
+  def echo(t) t
+  expect echo("hi") result "hi" :: String
+  (first, second) = ("a", "b")
+  expect first result "a" :: String
+  expect second result "b" :: String
+  expect ["hello"] .matches (type [_... :: String*]) result True :: Bool
+  expect "hello" .matches String result True :: Bool
+  expect
+    "hello" :: Int
+  error "expected Int"
+  expect
+    1 < "a"
+  error "E_INCOMPARABLE_TYPES"
+  expect parse(String)(toString(String)("hi")) result "hi" :: String
 end
 
 test "C02 exact Rational literal meanings"

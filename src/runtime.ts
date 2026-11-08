@@ -876,7 +876,7 @@ export class Interpreter {
             ) {
               if (a.value.length + b.value.length > 100000)
                 throw new LanguageError("string size limit exceeded");
-              return valLiteral(a.value + b.value);
+              return this.ascribeString(valLiteral(a.value + b.value));
             }
             if (!space || space.numeric === "rational") {
               const left = asRational(a),
@@ -1071,8 +1071,10 @@ export class Interpreter {
           )
         )
           throw new LanguageError("String requires Unicode code points");
-        return valLiteral(
-          numbers.map((n) => String.fromCodePoint(n as number)).join(""),
+        return this.ascribeString(
+          valLiteral(
+            numbers.map((n) => String.fromCodePoint(n as number)).join(""),
+          ),
         );
       }),
     ]);
@@ -1107,7 +1109,7 @@ export class Interpreter {
           );
         }
         const checked = single(this.check(type, value));
-        return valLiteral(valueText(checked, domain, type));
+        return this.ascribeString(valLiteral(valueText(checked, domain, type)));
       });
       const accepts = factory.test;
       factory.test = (xs) => accepts(xs) && !!this.materializeType(xs[0].value);
@@ -1118,11 +1120,13 @@ export class Interpreter {
         "toString",
         [1],
         ([value]) =>
-          valLiteral(
-            valueText(
-              value,
-              this.textDomain(),
-              value.kind === "slot" ? value.type : concreteSpace(value),
+          this.ascribeString(
+            valLiteral(
+              valueText(
+                value,
+                this.textDomain(),
+                value.kind === "slot" ? value.type : concreteSpace(value),
+              ),
             ),
           ),
         (xs) => !this.materializeType(xs[0].value),
@@ -1353,7 +1357,7 @@ export class Interpreter {
           });
         local.bindings.set(
           "\0readerFragments",
-          list(fragments.map(valLiteral)),
+          list(fragments.map((fragment) => this.stringValue(fragment))),
         );
         local.bindings.set("\0readerValues", list(values));
         return this.evaluate(
@@ -1372,7 +1376,7 @@ export class Interpreter {
         .join("");
       if (result.length > 100000)
         throw new LanguageError("string size limit exceeded", n.span);
-      return singleton(valLiteral(result));
+      return this.ascribeString(valLiteral(result));
     }
     if (n.kind === "typedQuote") {
       const type = this.typeFromSyntax(n.grammar, env);
@@ -1400,6 +1404,19 @@ export class Interpreter {
                   packOf(syntaxNumber({ n: -magnitude.n, d: magnitude.d })),
                 );
               }
+              if (
+                raw.kind === "literal" &&
+                typeof raw.value === "string" &&
+                (!space ||
+                  typeIdentity(space) ===
+                    typeIdentity(this.primitives.get("String")!))
+              )
+                return {
+                  kind: "code" as const,
+                  type: syntaxType,
+                  tree: literal,
+                  portable: true,
+                };
               if (!space || space.numeric === "rational")
                 return negative ||
                   (raw.kind === "literal" && isRational(raw.value))
@@ -1513,7 +1530,8 @@ export class Interpreter {
     if (n.kind === "block") return this.evaluateBlock(n, env);
     if (n.kind === "pack") return this.evaluateFields(n.body, env);
     if (n.kind === "literal") {
-      if (typeof n.value === "string") return singleton(valLiteral(n.value));
+      if (typeof n.value === "string")
+        return this.ascribeString(valLiteral(n.value));
       const r = rationalFromSyntax(n);
       if (!r)
         throw new LanguageError("malformed numeric source literal", n.span);
@@ -3700,6 +3718,12 @@ export class Interpreter {
   }
   private ascribeRational(value: Value): Field<Value>[] {
     return this.check(this.primitives.get("Rational")!, value);
+  }
+  private ascribeString(value: Value): Field<Value>[] {
+    return this.check(this.primitives.get("String")!, value);
+  }
+  private stringValue(text: string): Value {
+    return single(this.ascribeString(valLiteral(text)));
   }
   /** Prefix `-(a)` is negation; infix `-(a)(b)` remains subtraction. */
   private negateValue(v: Value): Field<Value>[] {

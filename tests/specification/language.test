@@ -18,65 +18,32 @@ test "C23 supported global typed text preserves value identity"
 end
 
 test "C24 applications preserve complete successive packs"
-  todo expect
+  expect
     def combine(x, y)(z)
       (x, y, z)
     end
     partial = combine("a", "b")
     (a, b, c) = partial("c")
     a
-  result
-    (
-      "a"
-    ) :: (
-      def combine(x, y)(z)
-        (x, y, z)
-      end
-      partial = combine("a", "b")
-      (a, b, c) = partial("c")
-      String
-    )
-  end
+  result "a" :: String
 
-  todo expect
+  expect
     def combine(x, y)(z)
       (x, y, z)
     end
     partial = combine("a", "b")
     (a, b, c) = partial("c")
     b
-  result
-    (
-      "b"
-    ) :: (
-      def combine(x, y)(z)
-        (x, y, z)
-      end
-      partial = combine("a", "b")
-      (a, b, c) = partial("c")
-      String
-    )
-  end
+  result "b" :: String
 
-  todo expect
+  expect
     def combine(x, y)(z)
       (x, y, z)
     end
     partial = combine("a", "b")
     (a, b, c) = partial("c")
     c
-  result
-    (
-      "c"
-    ) :: (
-      def combine(x, y)(z)
-        (x, y, z)
-      end
-      partial = combine("a", "b")
-      (a, b, c) = partial("c")
-      String
-    )
-  end
+  result "c" :: String
 
   todo expect
     def combine(x, y)(z)
@@ -95,17 +62,10 @@ end
 
 test "C25 infix operators retain equal precedence"
   expect (2 :: Float64) * (3 :: Float64) + (4 :: Float64) result 14 :: Float64
-  todo expect
+  expect
     def select(a)(b) b
     ("left" .select "right")
-  result
-    (
-      "right"
-    ) :: (
-      def select(a)(b) b
-      String
-    )
-  end
+  result "right" :: String
 end
 
 test "C26 todo assertions execute in isolated scopes"
