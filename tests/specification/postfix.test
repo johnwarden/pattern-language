@@ -65,3 +65,70 @@ end
 test "Spaced infix star is not postfix"
   expect 2 * 3 result 6 :: Rational
 end
+
+test "Postfix dollar amp tilde are distinct from prefix/infix"
+  def PostfixDollar type (Int)$
+  def PostfixAmp type (Int)&
+  def PrefixAmp type (&(Int))
+  def PostfixTilde type (Int)~
+  def PrefixTilde type (~(Int))
+  (dollar :: PostfixDollar) = 1$
+  (amp :: PostfixAmp) = 2&
+  (preAmp :: PrefixAmp) = &(3)
+  (tilde :: PostfixTilde) = 4~
+  (preTilde :: PrefixTilde) = ~(5)
+  expect
+    amp == preAmp
+  error "Can't compare types"
+  end
+  expect
+    tilde == preTilde
+  error "Can't compare types"
+  end
+  postfixDollarType = type (Int)$
+  prefixDollarType = type ($(Int))
+  expect
+    postfixDollarType == prefixDollarType
+  result False :: Bool
+  d = match dollar
+    (captured :: Int)$ -> captured
+  end
+  expect d result 1 :: Int
+  a = match amp
+    (captured :: Int)& -> captured
+  end
+  expect a result 2 :: Int
+  pa = match preAmp
+    &(captured :: Int) -> captured
+  end
+  expect pa result 3 :: Int
+  t = match tilde
+    (captured :: Int)~ -> captured
+  end
+  expect t result 4 :: Int
+  pt = match preTilde
+    ~(captured :: Int) -> captured
+  end
+  expect pt result 5 :: Int
+  expect $(1) error "$ is only valid inside quotation"
+  expect 6 $ 7 error "$ is only valid inside quotation"
+end
+
+test "Spaced infix amp and tilde are not postfix"
+  infAmp = 1 & 2
+  postAmp = (1&)
+  infTilde = 3 ~ 4
+  postTilde = (3~)
+  expect
+    infAmp == postAmp
+  result False :: Bool
+  expect
+    infTilde == postTilde
+  result False :: Bool
+end
+
+test "Interpolating dollar quote is not postfix dollar"
+  name = "Jo"
+  greeting = $"Hi $name"
+  expect greeting result "Hi Jo" :: Expression
+end

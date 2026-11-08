@@ -97,7 +97,7 @@ export const apply = (head: Syntax, body: Field<Syntax>[]): Syntax => ({
   body,
 });
 /** Tight one-character suffixes. Host-only; not a public SyntaxNode variant. */
-export const POSTFIX_SUFFIX = /^[?*!^@]+$/;
+export const POSTFIX_SUFFIX = /^[?*!^@$&~]+$/;
 export const postfix = (
   operator: string,
   operand: Syntax,

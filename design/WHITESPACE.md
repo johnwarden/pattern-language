@@ -95,7 +95,7 @@ width.
 | Newlines outside balanced delimiters | Separate rows / statements; joining or splitting rows can intentionally change a program. |
 | Newlines inside collection delimiters | Can distinguish vertical rows from comma continuation; row boundaries can change collection rank. |
 | Spaces around infix operators | Both sides are required; a+b is invalid, not a different addition expression. |
-| Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Suffixes wrap in source order. |
+| Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. The suffix inventory is `* ? ! ^ @ $ & ~`. Suffixes wrap in source order. Adding or removing spaces around a suffix does not yield two valid trees of the same fixity: tight is postfix, spaced is infix or invalid. Call spacing `f(x)` vs `f (x)` is a separate rule. |
 | Tight function calls versus sidefix operands | f(x) is application; f (x) is a space-separated sequence requiring a grammar, not automatic application. |
 | Dot notation | a.b and a .b c follow the stated call/pack rules; arbitrary spacing around dot is not permitted. |
 | Label colon | Must touch its label. Separating it is not an alternative label spelling and may only have meaning in another explicitly selected grammar. |

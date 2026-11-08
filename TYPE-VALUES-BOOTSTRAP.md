@@ -76,8 +76,9 @@ from bare names, and f(a)(b) remains distinct from f(a,b).
 
 Prefix `*(T)` / `?(T)` / `^(T)` are ordinary applications naming List/Option/error
 types. Their domains are disjoint from numeric operator packs. Tight postfix
-`Int*` / `Int?` / `Int^` / `Int!` / `T@` are a distinct construction, not those
-prefix applications. Prefix `!` is reserved for future action types.
+`Int*` / `Int?` / `Int^` / `Int!` / `T@` / `T$` / `T&` / `T~` are a distinct
+construction, not those prefix applications. Prefix `!` is reserved for future
+action types. Prefix `$` remains unquote.
 
 ## Normalization and identity
 

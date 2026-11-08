@@ -214,6 +214,9 @@ test("postfix type modifiers are distinct trees from prefix application", () => 
     ["Int*", "*(Int)"],
     ["Int?", "?(Int)"],
     ["Int^", "^(Int)"],
+    ["Int$", "$(Int)"],
+    ["Int&", "&(Int)"],
+    ["Int~", "~(Int)"],
   ]) {
     assert.notEqual(
       syntaxKey(parseExpression(suffix)),
@@ -221,7 +224,14 @@ test("postfix type modifiers are distinct trees from prefix application", () => 
     );
     assert.equal(parseExpression(suffix).kind, "postfix");
     assert.equal(parseExpression(prefix).kind, "apply");
-    assert.equal(run(suffix + " == " + prefix), "False");
+    assert.equal(
+      run(
+        suffix === "Int$"
+          ? "(type (Int)$) == (type ($(Int)))"
+          : suffix + " == " + prefix,
+      ),
+      "False",
+    );
     assert.equal(normal(parseExpression(suffix)), suffix);
     assert.equal(normal(parseExpression(prefix)), prefix);
   }

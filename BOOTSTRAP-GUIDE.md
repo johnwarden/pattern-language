@@ -119,9 +119,10 @@ not establish actual iOS lifecycle/storage behavior.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
 - All infix operators have equal precedence and associate right. They require
   spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
-- Prefix punctuation is a maximal symbol. Tight postfix `* ? ! ^ @` are distinct
-  from prefix/infix application. `Int?*` is postfix `*` of postfix `?` of `Int`,
-  not the list/option type `*(?(Int))`.
+- Prefix punctuation is a maximal symbol. Tight postfix `* ? ! ^ @ $ & ~` are
+  distinct from prefix/infix application. `Int?*` is postfix `*` of postfix `?`
+  of `Int`, not the list/option type `*(?(Int))`. Prefix `$` remains unquote;
+  interpolating `T$` quotes stay lexer prefixes, not postfix `$`.
 - Outfix `[1,2]` and `{1,2}` have the unquoted heads `[]` and `{}`. They remain
   outfix in normalized output; `[](1,2)` has a different, nested expression head.
 - `()` is an empty argument/result pack, not a unit value. `(x)` is grouping.

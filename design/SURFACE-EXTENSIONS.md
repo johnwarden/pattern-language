@@ -40,14 +40,23 @@ because a spaced punctuation operator is infix, not a prefix constructor. A host
 `Syntax` postfix node, if present, is temporary adapter debt; do not freeze a
 public `SyntaxNode` Postfix variant.
 
-The current suffix inventory is the grammar `typeSuffix` set plus `@`:
-`* ? ! ^ @` (parser `POSTFIX_SUFFIX`). Each is a distinct postfix construction,
-not prefix/infix `Apply`. Option/List/error types stay prefix `*(T)` / `?(T)` /
-`^(T)`. Postfix `Int*` / `String?` / `Int^` / `Int!` are incomparable with those
-prefix applications. `T+` nonempty-list meaning remains later work; `+` is not
-in the current suffix set and stays prefix/infix.
+The current suffix inventory is parser `POSTFIX_SUFFIX`:
+`* ? ! ^ @ $ & ~`. Each is a distinct postfix construction, not prefix/infix
+`Apply`. Option/List/error types stay prefix `*(T)` / `?(T)` / `^(T)`. Postfix
+`Int*` / `String?` / `Int^` / `Int!` / `Int$` / `Int&` / `Int~` are incomparable
+with the corresponding prefix applications. `T+` nonempty-list meaning remains
+later work; `+` is not in the current suffix set and stays prefix/infix.
 
-Other punctuation (`$ = / +` and similar) stays prefix/infix until listed as a
+Prefix `$` / `$(…)` / infix `$` remain unquote (`E_UNQUOTE_CONTEXT` outside
+quotation). Interpolating `` T$` ``, `$"…"`, and `$'…'` are lexer quote prefixes
+(the `$` is not an operator token) and are not postfix `$`. Tight `T$` without a
+quote delimiter is postfix. Do not treat postfix `$` as interpolation or unquote.
+
+Spaced `A & B` and `x ~ y` stay infix application. They are not facet-combination
+or equivalence operators merely because those spellings appear in later design
+notes.
+
+Other punctuation (`= / +` and similar) stays prefix/infix until listed as a
 suffix.
 
 The Question/`String?` sketch is the same generic distinction as `@`:

@@ -126,10 +126,11 @@ explicit layout termination, including shared string/if terminator ownership.
 - Implemented grammar diagnostics with found input, active expected form and locations.
   Contextual type-inference diagnostics still depend on milestones 6/7.
 - Implemented distinct postfix application for the current suffix inventory
-  (`* ? ! ^ @`) through Syntax/Value adapters. Suffixes are one character each:
-  T** is (T*)*, and String?*^! wraps from the nearest suffix outward. Postfix
-  punctuation is not prefix/infix `Apply`. Public `SyntaxNode` has no Postfix
-  variant. Option/List/error types are prefix `*(T)` / `?(T)` / `^(T)`. Full
+  (`* ? ! ^ @ $ & ~`) through Syntax/Value adapters. Suffixes are one character
+  each: T** is (T*)*, and String?*^! wraps from the nearest suffix outward.
+  Postfix punctuation is not prefix/infix `Apply`. Public `SyntaxNode` has no
+  Postfix variant. Option/List/error types are prefix `*(T)` / `?(T)` / `^(T)`.
+  Prefix `$` remains unquote; interpolating quotes stay lexer prefixes. Full
   parser migration is not a prerequisite and is not done.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.
