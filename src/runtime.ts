@@ -279,6 +279,8 @@ export class Interpreter {
   private inlineTypeDepth = 0;
   private parsingDataDepth = 0;
   private interpretingDepth = 0;
+  /** Match arms may select one unique union member; bindings and dispatch may not. */
+  private matchProjectionDepth = 0;
   private types = new Map<string, TypeValue>();
   private primitives = new Map<string, TypeValue>();
   private definitionProducts = new WeakMap<TypeValue, TypeDefinition>();
@@ -1634,7 +1636,12 @@ export class Interpreter {
             validatePatternCaptures([{ kind: "pack", body: pair[0] }]);
             let matched: Match<Value>;
             try {
-              matched = this.matchParameters(pair[0], values, env);
+              this.matchProjectionDepth++;
+              try {
+                matched = this.matchParameters(pair[0], values, env);
+              } finally {
+                this.matchProjectionDepth--;
+              }
             } catch (e) {
               if (e instanceof Mismatch) continue;
               throw e;
@@ -3293,15 +3300,17 @@ export class Interpreter {
         return {
           kind: "map",
           localCaptures: true,
-          input: type.transparent
-            ? undefined
-            : (v) => {
-                const raw = unwrap(v),
-                  tree = syntaxOrigins.get(raw);
-                return tree?.kind === "block"
-                  ? syntaxData(this.grammarInput(type, tree))
-                  : raw;
-              },
+          input: (v) => {
+            const space = concreteSpace(v);
+            if (space && this.uniqueMatchUnionMember(space, v, type))
+              return v.kind === "view" ? v.base : unwrap(v);
+            if (type.transparent) return v;
+            const raw = unwrap(v),
+              tree = syntaxOrigins.get(raw);
+            return tree?.kind === "block"
+              ? syntaxData(this.grammarInput(type, tree))
+              : raw;
+          },
           accept: (v) => {
             original = v;
             if (
@@ -3347,7 +3356,8 @@ export class Interpreter {
               type.transparent ||
               !prior ||
               typeIdentity(prior) === typeIdentity(type.baseType ?? type) ||
-              (prior.numeric === "rational" && type.numeric !== "rational")
+              (prior.numeric === "rational" && type.numeric !== "rational") ||
+              this.uniqueMatchUnionMember(prior, v, type)
             );
           },
           pattern: type.pattern(),
@@ -3493,6 +3503,85 @@ export class Interpreter {
       return valRational(r.n, r.d);
     }
     return unwrap(value);
+  }
+  /**
+   * D09: match-based projection may cross one union boundary when the payload
+   * uniquely designates a member. Ordinary binding and dispatch do not unwrap.
+   * Tagged Some/None options are constructor unions, not typed members, so they
+   * stay constructor matches.
+   */
+  private findImmediateUnion(
+    pattern: Pattern<Value>,
+    active = new Set<unknown>(),
+  ): Extract<Pattern<Value>, { kind: "union" }> | undefined {
+    if (pattern.kind === "union") return pattern;
+    if (pattern.kind === "map" || pattern.kind === "capture")
+      return this.findImmediateUnion(pattern.pattern, active);
+    if (pattern.kind !== "ref" || active.has(pattern.key)) return;
+    return this.findImmediateUnion(
+      pattern.resolve(),
+      new Set(active).add(pattern.key),
+    );
+  }
+  private typeForKey(key: unknown): TypeValue | undefined {
+    if (typeof key === "string") {
+      const cached = this.types.get(key);
+      if (cached) return cached;
+    }
+    for (const type of this.types.values()) if (type.key === key) return type;
+    for (const type of this.primitives.values())
+      if (type.key === key) return type;
+  }
+  private typeFromChoice(choice: Pattern<Value>): TypeValue | undefined {
+    const seen = new Set<unknown>();
+    let pattern = choice;
+    while (pattern.kind === "ref" && !seen.has(pattern.key)) {
+      seen.add(pattern.key);
+      const found = this.typeForKey(pattern.key);
+      if (found) return found;
+      pattern = pattern.resolve();
+    }
+    if (pattern.kind === "map") return this.typeFromChoice(pattern.pattern);
+  }
+  private immediateUnionChoices(type: TypeValue): Pattern<Value>[] | undefined {
+    if (type.unionMembers && type.unionMembers.length >= 2)
+      return type.unionMembers.map((member) => this.typePattern(member));
+    const union = this.findImmediateUnion(type.pattern());
+    if (!union || union.choices.length < 2) return;
+    return union.choices;
+  }
+  private uniqueMatchUnionMember(
+    prior: TypeValue,
+    value: Value,
+    target: TypeValue,
+  ): boolean {
+    if (!this.matchProjectionDepth) return false;
+    const choices = this.immediateUnionChoices(prior);
+    if (!choices) return false;
+    const payload = value.kind === "view" ? value.base : unwrap(value);
+    const hits: TypeValue[] = [];
+    let constructorHit = false;
+    const depth = this.matchProjectionDepth;
+    this.matchProjectionDepth = 0;
+    try {
+      for (const choice of choices) {
+        try {
+          this.interpretMatch(choice, singleton(payload));
+          const member = this.typeFromChoice(choice);
+          if (member) hits.push(member);
+          else constructorHit = true;
+        } catch (error) {
+          if (!(error instanceof Mismatch)) throw error;
+        }
+      }
+    } finally {
+      this.matchProjectionDepth = depth;
+    }
+    return (
+      !constructorHit &&
+      hits.length === 1 &&
+      typeIdentity(hits[0]) === typeIdentity(target)
+    );
   }
   private check(type: TypeValue, value: Value, env?: Scope): Field<Value>[] {
     this.requireExactNumericDesignation(type, value);

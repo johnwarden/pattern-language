@@ -1,0 +1,95 @@
+test "Unwrapped nested option designates a unique String"
+  def Inner type String | :None
+  def Nested type Inner | :None
+  (outer :: Nested) = "Hello"
+
+  expect outer result "Hello" :: Nested
+  assert "Hello" .matches Nested
+  assert False == ((type Nested) == (type Inner))
+end
+
+test "Nested absence is ambiguous across designation paths"
+  def Inner type String | :None
+  def Nested type Inner | :None
+
+  expect
+    (absent :: Nested) = :None
+    absent
+  error "E_AMBIGUOUS_PATTERN"
+end
+
+test "Match projects one unwrapped option boundary"
+  def Inner type String | :None
+  def Nested type Inner | :None
+  (outer :: Nested) = "Hello"
+
+  expect
+    match outer
+      (inner :: Inner) -> inner
+    end
+  result "Hello" :: Inner
+
+  expect
+    match outer
+      (inner :: Inner) -> match inner
+        (s :: String) -> s
+      end
+    end
+  result "Hello" :: String
+end
+
+test "Ordinary binding and dispatch do not unwrap Nested"
+  def Inner type String | :None
+  def Nested type Inner | :None
+  (outer :: Nested) = "Hello"
+
+  expect
+    (inner :: Inner) = outer
+    inner
+  error "E_PATTERN_MISMATCH"
+
+  expect
+    def take(x :: Inner) x
+    take(outer)
+  error "E_NO_METHOD"
+end
+
+test "Match does not skip two unwrapped option boundaries"
+  def Inner type String | :None
+  def Nested type Inner | :None
+  (outer :: Nested) = "Hello"
+
+  expect
+    match outer
+      (s :: String) -> s
+    end
+  error "E_PATTERN_MISMATCH"
+end
+
+test "Postfix nested option keeps tagged Some nodes"
+  expect
+    (outer :: String??) = "Hello"
+    outer
+  error "E_PATTERN_MISMATCH"
+
+  expect Some(Some("Hello")) :: String?? result Some(Some("Hello")) :: String??
+  expect :None :: String?? result :None :: String??
+  expect Some(:None) :: String?? result Some(:None) :: String??
+  assert False == "Hello" .matches String??
+  assert Some(Some("Hello")) .matches String??
+  assert Some(:None) .matches String??
+end
+
+test "Match does not strip a tagged Some constructor"
+  expect
+    match Some("Hello")
+      (s :: String) -> s
+    end
+  error "E_PATTERN_MISMATCH"
+
+  expect
+    match Some("Hello")
+      Some(s :: String) -> s
+    end
+  result "Hello" :: String
+end
