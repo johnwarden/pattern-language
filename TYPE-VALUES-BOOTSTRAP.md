@@ -4,8 +4,9 @@
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
 > [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md).
-> General unions, Rational literals, declaration-only accessors, proof-based
-> refinements and the new test DSL are planned changes, not promises of this guide.
+> Declaration-only accessors, proof-based refinements and remaining declaration
+> sugar are planned changes, not promises of this guide. Overlapping UnionType and
+> exact Rational literals are current bootstrap behavior.
 
 The interpreter represents types as ordinary immutable expression values. Compiled
 matchers and accessor products are derived caches, not public identity. This document
@@ -13,10 +14,11 @@ describes the implemented model; the drafts under design/ are not specifications
 
 ## Ordinary names and ordinary application
 
-Primitive type atoms are self-evaluating language values: Int, Float, Float32, Bool,
-String, Symbol, Expression, Body, Any, and Type. Number is an accepted alias for
-Float; global text always uses Float. Int currently uses JavaScript-safe integers,
-Float uses finite Float64 arithmetic, and Float32 rounds explicitly.
+Primitive type atoms are self-evaluating language values: Rational, Int, Float,
+Float64, Float32, Bool, String, Symbol, Expression, Body, Any, and Type. Number is
+an accepted alias for Float; global text always uses Float. Float64 is the distinct
+float64 carveout, not an alias of Float. Int currently uses JavaScript-safe integers,
+Float and Float64 use finite Float64 arithmetic, and Float32 rounds explicitly.
 
 ```text
 r = Int
@@ -206,8 +208,8 @@ atoms inside quoted expression trees. Parsing global data is inert: it never cal
 functions, installs declarations or evaluates interpolation. Primitive atoms resolve
 against the fixed language vocabulary, not user lexical bindings.
 
-Disjoint union positions omit :: tags: their grammar uniquely reconstructs the
-member. Facet/Any positions serialize the concrete type explicitly. Abstract slots
+Unique union spellings omit :: tags; overlapping members keep existing `::`.
+Facet/Any positions serialize the concrete type explicitly. Abstract slots
 do not add a structural annotation node to value identity.
 
 ```text
@@ -217,8 +219,9 @@ do not add a structural annotation node to value identity.
 ```
 
 Source expression :: T requires concrete/refinement T. Abstract domains belong in
-binding/parameter/match constraints. Disjoint union parsing selects its concrete
-member; facet/Any parsing still requires a concrete :: tag.
+binding/parameter/match constraints. Unique union spellings reconstruct without
+tags; overlapping members keep `::`. Facet/Any parsing still requires a concrete
+:: tag.
 
 Open facets retain every original field and the original concrete member descriptor.
 Their required fields must exist. Facets, concrete types, nested abstract fields,
@@ -281,11 +284,11 @@ representation remain serialization gaps, reported explicitly. Source refinement
 can express Code categories in the same concrete space; portable predicate-bearing
 category types remain subject to the general refinement serialization gap.
 
-## Intrinsic symbols and disjoint type unions
+## Intrinsic symbols and overlapping type unions
 
 LowerCamelSymbol, UpperCamelSymbol and PunctuationSymbol are intrinsic classes.
 Symbol is their prelude union. A bare symbol literal receives its natural class;
 its immediate context can interpret it, while a stored typed variable cannot be
 silently converted to a different space. unionType A | B normalizes to UnionType(A,B).
-Union members must be provably disjoint in the supported structural subset. Shared
-None, empty-list and numeric syntax reject. See design/UNION-GRAMMARS.md.
+General UnionType members may overlap; same-space refinements and concrete `:A | :A`
+still reject. See design/UNION-GRAMMARS.md.

@@ -1,0 +1,103 @@
+test "Float64 is a distinct primitive and float64 converts"
+  expect float64(0.5) result 0.5 :: Float64
+  expect float32(0.5) result 0.5 :: Float32
+  expect (type Float64) result Float64 :: Type
+  expect
+    type Num
+  error "E_UNBOUND_TYPE"
+  expect
+    type Int64
+  error "E_UNBOUND_TYPE"
+
+  expect
+    float32(0.5) == float64(0.5)
+  error "E_INCOMPARABLE_TYPES"
+end
+
+test "Overlapping UnionType keeps Float32 and Float64 identities"
+  def EitherFloat UnionType(type Float32, type Float64)
+  (a :: EitherFloat) = float32(0.5)
+  (b :: EitherFloat) = float64(0.5)
+
+  expect a result 0.5 :: Float32
+  expect b result 0.5 :: Float64
+  assert a .matches Float32
+  assert b .matches Float64
+  expect a == b result False :: Bool
+  assert parse(EitherFloat)(toString(EitherFloat)(a)) == a
+end
+
+test "Tagged reconstruction keeps :: for inexact Float64 decimals"
+  def EitherFloat UnionType(type Float32, type Float64)
+  (c :: EitherFloat) = float64(0.1)
+  text = toString(EitherFloat)(c)
+
+  legacy expect text result "0.1 :: Float64" :: Expression
+  todo expect text result "0.1 :: Float64" :: String
+  assert parse(EitherFloat)(text) == c
+end
+
+test "Unannotated overlapping numeric values stay ambiguous"
+  def EitherFloat UnionType(type Float32, type Float64)
+
+  expect
+    (x :: EitherFloat) = 0.5
+    x
+  error "E_AMBIGUOUS_PATTERN"
+end
+
+test "UnionType text distinguishes Float64 from Float"
+  t = UnionType(Float32, Float64)
+
+  legacy expect toString(Type)(t) result "UnionType(Float32, Float64)" :: Expression
+  todo expect toString(Type)(t) result "UnionType(Float32, Float64)" :: String
+  assert parse(Type)(toString(Type)(t)) == t
+end
+
+test "Overlapping option unions construct; unannotated None is ambiguous"
+  expect UnionType(Int?, String?) result UnionType(Type(:None | Some(Int)), Type(:None | Some(String))) :: Type
+
+  expect
+    def U UnionType(Int?, String?)
+    (x :: U) = :None
+    x
+  error "E_AMBIGUOUS_PATTERN"
+end
+
+test "Overlapping numeric and constructor unions construct"
+  expect UnionType(Int, Float) result UnionType(Float, Int) :: Type
+  assert UnionType(Int, Int) == UnionType(Int)
+
+  expect
+    def A type :X(Int)
+    def B type :X(Number)
+    UnionType(A, B)
+  result UnionType(Type(X(Float)), Type(X(Int))) :: Type
+
+  expect
+    def U UnionType(type Int, type Float)
+    (x :: U) = 3
+    x
+  error "E_AMBIGUOUS_PATTERN"
+end
+
+test "Same-space refinement unions reject without running predicates"
+  expect
+    def P Int .where (n -> panic("must not run"))
+    unionType P | Int
+  error "E_REFINED_UNION"
+end
+
+test "Concrete duplicate alternatives still reject"
+  expect
+    def Bad type :A | :A
+    0
+  error "E_AMBIGUOUS_PATTERN"
+end
+
+test "Overlapping abstract facet members retain spaces"
+  def Colored type :Rect(Number, Number, color: String)
+  def Rectangular type :Rect(w :: Number, h :: Number, **)
+
+  expect UnionType(type Rectangular, type Colored) result UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
+end

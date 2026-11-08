@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Interpreter, displayResults, LanguageError } from "../src/index.ts";
+import { Interpreter, displayResults } from "../src/index.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const expression = `def Atom unionType Number | String | Symbol
 def Application type (head :: ValueExpr)(args... :: ValueExpr*)
@@ -45,7 +45,7 @@ test("unionType evaluates type alternatives and normalizes just like UnionType",
     run("(unionType Int | String | Int) == UnionType(String,Int)"),
     "True",
   );
-  assert.throws(() => run("unionType Int | 3"), /type|Type/);
+  assert.throws(() => run("unionType Int | foo"), /unbound/);
 });
 test("unannotated raw union values select and retain exactly one concrete member", () => {
   const i = new Interpreter();
@@ -80,30 +80,6 @@ test("facets and Any still retain required concrete metadata", () => {
   assert.throws(() => run("(x :: Any) = Rect(2,3)\nx"), /explicit concrete/);
   assert.throws(() => run('parse(Any)("3")'), /explicit concrete/);
   assert.equal(run("(x :: Any) = 3 :: Int\ntoString(Any)(x)"), '"3 :: Int"');
-});
-test("overlapping alternatives reject at construction even when unused or annotated", () => {
-  for (const source of [
-    "UnionType(Int?,String?)",
-    "UnionType(Int*,String*)",
-    "UnionType(Int,Float)",
-    "def A type :X(Int)\ndef B type :X(Number)\nUnionType(A,B)",
-    "def U unionType Int? | String?\n0",
-  ]) {
-    assert.throws(
-      () => run(source),
-      (e: unknown) =>
-        e instanceof LanguageError && e.diagnostic.code === "E_AMBIGUOUS_UNION",
-      source,
-    );
-  }
-  assert.equal(run("UnionType(Int,Int) == UnionType(Int)"), "True");
-});
-test("disjointness never runs predicate bodies", () => {
-  assert.throws(
-    () =>
-      run('def P Int .where (n -> panic("must not run"))\nunionType P | Float'),
-    /overlapping syntax/,
-  );
 });
 test("ordinary recursive expression grammar exposes concrete applications and symbols", () => {
   const i = new Interpreter();

@@ -260,6 +260,22 @@ identity: `float32(0.5)` stays Float32, `float64(0.5)` stays Float64.
 `parse(EitherFloat)(toString(EitherFloat)(a)) == a` must reconstruct Float32.
 The text must retain enough information; no exact descriptor spelling is approved here.
 
+C13's `type Name abstract …` declaration spelling remains unconfirmed (D08), so this
+case stays todo. The overlap policy itself does not depend on that spelling: existing
+`UnionType` / `unionType` may contain overlapping members, typed members keep their
+spaces, and reconstruction uses the existing concrete `::` tag. Public
+`syntaxTree`/`NumberLiteral(Float)` adapters are lossy for exact Rational spellings
+and are not this case's reconstruction path.
+
+`float32(0.5)` / `float64(0.5)` keep `::` because the printed spelling `0.5` is exact
+for both members. `toString(EitherFloat)(float64(0.1))` must also keep `:: Float64`:
+uniqueness may not treat the live IEEE payload as a unique spelling. Untagged `0.1`
+is read as Rational `1/10` and fails. Tagged reconstruction uses the existing
+concrete `::` path, not a new Float64 spelling, `0f` print form, or `float64(...)`
+in parse. Source ascription `(0.1 :: Float64)` remains rejected by exact designation.
+Untagged `toString(Float64)(float64(0.1))` still prints JS `0.1` and does not
+round-trip; canonical IEEE payload text remains deferred.
+
 ### C14 — unambiguous grammar requirements are separate
 
 The qualifier spelling and certification diagnostics are provisional. Todo:

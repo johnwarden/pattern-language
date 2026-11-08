@@ -38,15 +38,24 @@ implementation restriction; it must not redefine general union membership.
 ## Current bootstrap compatibility
 
 The current source spelling `unionType A | B` constructs normalized UnionType(A,B)
-from type-valued members. Its matcher requires disjoint admitted syntax and rejects
-Int/Float, overlapping option and empty-list alternatives. This remains an implemented
-restriction, superseded in the intended design. Primitive symbol classes and their
-Symbol union work. The exact updated type/generic sugar is not yet implemented.
+from type-valued members. General abstract unions may overlap; unannotated text that
+fits more than one member is ambiguous rather than first-success. Reconstruction uses
+the existing concrete `::` tag. Unique-spelling omission follows printed numeric
+text, not live IEEE bits, so `float64(0.1)` under EitherFloat prints `0.1 :: Float64`
+rather than untagged `0.1`. Untagged `0.1` parses as Rational 1/10 and fails;
+the tagged form uses existing `::` reconstruction. Converters and `0f` are not a
+public Float64 payload schema. Untagged `toString(Float64)` of that payload remains
+JS decimal and is not claimed as a round-trip spelling. The `unambiguous` qualifier
+and `type Name abstract` declaration spelling remain unimplemented. Primitive symbol
+classes and their Symbol union work. The exact updated type/generic sugar is not yet
+implemented.
+
+Same-space refinement unions remain rejected. Concrete pattern alternatives such as
+`:A | :A` still require unique interpretations.
 
 [The bootstrap type reference](../TYPE-VALUES-BOOTSTRAP.md) documents working syntax.
-Tests enforcing blanket disjointness remain implementation regressions until the
-alignment slice deliberately replaces them. They must not be migrated as the final
-language's rule merely because they currently pass.
+Public `NumberLiteral(Float)` adapters remain lossy for exact Rational spellings;
+union reconstruction must not use them as the exactness path.
 
 ## Syntax interpretation and Code
 
