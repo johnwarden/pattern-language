@@ -18,6 +18,7 @@ end
 
 test "Bare keyword-rest ** is not rewritten by the suffix rule"
   assert parse(Code)("Rect(w, h, **)") .matches Code
+  assert parse(Code)("x...") .matches Code
 end
 
 test "Postfix plus does not evaluate as a nonempty-list type"

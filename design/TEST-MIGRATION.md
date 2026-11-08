@@ -57,6 +57,8 @@ No failing placeholder is substituted for an unspecified target result.
 | Actual controls, sorting and old/new storage restoration | test/playground.test.ts; every executable example exercised through DOM controls |
 | Resource limits, staging rollback, build/schema synchronization | existing host tests; preserve their boundary observations |
 | Revised primitives, value spaces, proof evidence, projections, facets and spreads | tests/specification/*.test; C01–C27 execute assertion-level todos, C27 explicitly exploratory |
+| PR10 postfix wrap / infix spacing / keyword-rest / `Int+` non-evaluation | tests/layout/postfix-suffixes.test via `parse(Code)`, `expect parse(Code)(…) error`, and ordinary expect; host keeps `syntaxKey`/`normal` print and this branch's prefix-shared trees |
+| PR10 layout end runtime and parse failures | tests/layout/explicit-ends.test; host keeps Grammar-object `parseSurface`, quote-indent with `:otherwise`, and `parseTestSource` / `loadTests` |
 
 No whole-file migration is claimed for candidate files outside the selected batch.
 Lower TypeScript-only counts do not imply lost semantic coverage; expected failures

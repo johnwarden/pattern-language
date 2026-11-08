@@ -43,16 +43,23 @@ test "An expectation cannot borrow its enclosing test's end"
 end
 
 test "A final end can close a string and its surrounding if"
-  source = '
-    s = if True '
-      Hello, World!
-    else '
-      What is cooking?
-    end
-    s
+  s = if True '
+    Hello, World!
+  else '
+    What is cooking?
   end
 
-  assert parse(Code)(source) .matches Code
+  expect s result "Hello, World!" :: Expression
+end
+
+test "if/else remains one form closed by a single aligned end"
+  v = if 1 < 2
+    x = 1
+    x + 1
+  else
+    3
+  end
+  expect v result 2 :: Expression
 end
 
 test "A nested block with its own aligned end is valid"

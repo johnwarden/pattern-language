@@ -87,14 +87,19 @@ form's final `end`.
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
 indentation changes, an expectation borrowing its test's end, a closed nested
 inner end, grouped parentheses versus a layout block, match termination, a
-closed expect/result under Test layout forms, and the shared string/if
-terminator. Required infix spacing remains an ordinary check. The cases parse
-source without running println or requiring code.evaluate. Host
-test/layout-ends.test.ts also covers a shared string stopping at a custom
-`otherwise` clause.
+closed expect/result under Test layout forms, the shared string/if terminator,
+and if/else as one form. Required infix spacing remains an ordinary check.
+Host test/layout-ends.test.ts keeps Grammar-object `parseSurface` (`:otherwise`
+versus `:else`), quote-indent with a replaced grammar, and `parseTestSource`
+layout-form checks. Custom-grammar parse failures of live `otherwise` cannot
+be a quoted `expect parse` payload on this branch: that test-grammar form is
+not present here.
 
 Tight postfix punctuation is one suffix character: T* is a wrap, T * U is infix,
 T** is (T*)*, and T+ parses as the same suffix wrap. tests/layout/postfix-suffixes.test
-covers that wrapping. T+ as a nonempty-list refinement, and a distinct postfix
-tree from prefix + / ordinary application, remain deferred: they need shared
-adapter identity, not a reader-only change.
+covers wrapping, spaced infix, keyword-rest `**`, ellipsis, and that `Int+`
+does not evaluate as a nonempty-list type. Host test/postfix-suffixes.test.ts
+keeps canonical `normal` printing and `syntaxKey` tree identity, including
+this branch's prefix-shared application tree. A distinct postfix tree from
+prefix application remains deferred: it needs shared adapter identity, not a
+reader-only change.
