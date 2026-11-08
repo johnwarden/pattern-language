@@ -21,7 +21,6 @@ test "Accessor ambiguity"
     r = Rect(3, 4) :: Rectangle
     r.w
   error "E_AMBIGUOUS_CALL"
-  end
 end
 
 test "Result arity error"
@@ -32,7 +31,6 @@ test "Result arity error"
     end
     x
   error "E_PATTERN_MISMATCH"
-  end
 end
 
 test "Function block"
@@ -118,7 +116,6 @@ test "Match"
       :None -> ""
     end
   result "3" :: Expression
-  end
 
   todo expect
     match (Some(3) :: Option)
@@ -126,7 +123,6 @@ test "Match"
       :None -> ""
     end
   result "3" :: String
-  end
 end
 
 test "Explicit primitive values"
@@ -150,7 +146,6 @@ test "Raw block preserves blank lines and dollars"
 
     end
   result "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: Expression
-  end
 
   todo expect
     '
@@ -160,7 +155,6 @@ test "Raw block preserves blank lines and dollars"
 
     end
   result "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: String
-  end
 end
 
 test "Mutually recursive function definitions"
@@ -243,7 +237,6 @@ test "User-defined if"
   expect
     if True 42 else (1 / 0)
   result 42 :: Rational
-  end
 end
 
 test "Vector"

@@ -1,6 +1,12 @@
 import { LanguageError } from "./diagnostics.ts";
 import { lineSeparator } from "./string-format.ts";
 import type { Syntax, TextPart, Span, Field } from "./syntax.ts";
+import {
+  hasLinePrefix,
+  indentBeyond,
+  lineIndent,
+  stripLinePrefix,
+} from "./indent.ts";
 
 const identifier = /^[\p{L}_][\p{L}\p{M}\p{N}_]*/u;
 function sourceLocator(source: string): (start: number, end?: number) => Span {
@@ -73,7 +79,7 @@ function blockText(
   layout: TextLayout,
 ): { text: string; positions: number[]; end: number; held?: boolean } {
   const lineStart = source.lastIndexOf("\n", opening - 1) + 1;
-  const indentation = source.slice(lineStart, opening).match(/^[ \t]*/)![0];
+  const indentation = lineIndent(source.slice(lineStart, opening));
   const lines: { text: string; start: number }[] = [];
   let cursor = contentStart,
     end = -1,
@@ -82,9 +88,7 @@ function blockText(
     const newline = source.indexOf("\n", cursor),
       limit = newline < 0 ? source.length : newline;
     const line = source.slice(cursor, limit);
-    const remainder = line.startsWith(indentation)
-      ? line.slice(indentation.length)
-      : "";
+    const remainder = stripLinePrefix(line, indentation);
     const stop = layoutStop(remainder, layout);
     if (stop === "end") {
       end = layout.shareEnd ? cursor : limit;
@@ -118,11 +122,8 @@ function blockText(
   const anchor =
     lines.find((line) => /[^ \t]/.test(line.text)) ??
     lines.find((line) => line.text.length > 0);
-  const prefix = anchor?.text.match(/^[ \t]*/)![0] ?? indentation + "  ";
-  if (
-    anchor &&
-    (!prefix.startsWith(indentation) || prefix.length <= indentation.length)
-  )
+  const prefix = anchor ? lineIndent(anchor.text) : indentation + "  ";
+  if (anchor && !indentBeyond(prefix, indentation))
     return fail(
       source,
       anchor.start,
@@ -132,14 +133,14 @@ function blockText(
   let text = "";
   const positions: number[] = [];
   for (const [index, line] of lines.entries()) {
-    if (line.text && !line.text.startsWith(prefix))
+    if (line.text && !hasLinePrefix(line.text, prefix))
       return fail(
         source,
         line.start,
         "text line does not have the required indentation prefix; use aligned end to close the quote",
         "E_QUOTE_INDENT",
       );
-    const content = line.text ? line.text.slice(prefix.length) : "";
+    const content = line.text ? stripLinePrefix(line.text, prefix) : "";
     if (index) {
       text += "\n";
       positions.push(line.start - 1);

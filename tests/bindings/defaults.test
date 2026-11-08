@@ -69,19 +69,16 @@ test "Supplied values are validated and never replaced by defaults"
     def f(x: Int = (1 / 0)) x
     f(x: 8)
   result 8 :: Int
-  end
 
   expect
     def f(x: Int = 3) x
     f(x: "bad")
   error "no applicable function"
-  end
 
   expect
     def f(x: Int = "bad") x
     f()
   error "default for x"
-  end
 end
 
 test "Supplied fields select an overload before binding defaults"
@@ -93,7 +90,6 @@ test "Supplied fields select an overload before binding defaults"
   expect
     f()
   error "ambiguous call"
-  end
 end
 
 test "Defaults retain lexical bindings and successive packs"
@@ -111,11 +107,9 @@ test "Binding defaults preserve option semantics"
     def f(color: Color? = Some(:Black)) color
     f()
   result Some(:Black) :: ?(Color)
-  end
 
   expect
     def f(color: Color? = :Black) color
     f()
   error "default for color"
-  end
 end

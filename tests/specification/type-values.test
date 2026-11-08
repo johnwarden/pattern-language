@@ -19,7 +19,6 @@ test "C04 structured values need a concrete interpretation"
     x = Rect(2, 2)
     x
   error "no concrete interpretation established for Rect(2,2)"
-  end
 end
 
 test "C05 types are structural values"
@@ -74,5 +73,4 @@ test "C06 equal spellings can belong to different concrete spaces"
     stopped = (:Red :: TicketStatus)
     (red == stopped)
   error "incomparable concrete spaces"
-  end
 end

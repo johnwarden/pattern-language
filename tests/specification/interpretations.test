@@ -34,7 +34,6 @@ test "C11 projection is one explicit concrete boundary"
     (direct :: Rational) = w
     direct
   error "ordinary binding does not unwrap Wrapped"
-  end
 
   todo expect
     small = n -> (n == 0)
@@ -47,7 +46,6 @@ test "C11 projection is one explicit concrete boundary"
     match w (direct :: Rational)
     direct
   error "the immediate base of Wrapped is Small"
-  end
 
   todo expect
     small = n -> (n == 0)
@@ -60,7 +58,6 @@ test "C11 projection is one explicit concrete boundary"
     def consume(x :: Rational) x
     consume(w)
   error "dispatch does not unwrap Wrapped"
-  end
 end
 
 test "C12 designation is recursive only when unambiguous"
@@ -105,7 +102,6 @@ test "C12 designation is recursive only when unambiguous"
     (ambiguous :: Option<Option<String>>) = :None
     ambiguous
   error "None has more than one designation path"
-  end
 
   todo expect
     type Option<T> concrete T | :None
@@ -123,7 +119,6 @@ test "C12 designation is recursive only when unambiguous"
     end
     extract("Hello" :: Option<String>)
   error "String extraction is not guaranteed for every Option<String>"
-  end
 end
 
 test "C13 abstract union retains overlapping numeric members"
@@ -182,7 +177,6 @@ test "C14 unambiguous is a separate grammar requirement"
     type Bad unambiguous abstract Float32 | Float64
     Bad
   error "the same numeric spelling admits more than one interpretation"
-  end
 end
 
 test "C15 facet intersection preserves concrete identity and fields"

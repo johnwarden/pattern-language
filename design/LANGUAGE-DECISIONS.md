@@ -206,14 +206,12 @@ test "C03 exact designation differs from rounding"
   expect
     (0.1 :: Float32)
   error "not exactly representable as Float32"
-  end
   expect (0.5 .matches Float32) result True :: Bool
   expect (0.1 .matches Float32) result False :: Bool
 
   todo expect
     (0.5 :: Int16)
   error "not an integer"
-  end
 end
 ```
 
@@ -241,7 +239,6 @@ test "C04 structured values need a concrete interpretation"
     x = Rect(2, 2)
     x
   error "no concrete interpretation established for Rect(2,2)"
-  end
 end
 ```
 
@@ -308,7 +305,6 @@ test "C06 equal spellings can belong to different concrete spaces"
     stopped = (:Red :: TicketStatus)
     (red == stopped)
   error "incomparable concrete spaces"
-  end
 end
 ```
 
@@ -377,7 +373,6 @@ test "C08 todo assert supplies no refinement evidence"
     end
     unchecked(1)
   error "refinement evidence is missing in unchecked"
-  end
 end
 ```
 
@@ -392,7 +387,6 @@ test "C09 base and refinement overloads overlap"
     def choose(x :: NonZero) "refined"
     choose(1)
   error "overlapping base and refinement overload domains"
-  end
 end
 ```
 
@@ -515,7 +509,6 @@ test "C11 projection is one explicit concrete boundary"
     (direct :: Rational) = w
     direct
   error "ordinary binding does not unwrap Wrapped"
-  end
 
   todo expect
     small = n -> (n == 0)
@@ -528,7 +521,6 @@ test "C11 projection is one explicit concrete boundary"
     match w (direct :: Rational)
     direct
   error "the immediate base of Wrapped is Small"
-  end
 
   todo expect
     small = n -> (n == 0)
@@ -541,7 +533,6 @@ test "C11 projection is one explicit concrete boundary"
     def consume(x :: Rational) x
     consume(w)
   error "dispatch does not unwrap Wrapped"
-  end
 end
 ```
 
@@ -590,7 +581,6 @@ test "C12 designation is recursive only when unambiguous"
     (ambiguous :: Option<Option<String>>) = :None
     ambiguous
   error "None has more than one designation path"
-  end
 
   todo expect
     type Option<T> concrete T | :None
@@ -608,7 +598,6 @@ test "C12 designation is recursive only when unambiguous"
     end
     extract("Hello" :: Option<String>)
   error "String extraction is not guaranteed for every Option<String>"
-  end
 end
 ```
 
@@ -681,7 +670,6 @@ test "C14 unambiguous is a separate grammar requirement"
     type Bad unambiguous abstract Float32 | Float64
     Bad
   error "the same numeric spelling admits more than one interpretation"
-  end
 end
 ```
 
@@ -753,7 +741,6 @@ test "C16 declarations own accessor products"
     t = concrete Rect(width :: Rational, height :: Rational)
     t
   error "ordinary type construction cannot declare captures/accessors"
-  end
 end
 ```
 
@@ -788,7 +775,6 @@ test "C17 defaults belong to bindings and explicit factories"
     end
     (Rect(2, 3) :: Rectangle)
   error "required color field is absent"
-  end
 
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
@@ -798,7 +784,6 @@ test "C17 defaults belong to bindings and explicit factories"
     type Invalid concrete Rect(color: String = "black")
     Invalid
   error "defaults are forbidden in type descriptions"
-  end
 end
 ```
 
@@ -1270,7 +1255,6 @@ test "C24 applications preserve complete successive packs"
     x = ("a", "b")
     x
   error "one capture cannot consume two positional results"
-  end
 end
 ```
 
@@ -1314,7 +1298,6 @@ test "C26 todo assertions execute in isolated scopes"
   expect
     futureLocal()
   error "E_UNBOUND_NAME"
-  end
 
   expect marker result 1 :: Rational
 end
@@ -1331,12 +1314,10 @@ test "C27 candidate Code rejection of redundant primitive quotation"
   todo expect
     :5
   error "primitive quotation is not a Code form"
-  end
 
   todo expect
     :Bool
   error "primitive quotation is not a Code form"
-  end
 end
 ```
 

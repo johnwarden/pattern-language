@@ -1,0 +1,54 @@
+test "Pure spaces, pure tabs, and mixed prefixes parse"
+  spaces = "if True\n  1\nelse\n  2\nend"
+  tabs = "if True\n\t1\nelse\n\t2\nend"
+  mixed = "if True\n \t1\nelse\n \t2\nend"
+  nested = "if True\n\t  if False\n\t    0\n\t  else\n\t    1\n\t  end\nelse\n\t  2\nend"
+
+  assert parse(Code)(spaces) .matches Code
+  assert parse(Code)(tabs) .matches Code
+  assert parse(Code)(mixed) .matches Code
+  assert parse(Code)(nested) .matches Code
+
+  expect
+    if True
+      1
+    else
+      2
+    end
+  result 1 :: Rational
+end
+
+test "Quoted if/else branches use the same prefix relation"
+  quoted = "if 1 == 1 '\n    Hello\nelse '\n    there\nend"
+  quotedTabs = "if 1 == 1 '\n\tHello\nelse '\n\tthere\nend"
+  quotedMixed = "if 1 == 1 '\n \tHello\nelse '\n \tthere\nend"
+  payload = "'\n\thello\n\t  world\nend"
+
+  assert parse(Code)(quoted) .matches Code
+  assert parse(Code)(quotedTabs) .matches Code
+  assert parse(Code)(quotedMixed) .matches Code
+  assert parse(Code)(payload) .matches Code
+
+  expect
+    if 1 == 1 '
+      Hello
+    else '
+      there
+    end
+  result "Hello" :: Expression
+
+  expect
+    '
+      hello
+        world
+    end
+  result "hello\n  world" :: Expression
+end
+
+test "Incompatible tab and space prefixes reject"
+  code = "if True\n  1\n\t2\nend"
+  quote = "'\n  x\n\ty\nend"
+
+  expect parse(Code)(code) error "inconsistent indentation"
+  expect parse(Code)(quote) error "indentation prefix"
+end

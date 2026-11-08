@@ -75,7 +75,6 @@ test "C24 applications preserve complete successive packs"
     x = ("a", "b")
     x
   error "one capture cannot consume two positional results"
-  end
 end
 
 test "C25 infix operators retain equal precedence"
@@ -107,7 +106,6 @@ test "C26 todo assertions execute in isolated scopes"
   expect
     futureLocal()
   error "E_UNBOUND_NAME"
-  end
 
   expect marker result 1 :: Rational
 end
@@ -116,10 +114,8 @@ test "C27 candidate Code rejection of redundant primitive quotation"
   todo expect
     :5
   error "primitive quotation is not a Code form"
-  end
 
   todo expect
     :Bool
   error "primitive quotation is not a Code form"
-  end
 end

@@ -19,7 +19,6 @@ test "C16 declarations own accessor products"
     t = concrete Rect(width :: Rational, height :: Rational)
     t
   error "ordinary type construction cannot declare captures/accessors"
-  end
 end
 
 test "C17 defaults belong to bindings and explicit factories"
@@ -48,7 +47,6 @@ test "C17 defaults belong to bindings and explicit factories"
     end
     (Rect(2, 3) :: Rectangle)
   error "required color field is absent"
-  end
 
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
@@ -58,7 +56,6 @@ test "C17 defaults belong to bindings and explicit factories"
     type Invalid concrete Rect(color: String = "black")
     Invalid
   error "defaults are forbidden in type descriptions"
-  end
 end
 
 test "C18 equivalent independently named descriptors interoperate"

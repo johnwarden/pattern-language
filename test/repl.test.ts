@@ -95,6 +95,23 @@ test("user-defined grammar drives the same REPL completeness rule", () => {
   assert.equal(holdDone.submitted.length, 1);
 });
 
+test("quoted if/else branches are ready only after the shared end", () => {
+  const quoted = `if 1 == 1 '
+    Hello
+else '
+    there`;
+  assert.equal(ready(quoted), false);
+  assert.equal(ready(quoted + "\nend"), true);
+  const tabbed = "if 1 == 1 '\n\tHello\nelse '\n\tthere";
+  assert.equal(ready(tabbed), false);
+  assert.equal(ready(tabbed + "\nend"), true);
+  const mixed = "if 1 == 1 '\n \tHello\nelse '\n \tthere";
+  assert.equal(ready(mixed), false);
+  const finished = play(["if 1 == 1 '", "    Hello", "else '", "    there", "end"]);
+  assert.equal(finished.submitted.length, 1);
+  assert.match(finished.submitted[0], /\nend\n$/);
+});
+
 test("incomplete parse errors stay incomplete; other errors are ready to report", () => {
   assert.equal(
     isIncompleteReplEntry(

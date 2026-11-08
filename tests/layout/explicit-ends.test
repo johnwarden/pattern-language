@@ -91,3 +91,34 @@ end
 test "Removing required infix spaces is an error"
   expect parse(Code)("a+b") error "infix operators require spaces"
 end
+
+test "An extra end after a complete inline clause is still accepted"
+  expect
+    if True
+      1
+    else 2
+    end
+  result 1 :: Rational
+end
+
+test "Quoted if/else branches share one end"
+  expect
+    if 1 == 1 '
+      Hello
+    else '
+      there
+    end
+  result "Hello" :: Expression
+
+  expect
+    if 1 == 0 '
+      Hello
+    else '
+      there
+    end
+  result "there" :: Expression
+
+  source = "if 1 == 1 '\n    Hello\nelse '\n    there\nend"
+
+  assert parse(Code)(source) .matches Code
+end

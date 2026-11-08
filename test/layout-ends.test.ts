@@ -253,3 +253,66 @@ end`,
     isBlockEnd,
   );
 });
+
+test("an extra end after a complete inline clause is still accepted", () => {
+  assert.equal(
+    run(`if True
+  1
+else 2
+end`),
+    "1",
+  );
+  const [compat] = loadTests({
+    "compat-extra-end.test": `test "compat extra end"
+  expect
+    missing()
+  error "E_UNBOUND_NAME"
+  end
+end`,
+  });
+  assert.equal(runTest(compat).passed, true);
+});
+
+test("quoted if/else branches continue the same form without end before else", () => {
+  assert.equal(
+    run(`if 1 == 1 '
+    Hello
+else '
+    there
+end`),
+    displayResults(new Interpreter().run('"Hello"')),
+  );
+  assert.equal(
+    run(`if 1 == 0 '
+    Hello
+else '
+    there
+end`),
+    displayResults(new Interpreter().run('"there"')),
+  );
+  parseTestSource(
+    `test "quoted nested"
+  expect
+    if 1 == 1 '
+      Hello
+    else '
+      there
+    end
+  result "Hello" :: Expression
+end`,
+    "quoted-nested.test",
+    { layoutForms: testLayoutForms },
+  );
+  const otherwise = new Grammar(
+    "def IfExpression type :if (condition :: Expression) (consequent :: Body) :otherwise (alternative :: Body)",
+  ).layoutForms();
+  parseSurface(
+    `if 1 == 1 '
+    Hello
+otherwise '
+    there
+end`,
+    "program",
+    { layoutForms: otherwise },
+  );
+});

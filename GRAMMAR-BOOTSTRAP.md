@@ -269,8 +269,10 @@ A text opener immediately followed by LF starts a block closed by an aligned
 EOF and dedent never close a quote. Strip the common indentation prefix and only
 the framing LF after the opener and before the closer. All other leading/trailing
 blank lines remain. A truly empty line needs no indentation; a whitespace-only
-line must have the complete prefix. Consistent tabs/spaces are permitted in text
-prefixes; ordinary code indentation remains spaces-only.
+line must have the complete prefix. Block quotes and ordinary code use the same
+leading-prefix relation: any combination of tabs and spaces is allowed. Nested
+indent is a strict extension of the parent prefix; incompatible prefixes reject.
+There is no tabstop-width conversion.
 
 Escapes are exactly `\n \r \t \v \b \f \0 \" \\ \xHH \uHHHH \UHHHHHHHH`.
 `\x` is ASCII-only; other numeric escapes must denote Unicode scalar values.

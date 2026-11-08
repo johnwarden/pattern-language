@@ -16,6 +16,7 @@ import {
   identifierName,
   labelName,
 } from "./lexical.ts";
+import { indentRelation, lineIndent } from "./indent.ts";
 /** Start keyword -> extra clause keywords. `chains` are quoted keyword sequences from the same grammar. */
 export type LayoutForms = Map<string, Set<string>> & {
   chains?: Map<string, string[][]>;
@@ -190,6 +191,12 @@ interface Token extends Span {
   textNode?: Syntax;
   interpolate?: boolean;
   layoutHold?: boolean;
+  indentPrefix?: string;
+}
+function tokenIndent(source: string, start: number): string {
+  return lineIndent(
+    source.slice(source.lastIndexOf("\n", start - 1) + 1, start),
+  );
 }
 const identifier = /^[\p{L}_][\p{L}\p{M}\p{N}_]*/u;
 /** Source conventions are applied once, before any tokens or literal values exist. */
@@ -210,13 +217,11 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
     column = 1;
   while (i < source.length) {
     const c = source[i];
-    if (c === " " || c === "\r") {
+    if (c === " " || c === "\t" || c === "\r") {
       i++;
       column++;
       continue;
     }
-    if (c === "\t")
-      throw new LanguageError("use spaces for indentation", { line, column });
     if (c === "\n") {
       out.push({ kind: "newline", text: c, start: i, end: ++i, line, column });
       line++;
@@ -302,6 +307,7 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
         endColumn: column,
         textNode: node,
         layoutHold: read.held,
+        indentPrefix: tokenIndent(source, start),
       });
       if (read.held && i > 0 && source[i - 1] === "\n")
         out.push({
@@ -430,6 +436,7 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
       endLine: line,
       endColumn: column,
       quoted,
+      indentPrefix: tokenIndent(source, start),
     });
   }
   // Reserve balanced tight angle suffixes before coalescing prefix punctuation.
@@ -777,13 +784,13 @@ function layout(
   topLevel = true,
   options: SurfaceOptions = {},
 ): Syntax {
-  const lines: { indent: number; tokens: Token[] }[] = [];
+  const lines: { indent: string; tokens: Token[] }[] = [];
   let current: Token[] = [];
   const stack: Token[] = [];
   for (const t of tokens) {
     if (t.kind === "newline") {
       if (!stack.length && current.length) {
-        lines.push({ indent: current[0].column - 1, tokens: current });
+        lines.push({ indent: current[0].indentPrefix ?? "", tokens: current });
         current = [];
       }
       continue;
@@ -803,13 +810,13 @@ function layout(
   }
   if (stack.length) throw new LanguageError("unclosed delimiter", stack.at(-1));
   if (current.length)
-    lines.push({ indent: current[0].column - 1, tokens: current });
-  if (topLevel && lines.length && lines[0].indent !== 0)
+    lines.push({ indent: current[0].indentPrefix ?? "", tokens: current });
+  if (topLevel && lines.length && lines[0].indent !== "")
     throw new LanguageError(
       "top-level code must start at column 1",
       lines[0].tokens[0],
     );
-  function region(start: number, indent: number): [Syntax[], number] {
+  function region(start: number, indent: string): [Syntax[], number] {
     const result: Syntax[] = [];
     let i = start;
     let open:
@@ -823,11 +830,12 @@ function layout(
       | undefined;
     while (i < lines.length) {
       let { indent: level, tokens: ts } = lines[i];
-      if (level < indent) {
+      const relation = indentRelation(level, indent);
+      if (relation === "dedented") {
         if (open && !open.closed) blockEndError(open.span, ts[0]);
         break;
       }
-      if (level > indent)
+      if (relation !== "same")
         throw new LanguageError("inconsistent indentation", ts[0]);
       if (isEndLine(ts)) {
         if (!open) throw new LanguageError("end has no preceding block", ts[0]);
@@ -845,7 +853,10 @@ function layout(
         open = { ...open, seen: [...open.seen, names[0]] };
       i++;
       let block: Syntax | undefined;
-      if (i < lines.length && lines[i].indent > indent) {
+      if (
+        i < lines.length &&
+        indentRelation(lines[i].indent, indent) === "nested"
+      ) {
         const [body, next] = region(i, lines[i].indent);
         if (
           topLevel &&
@@ -926,7 +937,7 @@ function layout(
             start: last.end + 1,
             end: last.end + 2,
             line: last.line + 1,
-            column: indent + 3,
+            column: indent.length + 3,
             block,
           },
         ]);
@@ -967,7 +978,10 @@ function layout(
     if (open && !open.closed) blockEndError(open.span);
     return [result, i];
   }
-  const [body, consumed] = region(0, topLevel ? 0 : (lines[0]?.indent ?? 0));
+  const [body, consumed] = region(
+    0,
+    topLevel ? "" : (lines[0]?.indent ?? ""),
+  );
   if (consumed !== lines.length)
     throw new LanguageError(
       "inconsistent indentation: unconsumed lines in grouped block",

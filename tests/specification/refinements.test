@@ -52,7 +52,6 @@ test "C08 todo assert supplies no refinement evidence"
     end
     unchecked(1)
   error "refinement evidence is missing in unchecked"
-  end
 end
 
 test "C09 base and refinement overloads overlap"
@@ -63,7 +62,6 @@ test "C09 base and refinement overloads overlap"
     def choose(x :: NonZero) "refined"
     choose(1)
   error "overlapping base and refinement overload domains"
-  end
 end
 
 test "C10 unrelated domains can coexist"

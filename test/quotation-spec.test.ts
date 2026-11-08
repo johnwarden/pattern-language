@@ -109,6 +109,16 @@ test("text blocks preserve every non-framing blank line and relative indentation
   assert.throws(() => parseExpression("'\n  x\nnext"), /explicit aligned end/);
   assert.throws(() => parseExpression("'\n \n  x\nend"), /indentation prefix/);
   assert.throws(() => parseExpression("'\n  x\n \nend"), /indentation prefix/);
+  assert.equal(text("'\n\thello\n\t  world\nend"), "hello\n  world");
+  assert.equal(text("'\n \thello\n \t  world\nend"), "hello\n  world");
+  assert.equal(
+    text("f = x ->\n  y = '\n  \tkeep\n  \t  payload\n  end\n  y\nend\nf(1)"),
+    "keep\n  payload",
+  );
+  assert.throws(
+    () => parseExpression("'\n  x\n\ty\nend"),
+    /indentation prefix/,
+  );
 });
 test("holes balance nested strings and do not read a postfix chain implicitly", () => {
   assert.equal(text('$"Value: $("a)" + "b")"'), "Value: a)b");

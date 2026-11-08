@@ -82,11 +82,16 @@ blank lines, raw contents and the existing CRLF/BOM conventions. EOF is not an
 implicit terminator. This changes the bootstrap's string/terminator ownership and
 needs coordinated reader, grammar, diagnostics and fixture migration.
 
+Indentation is an exact prefix of tabs and spaces, the same relation block quotes
+use when stripping content. Nested indent is a strict extension of the parent
+prefix. Incompatible mixed prefixes reject. Do not convert tabs to a visual
+width.
+
 ## Survey
 
 | Whitespace boundary | Meaning / required validation |
 | --- | --- |
-| Indentation outside explicit delimiters | Describes block membership; missing or misaligned end must reject rather than accept another scope. |
+| Indentation outside explicit delimiters | Describes block membership via the same tab/space prefix relation as block quotes; missing or misaligned end must reject rather than accept another scope. |
 | Newlines outside balanced delimiters | Separate rows / statements; joining or splitting rows can intentionally change a program. |
 | Newlines inside collection delimiters | Can distinguish vertical rows from comma continuation; row boundaries can change collection rank. |
 | Spaces around infix operators | Both sides are required; a+b is invalid, not a different addition expression. |
@@ -120,7 +125,8 @@ form's final `end`. Dedentation alone is not a semantic delimiter.
 
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
 indentation changes, an expectation borrowing its test's end, an error clause
-completing without a preceding `end`, and the shared string/if terminator.
+completing without a preceding `end`, quoted if/else branches, mixed
+tab/space prefixes, and the shared string/if terminator.
 Required infix spacing remains an ordinary check. The cases parse source without
 running println or requiring code.evaluate. Host test/layout-ends.test.ts also
 covers user-defined probe/then versus hold. test/repl.test.ts covers

@@ -335,7 +335,7 @@ test("legacy assertions must pass and never suppress failures", () => {
 });
 test("todo operands resolve and execute without leaking bindings or definitions", () => {
   const r = run(
-    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  end\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  end\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
+    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  end\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.equal(
