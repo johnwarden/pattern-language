@@ -5,6 +5,7 @@ test "C07 refinement evidence preserves the base value"
     def keep(x :: NonZero) x
     x = 0.5
     (nonZero(x))
+  end
 
   todo assert
     nonZero = n -> (n != 0)
@@ -14,6 +15,7 @@ test "C07 refinement evidence preserves the base value"
     assert ((nonZero(x)))
     (n :: NonZero) = x
     (n == x)
+  end
 
   todo expect
     nonZero = n -> (n != 0)
@@ -37,6 +39,7 @@ test "C07 refinement evidence preserves the base value"
       assert ((n == x))
       NonZero
     )
+  end
 end
 
 test "C08 todo assert supplies no refinement evidence"
@@ -84,6 +87,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+  end
 
   todo expect
     nonZero = n -> (n != 0)
@@ -107,6 +111,7 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+  end
 
   todo expect
     nonZero = n -> (n != 0)
@@ -130,4 +135,5 @@ test "C10 unrelated domains can coexist"
       end
       String
     )
+  end
 end

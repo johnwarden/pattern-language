@@ -11,6 +11,7 @@ test "C16 declarations own accessor products"
       r = (Rect(2, 3) :: Rectangle)
       Rational
     )
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
@@ -37,6 +38,7 @@ test "C17 defaults belong to bindings and explicit factories"
       end
       Rectangle
     )
+  end
 
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
@@ -67,6 +69,7 @@ test "C18 equivalent independently named descriptors interoperate"
       (Some("hello") :: Optional<String>)
     )
     (produced == independent)
+  end
 
   todo expect
     produced = (
@@ -114,4 +117,5 @@ test "C18 equivalent independently named descriptors interoperate"
       )
       String
     )
+  end
 end

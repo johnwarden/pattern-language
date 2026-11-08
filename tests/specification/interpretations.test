@@ -21,6 +21,7 @@ test "C11 projection is one explicit concrete boundary"
       match s (r :: Rational)
       Rational
     )
+  end
 
   todo expect
     small = n -> (n == 0)
@@ -86,6 +87,7 @@ test "C12 designation is recursive only when unambiguous"
       end
       String
     )
+  end
 
   todo expect
     type Option<T> concrete T | :None
@@ -134,6 +136,7 @@ test "C13 abstract union retains overlapping numeric members"
       (b :: EitherFloat) = float64(0.5)
       Float32
     )
+  end
 
   todo expect
     type EitherFloat abstract Float32 | Float64
@@ -149,6 +152,7 @@ test "C13 abstract union retains overlapping numeric members"
       (b :: EitherFloat) = float64(0.5)
       Float64
     )
+  end
 
   todo assert
     type EitherFloat abstract Float32 | Float64
@@ -156,6 +160,7 @@ test "C13 abstract union retains overlapping numeric members"
     (b :: EitherFloat) = float64(0.5)
     text = toString(EitherFloat)(a)
     (parse(EitherFloat)(text) == a)
+  end
 end
 
 test "C14 unambiguous is a separate grammar requirement"
@@ -163,6 +168,7 @@ test "C14 unambiguous is a separate grammar requirement"
     type Token unambiguous abstract Rational | String
     (n :: Token) = 0.5
     (parse(Token)(toString(Token)(n)) == n)
+  end
 
   todo expect
     type Token unambiguous abstract Rational | String
@@ -182,6 +188,7 @@ test "C15 facet intersection preserves concrete identity and fields"
     card = ({width: 0.5, height: 1, color: "blue"} :: Card)
     (view :: ColoredRectangle) = card
     (view == card)
+  end
 
   todo expect
     type Card concrete {width: Float32, height: Float32, color: String}
@@ -205,4 +212,5 @@ test "C15 facet intersection preserves concrete identity and fields"
       assert ((view == card))
       Card
     )
+  end
 end

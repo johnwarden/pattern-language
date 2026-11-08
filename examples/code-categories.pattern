@@ -12,5 +12,6 @@ match code
   (app :: FunctionApplication) ->
     Apply(function,arguments) = syntaxTree(app)
     (syntaxExpression(function),arguments)
+  end
   _ -> panic("Expected an application")
 end

@@ -60,6 +60,7 @@ test "Zero results"
       nothing()
     end
     True
+  end
 end
 
 test "Deferred expected output"

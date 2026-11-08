@@ -29,6 +29,7 @@ test "Sidefix data DSL"
   t = Test`
     test "Stored test data"
       expect missing(1 / 0) result 3 :: MissingType
+    end
   end
 
   expect t.name result "Stored test data" :: String
@@ -68,6 +69,7 @@ test "DSL: Tests with explicit value and type"
   t = Test`
     test "An unevaluated calculation"
       1 / 0
+    end
     expect :result result (a + b) :: MissingType
   end
 
@@ -90,7 +92,9 @@ test "Test DSL with typed Code"
       expect
         x = 3
         x + 1
+      end
       result 4 :: Int
+    end
   end
 
   expect t.name result "Typed code body" :: String

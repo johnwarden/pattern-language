@@ -1,0 +1,133 @@
+test "An indented function cannot terminate at EOF"
+  expect parse '
+    def f(x)
+      x
+  error "E_BLOCK_END"
+end
+
+test "A nested block needs its own aligned end"
+  expect parse '
+    main = x ->
+      f = y ->
+        y
+      x
+    end
+    main
+  error "E_BLOCK_END"
+
+  expect parse '
+    main = x ->
+      f = y ->
+        y
+        x
+    end
+    main
+  error "E_BLOCK_END"
+end
+
+test "An expectation cannot borrow its enclosing test's end"
+  expect parse '
+    test "outer"
+      expect
+        def f(x: Int = (1 / 0)) x
+        f(x: 8)
+      result
+        8 :: Int
+    end
+  error "E_BLOCK_END"
+end
+
+test "A final end can close a string and its surrounding if"
+  s = if True '
+    Hello, World!
+  else '
+    What is cooking?
+  end
+
+  expect s result "Hello, World!" :: Expression
+end
+
+test "An error clause closes an indented subject without a preceding end"
+  expect
+    missing()
+  error "E_UNBOUND_NAME"
+end
+
+test "An indented last operand still needs an aligned end"
+  assert
+    True
+  end
+end
+
+test "A completing inline clause does not invent a trailing end"
+  expect
+    if True
+      1
+    else 2
+  result 1 :: Rational
+end
+
+test "Indentation around a completing clause does not change membership"
+  expect
+    missing()
+  error "E_UNBOUND_NAME"
+  expect missing() error "E_UNBOUND_NAME"
+end
+
+test "An indented operand without a later grammar clause needs end"
+  expect parse '
+    hold
+      True
+  error "E_BLOCK_END"
+end
+
+test "Removing required infix spaces is an error"
+  expect parse '
+    a+b
+  error "infix operators require spaces"
+end
+
+test "infix"
+  expect parse '
+    x + 
+  error "Missing second argument to infix operation"
+end
+
+test "An extra end after a complete inline clause is an error"
+  expect parse '
+    if True
+      1
+    else 2
+    end
+  error "E_UNEXPECTED_END"
+end
+
+test "An extra end does not steal an enclosing block"
+  expect parse '
+    f = x ->
+      if True
+        1
+      else 2
+      end
+      x
+    end
+  error "E_UNEXPECTED_END"
+end
+
+test "Quoted if/else branches share one end"
+  expect
+    if 1 == 1 '
+      Hello
+    else '
+      there
+    end
+  result "Hello" :: Expression
+
+  expect
+    if 1 == 0 '
+      Hello
+    else '
+      there
+    end
+  result "there" :: Expression
+end

@@ -57,7 +57,8 @@ The user additionally specified these binding block-string constraints:
   is an accepted closing line.
 
 Text prefixes use exact spaces/tabs from the first content anchor, as specified
-below. Ordinary code indentation remains spaces-only.
+below. Ordinary code uses the same prefix relation: any combination of tabs and
+spaces, with nested indent a strict prefix extension and no tabstop width.
 
 ## Forms
 

@@ -9,6 +9,7 @@ test "C19 horizontal rest remains a typed positional list"
       def copy(xs... :: Float32*) ([xs...] :: Float32*)
       Float32*
     )
+  end
 
   expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
@@ -20,6 +21,7 @@ test "C19 horizontal rest remains a typed positional list"
       def copy(xs... :: Float32*) ([xs...] :: Float32*)
       Float32*
     )
+  end
 
   todo expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
@@ -37,6 +39,7 @@ test "C19 horizontal rest remains a typed positional list"
       Packet(first, rest... :: Float32*, color: c, **) = packet
       Float32*
     )
+  end
 
   todo expect
     def copy(xs... :: Float32*) ([xs...] :: Float32*)
@@ -54,6 +57,7 @@ test "C19 horizontal rest remains a typed positional list"
       Packet(first, rest... :: Float32*, color: c, **) = packet
       String
     )
+  end
 end
 
 test "C20 row capture and spreading are mirror images"
@@ -83,6 +87,7 @@ test "C20 row capture and spreading are mirror images"
       rows = x.cells
       Float32**
     )
+  end
 
   todo assert
     type Matrix concrete [
@@ -99,6 +104,7 @@ test "C20 row capture and spreading are mirror images"
       ...
     ] :: Matrix)
     (y == x)
+  end
 
   todo expect
     type Matrix concrete [
@@ -146,6 +152,7 @@ test "C20 row capture and spreading are mirror images"
       ] :: Matrix)
       Float32**
     )
+  end
 
   todo expect
     type Matrix concrete [
@@ -193,6 +200,7 @@ test "C20 row capture and spreading are mirror images"
       ] :: Matrix)
       Float32**
     )
+  end
 
   todo assert
     type Matrix concrete [
@@ -215,6 +223,7 @@ test "C20 row capture and spreading are mirror images"
       ()
     ] :: Matrix)
     (empty != oneEmptyRow)
+  end
 end
 
 test "C21 vertical-only capture is a list of items"
@@ -246,6 +255,7 @@ test "C21 vertical-only capture is a list of items"
       end
       String*
     )
+  end
 end
 
 test "C22 keyword remainder retains its record field types"
@@ -273,4 +283,5 @@ test "C22 keyword remainder retains its record field types"
       john = ({name: "John", id: 5, age: 48} :: PersonRecord)
       AgeInfo
     )
+  end
 end

@@ -4,6 +4,7 @@ def Test type (:test (name :: String) (code :: Expression) :expect (expected :: 
 t = Test`
   test "inert data"
     missing(1 / 0)
+  end
   expect 3 :: MissingType
 end
 (t.name,t.expected.e,t.expected.type)

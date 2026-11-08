@@ -89,9 +89,10 @@ node src/cli.ts --grammar default.pattern --repl
 node src/cli.ts --grammar default.pattern --parse demo.pattern
 ```
 
-Submit a REPL entry with a blank line. Entries can contain multiple lines. `:quit`
-exits. Program mode requires a final result; REPL mode also accepts definitions
-and bindings. Failed entries do not commit bindings.
+A finished grammar form runs on its last line; a blank line still submits.
+Entries can contain multiple lines. `:quit` exits. Program mode requires a final
+result; REPL mode also accepts definitions and bindings. Failed entries do not
+commit bindings.
 
 Open `index.html` to use the included browser build. Browser storage is best-effort;
 Save session / Load session provides a portable backup. The embedded ChatGPT
@@ -666,8 +667,10 @@ A text opener immediately followed by LF starts a block closed by an aligned
 EOF and dedent never close a quote. Strip the common indentation prefix and only
 the framing LF after the opener and before the closer. All other leading/trailing
 blank lines remain. A truly empty line needs no indentation; a whitespace-only
-line must have the complete prefix. Consistent tabs/spaces are permitted in text
-prefixes; ordinary code indentation remains spaces-only.
+line must have the complete prefix. Block quotes and ordinary code use the same
+leading-prefix relation: any combination of tabs and spaces is allowed. Nested
+indent is a strict extension of the parent prefix; incompatible prefixes reject.
+There is no tabstop-width conversion.
 
 Escapes are exactly `\n \r \t \v \b \f \0 \" \\ \xHH \uHHHH \UHHHHHHHH`.
 `\x` is ASCII-only; other numeric escapes must denote Unicode scalar values.
@@ -928,6 +931,10 @@ The runner recursively scans tests/**/*.test. Files contain one or more named te
 blocks, organized by broad subdirectory. The ordinary schema in examples/test-schema.pattern
 requires a first Test row and permits a repeated Test* tail. Shared setup belongs
 inside a test; assertion modifiers cannot be applied to an entire test.
+`expect parse` plus a quoted string checks program parse failure without making the
+outer file illegal; see [design/TEST-SUITE.md](design/TEST-SUITE.md). Ratified layout
+rules (`end` ownership, mixed tab/space prefixes, quoted branches) are in
+[design/WHITESPACE.md](design/WHITESPACE.md).
 
 ```text
 test "Current and future primitives"

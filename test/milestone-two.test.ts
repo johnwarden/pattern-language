@@ -49,7 +49,9 @@ test("AST transport distinguishes source quotation from similarly named applicat
     "f()(3)",
     "if True\n  1\nelse\n  2\nend",
   ]) {
-    const tree = parseSurface(source);
+    const tree = parseSurface(source, "program", {
+      layoutForms: new Grammar().layoutForms(),
+    });
     assert.equal(syntaxKey(decodeSyntax(encodeSyntax(tree))), syntaxKey(tree));
   }
   assert.notDeepEqual(

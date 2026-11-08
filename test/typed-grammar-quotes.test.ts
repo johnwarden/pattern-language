@@ -105,7 +105,7 @@ test("ordinary sidefix types quote and destructure without installing a Code key
 test("a Test-shaped DSL retains nested code as raw Expression during migration", () => {
   const source =
     expected +
-    'def Test type (:test (name :: String) (code :: Expression) :expect (expected :: ExpectedOutput))\nt = Test`\n  test "inert"\n    missing(1 / 0)\n  expect 3 :: MissingType\nend\n(t.name,t.expected.e,t.expected.type)';
+    'def Test type (:test (name :: String) (code :: Expression) :expect (expected :: ExpectedOutput))\nt = Test`\n  test "inert"\n    missing(1 / 0)\n  end\n  expect 3 :: MissingType\nend\n(t.name,t.expected.e,t.expected.type)';
   assert.equal(run(source), '("inert", 3, :MissingType)');
 });
 test("sidefix and deferred-expectation type/value text round trip without evaluation", () => {

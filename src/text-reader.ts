@@ -1,6 +1,12 @@
 import { LanguageError } from "./diagnostics.ts";
 import { lineSeparator } from "./string-format.ts";
 import type { Syntax, TextPart, Span, Field } from "./syntax.ts";
+import {
+  hasLinePrefix,
+  indentBeyond,
+  lineIndent,
+  stripLinePrefix,
+} from "./indent.ts";
 
 const identifier = /^[\p{L}_][\p{L}\p{M}\p{N}_]*/u;
 function sourceLocator(source: string): (start: number, end?: number) => Span {
@@ -50,28 +56,48 @@ interface Content {
   end: number;
   escaped: boolean;
   interpolate: boolean;
+  held?: boolean;
 }
 
+interface TextLayout {
+  clauses: Set<string>;
+  shareEnd: boolean;
+}
+function layoutStop(
+  remainder: string,
+  layout: TextLayout,
+): "end" | "clause" | undefined {
+  if (/^end[ \t]*(?:#.*)?$/.test(remainder)) return "end";
+  const word = remainder.match(identifier);
+  if (word && layout.clauses.has(word[0])) return "clause";
+}
 /** Strip exactly the first content prefix, retaining all non-framing lines. */
 function blockText(
   source: string,
   opening: number,
   contentStart: number,
-): { text: string; positions: number[]; end: number } {
+  layout: TextLayout,
+): { text: string; positions: number[]; end: number; held?: boolean } {
   const lineStart = source.lastIndexOf("\n", opening - 1) + 1;
-  const indentation = source.slice(lineStart, opening).match(/^[ \t]*/)![0];
+  const indentation = lineIndent(source.slice(lineStart, opening));
   const lines: { text: string; start: number }[] = [];
   let cursor = contentStart,
-    end = -1;
+    end = -1,
+    held = false;
   while (cursor <= source.length) {
     const newline = source.indexOf("\n", cursor),
       limit = newline < 0 ? source.length : newline;
     const line = source.slice(cursor, limit);
-    const remainder = line.startsWith(indentation)
-      ? line.slice(indentation.length)
-      : "";
-    if (/^end[ \t]*(?:#.*)?$/.test(remainder)) {
-      end = limit;
+    const remainder = stripLinePrefix(line, indentation);
+    const stop = layoutStop(remainder, layout);
+    if (stop === "end") {
+      end = layout.shareEnd ? cursor : limit;
+      held = layout.shareEnd;
+      break;
+    }
+    if (stop === "clause") {
+      end = cursor;
+      held = true;
       break;
     }
     if (cursor === source.length) break;
@@ -96,11 +122,8 @@ function blockText(
   const anchor =
     lines.find((line) => /[^ \t]/.test(line.text)) ??
     lines.find((line) => line.text.length > 0);
-  const prefix = anchor?.text.match(/^[ \t]*/)![0] ?? indentation + "  ";
-  if (
-    anchor &&
-    (!prefix.startsWith(indentation) || prefix.length <= indentation.length)
-  )
+  const prefix = anchor ? lineIndent(anchor.text) : indentation + "  ";
+  if (anchor && !indentBeyond(prefix, indentation))
     return fail(
       source,
       anchor.start,
@@ -110,14 +133,14 @@ function blockText(
   let text = "";
   const positions: number[] = [];
   for (const [index, line] of lines.entries()) {
-    if (line.text && !line.text.startsWith(prefix))
+    if (line.text && !hasLinePrefix(line.text, prefix))
       return fail(
         source,
         line.start,
         "text line does not have the required indentation prefix; use aligned end to close the quote",
         "E_QUOTE_INDENT",
       );
-    const content = line.text ? line.text.slice(prefix.length) : "";
+    const content = line.text ? stripLinePrefix(line.text, prefix) : "";
     if (index) {
       text += "\n";
       positions.push(line.start - 1);
@@ -127,7 +150,7 @@ function blockText(
       positions.push(line.start + (line.text ? prefix.length : 0) + i);
   }
   positions.push(end);
-  return { text, positions, end };
+  return { text, positions, end, held };
 }
 
 /** Skip a nested string using the same lexical rules as its containing quote. */
@@ -168,12 +191,17 @@ function readContent(
   interpolate: boolean,
   readerRaw: boolean,
   nesting = 0,
+  layout: TextLayout = { clauses: new Set(), shareEnd: false },
 ): Content {
   const delimiter = source[opening],
     escaped = delimiter === '"',
     start = opening + 1;
   if (source[start] === "\n")
-    return { ...blockText(source, opening, start + 1), escaped, interpolate };
+    return {
+      ...blockText(source, opening, start + 1, layout),
+      escaped,
+      interpolate,
+    };
   if (readerRaw) {
     const newline = source.indexOf("\n", start),
       end = newline < 0 ? source.length : newline;
@@ -345,8 +373,16 @@ export function readText(
   interpolate: boolean,
   readerRaw: boolean,
   parse: (source: string) => Syntax,
-): { end: number; parts: TextPart[] } {
-  const content = readContent(source, opening, interpolate, readerRaw),
+  layout: TextLayout = { clauses: new Set(), shareEnd: false },
+): { end: number; parts: TextPart[]; held?: boolean } {
+  const content = readContent(
+    source,
+    opening,
+    interpolate,
+    readerRaw,
+    0,
+    layout,
+  ),
     { text, positions } = content;
   const location = sourceLocator(source);
   const parts: TextPart[] = [];
@@ -431,5 +467,5 @@ export function readText(
   }
   flush();
   if (!parts.length) parts.push({ kind: "text", value: "" });
-  return { end: content.end, parts };
+  return { end: content.end, parts, held: content.held };
 }

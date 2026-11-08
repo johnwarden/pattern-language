@@ -1,5 +1,11 @@
 import { Interpreter } from "./runtime.ts";
-import { parseSurface, parseTestSource } from "./parser.ts";
+import {
+  layoutFormsFromBlock,
+  mergeLayoutForms,
+  parseSurface,
+  parseTestSource,
+} from "./parser.ts";
+import { DEFAULT_GRAMMAR, Grammar } from "./grammar.ts";
 import { normal, LanguageError } from "./syntax.ts";
 import type { Field, Syntax, Span } from "./syntax.ts";
 import { dataSyntax, codeSource } from "./syntax-values.ts";
@@ -23,7 +29,7 @@ import {
 
 export type AssertionMode = "check" | "legacy" | "todo";
 export interface TestStep {
-  kind: "setup" | "output" | "result" | "error" | "assert";
+  kind: "setup" | "output" | "result" | "error" | "parse-error" | "assert";
   mode: AssertionMode;
   subject: Syntax;
   expected?: Syntax;
@@ -67,6 +73,11 @@ export interface TestReport {
 }
 const problem = (message: string, tree?: Syntax, code = "E_TEST_EXPECTATION") =>
   new LanguageError(message, tree?.span, { code, phase: "parse" });
+const codeLayoutForms = new Grammar(DEFAULT_GRAMMAR).layoutForms();
+const testLayoutForms = mergeLayoutForms(
+  codeLayoutForms,
+  layoutFormsFromBlock(parseSurface(TEST_SCHEMA, "test schema")),
+);
 const asType = (value: Value): TypeValue => {
   const raw = unwrap(value);
   if (raw.kind !== "type")
@@ -249,11 +260,17 @@ class TestReader {
           kind: role,
           mode: scalarString(mode.value) as AssertionMode,
           subject,
-          source: testSourceText(subject),
+          source:
+            role === "parse-error"
+              ? scalarString(parts[0].value)
+              : testSourceText(subject),
           expected: role === "result" ? dataSyntax(parts[1].value) : undefined,
           expectedType:
             role === "result" ? dataSyntax(parts[2].value) : undefined,
-          reason: role === "error" ? scalarString(parts[1].value) : undefined,
+          reason:
+            role === "error" || role === "parse-error"
+              ? scalarString(parts[1].value)
+              : undefined,
         });
         pos = match.end;
       } else {
@@ -352,7 +369,9 @@ class TestReader {
     return result;
   }
   file(file: string, source: string): TestCase[] {
-    const tree = parseTestSource(source, file);
+    const tree = parseTestSource(source, file, {
+      layoutForms: testLayoutForms,
+    });
     if (tree.kind !== "block" || !tree.lines.length)
       throw problem(
         "a .test file requires one or more test blocks",
@@ -401,10 +420,16 @@ class TestReader {
       // that example's program. Todo-only cases still have no runnable example.
       const supported = steps.filter((step) => step.mode !== "todo");
       const assertions = supported.filter(isAssertion);
+      const exampleAssertions = assertions.filter(
+        (step) => step.kind !== "parse-error",
+      );
       const output = supported.at(-1)?.kind === "output";
       const singleProgram =
-        assertions.length === 1 && assertions[0] === supported.at(-1);
-      const program = singleProgram || (output && assertions.length > 0);
+        exampleAssertions.length === 1 &&
+        exampleAssertions[0] === supported.at(-1);
+      const program =
+        !supported.some((step) => step.kind === "parse-error") &&
+        (singleProgram || (output && exampleAssertions.length > 0));
       const source = program
         ? supported
             .filter((step) =>
@@ -439,7 +464,11 @@ export function loadTests(files: Record<string, string>): TestCase[] {
 
 function execute(interpreter: Interpreter, tree: Syntax): Field<Value>[] {
   // The source-only reader must not make unsupported syntax executable.
-  parseSurface(testSourceText(tree), tree.span?.source?.name ?? "test subject");
+  parseSurface(
+    testSourceText(tree),
+    tree.span?.source?.name ?? "test subject",
+    { layoutForms: codeLayoutForms },
+  );
   const codeType = asType(single(interpreter.run("Code")));
   const block =
     tree.kind === "block"
@@ -475,7 +504,13 @@ function expectedData(
   const numeric = parseNumericSpelling(canonical);
   const printed = numeric
     ? formatRational(numeric)
-    : normal(one(parseSurface(canonical)));
+    : normal(
+        one(
+          parseSurface(canonical, "program", {
+            layoutForms: codeLayoutForms,
+          }),
+        ),
+      );
   if (text !== printed)
     throw problem(
       "expected values use data syntax; write " +
@@ -494,6 +529,7 @@ function expectedResult(
   parseSurface(
     testSourceText(step.expected!),
     step.expected!.span?.source?.name ?? "expected result",
+    { layoutForms: codeLayoutForms },
   );
   return {
     value: step.expected!,
@@ -506,6 +542,12 @@ function resultType(value: Value, interpreter: Interpreter): TypeValue {
     ? asType(single(interpreter.run(observed)))
     : observed;
 }
+function matchesExpectedError(error: LanguageError, reason: string): boolean {
+  return reason.startsWith("E_")
+    ? error.diagnostic.code === reason
+    : error.message.includes(reason);
+}
+
 function compareResult(
   actual: Field<Value>[],
   expected: ExpectedResult,
@@ -631,22 +673,24 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         phase = "body";
         let subjectFailed = false;
         try {
-          results = execute(interpreter, step.subject);
-          actualOutput = interpreter.inspect(results);
+          if (step.kind === "parse-error") {
+            interpreter.parse(step.source, "program", test.file + ":parse");
+          } else {
+            results = execute(interpreter, step.subject);
+            actualOutput = interpreter.inspect(results);
+          }
         } catch (error) {
           if (
-            step.kind === "error" &&
+            (step.kind === "error" || step.kind === "parse-error") &&
             error instanceof LanguageError &&
-            (step.reason!.startsWith("E_")
-              ? error.diagnostic.code === step.reason
-              : error.message.includes(step.reason!))
+            matchesExpectedError(error, step.reason!)
           ) {
             subjectFailed = true;
             expectedError = step.reason;
           } else throw error;
         }
         phase = "comparison";
-        if (step.kind === "error") {
+        if (step.kind === "error" || step.kind === "parse-error") {
           if (!subjectFailed)
             mismatch = "expected " + step.reason + "; the subject succeeded";
         } else if (step.kind === "assert") {

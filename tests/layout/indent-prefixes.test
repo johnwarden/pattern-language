@@ -1,0 +1,50 @@
+test "Pure spaces, pure tabs, and mixed prefixes parse"
+  expect
+    if True
+      1
+    else
+      2
+    end
+  result 1 :: Rational
+
+  assert parse(Code)("if True\n\t1\nelse\n\t2\nend") .matches Code
+  assert parse(Code)("if True\n \t1\nelse\n \t2\nend") .matches Code
+  assert parse(Code)("if True\n\t  if False\n\t    0\n\t  else\n\t    1\n\t  end\nelse\n\t  2\nend") .matches Code
+end
+
+test "Quoted if/else branches use the same prefix relation"
+  expect
+    if 1 == 1 '
+      Hello
+    else '
+      there
+    end
+  result "Hello" :: Expression
+
+  expect
+    '
+      hello
+        world
+    end
+  result "hello\n  world" :: Expression
+
+  assert parse(Code)("if 1 == 1 '\n\tHello\nelse '\n\tthere\nend") .matches Code
+  assert parse(Code)("if 1 == 1 '\n \tHello\nelse '\n \tthere\nend") .matches Code
+  assert parse(Code)("'\n\thello\n\t  world\nend") .matches Code
+end
+
+test "Incompatible tab and space prefixes reject"
+  expect parse "if True\n  1\n\t2\nend"
+  error "inconsistent indentation"
+
+  expect parse "'\n  x\n\ty\nend"
+  error "indentation prefix"
+end
+
+test "An extra end after a complete mixed-prefix clause is an error"
+  expect parse "if True\n\t1\nelse 2\nend"
+  error "E_UNEXPECTED_END"
+
+  expect parse "if True\n \t1\nelse 2\nend"
+  error "E_UNEXPECTED_END"
+end

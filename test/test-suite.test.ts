@@ -137,6 +137,7 @@ test("ordinary destructuring retains empty and exact positional arity checks", (
     assert
       () = (() -> ())()
       True
+    end
 end`).passed,
     true,
   );
@@ -146,7 +147,7 @@ end`).passed,
     "() = (1)",
     "(x, color: c) = (1)",
   ]) {
-    const result = run(`test "Bad pack"\n assert\n  ${body}\n  True\nend`);
+    const result = run(`test "Bad pack"\n assert\n  ${body}\n  True\n end\nend`);
     assert.equal(result.passed, false, body);
   }
 });
@@ -332,9 +333,27 @@ test("legacy assertions must pass and never suppress failures", () => {
   assert.equal(r.passed, false);
   assert.equal(r.checks[0].mode, "legacy");
 });
+test("parse-error expectations parse quoted text, not the outer test file", () => {
+  const r = run(`test "infix"
+  expect parse '
+    x + 
+  error "Missing second argument to infix operation"
+end`);
+  assert.equal(r.passed, true, r.message);
+  assert.equal(r.checks[0].kind, "parse-error");
+  const ok = run(`test "valid"
+  expect parse '
+    1 + 1
+  error "Missing second argument to infix operation"
+end`);
+  assert.equal(ok.passed, false);
+  assert.match(ok.message, /the subject succeeded/);
+  assert.equal(ok.checks[0].kind, "parse-error");
+});
+
 test("todo operands resolve and execute without leaking bindings or definitions", () => {
   const r = run(
-    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
+    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  end\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.equal(

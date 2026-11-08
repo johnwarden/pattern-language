@@ -283,6 +283,7 @@ test "Inspect a typed code binding without evaluating it"
         [Field("_1", pattern)] = left
         [Field("_1", value)] = right
         (toString(Code)(Code(syntaxExpression(pattern))), toString(Code)(Code(syntaxExpression(value))))
+      end
       _ -> panic("Expected a binding")
     end
   end
@@ -308,6 +309,7 @@ test "Overlapping unions and narrowing"
       end
       _ -> False
     end
+  end
 end
 
 test "Numeric spaces and conversion"

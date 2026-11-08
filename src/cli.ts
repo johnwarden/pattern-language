@@ -7,6 +7,7 @@ import { DEFAULT_GRAMMAR } from "./grammar.ts";
 import { renderDiagnostic } from "./diagnostics.ts";
 import { normal } from "./syntax.ts";
 import { decodeSource } from "./source-encoding.ts";
+import { applyReplLine, replEntryReady } from "./repl.ts";
 export function main(args = argv.slice(2)): void {
   let grammar = DEFAULT_GRAMMAR,
     file: string | undefined,
@@ -21,7 +22,7 @@ export function main(args = argv.slice(2)): void {
     else if (args[i] === "--parse") parseOnly = true;
     else if (args[i] === "--help") {
       console.log(
-        "node src/cli.ts [--grammar FILE] [--parse] [FILE|-]\nnode src/cli.ts [--grammar FILE] --repl\nREPL: submit multiline forms with a blank line; :quit exits.",
+        "node src/cli.ts [--grammar FILE] [--parse] [FILE|-]\nnode src/cli.ts [--grammar FILE] --repl\nREPL: a finished grammar form runs on its last line; a blank line still submits. :quit exits.",
       );
       return;
     } else if (args[i].startsWith("--"))
@@ -66,6 +67,15 @@ export function main(args = argv.slice(2)): void {
     terminal: !!stdin.isTTY,
   });
   let pending = "";
+  const ready = (source: string) =>
+    replEntryReady(source, (text) => interpreter.parse(text, "repl"));
+  const submit = (source: string) => {
+    try {
+      run(source, "repl");
+    } catch (e) {
+      console.error(renderDiagnostic(e));
+    }
+  };
   const prompt = () => {
     if (stdin.isTTY) {
       rl.setPrompt(pending ? "… " : "> ");
@@ -73,23 +83,13 @@ export function main(args = argv.slice(2)): void {
     }
   };
   rl.on("line", (line) => {
-    if (!pending && line.trim() === ":quit") {
+    const step = applyReplLine(pending, line, ready);
+    pending = step.pending;
+    if (step.quit) {
       rl.close();
       return;
     }
-    if (line.trim()) {
-      pending += line + "\n";
-      prompt();
-      return;
-    }
-    if (pending) {
-      try {
-        run(pending, "repl");
-      } catch (e) {
-        console.error(renderDiagnostic(e));
-      }
-      pending = "";
-    }
+    if (step.submit) submit(step.submit);
     prompt();
   });
   rl.on("close", () => {

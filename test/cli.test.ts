@@ -17,6 +17,18 @@ test("program output uses the same annotated display as the REPL", () => {
   assert.equal(repl.status, 0);
   assert.equal(repl.stdout, program.stdout);
 });
+test("REPL evaluates a finished form on its last line without a blank line", () => {
+  const repl = invoke(":Widget\n:quit\n", "--repl");
+  assert.equal(repl.status, 0, repl.stderr);
+  assert.equal(repl.stdout, "Widget :: UpperCamelSymbol\n");
+  const complete = invoke("if True 1 else 2\n:quit\n", "--repl");
+  assert.equal(complete.status, 0, complete.stderr);
+  assert.equal(complete.stdout, "1 :: Rational\n");
+});
+test("REPL does not evaluate an incomplete clause-bearing form on the last pending line", () => {
+  const incomplete = invoke("if True 1\n", "--repl");
+  assert.match(incomplete.stderr, /incomplete or invalid IfExpression/);
+});
 test("program output annotates every result in a complete labeled pack", () => {
   const result = invoke('(1 :: Int,word: "hello" :: String)');
   assert.equal(result.status, 0, result.stderr);
