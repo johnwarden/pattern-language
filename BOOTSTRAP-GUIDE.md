@@ -324,6 +324,7 @@ These are host TypeScript modules, not a source-language import system.
 | `bootstrap.ts` | Minimal host reader for grammar declarations |
 | `language-description.ts` | Recursive Language schema, ordinary grammar data and lossless AST transport |
 | `elaboration.ts` | Ordered block recognition and final-result validation |
+| `expected-grammar.ts` | Unquoted String-field sidefix elaboration for expected types |
 | `lowering.ts` | Internal let/then operations for block bindings and sequencing |
 | `macros.ts` | Syntax/data conversion, quotation, hygiene, and source origins |
 | `availability.ts` | Conservative checks for unavailable runtime dependencies |

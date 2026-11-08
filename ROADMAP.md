@@ -231,6 +231,11 @@ merely to satisfy a future assertion.
 
 ### 5b. Grow Body into interpreted Code grammar
 
+The bootstrap implements the single-line String-field slice: annotated bindings and
+a uniquely known callable's current pack share one expected-grammar elaborator,
+associated by field label or position. Returns, layout, Code categories and
+canonical `toString :: String` remain later work.
+
 Propagate expected grammars through bindings, calls and returns, allowing unquoted
 DSL forms with normally evaluated field expressions. Keep literal keywords quoted
 in grammar patterns and unquoted in grammar-directed data text. Reject ambiguity.

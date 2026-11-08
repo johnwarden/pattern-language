@@ -45,6 +45,12 @@ import { valueText, parseValueText } from "./value-text.ts";
 import type { TextDomain } from "./value-text.ts";
 import { Grammar, DEFAULT_GRAMMAR, syntaxGrammars } from "./grammar.ts";
 import {
+  annotatedPatternTypes,
+  elaborateSequenceGrammar,
+  regroupAssignmentLine,
+  sequenceGrammarParts,
+} from "./expected-grammar.ts";
+import {
   LanguageError,
   isCapture,
   isTypeCapture,
@@ -1163,7 +1169,11 @@ export class Interpreter {
       try {
         if (node.kind === "then") result = this.evaluate(node.expression, env);
         else {
-          const values = this.evaluateFields(node.value, env);
+          const values = this.evaluateFields(
+            node.value,
+            env,
+            this.expectedFieldsFromPattern(node.pattern, env),
+          );
           const matched = this.matchParameters(node.pattern, values, env);
           // Same block scope deliberately preserves duplicate-name errors and REPL bindings.
           const runtime = [
@@ -1262,6 +1272,10 @@ export class Interpreter {
           }
         },
         repl,
+        (input) => {
+          flush();
+          return this.completeExpectedGrammarLine(input, env);
+        },
       );
       flush();
       if (!local) this.lastTree = tree;
@@ -1662,6 +1676,8 @@ export class Interpreter {
           );
       }
     }
+    if (n.kind === "sequence")
+      throw new LanguageError("unknown or incomplete macro form", n.span);
     if (n.kind !== "apply")
       throw new LanguageError("unresolved syntax reached evaluator");
     if (n.head.kind === "symbol" && !n.head.quoted && n.head.name === "$")
@@ -1786,7 +1802,21 @@ export class Interpreter {
           candidates: methods,
         }
       : single(this.evaluate(n.head, env), "function head");
-    return this.invoke(fn, this.evaluateFields(n.body, env), env);
+    const unique = this.uniqueClosure(fn);
+    return this.invoke(
+      fn,
+      this.evaluateFields(
+        n.body,
+        env,
+        unique
+          ? this.expectedFieldsFromPattern(
+              unique.parameters[0] ?? [],
+              unique.env,
+            )
+          : [],
+      ),
+      env,
+    );
   }
   private snapshot(env: Scope): Scope {
     const copy = new Scope(env.parent);
@@ -1796,11 +1826,86 @@ export class Interpreter {
     copy.runtimeBindings = new Set(env.runtimeBindings);
     return copy;
   }
-  private evaluateFields(xs: Field<Syntax>[], env: Scope): Field<Value>[] {
+  private uniqueClosure(fn: Value): Closure | undefined {
+    const value = unwrap(fn);
+    if (value.kind === "closure" && !value.macro) return value;
+    if (value.kind === "overload") {
+      const closures = value.candidates.filter(
+        (c): c is Closure => c.kind === "closure" && !c.macro,
+      );
+      if (value.candidates.length === 1 && closures.length === 1)
+        return closures[0];
+    }
+  }
+  private expectedFieldsFromPattern(
+    pattern: Field<Syntax>[],
+    env: Scope,
+  ): { label: string; type?: TypeValue }[] {
+    return annotatedPatternTypes(pattern).length
+      ? pattern.map((field) => {
+          const annotation = binary(field.value, "::");
+          return {
+            label: field.label,
+            type: annotation
+              ? this.typeFromSyntax(annotation[1], env)
+              : undefined,
+          };
+        })
+      : [];
+  }
+  private expectedTypeForArgument(
+    arg: Field<Syntax>,
+    expected: { label: string; type?: TypeValue }[],
+    used: Set<number>,
+  ): TypeValue | undefined {
+    const index = !positional(arg.label)
+      ? expected.findIndex((field) => field.label === arg.label)
+      : expected.findIndex(
+          (field, i) => !used.has(i) && positional(field.label),
+        );
+    if (index < 0) return;
+    used.add(index);
+    return expected[index].type;
+  }
+  private completeExpectedGrammarLine(
+    input: Syntax,
+    env: Scope,
+  ): Syntax | undefined {
+    if (input.kind !== "sequence") return;
+    const regrouped = regroupAssignmentLine(input.items);
+    const assignment = regrouped && operator(regrouped, "=");
+    if (!assignment) return;
+    const fields = this.expectedFieldsFromPattern(assignment[0], env);
+    if (
+      fields.length !== 1 ||
+      !fields[0].type ||
+      !sequenceGrammarParts(fields[0].type)
+    )
+      return;
+    return regrouped;
+  }
+  private evaluateExpectedGrammar(
+    n: Syntax,
+    type: TypeValue,
+    env: Scope,
+  ): Field<Value>[] | undefined {
+    const parts = sequenceGrammarParts(type);
+    if (!parts) return;
+    const data = elaborateSequenceGrammar(n, parts, (tree) =>
+      single(this.evaluate(tree, env)),
+    );
+    return data && this.check(type, data, env);
+  }
+  private evaluateFields(
+    xs: Field<Syntax>[],
+    env: Scope,
+    expected: { label: string; type?: TypeValue }[] = [],
+  ): Field<Value>[] {
     const out: Field<Value>[] = [];
     let index = 0,
       named = false;
     const labels = new Set<string>();
+    const used = new Set<number>();
     for (const e of xs) {
       if (
         e.label === "**" ||
@@ -1819,7 +1924,10 @@ export class Interpreter {
           throw new LanguageError("spread requires an argument body");
         values = v.body;
       } else {
-        values = this.evaluate(e.value, env);
+        const type = this.expectedTypeForArgument(e, expected, used);
+        values =
+          (type && this.evaluateExpectedGrammar(e.value, type, env)) ??
+          this.evaluate(e.value, env);
         if (!positional(e.label)) {
           if (values.length !== 1)
             throw new LanguageError(
