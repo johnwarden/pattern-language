@@ -592,7 +592,7 @@ test("ambiguous patterns do not silently fall through arms or dispatch", () => {
 test("actions are absent and postfix exclamation is reserved", () => {
   assert.throws(() => run("action(() -> ())"), /unbound name/);
   assert.throws(() => run("()!"), /reserved/);
-  assert.equal(normal(parseExpression("Int!")), "!(Int)");
+  assert.equal(normal(parseExpression("Int!")), "Int!");
 });
 
 test("ASCII camel and upper-snake words have explicit spelling boundaries", () => {

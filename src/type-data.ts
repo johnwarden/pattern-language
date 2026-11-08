@@ -191,6 +191,11 @@ export function typeDescription(
             : fields;
         };
       }
+      case "postfix": {
+        const op = encode(p.operator);
+        const operand = encode(p.operand);
+        return (bs) => term("Postfix", op(bs), operand(bs));
+      }
       case "node": {
         const h = encode(p.head),
           b = encode(p.body);

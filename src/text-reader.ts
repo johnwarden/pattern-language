@@ -334,6 +334,12 @@ function locate(
           head: visit(n.head),
           body: fields(n.body),
         };
+      case "postfix":
+        return {
+          ...n,
+          span: span(n.span),
+          operand: visit(n.operand),
+        };
       case "pack":
         return { ...n, span: span(n.span), body: fields(n.body) };
       case "quote":

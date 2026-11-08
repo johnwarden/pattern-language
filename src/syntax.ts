@@ -48,6 +48,12 @@ export type Syntax =
       span?: Span;
     }
   | { kind: "apply"; head: Syntax; body: Field<Syntax>[]; span?: Span }
+  | {
+      kind: "postfix";
+      operator: string;
+      operand: Syntax;
+      span?: Span;
+    }
   | { kind: "pack"; body: Field<Syntax>[]; span?: Span }
   | { kind: "sequence"; items: Syntax[]; span?: Span }
   | { kind: "block"; lines: Syntax[]; span?: Span }
@@ -69,9 +75,11 @@ export const isName = (n: Syntax, name: string): boolean =>
 export function quotePatternHead(node: Syntax): Syntax {
   return node.kind === "apply"
     ? { ...node, head: quotePatternHead(node.head) }
-    : node.kind === "symbol"
-      ? { ...node, quoted: true }
-      : node;
+    : node.kind === "postfix"
+      ? { ...node, operand: quotePatternHead(node.operand) }
+      : node.kind === "symbol"
+        ? { ...node, quoted: true }
+        : node;
 }
 export const isCapture = (name: string): boolean =>
   name.startsWith("\0macro") ||
@@ -88,6 +96,36 @@ export const apply = (head: Syntax, body: Field<Syntax>[]): Syntax => ({
   head,
   body,
 });
+/** Tight one-character suffixes. Host-only; not a public SyntaxNode variant. */
+export const POSTFIX_SUFFIX = /^[?*!^@]+$/;
+export const postfix = (
+  operator: string,
+  operand: Syntax,
+  span?: Span,
+): Extract<Syntax, { kind: "postfix" }> => ({
+  kind: "postfix",
+  operator,
+  operand,
+  span: span ?? operand.span,
+});
+export const isTypeModifierOperator = (name: string): boolean =>
+  name === "*" || name === "?" || name === "^" || name === "!";
+/** Prefix apply *?^! and postfix *?^! share this peel; @ is postfix-only. */
+export function typeModifier(
+  n: Syntax,
+): { name: string; operand: Syntax } | undefined {
+  if (n.kind === "postfix" && isTypeModifierOperator(n.operator))
+    return { name: n.operator, operand: n.operand };
+  if (
+    n.kind === "apply" &&
+    n.head.kind === "symbol" &&
+    !n.head.quoted &&
+    isTypeModifierOperator(n.head.name) &&
+    n.body.length === 1
+  )
+    return { name: n.head.name, operand: n.body[0].value };
+  return undefined;
+}
 export function operator(
   n: Syntax,
   name: string,
@@ -170,10 +208,7 @@ export function implicitFieldCapture(field: Field<Syntax>): string | undefined {
 export function isTypeSpecification(n: Syntax): boolean {
   return (
     (n.kind === "symbol" && !n.quoted && /^\p{Lu}/u.test(n.name)) ||
-    (n.kind === "apply" &&
-      n.head.kind === "symbol" &&
-      ["*", "?", "^", "!"].includes(n.head.name) &&
-      n.body.length === 1) ||
+    !!typeModifier(n) ||
     (n.kind === "form" && n.name === "TypeExpression") ||
     (n.kind === "sequence" &&
       n.items[0]?.kind === "symbol" &&
@@ -317,6 +352,15 @@ export function normal(n: Syntax, indent = 0): string {
         " ".repeat(indent) +
         ")"
       );
+    case "postfix": {
+      const inner = normal(n.operand, indent);
+      return n.operand.kind === "apply" ||
+        n.operand.kind === "sequence" ||
+        n.operand.kind === "form" ||
+        n.operand.kind === "pack"
+        ? "(" + inner + ")" + n.operator
+        : inner + n.operator;
+    }
     case "apply": {
       if (
         n.head.kind === "symbol" &&
@@ -376,6 +420,8 @@ export function syntaxKey(n: Syntax): string {
           key(n.head),
           canonicalFields(n.body).map((e) => [e.label, key(e.value)]),
         ];
+      case "postfix":
+        return ["postfix", n.operator, key(n.operand)];
       case "pack":
         return [
           "pack",

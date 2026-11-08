@@ -3,7 +3,10 @@ import { TYPE_SCHEMA } from "./type-schema.ts";
 import {
   canonicalFields,
   fields as syntaxFields,
+  isTypeModifierOperator,
   LanguageError,
+  packOf,
+  symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { valLiteral, valSymbol, unwrap } from "./values.ts";
@@ -88,6 +91,21 @@ export function encodeSyntax(input: Syntax): Value {
         );
       case "apply":
         return node("Apply", child(s.head), fields(s.body, depth));
+      case "postfix":
+        // Public SyntaxNode has Apply, not Postfix. Type-modifier suffixes
+        // already existed as Apply; only distinct postfix such as @ stays
+        // host-only adapter debt.
+        if (isTypeModifierOperator(s.operator))
+          return node(
+            "Apply",
+            child(symbol(s.operator)),
+            fields(packOf(s.operand), depth),
+          );
+        throw new LanguageError(
+          "postfix syntax is not a public SyntaxNode variant",
+          s.span,
+          { code: "E_VALUE_SERIALIZATION" },
+        );
       case "pack":
         return node("Pack", fields(s.body, depth));
       case "quote":

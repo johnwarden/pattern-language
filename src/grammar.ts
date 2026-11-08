@@ -12,9 +12,10 @@ import {
   operator,
   binary,
   spread,
-  isName,
   normal,
   syntaxKey,
+  typeModifier,
+  symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { Matcher, sequencePattern } from "./pattern.ts";
@@ -51,10 +52,22 @@ const syntaxAdapter: Adapter<Syntax> = {
             body: n.lines.map((value, i) => ({ label: "_" + (i + 1), value })),
           }
         : undefined,
+  postfix: (n) =>
+    n.kind === "postfix"
+      ? { operator: symbol(n.operator), operand: n.operand }
+      : undefined,
+  rebuildPostfix: (n, operator, operand) => ({
+    kind: "postfix",
+    operator: operator.kind === "symbol" ? operator.name : n.kind === "postfix" ? n.operator : "@",
+    operand,
+    span: n.span,
+  }),
   rebuild: (n, head, body) =>
     n.kind === "block"
       ? { ...n, lines: body.map((f) => f.value) }
-      : ({ ...n, head, body } as Syntax),
+      : n.kind === "postfix"
+        ? n
+        : ({ ...n, head, body } as Syntax),
   row: (n) => {
     if (n.kind === "sequence" && n.items.length === 1) n = n.items[0];
     return n.kind === "pack" ? n.body : [{ label: "_1", value: n }];
@@ -111,13 +124,12 @@ export class Grammar {
     return new PatternCompiler<Syntax>(
       {
         bareCaptures: true,
-        expression: (n) =>
-          n.kind === "apply" &&
-          n.head.kind === "symbol" &&
-          ["*", "?", "^"].includes(n.head.name) &&
-          n.body.length === 1
+        expression: (n) => {
+          const modifier = typeModifier(n);
+          return modifier && ["*", "?", "^"].includes(modifier.name)
             ? this.compiler(typeDefinition).domain.atom(n)
-            : undefined,
+            : undefined;
+        },
         defaultValue: (n) => n,
         head: (n, depth = 0) =>
           n.kind === "symbol"
@@ -129,44 +141,35 @@ export class Grammar {
             : this.compiler(typeDefinition, depth).compile(n),
         annotation: (n, dimensions = 0) => {
           for (let i = 0; i < dimensions; i++) {
-            if (
-              n.kind !== "apply" ||
-              !isName(n.head, "*") ||
-              n.body.length !== 1
-            )
+            const layer = typeModifier(n);
+            if (layer?.name !== "*")
               throw new LanguageError(
                 "vertical capture annotation requires a list layer",
                 n.span,
               );
-            n = n.body[0].value;
+            n = layer.operand;
           }
           return this.compilePattern(n);
         },
         repeatedElement: (n, dimensions = 0) => {
           for (let i = 0; i < dimensions; i++) {
-            if (
-              n.kind !== "apply" ||
-              !isName(n.head, "*") ||
-              n.body.length !== 1
-            )
+            const layer = typeModifier(n);
+            if (layer?.name !== "*")
               throw new LanguageError(
                 "vertical capture annotation requires a list layer",
                 n.span,
               );
-            n = n.body[0].value;
+            n = layer.operand;
           }
-          if (n.kind !== "apply" || !isName(n.head, "*") || n.body.length !== 1)
+          const rest = typeModifier(n);
+          if (rest?.name !== "*")
             throw new LanguageError("rest annotation requires T*");
-          return this.compilePattern(n.body[0].value);
+          return this.compilePattern(rest.operand);
         },
         expand: () => undefined,
         atom: (n) => {
-          if (
-            n.kind === "apply" &&
-            n.head.kind === "symbol" &&
-            ["?", "^"].includes(n.head.name) &&
-            n.body.length === 1
-          ) {
+          const modifier = typeModifier(n);
+          if (modifier && ["?", "^"].includes(modifier.name)) {
             const tagged = (
               name: string,
               pattern: Pattern<Syntax>,
@@ -182,11 +185,11 @@ export class Grammar {
                 parts: [{ kind: "label", label: "_1", pattern }],
               },
             });
-            const element = this.compilePattern(n.body[0].value);
+            const element = this.compilePattern(modifier.operand);
             return {
               kind: "union",
               choices:
-                n.head.name === "?"
+                modifier.name === "?"
                   ? [
                       {
                         kind: "test",
@@ -198,7 +201,7 @@ export class Grammar {
                   : [tagged("Ok", element), tagged("Error", { kind: "any" })],
             };
           }
-          if (n.kind === "apply" && isName(n.head, "*") && n.body.length === 1)
+          if (modifier?.name === "*")
             return {
               kind: "node",
               head: {
@@ -214,7 +217,7 @@ export class Grammar {
                     pattern: {
                       kind: "label",
                       label: "_1",
-                      pattern: this.compilePattern(n.body[0].value),
+                      pattern: this.compilePattern(modifier.operand),
                     },
                   },
                 ],
@@ -410,6 +413,10 @@ export class Grammar {
     if (n.kind === "sequence")
       return { node: this.resolveSequence(n, matcher), end };
     if (n.kind === "block") return { node: this.block(n, matcher, false), end };
+    if (n.kind === "postfix") {
+      const operand = this.resolveOperand(n.operand, tail, end, matcher);
+      return { node: { ...n, operand: operand.node }, end: operand.end };
+    }
     if (n.kind === "apply" || n.kind === "pack") {
       const head =
         n.kind === "pack"

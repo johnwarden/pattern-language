@@ -112,6 +112,13 @@ export function syntaxData(n: Syntax, insertions?: Map<Syntax, Value>): Value {
         body: n.body.map((e) => ({ ...e, value: child(e.value) })),
       };
       break;
+    case "postfix":
+      result = {
+        kind: "postfix",
+        operator: valSymbol(n.operator),
+        operand: child(n.operand),
+      };
+      break;
     case "pack":
       result = {
         kind: "pack",
@@ -159,6 +166,20 @@ export function dataSyntax(value: Value): Syntax {
       head: dataSyntax(v.head),
       body: v.body.map((e) => ({ ...e, value: dataSyntax(e.value) })),
     };
+  if (v.kind === "postfix") {
+    const operator = unwrap(v.operator);
+    if (operator.kind !== "symbol")
+      throw new LanguageError(
+        "cannot insert a function value into quoted syntax",
+        undefined,
+        { code: "E_UNQUOTE_VALUE", phase: "expand" },
+      );
+    return {
+      kind: "postfix",
+      operator: operator.name,
+      operand: dataSyntax(v.operand),
+    };
+  }
   if (v.kind === "pack")
     return {
       kind: "pack",
@@ -221,6 +242,19 @@ export function literalSyntax(value: Value): Syntax {
         { code: "E_UNQUOTE_VALUE" },
       );
     expression = quoted(dataSyntax(raw));
+  } else if (raw.kind === "postfix") {
+    const operator = unwrap(raw.operator);
+    if (operator.kind !== "symbol")
+      throw new LanguageError(
+        "this value needs a portable constant representation before insertion",
+        undefined,
+        { code: "E_UNQUOTE_VALUE" },
+      );
+    expression = {
+      kind: "postfix",
+      operator: operator.name,
+      operand: literalSyntax(raw.operand),
+    };
   } else if (raw.kind === "term") {
     const body = raw.body.map((field) => ({
       ...field,

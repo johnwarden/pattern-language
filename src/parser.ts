@@ -8,6 +8,8 @@ import {
   fields,
   packOf,
   isName,
+  postfix,
+  POSTFIX_SUFFIX,
 } from "./syntax.ts";
 import type { Syntax, Field, Span } from "./syntax.ts";
 import {
@@ -74,6 +76,8 @@ function quotedLayoutNames(n: Syntax): string[] {
         ...quotedLayoutNames(n.head),
         ...n.body.flatMap((field) => quotedLayoutNames(field.value)),
       ];
+    case "postfix":
+      return quotedLayoutNames(n.operand);
     case "quote":
       return quotedLayoutNames(n.value);
     case "block":
@@ -586,17 +590,11 @@ class Reader {
       } else if (
         t.kind === "op" &&
         !t.quoted &&
-        /^[?*!^]+$/.test(t.text) &&
+        POSTFIX_SUFFIX.test(t.text) &&
         this.suffixBoundary()
       ) {
         this.take();
-        for (const c of t.text)
-          n = {
-            kind: "apply",
-            head: symbol(c),
-            body: packOf(n),
-            span: n.span,
-          };
+        for (const c of t.text) n = postfix(c, n, n.span);
       } else break;
     }
     const end = this.tokens[this.pos - 1];
@@ -1087,6 +1085,7 @@ function readSurface(
     const visit = (n: Syntax) => {
       if (n.span) attachSource(n.span, document);
       if (n.kind === "apply") visit(n.head);
+      if (n.kind === "postfix") visit(n.operand);
       if (n.kind === "apply" || n.kind === "pack")
         for (const e of n.body) {
           if (e.span) attachSource(e.span, document);

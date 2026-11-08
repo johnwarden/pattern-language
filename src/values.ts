@@ -93,6 +93,7 @@ export type Value =
   | { kind: "symbol"; name: string }
   | { kind: "literal"; value: number | string | Rational }
   | { kind: "term"; head: Value; body: Field<Value>[] }
+  | { kind: "postfix"; operator: Value; operand: Value }
   | { kind: "overload"; name: string; candidates: Candidate[] }
   | { kind: "pack"; body: Field<Value>[] }
   | {
@@ -494,6 +495,18 @@ export function display(v: Value): string {
               body(v.body) +
               ")");
     }
+    case "postfix": {
+      const inner = display(v.operand);
+      const op =
+        v.operator.kind === "symbol" ? v.operator.name : display(v.operator);
+      const grouped =
+        unwrap(v.operand).kind === "term" ||
+        unwrap(v.operand).kind === "pack" ||
+        unwrap(v.operand).kind === "postfix";
+      return (grouped && unwrap(v.operand).kind !== "postfix"
+        ? "(" + inner + ")"
+        : inner) + op;
+    }
     case "type":
       try {
         return valueText(v);
@@ -590,7 +603,7 @@ export function compare(a: Value, b: Value): number {
     sb = concreteSpace(b);
   if (sa && sb && typeIdentity(sa) !== typeIdentity(sb))
     throw new LanguageError(
-      "values from different concrete types cannot be compared: " +
+      "Can't compare types: values from different concrete types cannot be compared: " +
         sa.name +
         " and " +
         sb.name,
@@ -604,6 +617,7 @@ export function compare(a: Value, b: Value): number {
     literal: 1,
     term: 3,
     pack: 4,
+    postfix: 5,
   };
   const rank = (v: Value) =>
     v.kind === "literal"
@@ -620,6 +634,10 @@ export function compare(a: Value, b: Value): number {
   }
   if (a.kind === "symbol" && b.kind === "symbol")
     return a.name === b.name ? 0 : a.name < b.name ? -1 : 1;
+  if (a.kind === "postfix" && b.kind === "postfix") {
+    const h = compare(a.operator, b.operator);
+    return h ? h : compare(a.operand, b.operand);
+  }
   if (
     (a.kind === "term" || a.kind === "pack") &&
     (b.kind === "term" || b.kind === "pack")

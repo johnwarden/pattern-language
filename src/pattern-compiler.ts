@@ -10,6 +10,7 @@ import {
   positional,
   normal,
   quotePatternHead,
+  symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { any } from "./pattern.ts";
@@ -199,6 +200,12 @@ export class PatternCompiler<T> {
         kind: "node",
         head: this.domain.head(n.head, this.dimensions),
         body: this.fields(n.body, false),
+      };
+    if (n.kind === "postfix")
+      return {
+        kind: "postfix",
+        operator: this.domain.head(symbol(n.operator), this.dimensions),
+        operand: this.compile(n.operand),
       };
     return this.domain.atom(n);
   }

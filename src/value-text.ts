@@ -272,6 +272,20 @@ export function valueText(
           value: syntax(f.value, false, inert),
         })),
       };
+    if (v.kind === "postfix") {
+      const operator = unwrap(v.operator);
+      if (operator.kind !== "symbol")
+        throw new LanguageError(
+          "functions and result packs need a portable description before serialization",
+          undefined,
+          { code: "E_VALUE_SERIALIZATION" },
+        );
+      return {
+        kind: "postfix",
+        operator: operator.name,
+        operand: syntax(v.operand, false, inert),
+      };
+    }
     if (v.kind === "term") {
       const h = unwrap(v.head);
       if (
@@ -512,6 +526,12 @@ export function parseValueText(
     if (n.kind === "sequence" && n.items.length === 1)
       return decode(n.items[0], pattern);
     if (n.kind === "sequence" && !pattern && allowLayout) return syntaxData(n);
+    if (n.kind === "postfix")
+      return {
+        kind: "postfix",
+        operator: { kind: "symbol", name: n.operator },
+        operand: decode(n.operand, pattern),
+      };
     if (n.kind !== "apply")
       return fail(
         "expected data; blocks, definitions, quotations, and generic calls are not evaluated by parse",

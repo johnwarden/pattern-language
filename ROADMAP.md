@@ -80,12 +80,13 @@ optional; that is separate from the parser destination, which is Expression.
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. **All 143 source cases execute**, with
-**287 passing assertions (54 legacy)** and **95 todo expected failures**. The corpus
+The reference is TypeScript prototype 0.2. **All 144 source cases execute**, with
+**290 passing assertions (54 legacy)** and **95 todo expected failures**. The corpus
 includes 76 playground examples, 14 other conformance cases, nine migrated binding/
-default cases, fifteen layout cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
+default cases, fifteen layout cases, the 27 C01–C27 design cases and the distinct
+postfix `@` regression. Host/canonical/control checks execute
 separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 788 tests with no skips, plus build/type checks.
+verification gate passes 791 tests with no skips, plus build/type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -125,12 +126,13 @@ explicit layout termination, including shared string/if terminator ownership.
   preserve the disambiguation table, defer Unicode casing and UpperSnake binding roles.
 - Implemented grammar diagnostics with found input, active expected form and locations.
   Contextual type-inference diagnostics still depend on milestones 6/7.
-- Distinct postfix application is a separate smaller item from parse-into-Expression.
-  Suffixes are one character each: T** is (T*)*, and String?*^! wraps from the
-  nearest suffix outward. Type-name/head rules apply to every suffix. Postfix
-  punctuation is not prefix/infix `Apply`. Land it through the current
-  Syntax/Value adapters as needed; do not freeze a public `SyntaxNode` Postfix
-  variant. Full parser migration is not a prerequisite.
+- Implemented distinct postfix application for `@` through current Syntax/Value
+  adapters. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
+  from the nearest suffix outward. Type-name/head rules apply to every suffix.
+  Postfix punctuation is not prefix/infix `Apply`. Public `SyntaxNode` has no
+  Postfix variant; type-modifier suffixes still transport as Apply. Whether
+  postfix `Int*` / `String?` stay identical to prefix `*(Int)` / `?(Int)` is
+  still open. Full parser migration is not a prerequisite and is not done.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.
 - Implement explicit layout end ownership and migrate source/host fixtures together.
@@ -142,9 +144,10 @@ explicit layout termination, including shared string/if terminator ownership.
 - Implemented legacy/todo setup alternatives from the same incoming scope; do not allow
   duplicate-name failures or leaked bindings to mask a fulfilled todo.
 
-These are focused slices, not new completed milestones. Postfix value identity and
-transport must be coherent across all common adapters before its syntax is shipped.
-Environment-aware macros belong to 6/7; expected DSL elaboration belongs to 5b.
+These are focused slices, not new completed milestones. `@` postfix values are
+distinct from prefix application; Option/List type-modifier identity is unchanged
+pending a later decision. Environment-aware macros belong to 6/7; expected DSL
+elaboration belongs to 5b.
 
 ### 1–4. Bootstrap foundations — implemented within the boundary above
 
@@ -193,8 +196,9 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 143 cases run, including C01–C27 and the explicit-end layout contracts. The
-corpus has 287 passing assertions (54 legacy) and 95 todo expected failures. The
+All 144 cases run, including C01–C27, the distinct postfix `@` regression, and the
+explicit-end layout contracts. The
+corpus has 290 passing assertions (54 legacy) and 95 todo expected failures. The
 Widget observation is already an ordinary passing contract. C03's supported Float32
 designation and C19's empty/singleton rest checks have no todo. C27 remains
 exploratory. Current bootstrap observations are explicitly legacy where they depend

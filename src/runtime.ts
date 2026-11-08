@@ -1,6 +1,6 @@
 import { bootstrapTypeNames } from "./primitive-names.ts";
 import { requireDisjointUnion } from "./union-disjointness.ts";
-import { symbolCategory } from "./lexical.ts";
+import { punctuation, symbolCategory } from "./lexical.ts";
 import { primitiveNames, constantNames } from "./primitive-names.ts";
 import {
   runtimeDependency,
@@ -57,6 +57,7 @@ import {
   apply,
   symbol,
   packOf,
+  typeModifier,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { Matcher, Mismatch, any } from "./pattern.ts";
@@ -187,6 +188,22 @@ const valueMatcher = () =>
       if (v.kind === "code") v = syntaxData(v.tree);
       if (v.kind === "type") v = typeData(v);
       return v.kind === "term" ? { head: v.head, body: v.body } : undefined;
+    },
+    postfix: (v) => {
+      v = unwrap(v);
+      return v.kind === "postfix"
+        ? { operator: v.operator, operand: v.operand }
+        : undefined;
+    },
+    rebuildPostfix: (v, operator, operand) => {
+      const input = unwrap(v);
+      if (input.kind === "code") return v;
+      const base = { kind: "postfix" as const, operator, operand };
+      const origin = syntaxOrigins.get(input);
+      if (origin) syntaxOrigins.set(base, origin);
+      const value = slotValue(v);
+      const rebuilt = value.kind === "view" ? { ...value, base } : base;
+      return v.kind === "slot" ? { ...v, value: rebuilt } : rebuilt;
     },
     rebuildRow: (value, fields) => {
       const raw = unwrap(value);
@@ -468,6 +485,11 @@ export class Interpreter {
       return pattern.choices.some((p) => this.hasLayoutPattern(p, seen));
     if (pattern.kind === "sequence" || pattern.kind === "fields")
       return pattern.parts.some((p) => this.hasLayoutPattern(p, seen));
+    if (pattern.kind === "postfix")
+      return (
+        this.hasLayoutPattern(pattern.operator, seen) ||
+        this.hasLayoutPattern(pattern.operand, seen)
+      );
     if (["capture", "row", "repeat", "map", "label"].includes(pattern.kind))
       return this.hasLayoutPattern(
         (pattern as Extract<Pattern<Value>, { kind: "map" }>).pattern,
@@ -1204,6 +1226,8 @@ export class Interpreter {
     }
     if (n.kind === "pack")
       return n.body.every((e) => this.canLowerWithoutStaging(e.value, env));
+    if (n.kind === "postfix")
+      return this.canLowerWithoutStaging(n.operand, env);
     return (
       this.canLowerWithoutStaging(n.head, env) &&
       n.body.every((e) => this.canLowerWithoutStaging(e.value, env))
@@ -1662,6 +1686,19 @@ export class Interpreter {
           );
       }
     }
+    if (n.kind === "postfix") {
+      const modifier = typeModifier(n);
+      if (modifier)
+        return this.evaluate(
+          apply(symbol(modifier.name), packOf(modifier.operand)),
+          env,
+        );
+      return singleton({
+        kind: "postfix",
+        operator: valSymbol(n.operator),
+        operand: single(this.evaluate(n.operand, env), "postfix operand"),
+      });
+    }
     if (n.kind !== "apply")
       throw new LanguageError("unresolved syntax reached evaluator");
     if (n.head.kind === "symbol" && !n.head.quoted && n.head.name === "$")
@@ -1770,7 +1807,10 @@ export class Interpreter {
           body: args,
         });
       }
-      if (/^\p{Lu}/u.test(n.head.name)) {
+      if (
+        /^\p{Lu}/u.test(n.head.name) ||
+        [...n.head.name].every((c) => punctuation.has(c))
+      ) {
         const value: Value = {
           kind: "term",
           head: valSymbol(n.head.name),
@@ -2403,7 +2443,11 @@ export class Interpreter {
   ): PatternCompiler<Value> {
     const lookup = (n: Syntax) =>
       lexicalScopes.get(n) ??
-      (n.kind === "apply" ? lexicalScopes.get(n.head) : undefined) ??
+      (n.kind === "apply"
+        ? lexicalScopes.get(n.head)
+        : n.kind === "postfix"
+          ? lexicalScopes.get(n.operand)
+          : undefined) ??
       env;
     const reference = (n: Syntax, dimensions = 0): Pattern<Value> => {
       if (typeMode) this.inlineTypeDepth++;
@@ -2467,14 +2511,9 @@ export class Interpreter {
             const type = this.materializeType(value);
             return type ? this.typePattern(type) : literalPattern(value);
           }
+          const modifier = typeModifier(n);
+          if (modifier) return reference(n);
           if (n.kind === "apply") {
-            if (
-              n.head.kind === "symbol" &&
-              !n.head.quoted &&
-              ["*", "?", "^", "!"].includes(n.head.name) &&
-              n.body.length === 1
-            )
-              return reference(n);
             const binding =
               n.head.kind === "symbol" && !n.head.quoted
                 ? lookup(n.head).get(n.head.name)
@@ -2511,7 +2550,19 @@ export class Interpreter {
           if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
           // Application heads are structural patterns, not unary type-factory
           // calls: the head of (a :* b) is the partial tree *(a).
-          if (n.kind === "apply" && !binary(n, "::") && !binary(n, "|")) {
+          if (
+            (n.kind === "apply" && !binary(n, "::") && !binary(n, "|")) ||
+            n.kind === "postfix"
+          ) {
+            if (n.kind === "postfix")
+              return {
+                kind: "postfix",
+                operator: this.compiler(env, typeMode, depth).domain.head(
+                  symbol(n.operator),
+                  depth,
+                ),
+                operand: this.compiler(env, typeMode, depth).compile(n.operand),
+              };
             const compiler = this.compiler(env, typeMode, depth);
             return {
               kind: "node",
@@ -2606,6 +2657,9 @@ export class Interpreter {
         } else if (p.kind === "node") {
           validate(p.head);
           validate(p.body);
+        } else if (p.kind === "postfix") {
+          validate(p.operator);
+          validate(p.operand);
         } else if (p.kind === "fields" || p.kind === "sequence")
           p.parts.forEach(validate);
         else if (
@@ -2646,7 +2700,8 @@ export class Interpreter {
       } else if (x.kind === "apply") {
         walk(x.head);
         x.body.forEach((f) => walk(f.value));
-      } else if (x.kind === "pack") x.body.forEach((f) => walk(f.value));
+      } else if (x.kind === "postfix") walk(x.operand);
+      else if (x.kind === "pack") x.body.forEach((f) => walk(f.value));
       else if (x.kind === "sequence") x.items.forEach(walk);
       else if (x.kind === "block") x.lines.forEach(walk);
     };
@@ -3696,7 +3751,11 @@ export class Interpreter {
   private typeFromSyntax(n: Syntax, env: Scope): TypeValue {
     env =
       lexicalScopes.get(n) ??
-      (n.kind === "apply" ? lexicalScopes.get(n.head) : undefined) ??
+      (n.kind === "apply"
+        ? lexicalScopes.get(n.head)
+        : n.kind === "postfix"
+          ? lexicalScopes.get(n.operand)
+          : undefined) ??
       env;
     let cache = this.evaluatedTypes.get(env);
     if (!cache) this.evaluatedTypes.set(env, (cache = new WeakMap()));
@@ -3828,6 +3887,15 @@ export class Interpreter {
       return type;
     }
     if (n.kind === "quote") return this.anonymousType(n, env);
+    if (n.kind === "postfix") {
+      const modifier = typeModifier(n);
+      if (modifier && modifier.name !== "!")
+        return this.modifiedType(
+          modifier.name,
+          this.typeFromSyntax(modifier.operand, env),
+        );
+      return this.anonymousType(n, env);
+    }
     if (n.kind === "apply" || n.kind === "literal")
       return this.anonymousType(n, env);
     throw new LanguageError("expected a type expression", n.span);

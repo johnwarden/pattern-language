@@ -85,7 +85,7 @@ test("all 27 decision-record cases execute from the synchronized specification c
   const files = sourceFiles(
     new URL("../tests/specification/", import.meta.url),
   );
-  const cases = loadTests(files);
+  const cases = loadTests(files).filter((value) => /^C\d\d /.test(value.name));
   assert.equal(excerpts.length, 27);
   assert.equal(cases.length, 27);
   for (const excerpt of excerpts) {

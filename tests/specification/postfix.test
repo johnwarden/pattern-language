@@ -1,0 +1,18 @@
+test "Postfix punctuation distinct from prefix/infix"
+  def PostfixAt type (String)@
+  def PrefixAt type (@(String))
+  (x :: PostfixAt) = "foo"@
+  (y :: PrefixAt) = @("bar")
+  expect
+    x == y
+  error "Can't compare types"
+  end
+  s = match x
+    (captured :: String)@ -> captured
+  end
+  expect s result "foo" :: String
+  t = match y
+    @(captured :: String) -> captured
+  end
+  expect t result "bar" :: String
+end

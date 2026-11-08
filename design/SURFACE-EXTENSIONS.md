@@ -18,25 +18,27 @@ informal sketch were unbound):
 
 ```text
 def PostfixAt type (String)@
-def PrefixAt type @(String)
+def PrefixAt type (@(String))
 (x :: PostfixAt) = "foo"@
 (y :: PrefixAt) = @("bar")
 expect
   x == y
 error "Can't compare types"
-match x
-  (s :: String)@ -> s
+s = match x
+  (captured :: String)@ -> captured
 end
 expect s result "foo" :: String
-match y
-  @(t :: String) -> t
+t = match y
+  @(captured :: String) -> captured
 end
 expect t result "bar" :: String
 ```
 
 `"foo"@` and `@("bar")` are distinct constructions. Matching the corresponding
-patterns yields the String payloads. A host `Syntax` postfix node, if present, is
-temporary adapter debt; do not freeze a public `SyntaxNode` Postfix variant.
+patterns yields the String payloads. Current `def Name type` needs `(@(String))`
+because a spaced punctuation operator is infix, not a prefix constructor. A host
+`Syntax` postfix node, if present, is temporary adapter debt; do not freeze a
+public `SyntaxNode` Postfix variant.
 
 Tight suffix characters already recognized for type modifiers (`* ? ! ^`) follow
 the same one-character wrap rule. Whether postfix `Int*` / `String?` remain the

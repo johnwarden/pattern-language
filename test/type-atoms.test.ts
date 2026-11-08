@@ -209,18 +209,21 @@ test("angle brackets no longer introduce a second application form", () => {
   assert.equal(run("(1 < 2,3 > 2)"), "(True, True)");
 });
 
-test("postfix type modifiers normalize into ordinary application trees", () => {
+test("postfix type modifiers are distinct trees and keep prefix type identity", () => {
   for (const [suffix, prefix] of [
     ["Int*", "*(Int)"],
     ["Int?", "?(Int)"],
     ["Int^", "^(Int)"],
   ]) {
-    assert.equal(
+    assert.notEqual(
       syntaxKey(parseExpression(suffix)),
       syntaxKey(parseExpression(prefix)),
     );
+    assert.equal(parseExpression(suffix).kind, "postfix");
+    assert.equal(parseExpression(prefix).kind, "apply");
     assert.equal(run(suffix + " == " + prefix), "True");
-    assert.equal(normal(parseExpression(suffix)), prefix);
+    assert.equal(normal(parseExpression(suffix)), suffix);
+    assert.equal(normal(parseExpression(prefix)), prefix);
   }
   assert.equal(run("2 * 3"), "6");
 });

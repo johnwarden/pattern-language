@@ -1344,6 +1344,7 @@ No corresponding expected result is assigned for raw Expression computation, whi
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
 | Test DSL modifiers | Implemented assertion-level todo/legacy execution and reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
+| Postfix `Int*` / `String?` vs prefix `*(Int)` / `?(Int)` identity | **Open.** Distinct `@` postfix is implemented; type-modifier suffixes still share `modifiedType` with prefix. Do not invent a split. |
 
 Obvious draft slips are normalized only to express the intended rules: String/sqrt examples meant an integer type; inconsistent normalizer names refer to one function; the Float union's self-reference is not a proposed recursive numeric member; mismatched id widths and Matrix dimensions are corrected explicitly. No semantic decision is extracted from those slips.
 
