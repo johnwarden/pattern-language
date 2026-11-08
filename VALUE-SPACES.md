@@ -242,6 +242,5 @@ how all cases execute. Assertions can be ordinary, legacy (must pass until retir
 or todo (must fail; a pass demands removal of todo). These are assertion modifiers,
 not alternate kinds of test or value. Every value expectation checks the observed
 result type as well as value identity. No assertion grants proof facts to another.
-The suite has 128 executing cases, 249 passing assertions (70 legacy), and 117 todo
-expected failures. Those outcomes do not implement the revised evidence or projection
-checker. Program CLI output uses the annotated REPL display.
+Running the suite does not implement the revised evidence or projection checker.
+Program CLI output uses the annotated REPL display.

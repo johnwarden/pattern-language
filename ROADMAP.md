@@ -80,13 +80,12 @@ optional; that is separate from the parser destination, which is Expression.
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. **All 144 source cases execute**, with
-**290 passing assertions (54 legacy)** and **95 todo expected failures**. The corpus
-includes 76 playground examples, 14 other conformance cases, nine migrated binding/
-default cases, fifteen layout cases, the 27 C01–C27 design cases and the distinct
-postfix `@` regression. Host/canonical/control checks execute
-separately; expected failures are not counted as passing assertions. The complete
-verification gate passes 791 tests with no skips, plus build/type checks.
+The reference is TypeScript prototype 0.2. The shared source corpus under `tests/`
+includes playground examples, conformance cases, binding/default cases, layout
+cases, the 27 C01–C27 design cases and the distinct postfix `@` regression.
+Host/canonical/control checks run separately. Expected failures are reported
+apart from passing assertions; they are not skipped cases. `just check` is the
+full CI gate, including build and type checks.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -196,18 +195,16 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-All 144 cases run, including C01–C27, the distinct postfix `@` regression, and the
-explicit-end layout contracts. The
-corpus has 290 passing assertions (54 legacy) and 95 todo expected failures. The
-Widget observation is already an ordinary passing contract. C03's supported Float32
-designation and C19's empty/singleton rest checks have no todo. C27 remains
-exploratory. Current bootstrap observations are explicitly legacy where they depend
-on raw Expression behavior.
+The suite includes C01–C27, the distinct postfix `@` regression, and the
+explicit-end layout contracts. The Widget observation is already an ordinary
+passing contract. C03's supported Float32 designation and C19's empty/singleton
+rest checks have no todo. C27 remains exploratory. Current bootstrap observations
+are explicitly legacy where they depend on raw Expression behavior.
 
-The 90 original source cases retain their intended payloads, with inaccurate type
-and expected-spelling assertions fixed. Nine binding/default host tests remain
-migrated. Necessary host/API/AST/UTF-8/DOM/resource/transaction/build and 14 canonical-
-source checks remain. All 76 playground options use the same source
+Original source cases retain their intended payloads, with inaccurate type
+and expected-spelling assertions fixed. Migrated binding/default host tests
+remain. Necessary host/API/AST/UTF-8/DOM/resource/transaction/build and
+canonical-source checks remain. Playground options use the same source
 corpus, including their shared setup and optional displayed return pack. CLI program output is annotated like REPL output.
 
 [TEST-SUITE.md](design/TEST-SUITE.md) specifies the working grammar and execution.
@@ -216,8 +213,8 @@ approved value-model slices, remove fulfilled todo markers and explicitly retire
 legacy assertions as their compatibility requirements end.
 
 Every remaining legacy assertion is accounted for in
-[LEGACY-ASSERTIONS.md](design/LEGACY-ASSERTIONS.md): 48 have executable same-subject
-todo replacements, and 22 await a stated design decision. Stable checks are ordinary
+[LEGACY-ASSERTIONS.md](design/LEGACY-ASSERTIONS.md). Some have executable same-subject
+todo replacements; others await a stated design decision. Stable checks are ordinary
 assertions. The inventory is checked against the suite, and companion todos do not
 remove supported playground programs.
 
