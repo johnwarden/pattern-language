@@ -189,7 +189,7 @@ test("schema and decoder agree on generated single-value and argument-pack posit
     assert.equal(
       displayResults(
         interpreter.run(
-          "(:" + descriptor + ") .matches (type TypeDescription)",
+          ":(" + descriptor + ") .matches (type TypeDescription)",
         ),
       ),
       accepted ? "True" : "False",

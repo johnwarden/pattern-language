@@ -241,7 +241,7 @@ test("vertical type/value descriptions transfer to a fresh interpreter without c
     if (literal.kind !== "literal" || data.kind !== "literal") continue;
     const restored = unwrap(
       fresh.readValue(
-        unwrap(single(fresh.run("Type"))) as typeof type,
+        unwrap(single(fresh.run("type Type"))) as typeof type,
         String(literal.value),
       ),
     );

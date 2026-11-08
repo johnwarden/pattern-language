@@ -3,7 +3,7 @@
 export const TYPE_SCHEMA = `# Executable recursive schema for the portable pattern-description vocabulary.
 # Recursive reference scope and semantic normalization remain decoder checks.
 def primitiveTag(s)
-  match toString(s)
+  match $"$(s)"
     "Rational" -> True
     "Float" -> True
     "Float32" -> True
@@ -27,15 +27,23 @@ end
 def PrimitiveTag
   (type ReservedSymbol) .where (s -> primitiveTag(s))
 end
+def reservedConstructor(h)
+  match $"$(h)"
+    "Type" -> True
+    "String" -> True
+    _ -> False
+  end
+end
+def schemaConstructor(h)
+  match h
+    (:UnionType | :Facet | :Literal | :Apply | :Postfix | :Fields | :OpenFields | :Repeat | :Row | :Sequence | :Collect | :Recursive | :Recur | :Union | :TreeGrammar | (:|)) -> False
+    _ -> True
+  end
+end
 def ordinaryHead(h)
-  match toString(h)
-    "Type" -> False
-    "String" -> False
-    _ ->
-      match h
-        (:UnionType | :Facet | :Literal | :Apply | :Postfix | :Fields | :OpenFields | :Repeat | :Row | :Sequence | :Collect | :Recursive | :Recur | :Union | :TreeGrammar | (:|)) -> False
-        _ -> True
-      end
+  match reservedConstructor(h)
+    True -> False
+    False -> schemaConstructor(h)
   end
 end
 def OrdinaryHead
@@ -47,14 +55,16 @@ end
 def Data type Rational | String | Symbol | (head :: Data)(fields... :: Data*,**)
 def FieldPattern(p :: Type) type p | Repeat(p)
 def FieldPack(p :: Type) type :Sequence(parts... :: p*) | :Fields(fields... :: FieldPattern(p)*,**) | :OpenFields(fields :: FieldPack(p),labels: Bool,positional: Bool)
+def notWildcard(s)
+  match s
+    :_ -> False
+    _ -> True
+  end
+end
 def patternSymbol(s)
   match primitiveTag(s)
     True -> False
-    False ->
-      match s
-        :_ -> False
-        _ -> True
-      end
+    False -> notWildcard(s)
   end
 end
 def PatternSymbol

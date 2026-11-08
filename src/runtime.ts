@@ -518,6 +518,7 @@ export class Interpreter {
         const head = literalName(p.head);
         const body = unwrapRef(p.body);
         if (head === "syntaxSequence" || head === "syntaxBlock") {
+          forms.structural = true;
           const parts =
             body.kind === "sequence" || body.kind === "fields"
               ? body.parts
@@ -530,6 +531,14 @@ export class Interpreter {
           }
           addLayoutKeywords(forms, chain);
         }
+        addFrom(p.head);
+        addFrom(body);
+        return;
+      }
+      if (p.kind === "row" || p.kind === "repeat" || p.kind === "fields") {
+        if (p.kind === "fields") {
+          for (const part of p.parts) addFrom(part);
+        } else addFrom(p.pattern);
         return;
       }
       if (p.kind === "sequence") {
@@ -1042,7 +1051,7 @@ export class Interpreter {
         const type = this.materializeType(pattern);
         return type && typeDescription(type).kind !== "symbol"
           ? type
-          : this.structuralType(term("Type", type ?? unwrap(pattern)));
+          : this.structuralType(term("Type", unwrap(pattern)));
       }),
     ]);
     scope.bindings.set(
@@ -3777,10 +3786,18 @@ export class Interpreter {
     );
   }
   private reserved(name: string): Field<Value>[] {
-    return this.check(
+    const fields = this.check(
       this.primitives.get("ReservedSymbol")!,
       valSymbol(name),
     );
+    return fields.map((field) => {
+      const value = field.value;
+      return {
+        ...field,
+        value:
+          value.kind === "view" ? { ...value, provisional: true } : value,
+      };
+    });
   }
   private symbolValue(name: string): Value {
     const category = symbolCategory(name);
@@ -4052,7 +4069,7 @@ export class Interpreter {
       ":" +
       JSON.stringify(
         canonicalFields(args).map((f) => {
-          const v = unwrap(f.value);
+          const v = unwrap(this.materializeType(f.value) ?? f.value);
           return [f.label, v.kind === "type" ? v.key : descriptionKey(v)];
         }),
       );
@@ -4070,7 +4087,7 @@ export class Interpreter {
         ? "(" +
           canonicalFields(args)
             .map((f) => {
-              const v = unwrap(f.value);
+              const v = unwrap(this.materializeType(f.value) ?? f.value);
               return (
                 (positional(f.label) ? "" : f.label + ": ") +
                 (v.kind === "type" ? v.name : display(v))

@@ -25,7 +25,7 @@ test("surface symbols have intrinsic concrete classes", () => {
   }
   assert.equal(
     run(
-      "Symbol == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)",
+      "(type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)",
     ),
     "True",
   );

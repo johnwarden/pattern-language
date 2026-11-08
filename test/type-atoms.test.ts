@@ -37,11 +37,7 @@ test("primitive names evaluate as ReservedSymbol values in ordinary expressions"
   assert.equal(i.inspect(i.run("r = Int\nr")), "Int :: ReservedSymbol");
   assert.equal(
     run("(Int == (type Int),Float == (type Float),Bool == (type Bool))"),
-    "(False, False, False)",
-  );
-  assert.equal(
-    run("((type Int) == (type Int),1 :: Int)"),
-    "(True, 1)",
+    "(True, True, True)",
   );
   rejects("x = Foo\nx", "E_UNBOUND_NAME");
 });

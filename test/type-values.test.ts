@@ -157,7 +157,7 @@ test("primitive, union, list, labeled and capture-free type descriptions round t
     ":(Recursive(Int))",
     ":Literal(Int)",
     "Float64(Int)",
-    ":(Type(Int))",
+    "Type(Int)",
   ]) {
     assert.equal(
       run(`t = type (${pattern})
@@ -273,7 +273,7 @@ test("data constructor names and empty applications remain ordinary distinct dat
 test("primitive atoms are ordinary self-evaluating type values", () => {
   assert.equal(
     run("(Int,Float,Bool,Int == (type Int))"),
-    "(Int, Float, Bool, False)",
+    "(Int, Float, Bool, True)",
   );
   assert.equal(run("def accept(t :: Type) t\naccept(String)"), "String");
   assert.throws(() => run("Imaginary"), /unbound name/);

@@ -16,8 +16,12 @@ test "C01 intrinsic primitive values"
     :Number
   error "E_QUOTED_PRIMITIVE"
   expect :(Int) result Int :: Code
-  legacy expect (type Bool) result Bool :: Type
-  todo expect (type Bool) result Bool :: PrimitiveType
+  legacy expect
+    type Bool
+  result Bool :: Type
+  todo expect
+    type Bool
+  result Bool :: PrimitiveType
   todo expect PrimitiveType result PrimitiveType :: PrimitiveType
 end
 

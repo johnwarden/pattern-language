@@ -266,7 +266,7 @@ test("UTF-8 decoding is strict and leaves exactly-one-BOM normalization to the p
 });
 test("canonical String spelling is total, inert and idempotent", () => {
   const i = new Interpreter(),
-    domain = unwrap(single(i.run("String")));
+    domain = unwrap(single(i.run("type String")));
   assert.equal(domain.kind, "type");
   if (domain.kind !== "type") return;
   const pieces = [

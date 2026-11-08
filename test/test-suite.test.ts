@@ -36,7 +36,7 @@ test("discovery reads the source schema without executing subjects or expected t
 test("a companion todo does not remove a supported playground program", () => {
   const value = loadTests({
     "paired.test": `test "Literal migration"
-  legacy expect Bool result Bool :: Type
+  legacy expect Bool result Bool :: ReservedSymbol
   todo expect Bool result Bool :: PrimitiveType
 end`,
   })[0];

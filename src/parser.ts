@@ -24,6 +24,8 @@ import { indentRelation, lineIndent } from "./indent.ts";
 /** Start keyword -> extra clause keywords. `chains` are quoted keyword sequences from the same grammar. */
 export type LayoutForms = Map<string, Set<string>> & {
   chains?: Map<string, string[][]>;
+  /** True when the expected type is a syntax-shaped block/sequence grammar. */
+  structural?: boolean;
 };
 export interface ParseSurfaceOptions {
   /** Inert specification reading only; execution always uses the ordinary reader. */
@@ -133,6 +135,7 @@ export function mergeLayoutForms(
     }
     for (const [start, chains] of source.chains ?? [])
       for (const chain of chains) addLayoutChain(forms, start, chain);
+    if (source.structural) forms.structural = true;
   }
   return forms;
 }

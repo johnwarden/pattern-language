@@ -381,15 +381,26 @@ export function compare(a: Value, b: Value): number {
   }
   const sa = concreteSpace(a),
     sb = concreteSpace(b);
-  if (sa && sb && typeIdentity(sa) !== typeIdentity(sb))
-    throw new LanguageError(
-      "Can't compare types: values from different concrete types cannot be compared: " +
-        sa.name +
-        " and " +
-        sb.name,
-      undefined,
-      { code: "E_INCOMPARABLE_TYPES", phase: "match" },
-    );
+  if (sa && sb && typeIdentity(sa) !== typeIdentity(sb)) {
+    const ua = unwrap(a),
+      ub = unwrap(b);
+    const boolVsReserved =
+      ua.kind === "symbol" &&
+      ub.kind === "symbol" &&
+      ua.name === ub.name &&
+      (ua.name === "True" || ua.name === "False") &&
+      ((sa.name === "ReservedSymbol" && sb.name === "Bool") ||
+        (sa.name === "Bool" && sb.name === "ReservedSymbol"));
+    if (!boolVsReserved)
+      throw new LanguageError(
+        "Can't compare types: values from different concrete types cannot be compared: " +
+          sa.name +
+          " and " +
+          sb.name,
+        undefined,
+        { code: "E_INCOMPARABLE_TYPES", phase: "match" },
+      );
+  }
   if (sa && sb && typeIdentity(sa) === typeIdentity(sb)) {
     const left = slotValue(a),
       right = slotValue(b);

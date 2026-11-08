@@ -5,6 +5,7 @@ import {
   isReservedPrimitiveSpelling,
 } from "./primitive-names.ts";
 import {
+  emptyLayoutForms,
   parseExpression,
   parseSurface,
   type LayoutForms,
@@ -510,14 +511,18 @@ export function parseValueText(
   const source = { name: "serialized value", text };
   const numeric = parseNumericSpelling(text);
   if (numeric && !typeExpected) return valRational(numeric.n, numeric.d);
-  const allowLayout = !!layoutForms?.size;
+  const forms = layoutForms?.size ? layoutForms : emptyLayoutForms();
+  const structural = !!(layoutForms?.size || layoutForms?.structural);
   let tree: Syntax;
   try {
-    if (allowLayout) {
-      tree = parseSurface(text, "serialized value", { layoutForms });
-      if (tree.kind === "block" && tree.lines.length === 1)
-        tree = tree.lines[0];
-    } else tree = parseExpression(text, false);
+    tree = parseSurface(text, "serialized value", { layoutForms: forms });
+    if (tree.kind === "block" && tree.lines.length === 1) {
+      const line = tree.lines[0];
+      if (line.kind === "sequence" && line.items.length === 1)
+        tree = line.items[0];
+      else if (line.kind !== "sequence" && line.kind !== "form") tree = line;
+    } else if (tree.kind === "sequence" && tree.items.length === 1)
+      tree = tree.items[0];
   } catch (error) {
     if (error instanceof LanguageError && error.diagnostic.primary)
       error.diagnostic.primary.source = source;
@@ -541,7 +546,8 @@ export function parseValueText(
       pattern &&
       n.kind !== "quote" &&
       !(n.kind === "symbol" && n.quoted) &&
-      !(n.kind === "apply" && n.head.kind === "symbol" && n.head.quoted)
+      !(n.kind === "apply" && n.head.kind === "symbol" && n.head.quoted) &&
+      !(n.kind === "symbol" && primitiveNames.has(n.name))
     ) {
       const alias = domain.localType?.(normal(n));
       if (alias) return alias;
@@ -566,15 +572,25 @@ export function parseValueText(
         );
       return sym(n.name);
     }
-    if (n.kind === "block" && !pattern && allowLayout) return syntaxData(n);
-    if (n.kind === "block" && n.lines.length === 1)
-      return decode(n.lines[0], pattern);
-    if (n.kind === "sequence" && n.items.length === 1 && !allowLayout)
+    if (n.kind === "block" && n.lines.length === 1) {
+      const line = n.lines[0];
+      if (line.kind === "sequence" && line.items.length === 1)
+        return decode(line.items[0], pattern);
+      if (line.kind !== "sequence" && line.kind !== "form")
+        return decode(line, pattern);
+      if (!pattern && structural) return syntaxData(n);
+    }
+    if (n.kind === "sequence" && n.items.length === 1)
       return decode(n.items[0], pattern);
+    if (n.kind === "pack")
+      return {
+        kind: "pack",
+        body: n.body.map((f) => ({ ...f, value: decode(f.value, pattern) })),
+      };
     if (
-      (n.kind === "sequence" || n.kind === "form") &&
+      (n.kind === "block" || n.kind === "sequence" || n.kind === "form") &&
       !pattern &&
-      allowLayout
+      structural
     )
       return syntaxData(n);
     if (n.kind === "postfix")
@@ -744,13 +760,21 @@ export function parseValueText(
       kind: "term",
       head:
         n.head.kind === "symbol" ? sym(n.head.name) : decode(n.head, pattern),
-      body: n.body.map((f) => ({ ...f, value: decode(f.value, pattern) })),
+      body: n.body.map((f) => ({
+        ...f,
+        value:
+          !pattern && f.value.kind === "block"
+            ? syntaxData(f.value)
+            : decode(f.value, pattern),
+      })),
     };
   }
   function decodeType(n: Syntax): TypeValue {
     const local = domain.localType?.(normal(n));
     if (local) return local;
     const value = decode(n);
+    if (value.kind === "symbol" && primitiveNames.has(value.name))
+      return domain.type(value);
     if (value.kind !== "type")
       return fail("a serialized interpretation requires a type value", n);
     return value;
