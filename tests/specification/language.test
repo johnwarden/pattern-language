@@ -12,14 +12,16 @@ test "C23 supported global typed text preserves value identity"
     r = (Rect(2, 3) :: Rectangle)
     text = toString(Rectangle)(r)
     restored = parse(Rectangle)(text)
-    assert ((restored == r))
+    assert restored == r
     (toString(Rectangle)(restored) == text)
   end
 end
 
 test "C24 applications preserve complete successive packs"
   todo expect
-    def combine(x, y)(z) (x, y, z)
+    def combine(x, y)(z)
+      (x, y, z)
+    end
     partial = combine("a", "b")
     (a, b, c) = partial("c")
     a
@@ -27,7 +29,9 @@ test "C24 applications preserve complete successive packs"
     (
       "a"
     ) :: (
-      def combine(x, y)(z) (x, y, z)
+      def combine(x, y)(z)
+        (x, y, z)
+      end
       partial = combine("a", "b")
       (a, b, c) = partial("c")
       String
@@ -35,7 +39,9 @@ test "C24 applications preserve complete successive packs"
   end
 
   todo expect
-    def combine(x, y)(z) (x, y, z)
+    def combine(x, y)(z)
+      (x, y, z)
+    end
     partial = combine("a", "b")
     (a, b, c) = partial("c")
     b
@@ -43,7 +49,9 @@ test "C24 applications preserve complete successive packs"
     (
       "b"
     ) :: (
-      def combine(x, y)(z) (x, y, z)
+      def combine(x, y)(z)
+        (x, y, z)
+      end
       partial = combine("a", "b")
       (a, b, c) = partial("c")
       String
@@ -51,7 +59,9 @@ test "C24 applications preserve complete successive packs"
   end
 
   todo expect
-    def combine(x, y)(z) (x, y, z)
+    def combine(x, y)(z)
+      (x, y, z)
+    end
     partial = combine("a", "b")
     (a, b, c) = partial("c")
     c
@@ -59,7 +69,9 @@ test "C24 applications preserve complete successive packs"
     (
       "c"
     ) :: (
-      def combine(x, y)(z) (x, y, z)
+      def combine(x, y)(z)
+        (x, y, z)
+      end
       partial = combine("a", "b")
       (a, b, c) = partial("c")
       String
@@ -67,10 +79,14 @@ test "C24 applications preserve complete successive packs"
   end
 
   todo expect
-    def combine(x, y)(z) (x, y, z)
+    def combine(x, y)(z)
+      (x, y, z)
+    end
     partial = combine("a", "b")
     (a, b, c) = partial("c")
-    def empty() ()
+    def empty()
+      ()
+    end
     () = empty()
     x = ("a", "b")
     x
@@ -78,7 +94,11 @@ test "C24 applications preserve complete successive packs"
 end
 
 test "C25 infix operators retain equal precedence"
-  todo expect ((2 :: Float64) * (3 :: Float64) + (4 :: Float64)) result 14 :: Float64
+  a = 2 :: Float
+  b = 3 :: Float
+  c = 4 :: Float
+
+  todo expect a * b + c result 14 :: Float64
   todo expect
     def select(a)(b) b
     ("left" .select "right")

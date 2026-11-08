@@ -1,0 +1,107 @@
+test "Tight application is a call"
+  def f(x) x
+
+  expect f(1) result 1 :: Rational
+end
+
+test "A space before a call parenthesis is a syntax error"
+  expect parse "f (1)" error "a term cannot be followed by a spaced '('"
+end
+
+test "Tight successive packs remain calls"
+  def f(x)(y)
+    x + y
+  end
+
+  expect f(1)(2) result 3 :: Rational
+  expect parse "f(1) (2)" error "a term cannot be followed by a spaced '('"
+end
+
+test "Sidefix uses a spaced operand without parentheses"
+  assert True
+end
+
+test "Spaced parenthesis after assert is a syntax error"
+  expect parse "assert (True)" error "a term cannot be followed by a spaced '('"
+end
+
+test "type form versus type call"
+  observed = type Int
+
+  expect observed result Int :: Type
+  expect parse "type (Int)" error "a term cannot be followed by a spaced '('"
+end
+
+test "Infix operator then grouped operand stays valid"
+  expect 5 - (2) result 3 :: Rational
+  expect 1 == (1) result True :: Bool
+end
+
+test "Prefix operator then spaced parenthesis stays valid"
+  assert :(- (4)) == :(-(4))
+end
+
+test "Pack after assignment, arrow, colon, or comma stays valid"
+  (a, b) = (1, 2)
+  f = x -> (x, x)
+  (c, d) = f(5)
+  (e, nested) = (1, (2))
+
+  expect a + b result 3 :: Rational
+  expect c + d result 10 :: Rational
+  expect e + nested result 3 :: Rational
+end
+
+test "Quoted spaced application is a syntax error"
+  expect parse ":(f (1))" error "a term cannot be followed by a spaced '('"
+end
+
+test "Spaced application inside Code quotation is a syntax error"
+  expect parse "Code` f (1)" error "a term cannot be followed by a spaced '('"
+end
+
+test "User-grammar keyword then spaced parenthesis is a syntax error"
+  macro :hold body :: Body Code$` $(body)
+
+  expect parse "hold (1)" error "a term cannot be followed by a spaced '('"
+end
+
+test "A pack body after a micro signature is indented, not spaced"
+  def pair()
+    (1, 2)
+  end
+  (a, b) = pair()
+
+  expect a + b result 3 :: Rational
+  expect parse "def pair() (1, 2)" error "a term cannot be followed by a spaced '('"
+end
+
+test "Same-indent following parenthesis is another row"
+  a = 1
+  (2)
+
+  expect a result 1 :: Rational
+end
+
+test "Infix .matches then grouped type stays valid"
+  n = 0 :: Int
+
+  assert n .matches (type Int)
+end
+
+test "A grouped expected result is indented after result"
+  expect 1 + 2 result
+    (3) :: Rational
+  end
+end
+
+test "Spaced parenthesis after result is a syntax error"
+  expect parse "expect 1 result (3) :: Rational" error "a term cannot be followed by a spaced '('"
+end
+
+test "Removing the space from a spaced call is a different tree, not a second valid parse"
+  def f(x) x
+
+  expect f(1) result 1 :: Rational
+  expect parse "f (1)" error "a term cannot be followed by a spaced '('"
+end

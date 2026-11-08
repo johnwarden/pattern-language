@@ -47,7 +47,7 @@ function mount(saved?: string, blocked = false) {
   };
 }
 const oldDefaultGrammar = DEFAULT_GRAMMAR.replace(
-  "def UnionTypeExpression type :unionType (pattern :: PatternBody)\n",
+  "def UnionTypeExpression type :unionType pattern :: PatternBody\n",
   "",
 );
 for (const state of ["fresh", "restored old grammar"]) {
@@ -290,7 +290,7 @@ test("version-two quote drafts are preserved with an explicit migration warning"
 test("version-three drafts keep their source and upgrade only the untouched default grammar", () => {
   const source = "x = :a\nx";
   const oldGrammar = DEFAULT_GRAMMAR.replace(
-    "def UnionTypeExpression type :unionType (pattern :: PatternBody)\n",
+    "def UnionTypeExpression type :unionType pattern :: PatternBody\n",
     "",
   );
   const app = mount(
@@ -347,7 +347,7 @@ test("playground reports declaration locations for missing labeled arguments", (
 test("user macros survive a saved REPL session and Parse does not register them twice", () => {
   const app = mount();
   app.el<HTMLSelectElement>("mode").value = "repl";
-  app.edit("source", "macro (:answer (x :: Expression)) Code$` $(x)");
+  app.edit("source", "macro :answer x :: Expression Code$` $(x)");
   app.click("parse");
   app.click("run");
   assert.equal(app.el("error").textContent, "");
@@ -365,7 +365,7 @@ test("Run stages generated grammar while Parse form stays non-executing", () => 
   const { dom, el, edit, click } = mount();
   edit(
     "source",
-    "macro (:install Args()) Code` macro (:answer (x :: Expression)) Code$` $(x)\n(install Args())\nanswer 42",
+    "macro :install Args() Code` macro :answer x :: Expression Code$` $(x)\n(install Args())\nanswer 42",
   );
   click("run");
   assert.equal(el("result").textContent, "42 :: Rational");

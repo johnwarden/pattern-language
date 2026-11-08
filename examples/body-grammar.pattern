@@ -1,12 +1,22 @@
 # A bounded source grammar for inert code inspection. No evaluation is installed.
-def Capture type (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+def Capture type
+  (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+end
 def Pattern unionType LowerCamelSymbol | Capture
-def Sum type (left :: ValueExpression) :+ (right :: ValueExpression)
-def Product type (left :: ValueExpression) :* (right :: ValueExpression)
+def Sum type
+  (left :: ValueExpression) :+ (right :: ValueExpression)
+end
+def Product type
+  (left :: ValueExpression) :* (right :: ValueExpression)
+end
 def ValueExpression unionType Number | String | Symbol | Sum | Product
-def FunctionSignature type (name :: LowerCamelSymbol)(parameters... :: Pattern*)
-def Definition type (:def (signature :: FunctionSignature) (value :: (unionType ValueExpression | Body)))
-def DestructuringBinding type (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+def FunctionSignature type
+  (name :: LowerCamelSymbol)(parameters... :: Pattern*)
+end
+def Definition type :def signature :: FunctionSignature value :: (unionType ValueExpression | Body)
+def DestructuringBinding type
+  (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+end
 def Binding unionType DestructuringBinding | Definition
 def Body type
   bindings :: Binding*

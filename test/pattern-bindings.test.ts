@@ -87,9 +87,9 @@ test("one positional and rest pattern agrees across bindings, parameters, arms, 
     "def f(" + spec + ") rest\nf(" + value + ")",
     "match " + value + "\n  " + spec + " -> rest\nend",
     "def P type " + spec + "\np = " + value + " :: P\np.rest",
-    "macro (:take Args(" +
+    "macro :take Args(" +
       spec +
-      ")) Code$` [$(rest...)]\n(take Args(" +
+      ") Code$` [$(rest...)]\n(take Args(" +
       value +
       "))",
   ])
@@ -103,12 +103,12 @@ test("one positional and rest pattern agrees across bindings, parameters, arms, 
 });
 test("hygiene preserves quoted literal patterns and literal constructor heads", () => {
   assert.equal(
-    run("macro (:make Args()) Code` :foo -> 1\nf = (make Args())\nf(:foo)"),
+    run("macro :make Args() Code` :foo -> 1\nf = (make Args())\nf(:foo)"),
     "1",
   );
   assert.equal(
     run(
-      "macro (:make Args()) Code` (tag,tag(value)) -> value\nf = (make Args())\nf(1,:tag(3))",
+      "macro :make Args() Code` (tag,tag(value)) -> value\nf = (make Args())\nf(1,:tag(3))",
     ),
     "3",
   );
@@ -116,7 +116,7 @@ test("hygiene preserves quoted literal patterns and literal constructor heads", 
 test("default expressions use the surrounding scope before binding captures", () => {
   assert.equal(
     run(
-      "size = 9\nmacro (:make Args()) Code` (size: Int = size) -> size\nf = (make Args())\nf()",
+      "size = 9\nmacro :make Args() Code` (size: Int = size) -> size\nf = (make Args())\nf()",
     ),
     "9",
   );
@@ -124,13 +124,13 @@ test("default expressions use the surrounding scope before binding captures", ()
 test("hygiene renames all alternative sites together and leaves inserted patterns in their caller scope", () => {
   assert.equal(
     run(
-      "macro (:make Args()) Code` (:Some(x) | :Other(x)) -> x\nf = (make Args())\n(f(Some(3)),f(Other(4)))",
+      "macro :make Args() Code` (:Some(x) | :Other(x)) -> x\nf = (make Args())\n(f(Some(3)),f(Other(4)))",
     ),
     "(3, 4)",
   );
   assert.equal(
     run(
-      "macro (:make Args(p)) Code$` $(p) -> 42\nf = (make Args(:foo))\nf(:foo)",
+      "macro :make Args(p) Code$` $(p) -> 42\nf = (make Args(:foo))\nf(:foo)",
     ),
     "42",
   );
@@ -139,7 +139,7 @@ test("alpha-renaming cannot hide duplicate captures in separate parameter packs"
   assert.throws(
     () =>
       run(
-        "macro (:make Args()) Code` (\n  def (f(x)(x)) x\n  1\n)\n(make Args())",
+        "macro :make Args() Code` (\n  def f(x)(x) x\n  1\n)\n(make Args())",
       ),
     /duplicate capture name/,
   );

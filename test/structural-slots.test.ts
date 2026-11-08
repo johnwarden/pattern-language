@@ -104,7 +104,7 @@ test("rest captures collect only positional fields and may precede named pattern
 test("rest fields have the same behavior in functions, match arms, and macros", () => {
   assert.equal(
     run(
-      'def f(Rect(first,rest...,color: c,**)) (first,rest,c)\nf(Rect(1,2,color: :Black,note: "x"))',
+      'def f(Rect(first,rest...,color: c,**))\n  (first,rest,c)\nend\nf(Rect(1,2,color: :Black,note: "x"))',
     ),
     "(1, [2], :Black)",
   );
@@ -116,7 +116,7 @@ test("rest fields have the same behavior in functions, match arms, and macros", 
   );
   assert.equal(
     run(
-      'macro (:take Rect(x,color: c,**)) Code$` $(x)\ntake Rect(1,color: :Black,note: "x")',
+      'macro :take Rect(x,color: c,**) Code$` $(x)\ntake Rect(1,color: :Black,note: "x")',
     ),
     "1",
   );
@@ -381,17 +381,21 @@ test("named repetition cannot be smuggled through a portable field description",
 });
 
 test("literal punctuation remains distinct from the labeled-rest marker in portable data", () => {
-  for (const value of [
-    ":R(:**)",
-    ":(R(**))",
-    ":**",
-    "type (:**)",
-    "type (:**(Int))",
-  ])
+  for (const value of [":R(:**)", ":(R(**))", ":**"])
     assert.equal(
       run("v = " + value + "\nparse(Expression)(toString(Expression)(v)) == v"),
       "True",
       value,
+    );
+  for (const pattern of [":**", ":**(Int)"])
+    assert.equal(
+      run(
+        "v =\n  type\n    " +
+          pattern +
+          "\n  end\nend\nparse(Expression)(toString(Expression)(v)) == v",
+      ),
+      "True",
+      pattern,
     );
   rejects("def f(**fields) fields\nf(foo: 1)", "E_KEYWORD_REST_UNSUPPORTED");
 });

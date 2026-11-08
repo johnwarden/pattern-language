@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Interpreter, displayResults } from "../src/index.ts";
 const installer =
-  "macro (:install Args()) Code` macro (:answer (x :: Expression)) Code$` $(x)";
+  "macro :install Args() Code` macro :answer x :: Expression Code$` $(x)";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 
 test("a generated sidefix definition recognizes the following source line", () => {
@@ -25,7 +25,7 @@ test("failed submissions roll back generated grammar and generated methods toget
 test("generated function parameters cannot capture inserted caller expressions", () => {
   assert.equal(
     run(
-      "macro (:install Args(value)) Code$` def (add(x)) (x + $(value))\nx = 10\n(install Args(x))\nadd(2)",
+      "macro :install Args(value) Code$` def add(x) x + $(value)\nx = 10\n(install Args(x))\nadd(2)",
     ),
     "12",
   );
@@ -33,7 +33,7 @@ test("generated function parameters cannot capture inserted caller expressions",
 test("generated macro retains its own interpolation stage and parameter scope", () => {
   assert.equal(
     run(
-      "macro (:install Args()) Code` macro (:twice (Args(x))) Code$` $(x) + $(x)\n(install Args())\n(twice Args(6))",
+      "macro :install Args() Code` macro :twice Args(x) Code$` $(x) + $(x)\n(install Args())\n(twice Args(6))",
     ),
     "12",
   );
@@ -47,7 +47,7 @@ test("parse-only never runs an installer or commits its declaration", () => {
 test("ordinary functions retain their definition-time grammar", () => {
   assert.equal(
     run(
-      "def f()\n  if True 1 else 2\nend\nmacro (:if (x :: Expression) (y :: Expression) :else (z :: Expression)) Code` 99\nf()",
+      "def f()\n  if True 1 else 2\nend\nmacro :if x :: Expression y :: Expression :else z :: Expression Code` 99\nf()",
     ),
     "1",
   );
@@ -62,7 +62,7 @@ test("a generated final definition is still invalid as a program result", () => 
 test("a generated structural type participates in subsequent sidefix patterns", () => {
   assert.equal(
     run(
-      "macro (:install Args()) Code` def Point type (:Point(x :: Int))\n(install Args())\nmacro (:use (p :: Point)) Code` 7\nuse Point(1)",
+      "macro :install Args() Code` def Point type :Point(x :: Int)\n(install Args())\nmacro :use p :: Point Code` 7\nuse Point(1)",
     ),
     "7",
   );

@@ -170,8 +170,16 @@ errors cannot be swallowed by todo. Subjects execute in separate child scopes an
 cannot supply declarations or checking facts to other assertions.
 
 Expected results use canonical data trees with exact observed type annotations,
-not evaluable expressions. Parenthesize an expected binary tree, for example
-expect e result (1 + 1) :: Expression. Multiple-return calls are destructured once,
+not evaluable expressions. Parenthesize an expected binary tree by indenting it
+after `result`, not by writing spaced `result (`:
+
+```text
+expect e result
+  (1 + 1) :: Expression
+end
+```
+
+Multiple-return calls are destructured once,
 then captures are checked separately; predicate checks use assert. The grammar has
 no value/type keyword clauses or results-pack expectation. The expected annotation
 itself is an ordinary ExpectedResult pattern around literal :: (quoted ::: in the

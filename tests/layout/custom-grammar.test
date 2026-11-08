@@ -1,5 +1,5 @@
 test "User-defined hold still needs an aligned end"
-  macro (:hold (body :: Body)) Code$` $(body)
+  macro :hold body :: Body Code$` $(body)
 
   expect parse '
     hold
@@ -8,7 +8,7 @@ test "User-defined hold still needs an aligned end"
 end
 
 test "An extra end after a complete then clause is an error"
-  macro (:probe (body :: Body) :then (result :: Expression)) Code$` $(result)
+  macro :probe body :: Body :then result :: Expression Code$` $(result)
 
   expect parse '
     probe

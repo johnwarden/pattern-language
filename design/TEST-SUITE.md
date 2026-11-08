@@ -17,7 +17,7 @@ test "A value and a predicate"
   def Rectangle type Rect(w :: Float, h :: Float)
   r = Rect(2, 3) :: Rectangle
   expect r.w result 2 :: Float
-  assert (r.h == 3)
+  assert r.h == 3
 end
 
 test "Current and future literals"
@@ -32,13 +32,15 @@ TestFileContent has a required first Test row and a vertical Test* tail. Expecte
 uses an ordinary pattern containing literal ::, quoted ::: in its definition:
 
 ```text
-def ExpectedResult type (expected :: Expression) ::: (expectedType :: Expression)
-def ResultExpectation type (:expect (subject :: Expression) :result (result :: ExpectedResult))
+def ExpectedResult type
+  (expected :: Expression) ::: (expectedType :: Expression)
+end
+def ResultExpectation type :expect subject :: Expression :result result :: ExpectedResult
 ```
 
 The result delimiter is required. There are no value/type keyword clauses or results
 pack expectations. Multiple expect lines describe distinct scalar observations.
-Parse-error checks use `:expect :parse (source :: String) :error (reason :: String)`
+Parse-error checks use `:expect :parse source :: String :error reason :: String`
 so malformed inner source stays inside a string; see Parse-error expectations below.
 
 ## Expected data and annotations
@@ -46,7 +48,9 @@ so malformed inner source stays inside a string; see Parse-error expectations be
 ```text
 test "Symbolic expression data"
   e = :(1 + 1)
-  legacy expect e result (1 + 1) :: Expression
+  legacy expect e result
+    (1 + 1) :: Expression
+  end
 end
 ```
 
@@ -73,14 +77,18 @@ when the boolean's own type or literal representation is the point being tested.
 
 ```text
 test "Separate return values"
-  def dimensions() (2 :: Float, 3 :: Float)
+  def dimensions()
+    (2 :: Float, 3 :: Float)
+  end
   (width, height) = dimensions()
   expect width result 2 :: Float
   expect height result 3 :: Float
 end
 
 test "No return values"
-  def nothing() ()
+  def nothing()
+    ()
+  end
   assert
     () = nothing()
     True
@@ -167,7 +175,7 @@ Malformed program text cannot be a live `expect` subject: the outer `.test` file
 would fail to parse. `ParseErrorExpectation` is an ordinary test-grammar form:
 
 ```text
-def ParseErrorExpectation type (:expect :parse (source :: String) :error (reason :: String))
+def ParseErrorExpectation type :expect :parse source :: String :error reason :: String
 ```
 
 `parse` is a quoted keyword in that chain, not a test-name special case. Todo and

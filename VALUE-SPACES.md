@@ -94,8 +94,8 @@ admitted input domain; otherwise use multiple arms or establish the needed fact.
 type Small concrete Rational .where small
 type Wrapped concrete Small .where smaller
 # Given w :: Wrapped:
-match w (s :: Small)
-match s (r :: Rational)
+match w s :: Small
+match s r :: Rational
 # Direct Wrapped -> Rational projection is not allowed.
 ```
 

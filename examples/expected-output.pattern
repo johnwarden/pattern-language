@@ -1,4 +1,6 @@
 # Both fields are syntax. Neither division nor the unknown type is evaluated.
-def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
+def ExpectedOutput type
+  (e :: Expression) ::: (type :: Expression)
+end
 expected = ExpectedOutput` (1 / 0) :: MissingType
 (expected.e,expected.type)

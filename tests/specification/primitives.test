@@ -13,20 +13,20 @@ test "C02 exact Rational literal meanings"
   expect 0.1 result 0.1 :: Rational
   expect 0f0.5 result 0.5 :: Rational
   expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
-  assert (0f0.1 != 0.1)
-  assert (0xFp8 == 0b1111p8)
+  assert 0f0.1 != 0.1
+  assert 0xFp8 == 0b1111p8
 end
 
 test "C03 exact designation differs from rounding"
-  expect (0.5 :: Float32) result 0.5 :: Float32
+  expect 0.5 :: Float32 result 0.5 :: Float32
   expect float32(0.5) result 0.5 :: Float32
-  todo expect (0f0.5 :: Decimal32) result 0.5 :: Decimal32
-  todo expect (0f0.1 :: Float64) result 0f0.1 :: Float64
+  todo expect 0f0.5 :: Decimal32 result 0.5 :: Decimal32
+  todo expect 0f0.1 :: Float64 result 0f0.1 :: Float64
   expect
     (0.1 :: Float32)
   error "not exactly representable as Float32"
-  expect (0.5 .matches Float32) result True :: Bool
-  expect (0.1 .matches Float32) result False :: Bool
+  expect 0.5 .matches Float32 result True :: Bool
+  expect 0.1 .matches Float32 result False :: Bool
 
   todo expect
     (0.5 :: Int16)

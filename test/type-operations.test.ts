@@ -67,7 +67,7 @@ test("computed type aliases preserve recursive identity", () => {
 
 test("refinement predicates are lexical closures and never create accessors", () => {
   const source =
-    "def lessThan(limit) x -> x < limit\ndef Small (type Int) .where lessThan(5 :: Int)\n";
+    "def lessThan(limit) x -> x < limit\ndef Small\n  (type Int) .where lessThan(5 :: Int)\nend\n";
   assert.equal(run(source + "3 :: Small"), "3");
   assert.throws(() => run(source + "5 :: Small"), /subset/);
   errorCode(
@@ -75,7 +75,7 @@ test("refinement predicates are lexical closures and never create accessors", ()
     "E_UNBOUND_NAME",
   );
   errorCode(
-    "def isSmall(x) x < 5\ndef Small (type Int) .where isSmall\n0",
+    "def isSmall(x) x < 5\ndef Small\n  (type Int) .where isSmall\nend\n0",
     "E_FUNCTION_NOT_VALUE",
   );
   errorCode("def NoInt Int? .where (_ .matches :None)\n0", "E_UNBOUND_NAME");
@@ -150,11 +150,11 @@ test("bad refinement arguments and predicate results are diagnosed at the call",
   errorCode("3 .where (x -> True)", "E_EXPECTED_TYPE");
   errorCode("(type Number) .where 3", "E_EXPECTED_PREDICATE");
   errorCode(
-    "def Bad (type Int) .where (x -> 7)\n1 :: Bad",
+    "def Bad\n  (type Int) .where (x -> 7)\nend\n1 :: Bad",
     "E_PREDICATE_RESULT",
   );
   assert.throws(
-    () => run("def Bad (type Int) .where (x -> missing)\n1 :: Bad"),
+    () => run("def Bad where(type Int)(x -> missing)\n1 :: Bad"),
     (e: unknown) => {
       assert.ok(e instanceof LanguageError);
       assert.equal(e.diagnostic.code, "E_UNBOUND_NAME");

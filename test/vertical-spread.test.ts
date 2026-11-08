@@ -48,11 +48,16 @@ test("vertical string captures are typed lists with empty and nonempty collectio
     ),
     '("[\\"one\\", \\"two\\"]", True)',
   );
-  assert.equal(
-    run(
-      todo + "t = TodoList` todo (\n\n)\n(t.todos, toString(String*)(t.todos))",
-    ),
-    '([], "[]")',
+  assert.throws(
+    () =>
+      run(
+        todo + "t = TodoList` todo (\n\n)\n(t.todos, toString(String*)(t.todos))",
+      ),
+    (error: unknown) =>
+      error instanceof LanguageError &&
+      /a term cannot be followed by a spaced '\('/.test(
+        (error as LanguageError).message,
+      ),
   );
 });
 

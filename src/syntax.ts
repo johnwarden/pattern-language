@@ -229,6 +229,71 @@ export function canonicalFields<T>(xs: Field<T>[]): Field<T>[] {
     ...xs.filter((e) => e.label === "**"),
   ];
 }
+/**
+ * Join form/sequence operands without printing a term followed by a spaced '('.
+ * Tight applications stay unwrapped after a keyword (`def f()` not `def (f())`).
+ * A pack or block after a term is indented; a later clause keyword continues
+ * the form without an `end` before that clause.
+ */
+function joinOperands(
+  items: Syntax[],
+  indent: number,
+  wrapOuter: boolean,
+): string {
+  const pad = " ".repeat(indent);
+  const inner = indent + 2;
+  const parts: string[] = [];
+  let openBlock = false;
+  const closeBlock = () => {
+    if (!openBlock) return;
+    parts.push("\n" + pad + "end");
+    openBlock = false;
+  };
+  const emitBlock = (text: string) => {
+    const last = parts.pop() ?? "";
+    parts.push(last + "\n" + text);
+    openBlock = true;
+  };
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]!;
+    const afterTerm = i > 0;
+    if (item.kind === "block") {
+      emitBlock(
+        item.lines
+          .map((line) => " ".repeat(inner) + normal(line, inner))
+          .join("\n"),
+      );
+      continue;
+    }
+    const raw = normal(item, inner);
+    const grouped = item.kind === "apply" || item.kind === "sequence";
+    let text = grouped && !afterTerm ? "(" + raw + ")" : raw;
+    if (afterTerm && grouped) text = raw;
+    const clause =
+      afterTerm && item.kind === "symbol" && !item.quoted && openBlock;
+    if (clause) {
+      openBlock = false;
+      parts.push("\n" + pad + text);
+      continue;
+    }
+    if (afterTerm && text.startsWith("(")) {
+      emitBlock(" ".repeat(inner) + text);
+      continue;
+    }
+    closeBlock();
+    const last = parts.at(-1) ?? "";
+    if (afterTerm && last.endsWith("end") && !text.startsWith("\n"))
+      parts.push("\n" + pad + text);
+    else parts.push(text);
+  }
+  closeBlock();
+  const joined = parts.reduce(
+    (acc, part, i) =>
+      i === 0 ? part : part.startsWith("\n") ? acc + part : acc + " " + part,
+    "",
+  );
+  return wrapOuter ? "(" + joined + ")" : joined;
+}
 export function normal(n: Syntax, indent = 0): string {
   const body = (xs: Field<Syntax>[]) =>
     canonicalFields(xs)
@@ -246,7 +311,8 @@ export function normal(n: Syntax, indent = 0): string {
         : undefined,
     render: (node) => normal(node, indent),
     fields: body,
-    needsGrouping: (node) => node.kind === "sequence",
+    needsGrouping: (node) =>
+      node.kind === "sequence" || node.kind === "form",
   };
   switch (n.kind) {
     case "quote":
@@ -288,25 +354,9 @@ export function normal(n: Syntax, indent = 0): string {
     case "pack":
       return "(" + body(n.body) + ")";
     case "sequence":
-      return n.items
-        .map((x) =>
-          x.kind === "apply" || x.kind === "sequence"
-            ? "(" + normal(x, indent) + ")"
-            : normal(x, indent),
-        )
-        .join(" ");
+      return joinOperands(n.items, indent, false);
     case "form":
-      return (
-        "(" +
-        n.items
-          .map((x) =>
-            x.kind === "apply" || x.kind === "sequence"
-              ? "(" + normal(x, indent) + ")"
-              : normal(x, indent),
-          )
-          .join(" ") +
-        ")"
-      );
+      return joinOperands(n.items, indent, false);
     case "block":
       return (
         "(\n" +

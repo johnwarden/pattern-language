@@ -53,8 +53,8 @@ end
 ```
 
 needs the aligned `end` because `assert`'s grammar has no later clause to close
-the indented operand. A user-defined form with the same shape (`:hold (body ::
-Body)` vs `:probe (body :: Body) :then (result :: Expression)`) follows the same
+the indented operand. A user-defined form with the same shape (`:hold body ::
+Body` vs `:probe body :: Body :then result :: Expression`) follows the same
 rule. Do not special-case assert or expect.
 
 When a later clause itself takes an indented operand, that operand still needs
@@ -103,7 +103,7 @@ width.
 | Newlines inside collection delimiters | Can distinguish vertical rows from comma continuation; row boundaries can change collection rank. |
 | Spaces around infix operators | Both sides are required; a+b is invalid, not a different addition expression. |
 | Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Suffixes wrap in source order. |
-| Tight function calls versus sidefix operands | f(x) is application; f (x) is a space-separated sequence requiring a grammar, not automatic application. |
+| Tight function calls versus sidefix operands | `f(x)` is application. A term then whitespace then `(` is a syntax error, including after keywords such as `assert`, `type`, `if`, `def`, `expect`, and `match`. Write `f x` for a sidefix operand. Infix/prefix operators may still be followed by a grouped operand (`a - (b)`, `- (x)`). |
 | Dot notation | a.b and a .b c follow the stated call/pack rules; arbitrary spacing around dot is not permitted. |
 | Label colon | Must touch its label. Separating it is not an alternative label spelling and may only have meaning in another explicitly selected grammar. |
 | Quotation / reader prefixes | Tight T` and reader quote prefixes select syntax; adding spaces does not preserve that interpretation automatically. |
@@ -115,6 +115,47 @@ width.
 The goal is not to make every whitespace edit harmless. It is to reject accidental
 block-scope changes that lack explicit closure, while keeping intentional row,
 fixity and literal-content distinctions visible in the grammar.
+
+## Call spacing
+
+A term (a name, including any sidefix keyword, or any other completed postfix
+expression) immediately followed by whitespace and then `(` is a syntax error.
+This holds in executable code, quotation `:(...)`, `parse(Code)`, sidefix/surface
+grammars, and `.test` files. Formatting mistakes must not become logic errors:
+adding or removing a space or newline may only flip valid↔invalid, never
+valid→valid with a different parse tree.
+
+```text
+f(x)          # application
+f x           # sidefix operand or sequence, as the grammar allows
+f (x)         # error
+assert True   # sidefix operand
+assert (True) # error
+type Point    # type form
+type(Point)   # application of type
+type (Point)  # error
+a - (b)       # valid: the token before '(' is an operator
+- (x)         # valid: prefix operator, same tree as -(x)
+x = (1, 2)    # valid: pack after '='
+```
+
+A completed application is a term, so `f(x) (y)` and `def f() (x, y)` are the
+same error; indent the pack or write tight `f(x)(y)` when a second call is meant.
+
+Write an indented operand when a group must start with `(` after a keyword:
+
+```text
+def f()
+  (x, y)
+end
+
+expect e result
+  (1 + 1) :: Expression
+end
+```
+
+Same-indent `f` then `(x)` on the next line are two rows, not this error. Postfix
+suffixes stay tight (`T?`, `T*`, `T^`).
 
 The REPL treats a buffer as ready when the active grammar can parse it as a
 finished entry. It must not wait for an extra blank line after `end` or after a

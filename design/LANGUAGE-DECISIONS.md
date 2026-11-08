@@ -134,6 +134,27 @@ The author has now tabled the feature until decoding values of constructedBy ref
 
 AR proposes a concrete union of NaN/infinities and finite Rational carveouts when Rational itself is not their superset. This is a possible representation, not a settled specification. Signed zero, NaN equality/payloads, exact special-value vocabulary and finite-only versus IEEE-complete scope may remain unsettled for now. Do not ratify the reviewer's finite-only or reflexive-NaN recommendations. **Sources:** P, N, AR; L.
 
+### D19. A term then spaced `(` is never a second valid parse — confirmed
+
+A term or name, including keywords such as `assert`, `type`, `if`, `def`, `expect`,
+`match`, and any user-grammar keyword, immediately followed by whitespace and then
+`(` is a syntax error everywhere (Code, `:(...)`, `parse(Code)`, sidefix/surface
+grammars, `.test` files). Tight `f(x)` is application. `f x` is a keyword/sidefix
+operand or sequence as today.
+
+This exists so the compiler does not have to check whether `a(b)` and `a b` both
+have meaning. Previously `assert (x)` / `type (Point)` meant `assert x` /
+`type Point` while tight `assert(...)` / `type(Point)` were calls: adding or
+removing a space flipped one valid tree into another. The rule removes that
+valid→valid path. Infix and prefix operators are not terms, so `a - (b)`,
+`x == (y)`, and `- (x)` stay valid; `- (x)` is the same tree as `-(x)`. Packs
+after `=`, `->`, `:`, or commas stay valid. A completed application is a term, so
+`f(x) (y)` and `def f() (x, y)` are this error; indent the pack. Postfix suffixes
+remain tight. A group that must start with `(` after a keyword is indented
+(`expect e result` then `(1 + 1) :: Expression`), not written as spaced `result (`.
+
+**Sources:** AR (call-spacing ratification).
+
 ## D18. Test assertions and migration contracts
 
 Files contain ordinary test blocks with shared setup. Assertions may use expect,

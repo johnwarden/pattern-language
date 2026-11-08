@@ -89,7 +89,9 @@ test("expected values are data rather than expressions to evaluate", () => {
       .passed,
     true,
   );
-  const wrong = runTest(sample("6 :: Int", "result (3 + 3) :: Int"));
+  const wrong = runTest(
+    sample("6 :: Int", "result\n    (3 + 3) :: Int\n  end"),
+  );
   assert.equal(wrong.passed, false);
   assert.equal(wrong.phase, "expectation");
 });
@@ -164,7 +166,7 @@ test("removed expectation clauses and missing result annotations are rejected", 
 test("grouping preserves symbolic binary expected data and does not evaluate it", () => {
   assert.equal(
     run(
-      `test "Tree"\n e = :(1 + 1)\n legacy expect e result (1 + 1) :: Expression\nend`,
+      `test "Tree"\n e = :(1 + 1)\n legacy expect e result\n  (1 + 1) :: Expression\n end\nend`,
     ).passed,
     true,
   );
@@ -226,7 +228,7 @@ test("sidefix fields preserve deferred expected names inside typed quotes", () =
   assert.equal(
     displayResults(
       i.run(
-        "def Output type (value :: Expression) ::: (expectedType :: Expression)\ndef Expected type (:expect (subject :: Expression) :result (output :: Output))\nt = Expected` expect missing() result 4 :: MissingType\n(t.output.value,t.output.expectedType)",
+        "def Output type\n  (value :: Expression) ::: (expectedType :: Expression)\nend\ndef Expected type :expect subject :: Expression :result output :: Output\nt = Expected` expect missing() result 4 :: MissingType\n(t.output.value,t.output.expectedType)",
       ),
     ),
     "(4, :MissingType)",
@@ -234,7 +236,7 @@ test("sidefix fields preserve deferred expected names inside typed quotes", () =
 });
 test("host calls preserve successive packs without exposing methods as values", () => {
   const i = new Interpreter();
-  i.run("def f(x,y)(z) (x,y,z)\n0");
+  i.run("def f(x,y)(z)\n  (x,y,z)\nend\n0");
   assert.throws(() => i.call("f"), /require an argument pack/);
   assert.equal(
     displayResults(
@@ -353,7 +355,7 @@ end`);
 
 test("todo operands resolve and execute without leaking bindings or definitions", () => {
   const r = run(
-    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  end\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
+    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  end\n  todo expect\n    def local() 99\n    macro :future e :: Expression Code$` $(e)\n    missing()\n  result 0 :: Expression\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.equal(
@@ -399,7 +401,7 @@ test("every assertion runs after failures; expected failures are not passes", ()
 test("setup is shared only within its case, while individual subjects remain isolated", () => {
   const cases = loadTests({
     "scope.test":
-      'test "Setup"\n  def Box type Box(Int)\n  x = 3 :: Int\n  expect (Box(x) :: Box) result Box(3) :: Box\n  expect\n    x = 9 :: Int\n    x\n  result 9 :: Int\n  expect x result 3 :: Int\nend\ntest "Fresh"\n  expect x error "E_UNBOUND_NAME"\nend',
+      'test "Setup"\n  def Box type Box(Int)\n  x = 3 :: Int\n  expect Box(x) :: Box result Box(3) :: Box\n  expect\n    x = 9 :: Int\n    x\n  result 9 :: Int\n  expect x result 3 :: Int\nend\ntest "Fresh"\n  expect x error "E_UNBOUND_NAME"\nend',
   });
   for (const t of cases) {
     const r = runTest(t);
@@ -411,11 +413,11 @@ test("0f source denotes a Float64-rounded Rational", () => {
   assert.equal(r.passed, true, r.message);
 });
 test("assertions require a positional Bool result and preserve ordinary operator lexing", () => {
-  assert.equal(run('test "Labels"\n assert (ok: True)\nend').passed, false);
+  assert.equal(run('test "Labels"\n x = (ok: True)\n assert x\nend').passed, false);
   assert.equal(run('test "Truthiness"\n assert 1\nend').passed, false);
   assert.equal(
     run(
-      'test "Operators"\n expect (3 >= 2) result True :: Bool\n expect (2 <= 2) result True :: Bool\nend',
+      'test "Operators"\n expect 3 >= 2 result True :: Bool\n expect 2 <= 2 result True :: Bool\nend',
     ).passed,
     true,
   );

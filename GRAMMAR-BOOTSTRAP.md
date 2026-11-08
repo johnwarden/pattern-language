@@ -140,7 +140,9 @@ x = (1)
 x = (1,foo: "bar")
 (x,foo: f) = (1,foo: "bar")
 
-def pair(x) (x,x)
+def pair(x)
+  (x,x)
+end
 (a,b) = pair(1)
 
 f = x ->
@@ -207,7 +209,7 @@ structural interpolation uses a typed `T$` backtick quote, not colon quotation.
 A field colon must be tight to its label: `label: value` differs from `label :(value)`.
 
 `def f(patterns) expression` defines an ordinary function with a micro signature,
-including when its result is Code. `macro (:keyword (capture :: Expression) ...) transformerExpression`
+including when its result is Code. `macro :keyword capture :: Expression ... transformerExpression`
 registers a sidefix macro and its grammar. Macro signatures must be sidefix;
 function definitions must use micro signatures. Macro invocation uses sidefix
 syntax, never function-call syntax. The transformer body may call an ordinary
@@ -292,7 +294,7 @@ splicing and portable captured environments remain later work.
 No new sidefix alternation or repetition is supported. A sidefix signature has a
 fixed sequence of keywords/readers. Spread is an argument-pack operation:
 `:all Pair(xs... :: Int*)` may match Pair(), Pair(1), or Pair(1,2), but
-`:all (xs... :: Int*)` is rejected at declaration time. `x :: Int*` matches one
+`:all xs... :: Int*` is rejected at declaration time. `x :: Int*` matches one
 list-shaped expression, never a variable-length sequence of integers.
 
 Non-generic declarative type patterns introduced with `def Name type Pattern`
@@ -368,9 +370,15 @@ calls the code evaluator or installs user grammar.
 
 A colon-quoted application pattern makes its constructor head literal while
 arguments remain patterns. The common compiler applies this rule to bindings,
-signatures, types, and match arms. For example, def split(:|(a)(b)) (a,b) captures
+signatures, types, and match arms. For example, `def split(:|(a)(b))` with indented body `(a,b)` captures
 the operands of a union expression. Unquoted a | b remains alternation.
-In sidefix type forms, group punctuation applications: type (:|(Symbol)(Symbol)).
+In sidefix type forms, indent a punctuation application so it is not read as infix:
+
+```text
+def Op type
+  :|(Symbol)(Symbol)
+end
+```
 In evaluated data, quoting an application head still evaluates its arguments.
 
 ## Abstract storage and open type patterns
@@ -415,7 +423,9 @@ associativity are unchanged.
 ExpectedOutput can therefore be declared as:
 
 ```text
-def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
+def ExpectedOutput type
+  (e :: Expression) ::: (type :: Expression)
+end
 expected = ExpectedOutput` (1 + 2) :: UnknownType
 ```
 
@@ -509,7 +519,7 @@ This adds no surface token, changes no precedence and does not hoist bindings.
 
 ## Disjoint union type form
 
-The source grammar declares UnionTypeExpression as :unionType (pattern :: PatternBody).
+The source grammar declares UnionTypeExpression as :unionType pattern :: PatternBody.
 Its operands separated by | are evaluated as type values, then normalized by the
 same constructor as UnionType(A,B). This does not alter infix precedence or turn
 pattern alternatives into type unions. The user-facing test expectation/display

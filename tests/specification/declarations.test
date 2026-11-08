@@ -80,7 +80,7 @@ test "C18 equivalent independently named descriptors interoperate"
       type Optional<T> concrete :None | Some(T)
       (Some("hello") :: Optional<String>)
     )
-    assert ((produced == independent))
+    assert produced == independent
     consumed = (
       type LocalOption<T> concrete :None | Some(T)
       def read(x :: LocalOption<String>)
@@ -104,7 +104,7 @@ test "C18 equivalent independently named descriptors interoperate"
         type Optional<T> concrete :None | Some(T)
         (Some("hello") :: Optional<String>)
       )
-      assert ((produced == independent))
+      assert produced == independent
       consumed = (
         type LocalOption<T> concrete :None | Some(T)
         def read(x :: LocalOption<String>)

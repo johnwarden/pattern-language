@@ -1,6 +1,8 @@
 test "DSL: Infix syntax and distinct argument packs"
   def Atom unionType Number | String | Symbol
-  def Application type (head :: ValueExpr)(args... :: ValueExpr*)
+  def Application type
+    (head :: ValueExpr)(args... :: ValueExpr*)
+  end
   def ValueExpr unionType Atom | Application
 
   infix = ValueExpr` a + b
@@ -10,22 +12,24 @@ test "DSL: Infix syntax and distinct argument packs"
 
   text = toString(ValueExpr)(infix)
   # Surface sugar preserves the application tree, including pack boundaries.
-  assert (infix == prefix)
+  assert infix == prefix
 
   assert False == (packed == successive)
   legacy expect text result "a + b" :: Expression
   todo expect text result "a + b" :: String
 
-  assert (parse(ValueExpr)(text) == infix)
+  assert parse(ValueExpr)(text) == infix
 
   ((infix == prefix), (packed == successive), text, (parse(ValueExpr)(text) == infix))
 end
 
 test "Sidefix data DSL"
-  def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
+  def ExpectedOutput type
+    (e :: Expression) ::: (type :: Expression)
+  end
   # Expression is a temporary bridge for the future typed Code field.
-  def Expectation type (:expect (subject :: Expression) :result (expected :: ExpectedOutput))
-  def Test type (:test (name :: String) (check :: Expectation))
+  def Expectation type :expect subject :: Expression :result expected :: ExpectedOutput
+  def Test type :test name :: String check :: Expectation
   t = Test`
     test "Stored test data"
       expect missing(1 / 0) result 3 :: MissingType
@@ -41,7 +45,9 @@ end
 test "DSL: Recursive expression grammar"
   # One numeric space until numeric literals distinguish Int from Float.
   def Atom unionType Number | String | Symbol
-  def Application type (head :: ValueExpr)(args... :: ValueExpr*)
+  def Application type
+    (head :: ValueExpr)(args... :: ValueExpr*)
+  end
   def ValueExpr unionType Atom | Application
 
   expression = ValueExpr` a + b
@@ -49,7 +55,9 @@ test "DSL: Recursive expression grammar"
   (head :: ValueExpr)(args... :: ValueExpr*) = expression
   (operator :: ValueExpr)(left... :: ValueExpr*) = head
 
-  expect expression result (a + b) :: Application
+  expect expression result
+    (a + b) :: Application
+  end
   legacy expect toString(ValueExpr)(head) result "+(a)" :: Expression
   todo expect toString(ValueExpr)(head) result "+(a)" :: String
   legacy expect toString(ValueExpr*)(args) result "[b]" :: Expression
@@ -62,15 +70,19 @@ test "DSL: Recursive expression grammar"
 end
 
 test "DSL: Tests with explicit value and type"
-  def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
-  def Test type (:test (name :: String) (code :: Code) :expect (actual :: Expression) :result (expected :: ExpectedOutput))
+  def ExpectedOutput type
+    (e :: Expression) ::: (type :: Expression)
+  end
+  def Test type :test name :: String code :: Code :expect actual :: Expression :result expected :: ExpectedOutput
 
   # This is an ordinary data grammar. Both expectation operands stay inert.
   t = Test`
     test "An unevaluated calculation"
       1 / 0
     end
-    expect :result result (a + b) :: MissingType
+    expect :result result
+      (a + b) :: MissingType
+    end
   end
 
   # Inspect the parts; the quoted calculation is never evaluated here.
@@ -78,15 +90,19 @@ test "DSL: Tests with explicit value and type"
   legacy expect toString(Code)(t.code) result "(\n  (1 / 0)\n)" :: Expression
   todo expect toString(Code)(t.code) result "(\n  (1 / 0)\n)" :: String
   legacy expect t.actual result :result :: Expression
-  legacy expect t.expected.e result (:a + :b) :: Expression
+  legacy expect t.expected.e result
+    (:a + :b) :: Expression
+  end
   legacy expect t.expected.type result :MissingType :: Expression
   (t.name, toString(Code)(t.code), t.actual, t.expected.e, t.expected.type)
 end
 
 test "Test DSL with typed Code"
-  def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
-  def Expectation type (:expect (code :: Code) :result (expected :: ExpectedOutput))
-  def Test type (:test (name :: String) (check :: Expectation))
+  def ExpectedOutput type
+    (e :: Expression) ::: (type :: Expression)
+  end
+  def Expectation type :expect code :: Code :result expected :: ExpectedOutput
+  def Test type :test name :: String check :: Expectation
   t = Test`
     test "Typed code body"
       expect
@@ -112,21 +128,31 @@ test "DSL: Symbols and unannotated unions"
   legacy expect text result "a" :: Expression
   todo expect text result "a" :: String
 
-  assert (parse(MathExp)(text) == a)
+  assert parse(MathExp)(text) == a
 
   (a, text, (parse(MathExp)(text) == a))
 end
 
 test "Vertical spreading: Inspect a nested Body"
   # A bounded source grammar for inert code inspection. No evaluation is installed.
-  def Capture type (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+  def Capture type
+    (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+  end
   def Pattern unionType LowerCamelSymbol | Capture
-  def Sum type (left :: ValueExpression) :+ (right :: ValueExpression)
-  def Product type (left :: ValueExpression) :* (right :: ValueExpression)
+  def Sum type
+    (left :: ValueExpression) :+ (right :: ValueExpression)
+  end
+  def Product type
+    (left :: ValueExpression) :* (right :: ValueExpression)
+  end
   def ValueExpression unionType Number | String | Symbol | Sum | Product
-  def FunctionSignature type (name :: LowerCamelSymbol)(parameters... :: Pattern*)
-  def Definition type (:def (signature :: FunctionSignature) (value :: (unionType ValueExpression | Body)))
-  def DestructuringBinding type (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+  def FunctionSignature type
+    (name :: LowerCamelSymbol)(parameters... :: Pattern*)
+  end
+  def Definition type :def signature :: FunctionSignature value :: (unionType ValueExpression | Body)
+  def DestructuringBinding type
+    (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+  end
   def Binding unionType DestructuringBinding | Definition
   def Body type
     bindings :: Binding*
@@ -152,7 +178,7 @@ test "Vertical spreading: Inspect a nested Body"
   legacy expect toString(ValueExpression*)(body.resultExpression) result "[y * z, y]" :: Expression
   todo expect toString(ValueExpression*)(body.resultExpression) result "[y * z, y]" :: String
 
-  assert (parse(Body)(toString(Body)(body)) == body)
+  assert parse(Body)(toString(Body)(body)) == body
 
   (first, second, toString(Binding*)(body.bindings), toString(ValueExpression*)(body.resultExpression), (parse(Body)(toString(Body)(body)) == body))
 end
@@ -169,7 +195,7 @@ test "Vertical spreading: Two-dimensional lists"
 
   expect m.values result [[1, 2], [3, 4]] :: *(*(Float))
 
-  assert (parse(Matrix)(toString(Matrix)(m)) == m)
+  assert parse(Matrix)(toString(Matrix)(m)) == m
 
   (m.values, (parse(Matrix)(toString(Matrix)(m)) == m))
 end
@@ -188,7 +214,7 @@ test "Vertical spreading: TodoList"
 
   expect list.todos result ["item 1", "item 2"] :: *(String)
 
-  assert (parse(TodoList)(toString(TodoList)(list)) == list)
+  assert parse(TodoList)(toString(TodoList)(list)) == list
 
   (list.todos, (parse(TodoList)(toString(TodoList)(list)) == list))
 end

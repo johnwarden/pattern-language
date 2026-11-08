@@ -1,10 +1,10 @@
 test "Abstract slots preserve identity"
   n = 3 :: Int
   (x :: Any) = n
-  assert (n == x)
+  assert n == x
 
   (y :: Int) = x
-  assert (x == y)
+  assert x == y
 
   legacy expect toString(Any)(x) result "3 :: Int" :: Expression
   todo expect toString(Any)(x) result "3 :: Int" :: String
@@ -48,12 +48,15 @@ test "Definitions evaluate their bodies"
 
   legacy expect :Rect(Number) result Rect(Float) :: Expression
   todo expect :Rect(Number) error "no concrete interpretation established"
-  expect (type R) result Type(Rect(Float)) :: Type
+  observed = type R
+  expect observed result Type(Rect(Float)) :: Type
   (r, (type R))
 end
 
 test "Zero results"
-  def nothing() ()
+  def nothing()
+    ()
+  end
 
   assert
     () =
@@ -64,9 +67,13 @@ test "Zero results"
 end
 
 test "Deferred expected output"
-  def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
+  def ExpectedOutput type
+    (e :: Expression) ::: (type :: Expression)
+  end
   expected = ExpectedOutput` (1 / 0) :: MissingType
-  legacy expect expected.e result (1 / 0) :: Expression
+  legacy expect expected.e result
+    (1 / 0) :: Expression
+  end
   legacy expect expected.type result :MissingType :: Expression
   todo expect expected.type result MissingType :: UpperCamelSymbol
   (expected.e, expected.type)
@@ -83,9 +90,10 @@ test "Narrow an abstract slot"
   (value :: Int) = x
 
   expect value result 3 :: Int
-  expect (type Int) result Int :: Type
+  observed = type Int
+  expect observed result Int :: Type
 
-  assert (value == x)
+  assert value == x
 
   (value, (type Int), (value == x))
 end
@@ -96,7 +104,7 @@ test "Language as data"
 
   s = toString(Expression)(l)
   r = parse(Expression)(s)
-  assert (r == l)
+  assert r == l
 
   Language(rules: rules, **) = l
   legacy expect rules.len result 6 :: Expression
@@ -111,14 +119,14 @@ test "Match"
   def Option type :None | Some(Int)
 
   legacy expect
-    match (Some(3) :: Option)
+    match Some(3) :: Option
       :Some(v) -> v.toString
       :None -> ""
     end
   result "3" :: Expression
 
   todo expect
-    match (Some(3) :: Option)
+    match Some(3) :: Option
       :Some(v) -> v.toString
       :None -> ""
     end
@@ -132,7 +140,7 @@ test "Explicit primitive values"
   expect Int result Int :: Type
   expect Bool result Bool :: Type
 
-  assert (t == (type Number))
+  assert t == (type Number)
 
   (t, Int, Bool, (t == (type Number)))
 end
@@ -169,7 +177,9 @@ test "Mutually recursive function definitions"
 end
 
 test "Multiple results"
-  def pair(x) (x, x)
+  def pair(x)
+    (x, x)
+  end
   (a, b) = pair(3 :: Int)
 
   expect a + b result 6 :: Int
@@ -191,11 +201,11 @@ test "Open structural facet"
   expect p.w result 2 :: Float
   expect p.h result 3 :: Float
 
-  assert (p == r)
+  assert p == r
   # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
   legacy expect toString(Rectangular)(p) result "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: Expression
 
-  assert (parse(Rectangular)(toString(Rectangular)(p)) == r)
+  assert parse(Rectangular)(toString(Rectangular)(p)) == r
 
   (p, p.w, p.h, (p == r), toString(Rectangular)(p), (parse(Rectangular)(toString(Rectangular)(p)) == r))
 end
@@ -205,7 +215,9 @@ test "Inspect and rebuild syntax"
   Apply(function, arguments) = tree
   changed = Apply(function, [Field("_1", NumberLiteral(3)), Field("color", Name("Red", True))])
 
-  legacy expect syntaxExpression(changed) result (factory(1)(3, color: :Red)) :: Expression
+  legacy expect syntaxExpression(changed) result
+    (factory(1)(3, color: :Red)) :: Expression
+  end
 end
 
 test "Abstract slots and ordering"
@@ -215,27 +227,27 @@ test "Abstract slots and ordering"
 
   expect a result 99 :: Int
   expect b result "0" :: String
-  assert (a < b)
+  assert a < b
   legacy expect toString(U)(a) result "99" :: Expression
   todo expect toString(U)(a) result "99" :: String
 
-  assert (parse(U)(toString(U)(a)) == a)
+  assert parse(U)(toString(U)(a)) == a
 
   (a, b, (a < b), toString(U)(a), (parse(U)(toString(U)(a)) == a))
 end
 
 test "User-defined if"
-  macro (:if (c :: Expression) (v :: Body) :else (a :: Body))
-    Code$` (
-    match ($(c)) (
-      (True -> $(v))
-      (False -> $(a))
-    )
-  )
+  macro :if c :: Expression v :: Body :else a :: Body
+    Code$`
+      match $(c)
+        True -> $(v)
+        False -> $(a)
+      end
+    end
   end
 
   expect
-    if True 42 else (1 / 0)
+    if True 42 else 1 / 0
   result 42 :: Rational
 end
 

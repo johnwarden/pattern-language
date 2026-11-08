@@ -3,5 +3,5 @@ test "Current and future type declaration syntax"
   todo type Color concrete :Black | :White
 
   expect Color result Type(:Black | :White) :: Type
-  expect (:Black :: Color) result :Black :: Color
+  expect :Black :: Color result :Black :: Color
 end
