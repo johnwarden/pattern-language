@@ -36,12 +36,12 @@ test("discovery reads the source schema without executing subjects or expected t
 test("a companion todo does not remove a supported playground program", () => {
   const value = loadTests({
     "paired.test": `test "Literal migration"
-  legacy expect 1 result 1 :: Expression
-  todo expect 1 result 1 :: Rational
+  legacy expect "hello" result "hello" :: Expression
+  todo expect "hello" result "hello" :: String
 end`,
   })[0];
   assert.equal(value.program, true);
-  assert.equal(value.source, "1");
+  assert.equal(value.source, '"hello"');
   const report = runTest(value);
   assert.equal(report.passed, true, report.message);
   assert.deepEqual(
@@ -52,16 +52,16 @@ end`,
 test("playground output includes setup and its final pack, excluding future checks", () => {
   const value = loadTests({
     "paired.test": `test "Captured migration"
-  (x, y) = (1, 2)
-  legacy expect x result 1 :: Expression
-  todo expect x result 1 :: Rational
-  legacy expect y result 2 :: Expression
-  todo expect y result 2 :: Rational
+  (x, y) = ("a", "b")
+  legacy expect x result "a" :: Expression
+  todo expect x result "a" :: String
+  legacy expect y result "b" :: Expression
+  todo expect y result "b" :: String
   (x, y)
 end`,
   })[0];
   assert.equal(value.program, true);
-  assert.equal(value.source, "(x, y) = (1, 2)\n(x, y)");
+  assert.equal(value.source, '(x, y) = ("a", "b")\n(x, y)');
   const report = runTest(value);
   assert.equal(report.passed, true, report.message);
   const interpreter = new Interpreter();
@@ -73,7 +73,7 @@ end`,
 test("todo-only cases do not become executable examples", () => {
   const value = loadTests({
     "future.test": `test "Future only"
-  todo expect 1 result 1 :: Rational
+  todo expect "hello" result "hello" :: String
   ()
 end`,
   })[0];
@@ -81,7 +81,7 @@ end`,
 });
 test("expected values are data rather than expressions to evaluate", () => {
   assert.equal(
-    runTest(sample("x = 3\nx + 1", "result 4 :: Expression")).passed,
+    runTest(sample("x = 3\nx + 1", "result 4 :: Rational")).passed,
     true,
   );
   assert.equal(
@@ -116,8 +116,8 @@ test("each result requires the stated type and canonical data spelling", () => {
 });
 test("one result is required; multiple and labeled returns must be destructured", () => {
   for (const [body, clause] of [
-    ["()", "result 1 :: Expression"],
-    ["(1, 2)", "result 1 :: Expression"],
+    ["()", "result 1 :: Rational"],
+    ["(1, 2)", "result 1 :: Rational"],
     ["(color: :Red)", "result Red :: UpperCamelSymbol"],
   ])
     assert.match(
@@ -126,7 +126,7 @@ test("one result is required; multiple and labeled returns must be destructured"
     );
   const result = run(`test "Separate fields"
     (n, color: c) = (1, color: :Red)
-    legacy expect n result 1 :: Expression
+    expect n result 1 :: Rational
     expect c result Red :: UpperCamelSymbol
 end`);
   assert.equal(result.passed, true, result.message);
@@ -205,20 +205,20 @@ test("fixture types are visible but subject-local declarations do not escape", (
 });
 test("source extraction retains comments, blank lines and nested end markers", () => {
   const body = "# comment\ndef f(x)\n  x + 1\nend\n\nf(2)";
-  const value = sample(body, "result 3 :: Expression");
+  const value = sample(body, "result 3 :: Rational");
   assert.equal(value.source, body);
   const withSetup = loadTests({
     "comments.test":
-      'test "Setup comments"\n  # kept in the editor\n  def f(x) x + 1\n  expect f(2) result 3 :: Expression\nend',
+      'test "Setup comments"\n  # kept in the editor\n  def f(x) x + 1\n  expect f(2) result 3 :: Rational\nend',
   })[0];
   assert.equal(withSetup.source, "# kept in the editor\ndef f(x) x + 1\nf(2)");
   assert.equal(runTest(value).passed, true);
 });
 test("repeated execution has fresh fixture and assertion scopes", () => {
-  const value = sample("x = x + 1\nx", "result 2 :: Expression");
+  const value = sample("x = x + 1\nx", "result 2 :: Rational");
   assert.equal(runTest(value, "x = 1").passed, true);
   assert.equal(runTest(value, "x = 1").passed, true);
-  assert.equal(runTest(sample("x", "result 1 :: Expression")).passed, false);
+  assert.equal(runTest(sample("x", "result 1 :: Rational")).passed, false);
 });
 test("sidefix fields preserve deferred expected names inside typed quotes", () => {
   const i = new Interpreter();
@@ -324,7 +324,7 @@ test("a fulfilled todo fails and asks for removal, including expected-error asse
 test("legacy assertions must pass and never suppress failures", () => {
   assert.equal(
     run(
-      'test "Legacy"\n legacy expect 1 result 1 :: Expression\n legacy assert True\nend',
+      'test "Legacy"\n legacy expect 1 result 1 :: Rational\n legacy assert True\nend',
     ).passed,
     true,
   );
@@ -334,7 +334,7 @@ test("legacy assertions must pass and never suppress failures", () => {
 });
 test("todo operands resolve and execute without leaking bindings or definitions", () => {
   const r = run(
-    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  expect local() error "E_UNBOUND_NAME"\n  legacy expect x result 3 :: Expression\nend',
+    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  todo expect\n    def local() 99\n    macro (:future (e :: Expression)) Code$` $(e)\n    missing()\n  result 0 :: Expression\n  expect local() error "E_UNBOUND_NAME"\n  expect x result 3 :: Rational\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.equal(
@@ -387,15 +387,9 @@ test("setup is shared only within its case, while individual subjects remain iso
     assert.equal(r.passed, true, r.message);
   }
 });
-test("provisional numeric source cannot execute as a transformed placeholder", () => {
-  const r = runTest(sample("0f0.1", 'error "E_UNBOUND_NAME"'));
-  assert.equal(r.passed, false);
-  assert.equal(r.phase, "body");
-  const expected = runTest(
-    sample(':(NumericSource("0f0.1"))', "result 0f0.1 :: Expression"),
-  );
-  assert.equal(expected.passed, false);
-  assert.equal(expected.phase, "expectation");
+test("0f source denotes a Float64-rounded Rational", () => {
+  const r = runTest(sample("0f0.1", "result 0x1.999999999999Ap-4 :: Rational"));
+  assert.equal(r.passed, true, r.message);
 });
 test("assertions require a positional Bool result and preserve ordinary operator lexing", () => {
   assert.equal(run('test "Labels"\n assert (ok: True)\nend').passed, false);
@@ -417,15 +411,15 @@ test("assert checks the Bool value space rather than a same-spelled constructor"
 });
 test("each expectation has its own actual and expected output", () => {
   const r = run(
-    'test "Outputs"\n legacy expect 1 result 1 :: Expression\n expect :Widget result Widget :: UpperCamelSymbol\nend',
+    'test "Outputs"\n expect 1 result 1 :: Rational\n expect :Widget result Widget :: UpperCamelSymbol\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.deepEqual(
     r.checks.map((c) => c.actual),
-    ["1 :: Expression", "Widget :: UpperCamelSymbol"],
+    ["1 :: Rational", "Widget :: UpperCamelSymbol"],
   );
   assert.deepEqual(
     r.checks.map((c) => c.expected),
-    ["1 :: Expression", "Widget :: UpperCamelSymbol"],
+    ["1 :: Rational", "Widget :: UpperCamelSymbol"],
   );
 });

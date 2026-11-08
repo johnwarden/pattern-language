@@ -6,7 +6,7 @@ const run = (source: string) => displayResults(new Interpreter().run(source));
 test("explicit TitleCase captures specialize ordinary function and type factories", () => {
   assert.equal(
     run(
-      "def nonZero(T :: Type)(n :: T) n != 0\n(nonZero(Int)(5),nonZero(Int)(0))",
+      "def nonZero(T :: Type)(n :: T) n != (0 :: T)\n(nonZero(Int)(5),nonZero(Int)(0))",
     ),
     "(True, False)",
   );

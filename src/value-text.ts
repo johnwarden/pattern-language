@@ -8,7 +8,18 @@ import { syntaxData, codeSource } from "./syntax-values.ts";
 import { LanguageError, normal } from "./syntax.ts";
 import type { Syntax } from "./syntax.ts";
 import type { TypeValue, Value } from "./values.ts";
-import { unwrap, concreteSpace, syntaxOrigins, equal } from "./values.ts";
+import {
+  unwrap,
+  concreteSpace,
+  syntaxOrigins,
+  equal,
+  isRational,
+  rationalLiteralParts,
+  parseNumericSpelling,
+  valRational,
+  float64ToRational,
+  integerValue,
+} from "./values.ts";
 import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
 
@@ -228,6 +239,14 @@ export function valueText(
     }
     if (v.kind === "type") return typeSyntax(v, root && expandRootType);
     if (v.kind === "literal") {
+      if (isRational(v.value)) {
+        const parts = rationalLiteralParts(v.value);
+        return {
+          kind: "literal",
+          value: parts.value,
+          spelling: parts.spelling,
+        };
+      }
       return { kind: "literal", value: v.value };
     }
     if (v.kind === "symbol")
@@ -433,6 +452,8 @@ export function parseValueText(
   allowLayout = false,
 ): Value {
   const source = { name: "serialized value", text };
+  const numeric = parseNumericSpelling(text);
+  if (numeric && !typeExpected) return valRational(numeric.n, numeric.d);
   let tree: Syntax;
   try {
     tree = parseExpression(text, allowLayout);
@@ -464,7 +485,22 @@ export function parseValueText(
       const alias = domain.localType?.(normal(n));
       if (alias) return alias;
     }
-    if (n.kind === "literal") return lit(n.value);
+    if (n.kind === "literal") {
+      if (typeof n.value === "number") {
+        const spelling =
+          n.spelling ??
+          (n.span?.source &&
+          n.span.start !== undefined &&
+          n.span.end !== undefined
+            ? n.span.source.text.slice(n.span.start, n.span.end)
+            : undefined);
+        const parsed = spelling ? parseNumericSpelling(spelling) : undefined;
+        if (parsed) return valRational(parsed.n, parsed.d);
+        const rounded = float64ToRational(n.value);
+        return valRational(rounded.n, rounded.d);
+      }
+      return lit(n.value);
+    }
     if (n.kind === "quote") return decode(n.value, pattern);
     if (n.kind === "symbol")
       return !n.quoted && primitiveNames.has(n.name)
@@ -526,6 +562,16 @@ export function parseValueText(
         );
       }
       if (n.head.kind === "symbol") {
+        if (n.head.name === "NumericSource") {
+          const [spelling] = positional(n, 1);
+          const text =
+            spelling.kind === "literal" && typeof spelling.value === "string"
+              ? spelling.value
+              : undefined;
+          const parsed = text ? parseNumericSpelling(text) : undefined;
+          if (!parsed) return fail("malformed numeric source literal", n);
+          return valRational(parsed.n, parsed.d);
+        }
         if (n.head.name === "TreeGrammar") {
           const [schema] = positional(n, 1);
           return domain.type({
@@ -565,23 +611,20 @@ export function parseValueText(
             codes.head.name !== "[]"
           )
             return fail("String requires a list of Unicode code points", n);
-          const values = positional(codes).map((x) => decode(x));
+          const values = positional(codes).map((x) => integerValue(decode(x)));
           if (
             values.some(
-              (v) =>
-                v.kind !== "literal" ||
-                typeof v.value !== "number" ||
-                !Number.isInteger(v.value) ||
-                v.value < 0 ||
-                v.value > 0x10ffff ||
-                (v.value >= 0xd800 && v.value <= 0xdfff),
+              (n) =>
+                n === undefined ||
+                !Number.isInteger(n) ||
+                n < 0 ||
+                n > 0x10ffff ||
+                (n >= 0xd800 && n <= 0xdfff),
             )
           )
             return fail("String requires Unicode code points", n);
           return lit(
-            values
-              .map((v) => String.fromCodePoint((v as { value: number }).value))
-              .join(""),
+            values.map((n) => String.fromCodePoint(n as number)).join(""),
           );
         }
         if (n.head.name === "Node") {

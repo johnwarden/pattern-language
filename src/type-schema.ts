@@ -10,7 +10,7 @@ def ordinaryHead(h)
   end
 end
 def OrdinaryHead (type Symbol) .where (h -> ordinaryHead(h))
-def Index (type Int) .where (n -> n >= 0)
+def Index (type Int) .where (n -> n >= (0 :: Int))
 def Data type Number | String | Symbol | (head :: Data)(fields... :: Data*,**)
 def FieldPattern(p :: Type) type p | Repeat(p)
 def FieldPack(p :: Type) type :Sequence(parts... :: p*) | :Fields(fields... :: FieldPattern(p)*,**) | :OpenFields(fields :: FieldPack(p),labels: Bool,positional: Bool)

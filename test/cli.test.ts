@@ -22,7 +22,7 @@ test("program output annotates every result in a complete labeled pack", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, '(1 :: Int, word: "hello" :: String)\n');
   assert.equal(invoke("()").stdout, "()\n");
-  assert.equal(invoke("3").stdout, "3 :: Expression\n");
+  assert.equal(invoke("3").stdout, "3 :: Rational\n");
 });
 test("parse-only output remains surface syntax and errors retain source locations", () => {
   const parsed = invoke("1 + 2", "--parse");

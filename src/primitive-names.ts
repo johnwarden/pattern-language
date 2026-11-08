@@ -1,5 +1,6 @@
 /** The language's self-evaluating atoms, independent of surface syntax. */
 export const primitiveNames = new Map([
+  ["Rational", "Rational"],
   ["Float", "Float"],
   ["Number", "Float"],
   ["Float32", "Float32"],

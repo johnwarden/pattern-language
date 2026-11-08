@@ -149,9 +149,9 @@ test("abstract value-expression ascriptions are rejected", () => {
 });
 
 test("every abstract field and container element needs a concrete interpretation", () => {
-  rejects("(x :: Any) = 3\nx", "E_CONCRETE_TYPE_REQUIRED");
-  rejects("(xs :: Any*) = [1]\nxs", "E_CONCRETE_TYPE_REQUIRED");
-  rejects("def Box type :Box(Any)\nBox(1) :: Box", "E_CONCRETE_TYPE_REQUIRED");
+  assert.equal(run("(x :: Any) = 3\nx"), "3");
+  assert.equal(run("(xs :: Any*) = [1]\nxs"), "[1]");
+  assert.equal(run("def Box type :Box(Any)\nBox(1) :: Box"), "Box(1)");
   rejects("(xs :: Any*) = [[]]\nxs", "E_CONCRETE_TYPE_REQUIRED");
   assert.equal(
     run(
@@ -183,7 +183,7 @@ test("REPL inspection distinguishes runtime concrete types from uninterpreted sy
     "3 :: Int",
   );
   assert.equal(inspectResults(interpreter.run("3 :: Int")), "3 :: Int");
-  assert.equal(inspectResults(interpreter.run("3")), "3 :: Expression");
+  assert.equal(inspectResults(interpreter.run("3")), "3 :: Rational");
   assert.equal(inspectResults(interpreter.run("type Int")), "Int :: Type");
 });
 

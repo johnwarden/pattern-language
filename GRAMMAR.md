@@ -94,8 +94,9 @@ implicit normalization is part of these forms.
 Numeric literals denote exact Rational values. `0f0.1` selects the Float64-rounded
 Rational; it does not create a Float64-typed variable. Explicit converters return
 typed values. Precision families, canonical numeric spelling and rounding edges remain
-provisional; IEEE special identities remain deferred. The current parser's ordinary
-number literals still use its bootstrap JS-backed model.
+provisional; IEEE special identities remain deferred. Ordinary execution interprets
+numeric spellings as exact Rationals; the specification reader still stores them as
+inert NumericSource data until an operand is reparsed.
 
 Input removes one leading BOM and normalizes CRLF to LF in one pass. Word symbols
 are ASCII LowerCamelSymbol, UpperCamelSymbol or UpperSnakeSymbol. One- and two-letter
