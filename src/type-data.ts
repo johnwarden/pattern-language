@@ -39,6 +39,7 @@ const primitiveNames: Record<string, string> = {
   Expression: "Expression",
   Body: "Body",
   Type: "Type",
+  ReservedSymbol: "ReservedSymbol",
 };
 const reserved = new Set([
   "Type",

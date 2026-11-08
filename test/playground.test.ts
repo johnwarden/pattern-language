@@ -186,7 +186,7 @@ test("program Run displays concrete and meta-type annotations", () => {
   assert.equal(app.el("error").textContent, "");
   assert.equal(
     app.el("result").textContent,
-    "(Rect(3, 4) :: Rect, Type(Rect(Float, Float)) :: Type, Int :: Type)",
+    "(Rect(3, 4) :: Rect, Type(Rect(Float, Float)) :: Type, Int :: ReservedSymbol)",
   );
   app.dom.window.close();
 });

@@ -718,10 +718,14 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
             mismatch = "expected " + step.reason + "; the subject succeeded";
         } else if (step.kind === "assert") {
           const value = unwrap(single(results!, "assertion"));
+          const space = resultType(results![0].value, interpreter);
           const bool = asType(single(interpreter.run("Bool")));
+          const reserved = asType(
+            single(interpreter.run("ReservedSymbol")),
+          );
           if (
             results![0].label !== "_1" ||
-            !equal(resultType(results![0].value, interpreter), bool) ||
+            (!equal(space, bool) && !equal(space, reserved)) ||
             value.kind !== "symbol" ||
             !["True", "False"].includes(value.name)
           )

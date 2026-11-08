@@ -156,7 +156,7 @@ test("primitive, union, list, labeled and capture-free type descriptions round t
     "[rest... :: Int*]",
     ":(Recursive(Int))",
     ":Literal(Int)",
-    ":Float64(Int)",
+    "Float64(Int)",
     ":(Type(Int))",
   ]) {
     assert.equal(
@@ -273,7 +273,7 @@ test("data constructor names and empty applications remain ordinary distinct dat
 test("primitive atoms are ordinary self-evaluating type values", () => {
   assert.equal(
     run("(Int,Float,Bool,Int == (type Int))"),
-    "(Int, Float, Bool, True)",
+    "(Int, Float, Bool, False)",
   );
   assert.equal(run("def accept(t :: Type) t\naccept(String)"), "String");
   assert.throws(() => run("Imaginary"), /unbound name/);
@@ -286,7 +286,7 @@ test("explicit Type wrappers and primitive atoms have different value trees", ()
     "(False, True)",
   );
   assert.equal(
-    run("(Type(Float) == (type :Float),Float == Type(Float))"),
+    run("(Type(Float) == (type Float),Float == Type(Float))"),
     "(False, False)",
   );
 });
@@ -295,7 +295,7 @@ test("primitive text is independent of lexical primitive bindings", () => {
   const i = new Interpreter();
   i.env.bindings.delete("Int");
   assert.equal(
-    displayResults(i.run("parse(Type)(toString(Type)(Int)) == Int")),
+    displayResults(i.run("parse(Type)(toString(Type)(Int)) == (type Int)")),
     "True",
   );
   assert.throws(

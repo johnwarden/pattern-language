@@ -75,10 +75,10 @@ selected. Ordinary where refinements remain in scope.
 IEEE signed zero, NaN identity/payloads and infinities remain deferred. Numeric
 family aliases, edge rounding/overflow and canonical spelling remain provisional.
 
-**Open: `Number`.** The bootstrap no longer has a `Number` alias or type. Its
-definition is undecided: GRAMMAR.md sketches `type Number abstract Float32 | Float64`,
-which is not an implementation and is not the former Float alias. Do not restore
-`Number` until that membership (union vs alias vs other) is chosen.
+**Open: `Number`.** The bootstrap has no `Number` alias or type. It will later
+be defined as an abstract union of fixed-width number types. Keep it removed
+until that membership is written. GRAMMAR.md's sketch is not an implementation
+and is not the former Float alias.
 
 Type declaration keywords, angle parameter sugar, MemberOf, bare-family facets,
 parameter recovery, singleton abstract policy, duplicate local names/accessor

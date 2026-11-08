@@ -85,17 +85,22 @@ function quotedLayoutNames(n: Syntax): string[] {
       return [];
   }
 }
-export function addLayoutForm(forms: LayoutForms, items: Syntax[]): void {
-  const quoted = items.flatMap(quotedLayoutNames);
-  if (!quoted.length) return;
-  const [start, ...clauses] = quoted;
+export function addLayoutKeywords(
+  forms: LayoutForms,
+  keywords: string[],
+): void {
+  if (!keywords.length) return;
+  const [start, ...clauses] = keywords;
   let set = forms.get(start);
   if (!set) {
     set = new Set();
     forms.set(start, set);
   }
   for (const clause of clauses) set.add(clause);
-  addLayoutChain(forms, start, quoted);
+  addLayoutChain(forms, start, keywords);
+}
+export function addLayoutForm(forms: LayoutForms, items: Syntax[]): void {
+  addLayoutKeywords(forms, items.flatMap(quotedLayoutNames));
 }
 export function layoutFormsFromBlock(root: Syntax): LayoutForms {
   const forms = emptyLayoutForms();

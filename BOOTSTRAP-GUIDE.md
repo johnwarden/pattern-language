@@ -833,7 +833,9 @@ See [TYPE-VALUES.md](TYPE-VALUES.md) for examples and explicit limits.
 
 ## One value equality
 
-Primitive names are not ordinary symbols: `:Int` is rejected. Type(Int) has
+Primitive names are `ReservedSymbol` values: `Int` inspects as
+`Int :: ReservedSymbol`, and `:Int` is rejected. `type Int` is the Int type.
+`:(Int)` is the quoted Code expression `Int`. Type(Int) has
 a distinct wrapped tree. Their compiled
 matchers are caches and do not participate in comparison. Canonical uncached type
 trees work in annotations, generic calls, and matching, and have the same global

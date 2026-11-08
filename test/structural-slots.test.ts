@@ -318,9 +318,9 @@ test("facet pattern metadata has no dependence on local capture names", () => {
 test("ordinary type values keep their intrinsic meta-type across abstract storage", () => {
   assert.equal(
     run(
-      "(x :: Any) = type Int\n(y :: Any) = Int\n(x == y,x == (type Int),toString(Any)(x),parse(Any)(toString(Any)(x)) == x)",
+      "(x :: Any) = type Int\n(y :: Any) = Int\n(x == y,x == (type Int),toString(Any)(x),y .matches (type ReservedSymbol))",
     ),
-    '(True, True, "Int :: Type", True)',
+    '(False, True, "Int :: Type", True)',
   );
 });
 

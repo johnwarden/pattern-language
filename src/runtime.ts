@@ -6,6 +6,7 @@ import {
   constantNames,
   bootstrapTypeNames,
   isReservedPrimitiveSpelling,
+  isSelfEvaluating,
 } from "./primitive-names.ts";
 import {
   runtimeDependency,
@@ -15,7 +16,12 @@ import {
 } from "./availability.ts";
 import { lowerBlock, lowerStatement } from "./lowering.ts";
 import type { Core } from "./lowering.ts";
-import { parseSurface } from "./parser.ts";
+import {
+  addLayoutKeywords,
+  emptyLayoutForms,
+  parseSurface,
+} from "./parser.ts";
+import type { LayoutForms } from "./parser.ts";
 import {
   quote,
   syntaxData,
@@ -474,46 +480,69 @@ export class Interpreter {
       return this.evaluate(expression, local);
     });
   }
-  private hasLayoutPattern(
-    pattern: Pattern<Value>,
-    seen = new Set<unknown>(),
-  ): boolean {
-    if (pattern.kind === "ref") {
-      if (seen.has(pattern.key)) return false;
-      seen.add(pattern.key);
-      return this.hasLayoutPattern(pattern.resolve(), seen);
-    }
-    if (pattern.kind === "node") {
-      const id =
-        pattern.head.kind === "test" ? pattern.head.identity : undefined;
-      if (Array.isArray(id) && id[0] === "literal") {
-        const head = unwrap(id[1] as Value);
-        if (
-          head.kind === "symbol" &&
-          ["syntaxBlock", "syntaxSequence"].includes(head.name)
-        )
-          return true;
+  /** Sidefix keywords from this type's own sequence, not the default language. */
+  private layoutFormsFromPattern(pattern: Pattern<Value>): LayoutForms {
+    const forms = emptyLayoutForms();
+    const seen = new Set<unknown>();
+    const unwrapRef = (p: Pattern<Value>): Pattern<Value> => {
+      while (p.kind === "ref" || p.kind === "map" || p.kind === "capture") {
+        if (p.kind === "ref") {
+          if (seen.has(p.key)) return p;
+          seen.add(p.key);
+          p = p.resolve();
+        } else p = p.pattern;
       }
-      return (
-        this.hasLayoutPattern(pattern.head, seen) ||
-        this.hasLayoutPattern(pattern.body, seen)
-      );
-    }
-    if (pattern.kind === "union")
-      return pattern.choices.some((p) => this.hasLayoutPattern(p, seen));
-    if (pattern.kind === "sequence" || pattern.kind === "fields")
-      return pattern.parts.some((p) => this.hasLayoutPattern(p, seen));
-    if (pattern.kind === "postfix")
-      return (
-        this.hasLayoutPattern(pattern.operator, seen) ||
-        this.hasLayoutPattern(pattern.operand, seen)
-      );
-    if (["capture", "row", "repeat", "map", "label"].includes(pattern.kind))
-      return this.hasLayoutPattern(
-        (pattern as Extract<Pattern<Value>, { kind: "map" }>).pattern,
-        seen,
-      );
-    return false;
+      return p;
+    };
+    const literalName = (p: Pattern<Value>): string | undefined => {
+      p = unwrapRef(p);
+      if (p.kind === "label" || p.kind === "row" || p.kind === "repeat")
+        return literalName(p.pattern);
+      if (
+        p.kind === "test" &&
+        Array.isArray(p.identity) &&
+        p.identity[0] === "literal"
+      ) {
+        const v = unwrap(p.identity[1] as Value);
+        if (v.kind === "symbol") return v.name;
+      }
+      return undefined;
+    };
+    const addFrom = (p: Pattern<Value>): void => {
+      p = unwrapRef(p);
+      if (p.kind === "union") {
+        for (const choice of p.choices) addFrom(choice);
+        return;
+      }
+      if (p.kind === "node") {
+        const head = literalName(p.head);
+        const body = unwrapRef(p.body);
+        if (head === "syntaxSequence" || head === "syntaxBlock") {
+          const parts =
+            body.kind === "sequence" || body.kind === "fields"
+              ? body.parts
+              : [body];
+          const chain: string[] = [];
+          for (const part of parts) {
+            const name = literalName(part);
+            if (name && !["syntaxSequence", "syntaxBlock"].includes(name))
+              chain.push(name);
+          }
+          addLayoutKeywords(forms, chain);
+        }
+        return;
+      }
+      if (p.kind === "sequence") {
+        const chain: string[] = [];
+        for (const part of p.parts) {
+          const name = literalName(part);
+          if (name) chain.push(name);
+        }
+        addLayoutKeywords(forms, chain);
+      }
+    };
+    addFrom(pattern);
+    return forms;
   }
   private grammarInput(type: TypeValue, tree: Syntax): Syntax {
     if (tree.kind !== "block" || type.treeGrammar || type.baseType?.treeGrammar)
@@ -560,7 +589,7 @@ export class Interpreter {
               text,
               this.textDomain(env),
               typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
-              this.hasLayoutPattern(type.pattern()),
+              this.layoutFormsFromPattern(type.pattern()),
             ),
       );
     } finally {
@@ -690,6 +719,8 @@ export class Interpreter {
           Number.isSafeInteger(v.value)
         );
       },
+      ReservedSymbol: (v: Value): boolean =>
+        v.kind === "symbol" && isSelfEvaluating(v.name),
     })) {
       const numericKind = ["Num", "Float", "Float64"].includes(name)
         ? "float64"
@@ -733,7 +764,7 @@ export class Interpreter {
     for (const alias of ["Num", "Number", "Int64"])
       scope.bindings.delete(alias);
     for (const name of constantNames)
-      scope.bindings.set(name, this.boolean(name === "True"));
+      scope.bindings.set(name, single(this.reserved(name)));
     for (const [name, value] of scope.bindings) {
       if (!("kind" in value) || value.kind !== "type") continue;
       scope.typeDefinitions.set(typeIdentity(value), {
@@ -1483,8 +1514,24 @@ export class Interpreter {
         (x) => single(this.evaluate(this.grammar.resolve(x), env), "unquote"),
         this.expansionDepth > 0,
       );
-      if (value.kind === "symbol" && isReservedPrimitiveSpelling(value.name))
-        throw this.quotedPrimitive(value.name, n.span);
+      if (value.kind === "symbol" && isReservedPrimitiveSpelling(value.name)) {
+        if (this.codeType)
+          return singleton({
+            kind: "code",
+            type: this.codeType,
+            tree:
+              n.value.kind === "symbol"
+                ? {
+                    kind: "symbol" as const,
+                    name: n.value.name,
+                    quoted: false,
+                    span: n.value.span,
+                  }
+                : dataSyntax(value),
+            portable: true,
+          });
+        return singleton(value);
+      }
       return singleton(
         value.kind === "symbol" ? this.symbolValue(value.name) : value,
       );
@@ -1552,9 +1599,8 @@ export class Interpreter {
           (lexicalScopes.get(n) ?? env).get(n.name)
         )
       )
-        return singleton(this.primitives.get(primitive)!);
-      if (constantNames.has(n.name))
-        return singleton(this.boolean(n.name === "True"));
+        return this.reserved(n.name);
+      if (constantNames.has(n.name)) return this.reserved(n.name);
       const lookup = lexicalScopes.get(n) ?? env;
       const candidates = lookup.visible(n.name),
         bound = lookup.get(n.name);
@@ -1809,6 +1855,8 @@ export class Interpreter {
         body: this.evaluateFields(n.body, env),
       });
     if (n.head.kind === "symbol" && n.head.quoted) {
+      if (isReservedPrimitiveSpelling(n.head.name))
+        throw this.quotedPrimitive(n.head.name, n.head.span);
       if (n.head.name === "NumericSource") {
         const args = this.evaluateFields(n.body, env);
         const spelling = unwrap(args[0]?.value);
@@ -2736,6 +2784,13 @@ export class Interpreter {
             }
             if (
               typeMode &&
+              n.head.kind === "symbol" &&
+              !n.head.quoted &&
+              isReservedPrimitiveSpelling(n.head.name)
+            )
+              return undefined;
+            if (
+              typeMode &&
               this.isTypeCall(n, lookup(n)) &&
               (n.head.kind !== "symbol" ||
                 isCapture(n.head.name) ||
@@ -2751,7 +2806,11 @@ export class Interpreter {
         defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {
-          if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
+          if (n.kind === "symbol") {
+            if (n.quoted && isReservedPrimitiveSpelling(n.name))
+              throw this.quotedPrimitive(n.name, n.span, "declaration");
+            return literalPattern(valSymbol(n.name));
+          }
           // Application heads are structural patterns, not unary type-factory
           // calls: the head of (a :* b) is the partial tree *(a).
           if (
@@ -2827,6 +2886,8 @@ export class Interpreter {
         },
         atom: (n) => {
           if (n.kind === "symbol") {
+            if (n.quoted && isReservedPrimitiveSpelling(n.name))
+              throw this.quotedPrimitive(n.name, n.span, "declaration");
             const binding = lookup(n).get(n.name);
             if (!n.quoted && primitiveNames.has(n.name)) return reference(n);
             if (!n.quoted && constantNames.has(n.name))
@@ -3704,11 +3765,21 @@ export class Interpreter {
       },
     };
   }
-  private quotedPrimitive(name: string, span?: Syntax["span"]): LanguageError {
+  private quotedPrimitive(
+    name: string,
+    span?: Syntax["span"],
+    phase: "evaluate" | "parse" | "declaration" = "evaluate",
+  ): LanguageError {
     return new LanguageError(
       "quoted " + name + " is not a symbol; " + name + " is a primitive",
       span,
-      { code: "E_QUOTED_PRIMITIVE", phase: "evaluate" },
+      { code: "E_QUOTED_PRIMITIVE", phase },
+    );
+  }
+  private reserved(name: string): Field<Value>[] {
+    return this.check(
+      this.primitives.get("ReservedSymbol")!,
+      valSymbol(name),
     );
   }
   private symbolValue(name: string): Value {

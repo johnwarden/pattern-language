@@ -20,23 +20,28 @@ const rejects = (source: string, code: string) =>
 test("Boolean constants and native predicates have a known Bool result type", () => {
   const i = new Interpreter();
   assert.equal(i.inspect(i.run("1 == 1")), "True :: Bool");
+  assert.equal(i.inspect(i.run("True")), "True :: ReservedSymbol");
   assert.equal(
     i.inspect(
       i.run(
         "(True,False,1 != 1,1 < 2,2 > 1,1 <= 2,2 >= 1,isInt64(3),2 .matches Int)",
       ),
     ),
-    "(True :: Bool, False :: Bool, False :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool)",
+    "(True :: ReservedSymbol, False :: ReservedSymbol, False :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool)",
   );
   rejects(":True", "E_QUOTED_PRIMITIVE");
 });
 
-test("primitive names evaluate as type values in ordinary expressions", () => {
+test("primitive names evaluate as ReservedSymbol values in ordinary expressions", () => {
   const i = new Interpreter();
-  assert.equal(i.inspect(i.run("r = Int\nr")), "Int :: Type");
+  assert.equal(i.inspect(i.run("r = Int\nr")), "Int :: ReservedSymbol");
   assert.equal(
     run("(Int == (type Int),Float == (type Float),Bool == (type Bool))"),
-    "(True, True, True)",
+    "(False, False, False)",
+  );
+  assert.equal(
+    run("((type Int) == (type Int),1 :: Int)"),
+    "(True, 1)",
   );
   rejects("x = Foo\nx", "E_UNBOUND_NAME");
 });

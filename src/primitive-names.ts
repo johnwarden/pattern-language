@@ -16,6 +16,7 @@ export const primitiveNames = new Map([
   ["Body", "Body"],
   ["Any", "Any"],
   ["Type", "Type"],
+  ["ReservedSymbol", "ReservedSymbol"],
 ]);
 export const constantNames = new Set(["True", "False"]);
 /** Withdrawn spellings that must not become ordinary symbols either. */

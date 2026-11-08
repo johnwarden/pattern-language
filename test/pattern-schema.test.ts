@@ -16,8 +16,13 @@ test("documented schema is the exact runtime bootstrap source", () => {
 test("language schema gates descriptor shapes without consulting the user scope", () => {
   // These shapes previously fell through the host decoder as ordinary nodes,
   // despite using heads reserved by the descriptor grammar.
-  for (const source of ["Type(:String(:A))", "Type(:|(:A,:B))"])
-    assert.throws(() => run(source), /invalid type-description shape/);
+  for (const source of ["Type(:String(:A))", "Literal(:String)"])
+    assert.throws(
+      () => run(source),
+      (e: unknown) =>
+        e instanceof LanguageError && e.diagnostic.code === "E_QUOTED_PRIMITIVE",
+    );
+  assert.throws(() => run("Type(:|(:A,:B))"), /invalid type-description shape/);
   assert.equal(
     run(
       "def ordinaryHead(h) False\ndef TypeDescription type :Nope\nType(:Box(Int)) == (type :Box(Int))",
@@ -28,13 +33,8 @@ test("language schema gates descriptor shapes without consulting the user scope"
     () => run("def ordinaryHead(h) True\nType(:|(:A,:B))"),
     /invalid type-description shape/,
   );
-  // Explicit Apply describes a literal reserved head without evaluating a
-  // quoted primitive name as an ordinary symbol (D20).
-  assert.throws(
-    () => run("Literal(:String)"),
-    (e: unknown) =>
-      e instanceof LanguageError && e.diagnostic.code === "E_QUOTED_PRIMITIVE",
-  );
+  // Explicit Apply describes a literal reserved head. Quoted primitive names
+  // are E_QUOTED_PRIMITIVE (D20); the unquoted reserved symbol is the tag.
   assert.equal(
     run("Type(Apply(Literal(:Box),Fields(:A))) == (type :Box(:A))"),
     "True",
@@ -63,7 +63,7 @@ test("recursive pattern schema covers portable descriptors without Expression pl
     "type :Some(Int) | :None",
     "type :Pair(x :: Int,y :: Int)",
     "type [rest... :: Int*]",
-    "type :String([65])",
+    "type String([65])",
     "UnionType(Int,String)",
   ]) {
     assert.equal(
@@ -128,7 +128,7 @@ test("alternative branch captures erase without shared slots", () => {
 });
 
 test("String constructor patterns round trip without becoming string literals", () => {
-  for (const pattern of [":String([65])", ":String(Int)", ":String()"])
+  for (const pattern of ["String([65])", "String(Int)", "String()"])
     assert.equal(
       run("t = type " + pattern + "\nparse(Type)(toString(Type)(t)) == t"),
       "True",

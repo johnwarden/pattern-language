@@ -29,8 +29,9 @@ The proposed primitive vocabulary includes self-evaluating PrimitiveType, with B
 and PrimitiveType as its values. The complete metatype and redundant primitive-quote
 policy remain provisional. Nonprimitive numeric types should be definable carveouts.
 Quoted primitive names such as `:Int` are rejected in expression syntax (D20).
-The old Int == :Int/cache convention is not the relationship between a type value
-and quoted syntax.
+Primitive names are `ReservedSymbol` values; `type Int` is the Int type. The old
+`Int == :Int` convention is dropped: the type description of a primitive is the
+reserved symbol itself (`Int`), not `:Int`.
 
 An explicitly interpreted Expression descriptor, if exposed, need not equal the result
 of evaluating it. Whether runtime Expression computation exists, and the exact public

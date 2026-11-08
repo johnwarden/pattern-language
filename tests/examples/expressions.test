@@ -127,9 +127,9 @@ end
 test "Explicit primitive values"
   t = Float
 
-  expect t result Float :: Type
-  expect Int result Int :: Type
-  expect Bool result Bool :: Type
+  expect t result Float :: ReservedSymbol
+  expect Int result Int :: ReservedSymbol
+  expect Bool result Bool :: ReservedSymbol
 
   assert t == (type Float)
 

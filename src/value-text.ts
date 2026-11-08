@@ -4,7 +4,11 @@ import {
   isCanonicalAtom,
   isReservedPrimitiveSpelling,
 } from "./primitive-names.ts";
-import { parseExpression } from "./parser.ts";
+import {
+  parseExpression,
+  parseSurface,
+  type LayoutForms,
+} from "./parser.ts";
 import { syntaxData, codeSource } from "./syntax-values.ts";
 import { LanguageError, normal } from "./syntax.ts";
 import type { Syntax } from "./syntax.ts";
@@ -27,32 +31,11 @@ import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
 
 const singleton = (value: Syntax) => [{ label: "_1", value }];
-/** Names the default grammar reads as layout keywords, not as this symbol. */
-const layoutKeywords = new Set([
-  "def",
-  "macro",
-  "type",
-  "unionType",
-  "if",
-  "else",
-  "match",
-  "end",
-  "test",
-  "expect",
-  "assert",
-  "todo",
-  "legacy",
-  "result",
-  "error",
-]);
-/** Value text prints ordinary symbols bare. Colon quotation is a code form,
- * used when a bare name would bind, and for layout keywords whose bare name
- * would be read as a grammar form rather than this symbol.
- */
+/** Value text prints every symbol bare. Colon quotation is a code-domain form. */
 function quoteValueSymbol(name: string, expected?: TypeValue): boolean {
   if (expected && ["Expression", "Code", "Body"].includes(expected.name))
     return !isCanonicalAtom(name);
-  return layoutKeywords.has(name);
+  return false;
 }
 const reserved = new Set([
   "Type",
@@ -496,7 +479,7 @@ export function valueText(
                     ? {
                         kind: "symbol" as const,
                         name: f.value.name,
-                        quoted: true,
+                        quoted: !isSelfEvaluating(f.value.name),
                       }
                     : syntax(f.value),
             })),
@@ -522,14 +505,19 @@ export function parseValueText(
   text: string,
   domain: TextDomain,
   typeExpected = false,
-  allowLayout = false,
+  layoutForms?: LayoutForms,
 ): Value {
   const source = { name: "serialized value", text };
   const numeric = parseNumericSpelling(text);
   if (numeric && !typeExpected) return valRational(numeric.n, numeric.d);
+  const allowLayout = !!layoutForms?.size;
   let tree: Syntax;
   try {
-    tree = parseExpression(text, allowLayout);
+    if (allowLayout) {
+      tree = parseSurface(text, "serialized value", { layoutForms });
+      if (tree.kind === "block" && tree.lines.length === 1)
+        tree = tree.lines[0];
+    } else tree = parseExpression(text, false);
   } catch (error) {
     if (error instanceof LanguageError && error.diagnostic.primary)
       error.diagnostic.primary.source = source;
@@ -566,7 +554,7 @@ export function parseValueText(
     }
     if (n.kind === "quote") return decode(n.value, pattern);
     if (n.kind === "symbol") {
-      if (n.quoted && isReservedPrimitiveSpelling(n.name) && !pattern)
+      if (n.quoted && isReservedPrimitiveSpelling(n.name))
         throw new LanguageError(
           "quoted " +
             n.name +
@@ -576,16 +564,19 @@ export function parseValueText(
           n.span,
           { code: "E_QUOTED_PRIMITIVE", phase: "parse" },
         );
-      return !n.quoted && primitiveNames.has(n.name)
-        ? domain.type(sym(primitiveNames.get(n.name)!))
-        : sym(n.name);
+      return sym(n.name);
     }
     if (n.kind === "block" && !pattern && allowLayout) return syntaxData(n);
     if (n.kind === "block" && n.lines.length === 1)
       return decode(n.lines[0], pattern);
-    if (n.kind === "sequence" && n.items.length === 1)
+    if (n.kind === "sequence" && n.items.length === 1 && !allowLayout)
       return decode(n.items[0], pattern);
-    if (n.kind === "sequence" && !pattern && allowLayout) return syntaxData(n);
+    if (
+      (n.kind === "sequence" || n.kind === "form") &&
+      !pattern &&
+      allowLayout
+    )
+      return syntaxData(n);
     if (n.kind === "postfix")
       return {
         kind: "postfix",
@@ -596,6 +587,20 @@ export function parseValueText(
       return fail(
         "expected data; blocks, definitions, quotations, and generic calls are not evaluated by parse",
         n,
+      );
+    if (
+      n.head.kind === "symbol" &&
+      n.head.quoted &&
+      isReservedPrimitiveSpelling(n.head.name)
+    )
+      throw new LanguageError(
+        "quoted " +
+          n.head.name +
+          " is not a symbol; " +
+          n.head.name +
+          " is a primitive",
+        n.head.span,
+        { code: "E_QUOTED_PRIMITIVE", phase: "parse" },
       );
     if (n.head.kind === "symbol" && n.head.name.startsWith("\0"))
       return fail(
