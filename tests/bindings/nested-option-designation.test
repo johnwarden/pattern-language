@@ -54,6 +54,35 @@ test "Ordinary binding and dispatch do not unwrap Nested"
   error "E_NO_METHOD"
 end
 
+test "Match-arm defaults do not inherit projection"
+  def Inner type String | :None
+  def Nested type Inner | :None
+  (outer :: Nested) = "Hello"
+  def take(x :: Inner) True
+
+  expect take(outer) error "E_NO_METHOD"
+  expect
+    match ()
+      (missing: v = take(outer)) -> v
+    end
+  error "E_PATTERN_MISMATCH"
+end
+
+test "Match-arm predicates do not inherit projection"
+  def Inner type String | :None
+  def Nested type Inner | :None
+  (outer :: Nested) = "Hello"
+  def take(x :: Inner) True
+  def Refined Nested .where (x -> take(outer))
+
+  expect take(outer) error "E_NO_METHOD"
+  expect
+    match outer
+      (v :: Refined) -> v
+    end
+  error "E_PATTERN_MISMATCH"
+end
+
 test "Match does not skip two unwrapped option boundaries"
   def Inner type String | :None
   def Nested type Inner | :None

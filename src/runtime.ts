@@ -1636,12 +1636,9 @@ export class Interpreter {
             validatePatternCaptures([{ kind: "pack", body: pair[0] }]);
             let matched: Match<Value>;
             try {
-              this.matchProjectionDepth++;
-              try {
-                matched = this.matchParameters(pair[0], values, env);
-              } finally {
-                this.matchProjectionDepth--;
-              }
+              matched = this.withMatchProjection(() =>
+                this.matchParameters(pair[0], values, env),
+              );
             } catch (e) {
               if (e instanceof Mismatch) continue;
               throw e;
@@ -2204,6 +2201,8 @@ export class Interpreter {
     }
   }
   private invoke(fn: Value, args: Field<Value>[], env?: Scope): Field<Value>[] {
+    if (this.matchProjectionDepth)
+      return this.withoutMatchProjection(() => this.invoke(fn, args, env));
     this.tick();
     fn = unwrap(fn);
     if (fn.kind === "symbol" || fn.kind === "term")
@@ -2512,7 +2511,10 @@ export class Interpreter {
         allowIgnoredCaptures: !typeMode,
         requireCaptureTypes: typeMode,
         allowDefaults: !typeMode,
-        defaultValue: (n) => single(this.evaluate(n, env), "default value"),
+        defaultValue: (n) =>
+          this.withoutMatchProjection(() =>
+            single(this.evaluate(n, env), "default value"),
+          ),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {
           if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
@@ -3550,6 +3552,23 @@ export class Interpreter {
     if (!union || union.choices.length < 2) return;
     return union.choices;
   }
+  private withMatchProjection<T>(body: () => T): T {
+    this.matchProjectionDepth++;
+    try {
+      return body();
+    } finally {
+      this.matchProjectionDepth--;
+    }
+  }
+  private withoutMatchProjection<T>(body: () => T): T {
+    const depth = this.matchProjectionDepth;
+    this.matchProjectionDepth = 0;
+    try {
+      return body();
+    } finally {
+      this.matchProjectionDepth = depth;
+    }
+  }
   private uniqueMatchUnionMember(
     prior: TypeValue,
     value: Value,
@@ -3561,9 +3580,7 @@ export class Interpreter {
     const payload = value.kind === "view" ? value.base : unwrap(value);
     const hits: TypeValue[] = [];
     let constructorHit = false;
-    const depth = this.matchProjectionDepth;
-    this.matchProjectionDepth = 0;
-    try {
+    this.withoutMatchProjection(() => {
       for (const choice of choices) {
         try {
           this.interpretMatch(choice, singleton(payload));
@@ -3574,9 +3591,7 @@ export class Interpreter {
           if (!(error instanceof Mismatch)) throw error;
         }
       }
-    } finally {
-      this.matchProjectionDepth = depth;
-    }
+    });
     return (
       !constructorHit &&
       hits.length === 1 &&

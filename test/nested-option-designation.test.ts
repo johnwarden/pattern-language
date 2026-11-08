@@ -38,6 +38,26 @@ test("ordinary binding and dispatch keep the Nested boundary", () => {
   rejects(nested + "def take(x :: Inner) x\ntake(outer)", "E_NO_METHOD");
 });
 
+test("match-arm defaults and predicates do not inherit projection", () => {
+  const take = nested + "def take(x :: Inner) True\n";
+  rejects(take + "take(outer)", "E_NO_METHOD");
+  rejects(
+    take +
+      `match ()
+  (missing: v = take(outer)) -> v
+end`,
+    "E_PATTERN_MISMATCH",
+  );
+  rejects(
+    take +
+      `def Refined Nested .where (x -> take(outer))
+match outer
+  (v :: Refined) -> v
+end`,
+    "E_PATTERN_MISMATCH",
+  );
+});
+
 test("tagged postfix option does not wrap or strip Some", () => {
   rejects('(outer :: String??) = "Hello"\nouter', "E_PATTERN_MISMATCH");
   assert.equal(run('Some(Some("Hello")) :: String??'), 'Some(Some("Hello"))');
