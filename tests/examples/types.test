@@ -211,9 +211,10 @@ test "Ordinary factory with defaults"
 end
 
 test "Subset of an optional type"
-  def NoInt (?(Int)) .where (v -> v .matches :None)
+  def Option(T :: Type) type :None | Some(T)
+  def NoInt Option(Int) .where (v -> v .matches :None)
   a = :None :: NoInt
-  b = :None :: ?(Int)
+  b = :None :: Option(Int)
 
   assert a == b
 end

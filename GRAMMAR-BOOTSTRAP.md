@@ -104,7 +104,7 @@ including rest captures. Binding, parameter, and match captures may remain
 unannotated without boxing their inputs. `_` cannot define a type field.
 
 Type suffixes apply left to right: `Int?*` is postfix `*` of postfix `?` of `Int`,
-distinct from prefix `*(?(Int))`. Angle brackets have no application role; spaced `<`
+distinct from prefix `*(Int?)`. Angle brackets have no application role; spaced `<`
 and `>` remain ordinary infix operators.
 Prefix punctuation is maximal; each postfix modifier is interpreted separately.
 
@@ -186,10 +186,10 @@ Defaults are valid only in binding patterns, including parameters and match arms
 They populate captures without modifying input values. Type expressions reject them
 with E_TYPE_DEFAULT. An ordinary factory function can accept defaulted parameters
 and explicitly return a complete value; type annotations never complete fields.
-Prefix `?(T)` is Option, with no field-specific interpretation. Postfix `T?` is a
-distinct construction. Defaults must match the annotated type. A label in a binding
-pattern may be absent because it has a default, not because its type is `?(T)`.
-Type fields remain required.
+Option types are written `T?` by convention (the postfix tree), with no
+field-specific interpretation. Prefix `?(T)` is not Option. Defaults must match
+the annotated type. A label in a binding pattern may be absent because it has a
+default, not because its type is `T?`. Type fields remain required.
 
 Names use ASCII lower camel, upper camel or upper snake; capital runs are allowed.
 Lower-snake words and malformed underscore separators reject. Prefix `!` is
@@ -312,7 +312,8 @@ there is no implicit `_` subject or special permission to pass a defined functio
 as a value. Use a closure, for example `n -> isInt64(n)`.
 
 ```text
-def NoInt (?(Int)) .where (v -> v .matches :None)
+def Option(T :: Type) type :None | Some(T)
+def NoInt Option(Int) .where (v -> v .matches :None)
 (x :: Number .where (n -> isInt64(n))) = 10
 ```
 
@@ -387,7 +388,7 @@ It retains the complete concrete input and creates only scoped accessor definiti
 Type(Pattern) describes complete concrete values and cannot disguise open constraints.
 The portable OpenFields(Fields(...),labels: Bool,positional: Bool) description records
 both kinds of openness. Literal punctuation symbols and constructor heads use the
-ordinary quoted-head/Apply escapes; keyword rest capture/spread remains unsupported.
+ordinary quoted-head/Apply escapes; prefix keyword rest capture/spread remains unsupported.
 
 ## Name lookup and type normalization
 

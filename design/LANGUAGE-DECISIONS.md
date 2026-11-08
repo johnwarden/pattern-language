@@ -91,7 +91,7 @@ The author accepted that functional equality alone does not justify banning all 
 
 ### D09. Designation and projection are settled, different operations — confirmed
 
-Designation into an expected concrete type may recursively establish the necessary inward interpretations **when there is exactly one justified path**. Predicate constraints along that path require evidence. This does not license missing required fields, arbitrary rounding or branch priority. Nested optional designation from a String is permitted when unique; nested `None` is rejected when it could identify different absence levels. C12 uses unwrapped optional branches for direct typed-branch projection; it must not be read as silently stripping Some nodes from a tagged representation.
+Designation into an expected concrete type may recursively establish the necessary inward interpretations **when there is exactly one justified path**. Predicate constraints along that path require evidence. This does not license missing required fields, arbitrary rounding or branch priority. Nested optional designation from a String is permitted when unique; nested `None` is rejected when it could identify different absence levels. Option types are written `T?` by convention (the postfix tree); nested option in that convention is `(T?)?` / `T??`. C12 uses unwrapped optional branches (`T | :None`) for direct typed-branch projection; it must not be read as silently stripping Some nodes from a tagged representation, and neither that recipe nor tagged `:None | Some(T)` is a factory that postfix `?` maps to.
 
 Projection crosses **exactly one explicitly requested concrete boundary**. It is performed by explicit match-based extraction, not by an ordinary typed binding or by function dispatch. Repeated boundaries require repeated explicit projections. An unannotated capture preserves the value rather than stripping wrappers. Single-arm extraction must be guaranteed over its admitted input domain; otherwise a multi-arm match or additional evidence is required.
 
@@ -125,7 +125,7 @@ Independently scoped declarations with equivalent capture-free descriptions exch
 
 The horizontal/vertical capture contract is retained: one repeated dimension contributes one list layer to the aggregate capture. A horizontal rest alone has `T*`; horizontal rest repeated over rows has `T**`. The author corrected the specialization Matrix example's `N*` to the two-dimensional rule. Zero rows, one empty row and a flat empty pack remain distinct.
 
-R proposes mirrored row spreading/capture and a keyword remainder represented by an actual typed record preserving its field labels and concrete field types. These are **intended proposals, not implemented guarantees**. Postfix `...` is preferred; postfix keyword-rest/spread `**`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
+R proposes mirrored row spreading/capture and a keyword remainder represented by an actual typed record preserving its field labels and concrete field types. These are **intended proposals, not implemented guarantees**. Postfix `...` is preferred; prefix keyword-rest/spread `**rest` / `**(x)` / `**rest: {**}`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
 
 ### D16. constructedBy is tabled entirely — deferred by latest decision
 
@@ -1138,7 +1138,7 @@ end
 
 ### C22 — keyword remainder is a typed record
 
-**Proposal, not an implemented or fully spelled feature.** The `rest**: {**}` capture syntax follows R's sketch and still needs grammar approval.
+**Proposal, not an implemented or fully spelled feature.** The `**rest: {**}` capture syntax is prefix `**` (not postfix `rest**`) and still needs grammar approval.
 
 ```text
 test "C22 keyword remainder retains its record field types"
@@ -1147,7 +1147,7 @@ test "C22 keyword remainder retains its record field types"
     type Person abstract {name: String, id: Int64, **}
     type AgeInfo concrete {age: Int8}
     def extra(person :: Person)
-      {name: name, id: id, rest**: {**}} = person
+      {name: name, id: id, **rest: {**}} = person
       rest
     end
     john = ({name: "John", id: 5, age: 48} :: PersonRecord)
@@ -1160,7 +1160,7 @@ test "C22 keyword remainder retains its record field types"
       type Person abstract {name: String, id: Int64, **}
       type AgeInfo concrete {age: Int8}
       def extra(person :: Person)
-        {name: name, id: id, rest**: {**}} = person
+        {name: name, id: id, **rest: {**}} = person
         rest
       end
       john = ({name: "John", id: 5, age: 48} :: PersonRecord)
@@ -1170,7 +1170,7 @@ test "C22 keyword remainder retains its record field types"
 end
 ```
 
-This corrects R's inconsistent id-width example. It makes no claim that specialization is required to give `rest` a descriptor or that its shape is always statically known. Keyword spread spelling is not settled by this capture example.
+This corrects R's inconsistent id-width example. It makes no claim that specialization is required to give `rest` a descriptor or that its shape is always statically known. Keyword spread is prefix `**`; this capture example is still a proposal.
 
 ### C23 — canonical typed text remains a value round trip
 
@@ -1344,7 +1344,7 @@ No corresponding expected result is assigned for raw Expression computation, whi
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
 | Test DSL modifiers | Implemented assertion-level todo/legacy execution and reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
-| Postfix vs prefix punctuation application | **Decided.** Every current suffix (`* ? ! ^ @ $ & ~`) is a distinct postfix construction. Option/List/error types are prefix `*(T)` / `?(T)` / `^(T)`. Prefix `$` remains unquote; interpolating quotes are lexer prefixes. `T+` is not in the current suffix inventory. |
+| Postfix vs prefix punctuation application | **Decided.** Every current suffix (`* ? ! ^ @ $ & ~`) is a distinct postfix construction. Option types are written `T?` by convention (the postfix tree itself, not a factory). List/error types stay prefix `*(T)` / `^(T)`. Prefix `?(T)` is ordinary prefix application, not Option. Prefix `$` remains unquote; interpolating quotes are lexer prefixes. `T+` is not in the current suffix inventory. |
 
 Obvious draft slips are normalized only to express the intended rules: String/sqrt examples meant an integer type; inconsistent normalizer names refer to one function; the Float union's self-reference is not a proposed recursive numeric member; mismatched id widths and Matrix dimensions are corrected explicitly. No semantic decision is extracted from those slips.
 

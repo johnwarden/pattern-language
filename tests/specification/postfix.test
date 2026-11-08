@@ -28,7 +28,7 @@ test "Postfix star question caret bang are distinct from prefix application"
   (star :: PostfixStar) = 1*
   (xs :: PrefixStar) = [1]
   (opt :: PostfixOpt) = "hi"?
-  (none :: PrefixOpt) = :None
+  (preOpt :: PrefixOpt) = ?("bar")
   (caret :: PostfixCaret) = 2^
   (ok :: PrefixCaret) = Ok(2)
   (bang :: PostfixBang) = 3!
@@ -37,7 +37,7 @@ test "Postfix star question caret bang are distinct from prefix application"
   error "Can't compare types"
   end
   expect
-    opt == none
+    opt == preOpt
   error "Can't compare types"
   end
   expect

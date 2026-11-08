@@ -42,10 +42,13 @@ public `SyntaxNode` Postfix variant.
 
 The current suffix inventory is parser `POSTFIX_SUFFIX`:
 `* ? ! ^ @ $ & ~`. Each is a distinct postfix construction, not prefix/infix
-`Apply`. Option/List/error types stay prefix `*(T)` / `?(T)` / `^(T)`. Postfix
-`Int*` / `String?` / `Int^` / `Int!` / `Int$` / `Int&` / `Int~` are incomparable
-with the corresponding prefix applications. `T+` nonempty-list meaning remains
-later work; `+` is not in the current suffix set and stays prefix/infix.
+`Apply`. Option types are written `T?` by convention: that spelling *is* the
+postfix tree, not a mapping onto a named `Option(T)` factory. List/error types
+stay prefix `*(T)` / `^(T)`. Prefix `?(T)` is ordinary prefix application, not
+Option. Postfix `Int*` / `Int^` / `Int!` / `Int$` / `Int&` / `Int~` are
+incomparable with the corresponding prefix applications. `T+` nonempty-list
+meaning remains later work; `+` is not in the current suffix set and stays
+prefix/infix.
 
 Prefix `$` / `$(…)` / infix `$` remain unquote (`E_UNQUOTE_CONTEXT` outside
 quotation). Interpolating `` T$` ``, `$"…"`, and `$'…'` are lexer quote prefixes
@@ -59,7 +62,8 @@ notes.
 Other punctuation (`= / +` and similar) stays prefix/infix until listed as a
 suffix.
 
-The Question/`String?` sketch is the same generic distinction as `@`:
+The Question/`String?` sketch is the option-type convention: `T?` *is* the
+postfix tree, inhabited by postfix values, the same generic distinction as `@`:
 
 ```text
 type Question String?
@@ -70,12 +74,13 @@ expect s result "Does this actually work" :: String
 ```
 
 Tight postfix punctuation is one symbol per character. Each suffix wraps the
-expression immediately to its left: String?*^! is (((String?)*)^)!, or an action
-returning a fallible result of a list of optional strings. T** is (T*)* and not a
+expression immediately to its left: String?*^! is (((String?)*)^)!, postfix
+wrapping of the option-type tree, not prefix `*(String?)` / `^(…)`. T** is (T*)* and not a
 new two-character postfix operator. Prefix punctuation still forms maximal symbols.
 The surface reader recognizes ... and bare ** markers; their repetition/openness
-meaning belongs to interpretation. Keyword remainder capture/spread remains later
-work and cannot silently change this suffix rule. Effects are still deferred.
+meaning belongs to interpretation. Keyword remainder capture/spread is prefix
+`**rest` / `**(x)` / `**rest: pattern` and remains later work; it cannot silently
+change the suffix rule that T** is (T*)*. Effects are still deferred.
 
 T+ denotes a nonempty list, refining T* without creating a new concrete list space.
 Vertical repetition remains explicit; a list annotation alone is not row repetition:

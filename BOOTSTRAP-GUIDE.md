@@ -121,7 +121,7 @@ not establish actual iOS lifecycle/storage behavior.
   spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
 - Prefix punctuation is a maximal symbol. Tight postfix `* ? ! ^ @ $ & ~` are
   distinct from prefix/infix application. `Int?*` is postfix `*` of postfix `?`
-  of `Int`, not the list/option type `*(?(Int))`. Prefix `$` remains unquote;
+  of `Int`, not the list type `*(Int?)`. Prefix `$` remains unquote;
   interpolating `T$` quotes stay lexer prefixes, not postfix `$`.
 - Outfix `[1,2]` and `{1,2}` have the unquoted heads `[]` and `{}`. They remain
   outfix in normalized output; `[](1,2)` has a different, nested expression head.
@@ -358,8 +358,10 @@ This is an experimental interpreter, not a compiler or a statically typed langua
 - Overlapping pattern alternatives that produce multiple complete matches are
   rejected as ambiguous. This is a conservative matcher policy, not set-theoretic
   union simplification or a subtype solver.
-- `T?` uses `None | Some(T)` and `T^` uses `Ok(T) | Error(_)` as provisional
-  conventions. Postfix `!` is reserved for future action types; action values and
+- Option types are written `T?` by convention (the postfix tree). `T^` uses
+  `Ok(T) | Error(_)` as a provisional prefix convention. A separately named
+  `def Option(T :: Type) type :None | Some(T)` tagged union is not what `?`
+  maps to. Postfix `!` is reserved for future action types; action values and
   execution are not implemented. No console, file, network, or library-import
   capabilities are supplied.
 - Recursive declaration groups are supported. Per-type parse/toString function
@@ -383,11 +385,11 @@ scope only when needed, must produce one value, and is checked by the same
 pattern. It cannot refer to sibling captures from the same argument pack.
 Explicit captures and implicit label captures both work: `color: c :: Color = Black`
 and `color: Color = Black`. A default itself makes a label optional, so
-`size: Int = 3` also works. Prefix `?(T)` is Option (currently `None | Some(T)`),
-including in defaulted fields. Postfix `T?` is a distinct construction. A default
-must inhabit the annotated type: `color: c :: ?(Color) = Some(Black)` is valid;
-`color: c :: ?(Color) = Black` is not. Omitting a default keeps a label required,
-even if its value type is `?(T)`.
+`size: Int = 3` also works. Option types are written `T?` by convention (the
+postfix tree), including in defaulted fields. A default must inhabit the
+annotated type: `color: c :: Color? = Black?` is valid; `color: c :: Color? =
+Black` is not. Omitting a default keeps a label required, even if its value type
+is `T?`. Prefix `?(T)` is not Option.
 
 
 Defaults are permitted in binding patterns: destructuring bindings, function
@@ -774,11 +776,12 @@ x.toInt == y
 ```
 
 ```text
-def NoInt (?(Int)) .where (v -> v .matches :None)
+def Option(T :: Type) type :None | Some(T)
+def NoInt Option(Int) .where (v -> v .matches :None)
 a = :None :: NoInt
-b = :None :: ?(Int)
+b = :None :: Option(Int)
 a == b
-# True; :None :: ?(String) is a different concrete space.
+# True; :None :: Option(String) is a different concrete space.
 ```
 
 The numeric backend remains limited to safe JavaScript integers, including the
@@ -1041,7 +1044,7 @@ PunctuationSymbol. UnionType members must have disjoint syntax; overlap and
 unsupported proofs reject. Union parsing selects the unique concrete member,
 including in fields/lists, and printing omits redundant union annotations.
 Facet/Any reconstruction tags remain explicit. The current overlapping Int/Float,
-?(Int)/?(String) and list unions are invalid rather than resolved by branch priority.
+Option(Int)/Option(String) tagged unions and list unions are invalid rather than resolved by branch priority.
 See simpleExpressionUnion and unannotatedUnion in the playground. The smaller
 Full Code grammar and executable nested test suites remain next work;
 [the design notes](design/UNION-GRAMMARS.md) distinguish them from this fix.

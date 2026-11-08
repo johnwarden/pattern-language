@@ -126,7 +126,7 @@ export class Grammar {
         bareCaptures: true,
         expression: (n) => {
           const modifier = typeModifier(n);
-          return modifier && ["*", "?", "^"].includes(modifier.name)
+          return modifier && ["*", "^"].includes(modifier.name)
             ? this.compiler(typeDefinition).domain.atom(n)
             : undefined;
         },
@@ -169,7 +169,7 @@ export class Grammar {
         expand: () => undefined,
         atom: (n) => {
           const modifier = typeModifier(n);
-          if (modifier && ["?", "^"].includes(modifier.name)) {
+          if (modifier?.name === "^") {
             const tagged = (
               name: string,
               pattern: Pattern<Syntax>,
@@ -188,17 +188,7 @@ export class Grammar {
             const element = this.compilePattern(modifier.operand);
             return {
               kind: "union",
-              choices:
-                modifier.name === "?"
-                  ? [
-                      {
-                        kind: "test",
-                        name: "None",
-                        test: (v) => v.kind === "symbol" && v.name === "None",
-                      },
-                      tagged("Some", element),
-                    ]
-                  : [tagged("Ok", element), tagged("Error", { kind: "any" })],
+              choices: [tagged("Ok", element), tagged("Error", { kind: "any" })],
             };
           }
           if (modifier?.name === "*")

@@ -32,7 +32,7 @@ test("abstract ordering compares concrete type before payload", () => {
   );
   assert.equal(
     run(
-      "(a :: Any) = :None :: ?(Int)\n(b :: Any) = :None :: ?(String)\n(a == b,a < b,b > a)",
+      "def Option(T :: Type) type :None | Some(T)\n(a :: Any) = :None :: Option(Int)\n(b :: Any) = :None :: Option(String)\n(a == b,a < b,b > a)",
     ),
     "(False, True, True)",
   );
@@ -136,7 +136,7 @@ test("abstract slots narrow with typed patterns rather than annotation-tree insp
 test("narrowing preserves concrete identity and abstract text round trips", () => {
   assert.equal(
     run(
-      "(x :: Any) = :None :: ?(Int)\n(v :: ?(Int)) = x\n(v == (:None :: ?(Int)),parse(Any)(toString(Any)(x)) == x,x == v)",
+      "def Option(T :: Type) type :None | Some(T)\n(x :: Any) = :None :: Option(Int)\n(v :: Option(Int)) = x\n(v == (:None :: Option(Int)),parse(Any)(toString(Any)(x)) == x,x == v)",
     ),
     "(True, True, True)",
   );

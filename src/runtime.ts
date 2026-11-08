@@ -727,7 +727,7 @@ export class Interpreter {
         accessors: [],
       });
     }
-    for (const name of ["*", "?", "^"])
+    for (const name of ["*", "^"])
       scope.functions.set(name, [
         this.native(
           name,
@@ -3789,18 +3789,6 @@ export class Interpreter {
                 },
               ],
             },
-          };
-        if (name === "?")
-          return {
-            kind: "union",
-            choices: [
-              literalPattern(valSymbol("None")),
-              {
-                kind: "node",
-                head: literalPattern(valSymbol("Some")),
-                body: positionalPattern([this.typePattern(element)]),
-              },
-            ],
           };
         if (name === "^")
           return {

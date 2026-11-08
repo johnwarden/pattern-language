@@ -109,9 +109,10 @@ export const postfix = (
   span: span ?? operand.span,
 });
 export const isTypeModifierOperator = (name: string): boolean =>
-  name === "*" || name === "?" || name === "^" || name === "!";
-/** Prefix apply *?^! still names Option/List/error constructors. Postfix is a
- * distinct tree and is not peeled here. */
+  name === "*" || name === "^" || name === "!";
+/** Prefix apply *^! still names List/error constructors (and reserved !).
+ * Postfix is a distinct tree and is not peeled here. Option types are written
+ * T? by convention: that spelling is the postfix tree, not a factory. */
 export function typeModifier(
   n: Syntax,
 ): { name: string; operand: Syntax } | undefined {

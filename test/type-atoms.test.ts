@@ -226,8 +226,8 @@ test("postfix type modifiers are distinct trees from prefix application", () => 
     assert.equal(parseExpression(prefix).kind, "apply");
     assert.equal(
       run(
-        suffix === "Int$"
-          ? "(type (Int)$) == (type ($(Int)))"
+        suffix === "Int$" || suffix === "Int?"
+          ? "(type (" + suffix + ")) == (type (" + prefix + "))"
           : suffix + " == " + prefix,
       ),
       "False",

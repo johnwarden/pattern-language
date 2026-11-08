@@ -74,11 +74,13 @@ so V(3) and the type factory call V(Int) can coexist. Matching/interpretation ch
 whether that data belongs to the intended type. Empty applications remain distinct
 from bare names, and f(a)(b) remains distinct from f(a,b).
 
-Prefix `*(T)` / `?(T)` / `^(T)` are ordinary applications naming List/Option/error
-types. Their domains are disjoint from numeric operator packs. Tight postfix
-`Int*` / `Int?` / `Int^` / `Int!` / `T@` / `T$` / `T&` / `T~` are a distinct
-construction, not those prefix applications. Prefix `!` is reserved for future
-action types. Prefix `$` remains unquote.
+Prefix `*(T)` / `^(T)` are ordinary applications naming List/error types.
+Option types are written `T?` by convention (the postfix tree itself, not a
+named factory). Their domains are disjoint from numeric operator packs. Tight
+postfix `Int*` / `Int?` / `Int^` / `Int!` / `T@` / `T$` / `T&` / `T~` are a
+distinct construction, not prefix application. Prefix `?(T)` is ordinary prefix
+application, not Option. Prefix `!` is reserved for future action types. Prefix
+`$` remains unquote.
 
 ## Normalization and identity
 

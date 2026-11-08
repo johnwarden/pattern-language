@@ -83,11 +83,11 @@ test("facets and Any still retain required concrete metadata", () => {
 });
 test("overlapping alternatives reject at construction even when unused or annotated", () => {
   for (const source of [
-    "UnionType(?(Int),?(String))",
+    "def Option(T :: Type) type :None | Some(T)\nUnionType(Option(Int),Option(String))",
     "UnionType(*(Int),*(String))",
     "UnionType(Int,Float)",
     "def A type :X(Int)\ndef B type :X(Number)\nUnionType(A,B)",
-    "def U unionType (?(Int)) | (?(String))\n0",
+    "def Option(T :: Type) type :None | Some(T)\ndef U unionType (Option(Int)) | (Option(String))\n0",
   ]) {
     assert.throws(
       () => run(source),

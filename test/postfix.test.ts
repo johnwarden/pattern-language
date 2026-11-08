@@ -141,4 +141,33 @@ amp == pre
   assert.equal(run('name = "Jo"\n$"Hi $name"'), '"Hi Jo"');
   assert.equal(run("1 & 2"), "1 & 2");
   assert.equal(run("3 ~ 4"), "3 ~ 4");
+  assert.equal(run("?(1)"), "?(1)");
+  assert.notEqual(run("1?"), run("?(1)"));
+  assert.throws(
+    () => run("Some(1) :: Int?"),
+    (e: unknown) => e instanceof LanguageError,
+  );
+});
+
+test("keyword rest is prefix ** and postfix rest** is two stars", () => {
+  assert.equal(parseExpression("**rest").kind, "apply");
+  assert.equal(normal(parseExpression("**rest")), "**(rest)");
+  assert.equal(normal(parseExpression("** rest")), "**(rest)");
+  assert.equal(parseExpression("**(x)").kind, "apply");
+  assert.equal(normal(parseExpression("**(x)")), "**(x)");
+  const post = parseExpression("rest**");
+  assert.equal(post.kind, "postfix");
+  assert.equal(normal(post), "rest**");
+  assert.throws(
+    () => run("{**rest} = {a: 1}\n0"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      e.diagnostic.code === "E_KEYWORD_REST_UNSUPPORTED",
+  );
+  assert.throws(
+    () => run("{**rest: {**}} = {a: 1}\n0"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      e.diagnostic.code === "E_KEYWORD_REST_UNSUPPORTED",
+  );
 });

@@ -709,15 +709,19 @@ class Reader {
       let label = "_" + (result.length + 1);
       let keywordRest = false;
       if (
-        this.options.specification &&
-        this.peek()?.kind === "name" &&
-        this.peek(1)?.text === "**" &&
-        this.peek(2)?.kind === ":" &&
-        this.peek()!.end === this.peek(1)!.start &&
-        this.peek(1)!.end === this.peek(2)!.start
+        this.peek()?.text === "**" &&
+        !this.peek()?.quoted &&
+        this.peek(1)?.kind === "name" &&
+        this.peek(2)?.kind === ":"
       ) {
-        label = this.take().text;
         this.take();
+        const name = this.take();
+        if (!labelName(name.text))
+          throw new LanguageError(
+            "labels must be lowercase camelCase names",
+            name,
+          );
+        label = name.text;
         this.take();
         keywordRest = true;
       }
@@ -741,7 +745,7 @@ class Reader {
         throw new LanguageError("expected an argument", this.peek());
       const rawValue = seq.items.length === 1 ? seq.items[0] : seq;
       const value = keywordRest
-        ? apply(symbol("KeywordRest", true), [{ label: "_1", value: rawValue }])
+        ? apply(symbol("**"), [{ label: "_1", value: rawValue }])
         : rawValue;
       if (value.kind === "symbol" && !value.quoted && value.name === "**") {
         if (!/^_\d+$/.test(label))

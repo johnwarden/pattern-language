@@ -41,15 +41,24 @@ test("physical labels matter but their order does not", () => {
   assert.equal(run("(type :R(x: Int)) == (type :R(y: Int))"), "False");
 });
 test("same syntax in different optional spaces is incomparable", () => {
-  incomparable("a = :None :: ?(Int)\nb = :None :: ?(String)\na == b");
-  incomparable("a = :None :: ?(Int)\nb = :None :: ?(String)\na < b");
+  const option = "def Option(T :: Type) type :None | Some(T)\n";
   incomparable(
-    "def Empty type :None\na = :None :: Empty\nb = :None :: ?(Int)\na == b",
+    option + "a = :None :: Option(Int)\nb = :None :: Option(String)\na == b",
+  );
+  incomparable(
+    option + "a = :None :: Option(Int)\nb = :None :: Option(String)\na < b",
+  );
+  incomparable(
+    option +
+      "def Empty type :None\na = :None :: Empty\nb = :None :: Option(Int)\na == b",
   );
 });
 test("annotation cannot silently convert an already interpreted value", () => {
   assert.throws(
-    () => run("x = :None :: ?(Int)\nx :: ?(String)"),
+    () =>
+      run(
+        "def Option(T :: Type) type :None | Some(T)\nx = :None :: Option(Int)\nx :: Option(String)",
+      ),
     /different concrete type/,
   );
 });
@@ -69,13 +78,15 @@ test("generic arguments participate in identity even for empty containers", () =
 test("a subset preserves its base concrete space", () => {
   assert.equal(
     run(
-      "def NoInt (?(Int)) .where (v -> v .matches :None)\na = :None :: NoInt\nb = :None :: ?(Int)\na == b",
+      "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> v .matches :None)\na = :None :: NoInt\nb = :None :: Option(Int)\na == b",
     ),
     "True",
   );
   assert.throws(
     () =>
-      run("def NoInt (?(Int)) .where (v -> v .matches :None)\nSome(3) :: NoInt"),
+      run(
+        "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> v .matches :None)\nSome(3) :: NoInt",
+      ),
     /subset/,
   );
 });
@@ -117,7 +128,7 @@ test("aliases and recursive aliases preserve their concrete identity", () => {
   );
   assert.equal(
     run(
-      "def NoInt (?(Int)) .where (v -> v .matches :None)\nemptyInt = type NoInt\na = :None :: emptyInt\nb = :None :: ?(Int)\na == b",
+      "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> v .matches :None)\nemptyInt = type NoInt\na = :None :: emptyInt\nb = :None :: Option(Int)\na == b",
     ),
     "True",
   );
