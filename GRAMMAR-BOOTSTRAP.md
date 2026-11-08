@@ -106,7 +106,7 @@ unannotated without boxing their inputs. `_` cannot define a type field.
 Type suffixes apply left to right: `Int?*` is `(Int?)*`, and `T**` is `(T*)*`.
 The current bootstrap still rewrites those suffixes into prefix application
 nodes (`Int?*` as `*(?(Int))`); distinct postfix trees replace that
-normalization. List `T*`, Option `T?`, and error `T^` are postfix by
+normalization. List `T*`, option `T?` (`T | :None`), and error `T^` are postfix by
 convention.
 
 Prefix `+Int` and `+(Int)` are the same application tree. Tight `Int+` is not a
@@ -192,7 +192,8 @@ Defaults are valid only in binding patterns, including parameters and match arms
 They populate captures without modifying input values. Type expressions reject them
 with E_TYPE_DEFAULT. An ordinary factory function can accept defaulted parameters
 and explicitly return a complete value; type annotations never complete fields.
-`T?` always means `?(T)`, with no field-specific interpretation. Defaults must
+Postfix `T?` is only the type constructor for `T | :None`, with no field-specific
+interpretation. Present values are plain; absence is `:None`. Defaults must
 match the annotated type. A label in a binding pattern may be absent because it has a default, not
 because its type is `T?`. Type fields remain required.
 

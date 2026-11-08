@@ -95,15 +95,103 @@ test "Match does not skip two unwrapped option boundaries"
   error "E_PATTERN_MISMATCH"
 end
 
-test "Postfix T? is a distinct tree from unwrapped option"
-  def Inner type String | :None
-  assert False == (type String?) == (type Inner)
+test "Postfix T? is the unwrapped type constructor T | :None"
   expect
-    (outer :: String?) = "Hello"
-    outer
+    (present :: String?) = "Hello"
+    present
+  result "Hello" :: String?
+
+  expect
+    (absent :: String?) = :None
+    absent
+  result :None :: String?
+
+  expect
+    (tagged :: String?) = Some("Hello")
+    tagged
   error "E_PATTERN_MISMATCH"
+end
+
+test "Nested postfix String?? designates a unique String"
   expect
     (outer :: String??) = "Hello"
     outer
+  result "Hello" :: String??
+
+  assert "Hello" .matches (type String??)
+  assert False == ((type String??) == (type String?))
+end
+
+test "Nested postfix absence is ambiguous across designation paths"
+  expect
+    (absent :: String??) = :None
+    absent
+  error "E_AMBIGUOUS_PATTERN"
+end
+
+test "Match projects one postfix option boundary"
+  (outer :: String??) = "Hello"
+
+  expect
+    match outer
+      (inner :: String?) -> inner
+    end
+  result "Hello" :: String?
+
+  expect
+    match outer
+      (inner :: String?) -> match inner
+        (s :: String) -> s
+      end
+    end
+  result "Hello" :: String
+end
+
+test "Ordinary binding and dispatch do not unwrap String??"
+  (outer :: String??) = "Hello"
+
+  expect
+    (inner :: String?) = outer
+    inner
+  error "E_PATTERN_MISMATCH"
+
+  expect
+    def take(x :: String?) x
+    take(outer)
+  error "E_NO_METHOD"
+end
+
+test "Match-arm defaults do not inherit postfix option projection"
+  (outer :: String??) = "Hello"
+  def take(x :: String?) True
+
+  expect take(outer) error "E_NO_METHOD"
+  expect
+    match ()
+      (missing: v = take(outer)) -> v
+    end
+  error "E_PATTERN_MISMATCH"
+end
+
+test "Match-arm predicates do not inherit postfix option projection"
+  (outer :: String??) = "Hello"
+  def take(x :: String?) True
+  def Refined String?? .where (x -> take(outer))
+
+  expect take(outer) error "E_NO_METHOD"
+  expect
+    match outer
+      (v :: Refined) -> v
+    end
+  error "E_PATTERN_MISMATCH"
+end
+
+test "Match does not skip two postfix option boundaries"
+  (outer :: String??) = "Hello"
+
+  expect
+    match outer
+      (s :: String) -> s
+    end
   error "E_PATTERN_MISMATCH"
 end

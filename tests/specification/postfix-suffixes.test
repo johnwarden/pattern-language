@@ -29,3 +29,8 @@ end
 test "Int* is a list type"
   expect ([1, 2] :: Int*) result [1, 2] :: Int*
 end
+
+test "Postfix T? is the unwrapped option type constructor"
+  expect ("Hello" :: String?) result "Hello" :: String?
+  expect (:None :: String?) result :None :: String?
+end

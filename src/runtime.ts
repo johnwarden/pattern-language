@@ -3522,8 +3522,8 @@ export class Interpreter {
   /**
    * D09: match-based projection may cross one union boundary when the payload
    * uniquely designates a member. Ordinary binding and dispatch do not unwrap.
-   * Tagged Some/None options are constructor unions, not typed members, so they
-   * stay constructor matches.
+   * Postfix T? is unwrapped T | :None, so a unique present payload projects.
+   * Constructor-only unions such as T^ stay constructor matches.
    */
   private findImmediateUnion(
     pattern: Pattern<Value>,
@@ -3838,12 +3838,8 @@ export class Interpreter {
           return {
             kind: "union",
             choices: [
+              this.typePattern(element),
               literalPattern(valSymbol("None")),
-              {
-                kind: "node",
-                head: literalPattern(valSymbol("Some")),
-                body: positionalPattern([this.typePattern(element)]),
-              },
             ],
           };
         if (name === "^")

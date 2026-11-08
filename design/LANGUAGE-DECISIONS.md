@@ -88,7 +88,7 @@ The author accepted that functional equality alone does not justify banning all 
 
 ### D09. Designation and projection are settled, different operations — confirmed
 
-Designation into an expected concrete type may recursively establish the necessary inward interpretations **when there is exactly one justified path**. Predicate constraints along that path require evidence. This does not license missing required fields, arbitrary rounding or branch priority. Nested optional designation from a String is permitted when unique; nested `None` is rejected when it could identify different absence levels. C12 uses unwrapped optional branches for direct typed-branch projection; it must not be read as silently stripping Some nodes from a tagged representation.
+Designation into an expected concrete type may recursively establish the necessary inward interpretations **when there is exactly one justified path**. Predicate constraints along that path require evidence. This does not license missing required fields, arbitrary rounding or branch priority. Nested optional designation from a String is permitted when unique; nested `None` is rejected when it could identify different absence levels. Postfix `T?` is the unwrapped constructor `T | :None`: present values are plain, absence is `:None`, and `String??` is `(String | :None) | :None`. C12 uses those unwrapped optional branches for direct typed-branch projection; it must not be read as silently stripping Some nodes from a tagged representation.
 
 Projection crosses **exactly one explicitly requested concrete boundary**. It is performed by explicit match-based extraction, not by an ordinary typed binding or by function dispatch. Repeated boundaries require repeated explicit projections. An unannotated capture preserves the value rather than stripping wrappers. Single-arm extraction must be guaranteed over its admitted input domain; otherwise a multi-arm match or additional evidence is required.
 
@@ -251,7 +251,9 @@ than one designation path. Single-arm `extract` on `Option<String>` is not
 guaranteed for every Option; a multi-arm consumer can handle absence explicitly.
 This case deliberately uses an **unwrapped** optional representation to exercise
 direct typed branch projection without silently stripping a Some constructor.
-C18 separately uses a tagged `:None | Some(T)` representation.
+Postfix `T?` is that constructor: present values are plain (`"x" :: String?`),
+absence is `:None`, and `String??` is `(String | :None) | :None`. C18 separately
+uses a tagged `:None | Some(T)` representation.
 
 ### C13 — a general union admits overlapping spellings
 

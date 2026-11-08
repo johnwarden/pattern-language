@@ -13,9 +13,11 @@ Type definitions, quotation, binding patterns and match patterns share this tree
 
 ```text
 type Question String?
-q = "Does this actually work"? :: Question
-expect q result "Does this actually work"? :: Question
-match q (s :: String)?
+q = "Does this actually work" :: Question
+expect q result "Does this actually work" :: Question
+match q
+  (s :: String) -> s
+end
 expect s result "Does this actually work" :: String
 ```
 

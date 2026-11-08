@@ -75,7 +75,7 @@ test("a subset preserves its base concrete space", () => {
   );
   assert.throws(
     () =>
-      run("def NoInt Int? .where (v -> v .matches :None)\nSome(3) :: NoInt"),
+      run("def NoInt Int? .where (v -> v .matches :None)\n3 :: NoInt"),
     /subset/,
   );
 });

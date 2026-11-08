@@ -116,7 +116,7 @@ explicit layout termination, including shared string/if terminator ownership.
 - Extend the shared tree/value/pattern/serialization adapters with distinct postfix
   expressions. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
   from the nearest suffix outward. Type-name/head rules apply to every suffix.
-  List T*, Option T?, and error T^ are postfix trees. Prefix `+Int` and `+(Int)`
+  List T*, option T? (`T | :None`), and error T^ are postfix trees. Prefix `+Int` and `+(Int)`
   are the same application tree; tight `Int+` is not rewritten to prefix `+`.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.

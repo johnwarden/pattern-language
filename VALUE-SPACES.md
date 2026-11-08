@@ -73,16 +73,17 @@ path**. Every required predicate needs evidence. This rule does not insert missi
 fields, round numbers, select a preferred alternative or erase existing boundaries.
 
 ```text
-# Intended notation; these examples are pending conformance cases.
-type Option<T> concrete T | :None
-(outer :: Option<Option<String>>) = "Hello"
-# Unique path: inner String option, then outer option.
+type T? concrete T | :None
+(outer :: String??) = "Hello"
+# Unique path: inner String?, then outer String??.
 # :None is ambiguous between absence at different levels and is rejected.
 ```
 
-This example uses an unwrapped optional representation. An independently defined
-`concrete :None | Some(T)` retains its explicit Some node; designation/projection
-must not silently strip arbitrary constructor nodes.
+Postfix `T?` is only this type constructor. Present values are plain
+(`"Hello" :: String?`); absence is `:None`; values never carry postfix `?`; there
+are no Some/None factories. Nested `String??` is `(String | :None) | :None`. An
+independently defined `concrete :None | Some(T)` retains its explicit Some node;
+designation/projection must not silently strip arbitrary constructor nodes.
 
 Projection crosses **one explicitly requested concrete boundary** by match-based
 extraction. Ordinary typed binding and function dispatch do not unwrap. Repeating
@@ -229,11 +230,11 @@ name. Runtime Expression and automatic descriptor decoding remain optional/unset
 The current bootstrap has structural descriptors, abstract slots/facets, runtime
 subsets, canonical typed-text support, recursive groups and typed Body inspection.
 Ordinary numeric literals are exact Rationals; Int/Float/Float32 remain concrete
-carveouts of representable Rationals (with JS payloads in this bootstrap). It still
-rejects syntax-overlapping UnionType members, admits raw Expression compatibility
-values, installs accessor products under the old type forms, and lacks the revised
-evidence/projection checker. These are implementation facts, not new accepted
-constraints. Details are in
+carveouts of representable Rationals (with JS payloads in this bootstrap). Postfix
+`T?` is unwrapped `T | :None`. It still rejects syntax-overlapping UnionType
+members, admits raw Expression compatibility values, installs accessor products
+under the old type forms, and lacks the revised evidence checker. These are
+implementation facts, not new accepted constraints. Details are in
 [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md).
 
 [The roadmap](ROADMAP.md) schedules alignment. [The decision record](design/LANGUAGE-DECISIONS.md)

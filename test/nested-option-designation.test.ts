@@ -58,10 +58,59 @@ end`,
   );
 });
 
-test("postfix T? is distinct from unwrapped option", () => {
+test("postfix T? is unwrapped T | :None", () => {
+  assert.equal(run('(present :: String?) = "Hello"\npresent'), '"Hello"');
+  assert.equal(run("(absent :: String?) = :None\nabsent"), ":None");
+  rejects('(tagged :: String?) = Some("Hello")\ntagged', "E_PATTERN_MISMATCH");
+});
+
+test("nested postfix String?? designates a unique String", () => {
+  assert.equal(run('(outer :: String??) = "Hello"\nouter'), '"Hello"');
+  assert.equal(run('"Hello" .matches (type String??)'), "True");
+  assert.equal(run("(type String??) == (type String?)"), "False");
+});
+
+test("nested postfix absence is ambiguous", () => {
+  rejects('(absent :: String??) = :None\nabsent', "E_AMBIGUOUS_PATTERN");
+});
+
+test("match projects one postfix option boundary", () => {
+  const outer = '(outer :: String??) = "Hello"\n';
+  assert.equal(
+    run(
+      outer +
+        `match outer
+  (inner :: String?) -> inner
+end`,
+    ),
+    '"Hello"',
+  );
   rejects(
-    nested + '(outer :: String?) = "Hello"\nouter',
+    outer +
+      `match outer
+  (s :: String) -> s
+end`,
     "E_PATTERN_MISMATCH",
   );
-  rejects('(outer :: String??) = "Hello"\nouter', "E_PATTERN_MISMATCH");
+});
+
+test("ordinary binding and match-arm defaults do not unwrap String??", () => {
+  const outer = '(outer :: String??) = "Hello"\ndef take(x :: String?) True\n';
+  rejects(outer + "(inner :: String?) = outer\ninner", "E_PATTERN_MISMATCH");
+  rejects(outer + "take(outer)", "E_NO_METHOD");
+  rejects(
+    outer +
+      `match ()
+  (missing: v = take(outer)) -> v
+end`,
+    "E_PATTERN_MISMATCH",
+  );
+  rejects(
+    outer +
+      `def Refined String?? .where (x -> take(outer))
+match outer
+  (v :: Refined) -> v
+end`,
+    "E_PATTERN_MISMATCH",
+  );
 });

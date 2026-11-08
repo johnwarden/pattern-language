@@ -106,8 +106,8 @@ const cases: [string, string, string][] = [
     "t = t -> type :Some(value :: t)\nt(type Int)",
     "Type(Some(Int))",
   ],
-  ["option", "Some(1) :: Int?", "Some(1)"],
-  ["list of options", "[Some(1),:None] :: Int?*", "[Some(1), :None]"],
+  ["option", "1 :: Int?", "1"],
+  ["list of options", "[1,:None] :: Int?*", "[1, :None]"],
   ["result", "Ok(1) :: Int^", "Ok(1)"],
 ];
 for (const [name, source, expected] of cases)
@@ -493,34 +493,26 @@ test("binding defaults preserve inputs and type definitions reject defaults", ()
 });
 
 test("built-in concrete types require exact labels", () => {
-  for (const source of [
-    "Some(1,meta: 2) :: Int?",
-    "Ok(1,meta: 2) :: Int^",
-    "[1,2,meta: 3] :: Int*",
-  ])
+  for (const source of ["Ok(1,meta: 2) :: Int^", "[1,2,meta: 3] :: Int*"])
     assert.throws(() => run(source), /unexpected labeled field/);
-  assert.throws(() => run("Some(meta: 2) :: Int?"), /expected/);
 });
 
 test("question mark preserves option type semantics in defaulted fields", () => {
   const color = "def Color type :Black | :White\n";
   assert.equal(
-    run(color + "(color: c :: Color? = Some(:Black)) = ()\nc"),
-    "Some(:Black)",
+    run(color + "(color: c :: Color? = :Black) = ()\nc"),
+    ":Black",
   );
   assert.equal(
-    run(color + "def f(color: c :: Color? = Some(:Black)) c\nf()"),
-    "Some(:Black)",
+    run(color + "def f(color: c :: Color? = :Black) c\nf()"),
+    ":Black",
   );
   assert.equal(
-    run(
-      color +
-        "def f(color: c :: Color? = Some(:Black)) c\nf(color: Some(:White))",
-    ),
-    "Some(:White)",
+    run(color + "def f(color: c :: Color? = :Black) c\nf(color: :White)"),
+    ":White",
   );
   assert.equal(
-    run(color + "def f(color: c :: Color? = Some(:Black)) c\nf(color: :None)"),
+    run(color + "def f(color: c :: Color? = :Black) c\nf(color: :None)"),
     ":None",
   );
   assert.equal(
@@ -528,14 +520,12 @@ test("question mark preserves option type semantics in defaulted fields", () => 
     ":None",
   );
   assert.throws(
-    () => run(color + "(color: c :: Color? = :Black) = ()\nc"),
+    () => run(color + '(color: c :: Color? = "black") = ()\nc'),
     /expected/,
   );
   assert.throws(
     () =>
-      run(
-        color + "def f(color: c :: Color? = Some(:Black)) c\nf(color: :White)",
-      ),
+      run(color + "def f(color: c :: Color? = :Black) c\nf(color: :Grey)"),
     /no applicable/,
   );
   assert.throws(
@@ -545,9 +535,9 @@ test("question mark preserves option type semantics in defaulted fields", () => 
   assert.equal(
     run(
       color +
-        "def R type :R(color: c :: Color?)\ndef make(color: Color? = Some(:Black)) R(color: color) :: R\nr = make()\nr.c",
+        "def R type :R(color: c :: Color?)\ndef make(color: Color? = :Black) R(color: color) :: R\nr = make()\nr.c",
     ),
-    "Some(:Black)",
+    ":Black",
   );
 });
 

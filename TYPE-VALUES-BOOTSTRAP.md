@@ -76,7 +76,9 @@ from bare names, and f(a)(b) remains distinct from f(a,b).
 
 The unary modifiers are ordinary applications too: Int* is *(Int), Int? is ?(Int),
 and Int^ is ^(Int). Their domains are disjoint from numeric operator packs.
-Postfix ! remains reserved for future action types. There is no generic AST node.
+Postfix `T?` is the type constructor for `T | :None`: present values are plain,
+absence is `:None`, and `String??` is `(String | :None) | :None`. Postfix ! remains
+reserved for future action types. There is no generic AST node.
 
 ## Normalization and identity
 

@@ -356,8 +356,11 @@ This is an experimental interpreter, not a compiler or a statically typed langua
 - Overlapping pattern alternatives that produce multiple complete matches are
   rejected as ambiguous. This is a conservative matcher policy, not set-theoretic
   union simplification or a subtype solver.
-- `T?` uses `None | Some(T)` and `T^` uses `Ok(T) | Error(_)` as provisional
-  conventions. Postfix `!` is reserved for future action types; action values and
+- `T?` is the postfix type constructor for `T | :None`. Present values are
+  plain (`"x" :: String?`); absence is `:None`. Values never carry postfix `?`,
+  and there are no Some/None factories. Nested `String??` is
+  `(String | :None) | :None`. `T^` uses `Ok(T) | Error(_)` as a provisional
+  convention. Postfix `!` is reserved for future action types; action values and
   execution are not implemented. No console, file, network, or library-import
   capabilities are supplied.
 - Recursive declaration groups are supported. Per-type parse/toString function
@@ -381,10 +384,10 @@ scope only when needed, must produce one value, and is checked by the same
 pattern. It cannot refer to sibling captures from the same argument pack.
 Explicit captures and implicit label captures both work: `color: c :: Color = Black`
 and `color: Color = Black`. A default itself makes a label optional, so
-`size: Int = 3` also works. `T?` always means `?(T)` (currently `None | Some(T)`),
-including in defaulted fields. A default must inhabit the annotated type:
-`color: c :: Color? = Some(Black)` is valid; `color: c :: Color? = Black` is not.
-Omitting a default keeps a label required, even if its value type is `T?`.
+`size: Int = 3` also works. Postfix `T?` is only the type constructor for
+`T | :None`, including in defaulted fields. A default must inhabit the annotated
+type: `color: c :: Color? = :Black` is valid; `color: c :: Color? = "black"` is
+not. Omitting a default keeps a label required, even if its value type is `T?`.
 
 
 Defaults are permitted in binding patterns: destructuring bindings, function
