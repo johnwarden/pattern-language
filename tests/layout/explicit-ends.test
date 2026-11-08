@@ -55,6 +55,39 @@ test "A final end can close a string and its surrounding if"
   assert parse(Code)(source) .matches Code
 end
 
+test "An error clause closes an indented subject without a preceding end"
+  expect
+    missing()
+  error "E_UNBOUND_NAME"
+end
+
+test "An indented last operand still needs an aligned end"
+  assert
+    True
+  end
+end
+
+test "A completing inline clause does not invent a trailing end"
+  expect
+    if True
+      1
+    else 2
+  result 1 :: Expression
+end
+
+test "Indentation around a completing clause does not change membership"
+  expect
+    missing()
+  error "E_UNBOUND_NAME"
+  expect missing() error "E_UNBOUND_NAME"
+end
+
+test "An indented operand without a later grammar clause needs end"
+  source = "hold\n  True"
+
+  expect parse(Code)(source) error "E_BLOCK_END"
+end
+
 test "Removing required infix spaces is an error"
   expect parse(Code)("a+b") error "infix operators require spaces"
 end

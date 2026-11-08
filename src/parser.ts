@@ -16,12 +16,48 @@ import {
   identifierName,
   labelName,
 } from "./lexical.ts";
-export type LayoutForms = Map<string, Set<string>>;
+/** Start keyword -> extra clause keywords. `chains` are quoted keyword sequences from the same grammar. */
+export type LayoutForms = Map<string, Set<string>> & {
+  chains?: Map<string, string[][]>;
+};
 export interface ParseSurfaceOptions {
   /** Inert specification reading only; execution always uses the ordinary reader. */
   specification?: boolean;
   /** Sidefix start keyword -> additional clause keywords from the active grammar. */
   layoutForms?: LayoutForms;
+}
+export function emptyLayoutForms(): LayoutForms {
+  const forms = new Map() as LayoutForms;
+  forms.chains = new Map();
+  return forms;
+}
+function addLayoutChain(
+  forms: LayoutForms,
+  start: string,
+  chain: string[],
+): void {
+  const chains = (forms.chains ??= new Map<string, string[][]>());
+  const found = chains.get(start) ?? [];
+  if (!found.some((existing) => existing.join("\0") === chain.join("\0")))
+    found.push(chain);
+  chains.set(start, found);
+}
+function formKeywords(
+  names: string[],
+  start: string,
+  clauses: Set<string>,
+): string[] {
+  return names.filter((name) => name === start || clauses.has(name));
+}
+function formComplete(
+  seen: string[],
+  chains: string[][] | undefined,
+): boolean {
+  return !!chains?.some(
+    (chain) =>
+      chain.length === seen.length &&
+      chain.every((keyword, index) => keyword === seen[index]),
+  );
 }
 type SurfaceOptions = ParseSurfaceOptions;
 function quotedLayoutNames(n: Syntax): string[] {
@@ -55,9 +91,10 @@ export function addLayoutForm(forms: LayoutForms, items: Syntax[]): void {
     forms.set(start, set);
   }
   for (const clause of clauses) set.add(clause);
+  addLayoutChain(forms, start, quoted);
 }
 export function layoutFormsFromBlock(root: Syntax): LayoutForms {
-  const forms: LayoutForms = new Map();
+  const forms = emptyLayoutForms();
   if (root.kind !== "block") return forms;
   for (const line of root.lines) {
     const items = line.kind === "sequence" ? line.items : [line];
@@ -75,8 +112,8 @@ export function mergeLayoutForms(
   left: LayoutForms,
   right: LayoutForms,
 ): LayoutForms {
-  const forms: LayoutForms = new Map();
-  for (const source of [left, right])
+  const forms = emptyLayoutForms();
+  for (const source of [left, right]) {
     for (const [start, clauses] of source) {
       let set = forms.get(start);
       if (!set) {
@@ -85,19 +122,29 @@ export function mergeLayoutForms(
       }
       for (const clause of clauses) set.add(clause);
     }
+    for (const [start, chains] of source.chains ?? [])
+      for (const chain of chains) addLayoutChain(forms, start, chain);
+  }
   return forms;
+}
+function owningForm(
+  names: string[],
+  forms: LayoutForms | undefined,
+): { start: string; clauses: Set<string> } | undefined {
+  if (!forms?.size) return;
+  for (const name of names) {
+    const clauses = forms.get(name);
+    if (clauses) return { start: name, clauses };
+  }
+  for (const [start, clauses] of forms)
+    if (names.some((name) => clauses.has(name))) return { start, clauses };
 }
 function owningClauses(
   names: string[],
   forms: LayoutForms | undefined,
 ): Set<string> | undefined {
-  if (!forms?.size) return;
-  for (const name of names) {
-    const clauses = forms.get(name);
-    if (clauses) return new Set(clauses);
-  }
-  for (const clauses of forms.values())
-    if (names.some((name) => clauses.has(name))) return new Set(clauses);
+  const form = owningForm(names, forms);
+  return form ? new Set(form.clauses) : undefined;
 }
 function unquotedNames(tokens: Token[]): string[] {
   return tokens
@@ -765,14 +812,17 @@ function layout(
     let i = start;
     let open:
       | {
+          start: string;
+          seen: string[];
           clauses: Set<string>;
           span: Span;
+          closed: boolean;
         }
       | undefined;
     while (i < lines.length) {
       let { indent: level, tokens: ts } = lines[i];
       if (level < indent) {
-        if (open) blockEndError(open.span, ts[0]);
+        if (open && !open.closed) blockEndError(open.span, ts[0]);
         break;
       }
       if (level > indent)
@@ -784,9 +834,13 @@ function layout(
         continue;
       }
       const names = unquotedNames(ts);
-      if (open && !(names.length && open.clauses.has(names[0])))
-        blockEndError(open.span, ts[0]);
+      if (open && !(names.length && open.clauses.has(names[0]))) {
+        if (open.closed) open = undefined;
+        else blockEndError(open.span, ts[0]);
+      }
       const continuing = !!open;
+      if (continuing && open && names[0])
+        open = { ...open, seen: [...open.seen, names[0]] };
       i++;
       let block: Syntax | undefined;
       if (i < lines.length && lines[i].indent > indent) {
@@ -817,15 +871,20 @@ function layout(
         };
         i = next;
         block = { kind: "block", lines: body, span };
-        if (!continuing)
+        if (!continuing) {
+          const form = owningForm(unquotedNames(ts), options.layoutForms);
           open = {
-            clauses:
-              owningClauses(unquotedNames(ts), options.layoutForms) ??
-              new Set(),
+            start: form?.start ?? "",
+            seen: form
+              ? formKeywords(unquotedNames(ts), form.start, form.clauses)
+              : [],
+            clauses: form?.clauses ?? new Set(),
             span: ts[0],
+            closed: false,
           };
+        }
       } else if (!continuing) {
-        const form = owningClauses(names, options.layoutForms);
+        const form = owningForm(names, options.layoutForms);
         const next = lines[i];
         const nextName = next ? unquotedNames(next.tokens)[0] : undefined;
         if (
@@ -834,10 +893,24 @@ function layout(
           next &&
           next.indent === indent &&
           (isEndLine(next.tokens) ||
-            (nextName !== undefined && form.has(nextName)))
+            (nextName !== undefined && form.clauses.has(nextName)))
         )
-          open = { clauses: form, span: ts[0] };
+          open = {
+            start: form.start,
+            seen: formKeywords(names, form.start, form.clauses),
+            clauses: form.clauses,
+            span: ts[0],
+            closed: false,
+          };
       }
+      if (
+        continuing &&
+        open &&
+        !block &&
+        !ts.some((token) => token.layoutHold) &&
+        formComplete(open.seen, options.layoutForms?.chains?.get(open.start))
+      )
+        open = { ...open, closed: true };
       if (
         block &&
         ["op", "typedQuote"].includes(ts.at(-1)!.kind) &&
@@ -889,7 +962,7 @@ function layout(
       if (seq.kind === "sequence" && block) seq.items.push(block);
       result.push(seq);
     }
-    if (open) blockEndError(open.span);
+    if (open && !open.closed) blockEndError(open.span);
     return [result, i];
   }
   const [body, consumed] = region(0, topLevel ? 0 : (lines[0]?.indent ?? 0));

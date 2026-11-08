@@ -89,9 +89,10 @@ node src/cli.ts --grammar default.pattern --repl
 node src/cli.ts --grammar default.pattern --parse demo.pattern
 ```
 
-Submit a REPL entry with a blank line. Entries can contain multiple lines. `:quit`
-exits. Program mode requires a final result; REPL mode also accepts definitions
-and bindings. Failed entries do not commit bindings.
+A finished grammar form runs on its last line; a blank line still submits.
+Entries can contain multiple lines. `:quit` exits. Program mode requires a final
+result; REPL mode also accepts definitions and bindings. Failed entries do not
+commit bindings.
 
 Open `index.html` to use the included browser build. Browser storage is best-effort;
 Save session / Load session provides a portable backup. The embedded ChatGPT

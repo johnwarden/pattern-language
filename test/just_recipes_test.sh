@@ -75,6 +75,9 @@ printf '%s\n' "$list_out" | grep -q 'Available recipes' &&
 repl_out="$(printf ':Widget\n\n:quit\n' | just repl)"
 printf '%s\n' "$repl_out" | grep -q 'Widget :: UpperCamelSymbol' ||
 	fail "just repl unexpected output: $repl_out"
+ready_out="$(printf '1\n:quit\n' | just repl)"
+printf '%s\n' "$ready_out" | grep -q '1 :: Expression' ||
+	fail "just repl did not submit a finished form on its last line: $ready_out"
 
 command -v timeout >/dev/null || fail "timeout is required for watch smoke tests"
 command -v entr >/dev/null || fail "entr is required for watch smoke tests"
