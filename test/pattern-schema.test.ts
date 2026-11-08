@@ -33,8 +33,9 @@ test("language schema gates descriptor shapes without consulting the user scope"
     () => run("def ordinaryHead(h) True\nType(:|(:A,:B))"),
     /invalid type-description shape/,
   );
-  // Explicit Apply describes a literal reserved head. Quoted primitive names
-  // are E_QUOTED_PRIMITIVE (D20); the unquoted reserved symbol is the tag.
+  // Explicit Apply describes a literal reserved head. Evaluating a quoted
+  // primitive name is E_QUOTED_PRIMITIVE (D20); the unquoted reserved symbol
+  // is the tag.
   assert.equal(
     run("Type(Apply(Literal(:Box),Fields(:A))) == (type :Box(:A))"),
     "True",

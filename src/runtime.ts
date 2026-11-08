@@ -3784,7 +3784,7 @@ export class Interpreter {
   private quotedPrimitive(
     name: string,
     span?: Syntax["span"],
-    phase: "evaluate" | "parse" | "declaration" = "evaluate",
+    phase: "evaluate" | "declaration" = "evaluate",
   ): LanguageError {
     return new LanguageError(
       "quoted " + name + " is not a symbol; " + name + " is a primitive",

@@ -16,6 +16,9 @@ test "C01 intrinsic primitive values"
     :Number
   error "E_QUOTED_PRIMITIVE"
   expect :(Int) result Int :: Code
+  expect parse(Code)(":Int") result :Int :: Code
+  expect parse(Code)(":(Int)") result :(Int) :: Code
+  expect parse(Code)(":True") result :True :: Code
   expect
     Int == :(Int)
   error "E_INCOMPARABLE_TYPES"

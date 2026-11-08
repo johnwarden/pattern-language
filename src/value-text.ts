@@ -560,16 +560,8 @@ export function parseValueText(
     }
     if (n.kind === "quote") return decode(n.value, pattern);
     if (n.kind === "symbol") {
-      if (n.quoted && isReservedPrimitiveSpelling(n.name))
-        throw new LanguageError(
-          "quoted " +
-            n.name +
-            " is not a symbol; " +
-            n.name +
-            " is a primitive",
-          n.span,
-          { code: "E_QUOTED_PRIMITIVE", phase: "parse" },
-        );
+      if (n.quoted && isReservedPrimitiveSpelling(n.name) && typeExpected)
+        return fail("type description uses " + n.name + ", not :" + n.name, n);
       return sym(n.name);
     }
     if (n.kind === "block" && n.lines.length === 1) {
@@ -605,18 +597,14 @@ export function parseValueText(
         n,
       );
     if (
+      typeExpected &&
       n.head.kind === "symbol" &&
       n.head.quoted &&
       isReservedPrimitiveSpelling(n.head.name)
     )
-      throw new LanguageError(
-        "quoted " +
-          n.head.name +
-          " is not a symbol; " +
-          n.head.name +
-          " is a primitive",
-        n.head.span,
-        { code: "E_QUOTED_PRIMITIVE", phase: "parse" },
+      return fail(
+        "type description uses " + n.head.name + "(...), not :" + n.head.name + "(...)",
+        n,
       );
     if (n.head.kind === "symbol" && n.head.name.startsWith("\0"))
       return fail(
