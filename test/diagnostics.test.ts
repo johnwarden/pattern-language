@@ -82,7 +82,7 @@ test("invalid factory parameter patterns fail at declaration even without use", 
   for (const source of [
     "def Bad(x :: Type,x :: Type) type x\n0",
     "def Bad(t :: Type,t :: Type) type t\n0",
-    "def Bad(ts... :: Type*,t :: Type) type t\n0",
+    "def Bad(ts... :: *(Type),t :: Type) type t\n0",
   ]) {
     const error = fail(source);
     assert.equal(error.diagnostic.phase, "declaration");

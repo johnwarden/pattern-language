@@ -12,45 +12,63 @@ import { syntaxKey } from "../src/syntax.ts";
 
 const run = (source: string) => displayResults(new Interpreter().run(source));
 
-test("tight @ is postfix, prefix @ remains apply", () => {
-  const post = parseExpression('"foo"@');
-  const pre = parseExpression('@("bar")');
-  assert.equal(post.kind, "postfix");
-  assert.equal(pre.kind, "apply");
-  assert.notEqual(syntaxKey(post), syntaxKey(pre));
-  assert.equal(normal(post), '"foo"@');
-  assert.equal(normal(pre), '@("bar")');
-  assert.throws(
-    () => encodeSyntax(post),
-    (e: unknown) =>
-      e instanceof LanguageError && e.diagnostic.code === "E_VALUE_SERIALIZATION",
-  );
+const pairs = [
+  ['"foo"@', '@("bar")'],
+  ["1*", "*(Int)"],
+  ['"hi"?', "?(String)"],
+  ["2^", "^(Int)"],
+  ["3!", "!(Int)"],
+];
+
+test("tight suffix punctuation is postfix, prefix remains apply", () => {
+  for (const [postSource, preSource] of pairs) {
+    const post = parseExpression(postSource);
+    const pre = parseExpression(preSource);
+    assert.equal(post.kind, "postfix", postSource);
+    assert.equal(pre.kind, "apply", preSource);
+    assert.notEqual(syntaxKey(post), syntaxKey(pre));
+    assert.equal(normal(post), postSource);
+    assert.equal(normal(pre), preSource);
+    assert.throws(
+      () => encodeSyntax(post),
+      (e: unknown) =>
+        e instanceof LanguageError &&
+        e.diagnostic.code === "E_VALUE_SERIALIZATION",
+    );
+  }
+  assert.equal(parseExpression("2 * 3").kind, "apply");
+  assert.equal(normal(parseExpression("2 * 3")), "2 * 3");
 });
 
-test("postfix @ values match and differ from prefix application", () => {
+test("postfix values match payloads and differ from prefix application", () => {
   assert.equal(
     run(`
-def PostfixAt type (String)@
-def PrefixAt type (@(String))
-(x :: PostfixAt) = "foo"@
-match x
-  (s :: String)@ -> s
+def PostfixStar type (Int)*
+(star :: PostfixStar) = 1*
+match star
+  (n :: Int)* -> n
 end
 `),
-    '"foo"',
+    "1",
   );
   assert.throws(
     () =>
       run(`
-def PostfixAt type (String)@
-def PrefixAt type (@(String))
-(x :: PostfixAt) = "foo"@
-(y :: PrefixAt) = @("bar")
-x == y
+def PostfixStar type (Int)*
+def PrefixStar type (*(Int))
+(star :: PostfixStar) = 1*
+(xs :: PrefixStar) = [1]
+star == xs
 `),
     (e: unknown) =>
       e instanceof LanguageError &&
       e.diagnostic.code === "E_INCOMPARABLE_TYPES" &&
       e.message.includes("Can't compare types"),
+  );
+  assert.throws(
+    () => run("!(1)"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      e.diagnostic.code === "E_RESERVED_OPERATOR",
   );
 });

@@ -18,7 +18,7 @@ const run = (source: string) => displayResults(new Interpreter().run(source));
 test("compiled binding metadata identifies explicit, implicit, typed and rest sites", () => {
   const metadata = patternBindings(
     bindingPattern([
-      parseExpression("Box(T :: Type,rest... :: Int*,color: String)"),
+      parseExpression("Box(T :: Type,rest... :: *(Int),color: String)"),
     ]),
   );
   assert.deepEqual([...metadata.keys()], ["T", "rest", "color"]);
@@ -80,7 +80,7 @@ test("compiled references and local capture maps keep their own binding scopes",
   );
 });
 test("one positional and rest pattern agrees across bindings, parameters, arms, types, macros and grammar", () => {
-  const spec = "Pair(first :: Int,rest... :: Int*)",
+  const spec = "Pair(first :: Int,rest... :: *(Int))",
     value = "Pair(1, 2, 3)";
   for (const source of [
     spec + " = " + value + "\nrest",

@@ -312,7 +312,7 @@ export class PatternCompiler<T> {
               rest.name +
               " needs an element type; type inference is not implemented (write " +
               rest.name +
-              "... :: T*)",
+              "... :: *(T))",
             e.value.span,
             { code: "E_TYPE_INFERENCE_REQUIRED", phase: "declaration" },
           );

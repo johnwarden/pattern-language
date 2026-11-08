@@ -92,12 +92,12 @@ test("type factories use the same parameter-pattern matcher", () => {
   );
   assert.equal(
     run(
-      "def Vector(t :: Type) type [values... :: t*]\nv = [1,2] :: Vector(Int)\nv.values",
+      "def Vector(t :: Type) type [values... :: *(t)]\nv = [1,2] :: Vector(Int)\nv.values",
     ),
     "[1, 2]",
   );
   assert.equal(
-    run('def Tuple(ts... :: Type*) type {ts...}\n{1,"a"} :: Tuple(Int,String)'),
+    run('def Tuple(ts... :: *(Type)) type {ts...}\n{1,"a"} :: Tuple(Int,String)'),
     '{1, "a"}',
   );
 });
@@ -209,7 +209,7 @@ test("angle brackets no longer introduce a second application form", () => {
   assert.equal(run("(1 < 2,3 > 2)"), "(True, True)");
 });
 
-test("postfix type modifiers are distinct trees and keep prefix type identity", () => {
+test("postfix type modifiers are distinct trees from prefix application", () => {
   for (const [suffix, prefix] of [
     ["Int*", "*(Int)"],
     ["Int?", "?(Int)"],
@@ -221,7 +221,7 @@ test("postfix type modifiers are distinct trees and keep prefix type identity", 
     );
     assert.equal(parseExpression(suffix).kind, "postfix");
     assert.equal(parseExpression(prefix).kind, "apply");
-    assert.equal(run(suffix + " == " + prefix), "True");
+    assert.equal(run(suffix + " == " + prefix), "False");
     assert.equal(normal(parseExpression(suffix)), suffix);
     assert.equal(normal(parseExpression(prefix)), prefix);
   }

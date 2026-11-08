@@ -16,3 +16,52 @@ test "Postfix punctuation distinct from prefix/infix"
   end
   expect t result "bar" :: String
 end
+
+test "Postfix star question caret bang are distinct from prefix application"
+  def PostfixStar type (Int)*
+  def PrefixStar type (*(Int))
+  def PostfixOpt type (String)?
+  def PrefixOpt type (?(String))
+  def PostfixCaret type (Int)^
+  def PrefixCaret type (^(Int))
+  def PostfixBang type (Int)!
+  (star :: PostfixStar) = 1*
+  (xs :: PrefixStar) = [1]
+  (opt :: PostfixOpt) = "hi"?
+  (none :: PrefixOpt) = :None
+  (caret :: PostfixCaret) = 2^
+  (ok :: PrefixCaret) = Ok(2)
+  (bang :: PostfixBang) = 3!
+  expect
+    star == xs
+  error "Can't compare types"
+  end
+  expect
+    opt == none
+  error "Can't compare types"
+  end
+  expect
+    caret == ok
+  error "Can't compare types"
+  end
+  n = match star
+    (captured :: Int)* -> captured
+  end
+  expect n result 1 :: Int
+  q = match opt
+    (captured :: String)? -> captured
+  end
+  expect q result "hi" :: String
+  c = match caret
+    (captured :: Int)^ -> captured
+  end
+  expect c result 2 :: Int
+  b = match bang
+    (captured :: Int)! -> captured
+  end
+  expect b result 3 :: Int
+end
+
+test "Spaced infix star is not postfix"
+  expect 2 * 3 result 6 :: Rational
+end

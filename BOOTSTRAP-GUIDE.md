@@ -119,8 +119,9 @@ not establish actual iOS lifecycle/storage behavior.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
 - All infix operators have equal precedence and associate right. They require
   spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
-- Prefix punctuation is a maximal symbol. Postfix `* ? ! ^` are separate type
-  modifiers. `Int?*` means a list of optional integers.
+- Prefix punctuation is a maximal symbol. Tight postfix `* ? ! ^ @` are distinct
+  from prefix/infix application. `Int?*` is postfix `*` of postfix `?` of `Int`,
+  not the list/option type `*(?(Int))`.
 - Outfix `[1,2]` and `{1,2}` have the unquoted heads `[]` and `{}`. They remain
   outfix in normalized output; `[](1,2)` has a different, nested expression head.
 - `()` is an empty argument/result pack, not a unit value. `(x)` is grouping.
@@ -214,14 +215,14 @@ p = Picture(shape: Rectangle(3,4)) :: Picture
 ```
 
 ```text
-def Vector(t :: Type) type [values... :: t*]
+def Vector(t :: Type) type [values... :: *(t)]
 [1,2] :: Vector(Int)
 ```
 
-`T*` accepts zero or more elements. Type-argument spreading remains different:
+`*(T)` accepts zero or more elements. Type-argument spreading remains different:
 
 ```text
-def Tuple(ts... :: Type*) type {ts…}
+def Tuple(ts... :: *(Type)) type {ts…}
 {1,"hello"} :: Tuple(Int,String)
 ```
 
@@ -262,7 +263,7 @@ r.width * height(r)
 
 `width: Int` captures as `width`; `width: w :: Int` captures only as `w`.
 An explicit wildcard (`width: _`) suppresses capture. This rule also applies to
-function parameters and binding patterns. `rest: Int*` captures one labeled list;
+function parameters and binding patterns. `rest: *(Int)` captures one labeled list;
 `rest...` captures the remaining argument fields (including zero fields).
 
 Named labels and explicit capture names are separate:
@@ -381,10 +382,11 @@ scope only when needed, must produce one value, and is checked by the same
 pattern. It cannot refer to sibling captures from the same argument pack.
 Explicit captures and implicit label captures both work: `color: c :: Color = Black`
 and `color: Color = Black`. A default itself makes a label optional, so
-`size: Int = 3` also works. `T?` always means `?(T)` (currently `None | Some(T)`),
-including in defaulted fields. A default must inhabit the annotated type:
-`color: c :: Color? = Some(Black)` is valid; `color: c :: Color? = Black` is not.
-Omitting a default keeps a label required, even if its value type is `T?`.
+`size: Int = 3` also works. Prefix `?(T)` is Option (currently `None | Some(T)`),
+including in defaulted fields. Postfix `T?` is a distinct construction. A default
+must inhabit the annotated type: `color: c :: ?(Color) = Some(Black)` is valid;
+`color: c :: ?(Color) = Black` is not. Omitting a default keeps a label required,
+even if its value type is `?(T)`.
 
 
 Defaults are permitted in binding patterns: destructuring bindings, function
@@ -771,11 +773,11 @@ x.toInt == y
 ```
 
 ```text
-def NoInt Int? .where (v -> v .matches :None)
+def NoInt (?(Int)) .where (v -> v .matches :None)
 a = :None :: NoInt
-b = :None :: Int?
+b = :None :: ?(Int)
 a == b
-# True; :None :: String? is a different concrete space.
+# True; :None :: ?(String) is a different concrete space.
 ```
 
 The numeric backend remains limited to safe JavaScript integers, including the
@@ -1038,7 +1040,7 @@ PunctuationSymbol. UnionType members must have disjoint syntax; overlap and
 unsupported proofs reject. Union parsing selects the unique concrete member,
 including in fields/lists, and printing omits redundant union annotations.
 Facet/Any reconstruction tags remain explicit. The current overlapping Int/Float,
-Int?/String? and list unions are invalid rather than resolved by branch priority.
+?(Int)/?(String) and list unions are invalid rather than resolved by branch priority.
 See simpleExpressionUnion and unannotatedUnion in the playground. The smaller
 Full Code grammar and executable nested test suites remain next work;
 [the design notes](design/UNION-GRAMMARS.md) distinguish them from this fix.

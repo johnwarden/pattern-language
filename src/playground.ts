@@ -28,7 +28,7 @@ value .matches pattern  → matches(value)(pattern)
 
 # Subsets keep their base type's concrete space
 Number .where (n -> isInt64(n))
-Int? .where (v -> v .matches :None)
+?(Int) .where (v -> v .matches :None)
 
 # Pattern test returns True or False
 Some(3) .matches (type :Some(Int))`;

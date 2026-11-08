@@ -40,18 +40,17 @@ because a spaced punctuation operator is infix, not a prefix constructor. A host
 `Syntax` postfix node, if present, is temporary adapter debt; do not freeze a
 public `SyntaxNode` Postfix variant.
 
-Tight suffix characters already recognized for type modifiers (`* ? ! ^`) follow
-the same one-character wrap rule. Whether postfix `Int*` / `String?` remain the
-same Type values as prefix `*(Int)` / `?(Int)` (today's Option/List/error
-`modifiedType` interpretation) or become incomparable constructions like
-`PostfixAt` vs `PrefixAt` is **not decided here**. Do not invent a split. `T+`
-nonempty-list meaning remains later work.
+The current suffix inventory is the grammar `typeSuffix` set plus `@`:
+`* ? ! ^ @` (parser `POSTFIX_SUFFIX`). Each is a distinct postfix construction,
+not prefix/infix `Apply`. Option/List/error types stay prefix `*(T)` / `?(T)` /
+`^(T)`. Postfix `Int*` / `String?` / `Int^` / `Int!` are incomparable with those
+prefix applications. `T+` nonempty-list meaning remains later work; `+` is not
+in the current suffix set and stays prefix/infix.
 
 Other punctuation (`$ = / +` and similar) stays prefix/infix until listed as a
-suffix. `@` is postfix.
+suffix.
 
-The Question/`String?` sketch below is the unresolved Option/List identity
-question, not the `@` contract, and is not implemented by treating `?` as `@`:
+The Question/`String?` sketch is the same generic distinction as `@`:
 
 ```text
 type Question String?

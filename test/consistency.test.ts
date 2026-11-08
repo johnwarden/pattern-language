@@ -12,7 +12,7 @@ const run = (s: string) => displayResults(new Interpreter().run(s));
 test("sidefix spread is rejected at declaration but argument-pack spread remains valid", () => {
   for (const tail of ["", "1", "1 2"])
     assert.throws(
-      () => run("macro (:all (xs... :: Int*)) Code` 0\nall " + tail),
+      () => run("macro (:all (xs... :: *(Int))) Code` 0\nall " + tail),
       (e: unknown) => {
         assert.ok(e instanceof LanguageError);
         assert.equal(e.diagnostic.code, "E_SIDEFIX_SPREAD");
@@ -26,13 +26,13 @@ test("sidefix spread is rejected at declaration but argument-pack spread remains
   ]) {
     assert.equal(
       run(
-        "macro (:all Pair(xs... :: Int*)) Code$` $(xs)\nall Pair(" + args + ")",
+        "macro (:all Pair(xs... :: *(Int))) Code$` $(xs)\nall Pair(" + args + ")",
       ),
       expected,
     );
     assert.equal(
       run(
-        "macro (:all Args(xs... :: Int*)) Code$` $(xs)\nall Args(" + args + ")",
+        "macro (:all Args(xs... :: *(Int))) Code$` $(xs)\nall Args(" + args + ")",
       ),
       expected,
     );
@@ -40,14 +40,14 @@ test("sidefix spread is rejected at declaration but argument-pack spread remains
 });
 test("a list annotation means a list in direct and constructor-shaped sidefix parameters", () => {
   assert.equal(
-    run("macro (:show Args(x :: Int*)) Code$` $(x)\n(show Args([1,2]))"),
+    run("macro (:show Args(x :: *(Int))) Code$` $(x)\n(show Args([1,2]))"),
     "[1, 2]",
   );
   assert.equal(
-    run("macro (:show (x :: Int*)) Code$` $(x)\nshow [1,2]"),
+    run("macro (:show (x :: *(Int))) Code$` $(x)\nshow [1,2]"),
     "[1, 2]",
   );
-  assert.throws(() => run("macro (:show (x :: Int*)) Code` 0\nshow 1 2"));
+  assert.throws(() => run("macro (:show (x :: *(Int))) Code` 0\nshow 1 2"));
 });
 test("a named structural pattern works in all five contexts with private internal captures", () => {
   const prelude = "def Point type :Point(x :: Int)\n";

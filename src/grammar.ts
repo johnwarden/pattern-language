@@ -163,7 +163,7 @@ export class Grammar {
           }
           const rest = typeModifier(n);
           if (rest?.name !== "*")
-            throw new LanguageError("rest annotation requires T*");
+            throw new LanguageError("rest annotation requires *(T)");
           return this.compilePattern(rest.operand);
         },
         expand: () => undefined,

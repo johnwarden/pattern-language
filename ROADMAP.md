@@ -82,7 +82,7 @@ optional; that is separate from the parser destination, which is Expression.
 
 The reference is TypeScript prototype 0.2. The shared source corpus under `tests/`
 includes playground examples, conformance cases, binding/default cases, layout
-cases, the 27 C01–C27 design cases and the distinct postfix `@` regression.
+cases, the 27 C01–C27 design cases and the distinct postfix regression.
 Host/canonical/control checks run separately. Expected failures are reported
 apart from passing assertions; they are not skipped cases. `just check` is the
 full CI gate, including build and type checks.
@@ -125,13 +125,12 @@ explicit layout termination, including shared string/if terminator ownership.
   preserve the disambiguation table, defer Unicode casing and UpperSnake binding roles.
 - Implemented grammar diagnostics with found input, active expected form and locations.
   Contextual type-inference diagnostics still depend on milestones 6/7.
-- Implemented distinct postfix application for `@` through current Syntax/Value
-  adapters. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
-  from the nearest suffix outward. Type-name/head rules apply to every suffix.
-  Postfix punctuation is not prefix/infix `Apply`. Public `SyntaxNode` has no
-  Postfix variant; type-modifier suffixes still transport as Apply. Whether
-  postfix `Int*` / `String?` stay identical to prefix `*(Int)` / `?(Int)` is
-  still open. Full parser migration is not a prerequisite and is not done.
+- Implemented distinct postfix application for the current suffix inventory
+  (`* ? ! ^ @`) through Syntax/Value adapters. Suffixes are one character each:
+  T** is (T*)*, and String?*^! wraps from the nearest suffix outward. Postfix
+  punctuation is not prefix/infix `Apply`. Public `SyntaxNode` has no Postfix
+  variant. Option/List/error types are prefix `*(T)` / `?(T)` / `^(T)`. Full
+  parser migration is not a prerequisite and is not done.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.
 - Implement explicit layout end ownership and migrate source/host fixtures together.
@@ -143,10 +142,9 @@ explicit layout termination, including shared string/if terminator ownership.
 - Implemented legacy/todo setup alternatives from the same incoming scope; do not allow
   duplicate-name failures or leaked bindings to mask a fulfilled todo.
 
-These are focused slices, not new completed milestones. `@` postfix values are
-distinct from prefix application; Option/List type-modifier identity is unchanged
-pending a later decision. Environment-aware macros belong to 6/7; expected DSL
-elaboration belongs to 5b.
+These are focused slices, not new completed milestones. Postfix values are
+distinct from prefix application. Environment-aware macros belong to 6/7; expected
+DSL elaboration belongs to 5b.
 
 ### 1–4. Bootstrap foundations — implemented within the boundary above
 
@@ -195,7 +193,7 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-The suite includes C01–C27, the distinct postfix `@` regression, and the
+The suite includes C01–C27, the distinct postfix regression, and the
 explicit-end layout contracts. The Widget observation is already an ordinary
 passing contract. C03's supported Float32 designation and C19's empty/singleton
 rest checks have no todo. C27 remains exploratory. Current bootstrap observations

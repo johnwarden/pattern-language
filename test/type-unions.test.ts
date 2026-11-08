@@ -36,12 +36,12 @@ test("type unions preserve member spaces across overlapping unions", () => {
 
 test("option spaces stay distinct and their overlapping union is rejected", () => {
   assert.throws(
-    () => run("a = :None :: Int?\nb = :None :: String?\na == b"),
+    () => run("a = :None :: ?(Int)\nb = :None :: ?(String)\na == b"),
     /different concrete types/,
   );
   for (const source of [
-    "UnionType(Int?,String?)",
-    "def U UnionType(Int?,String?)\n0",
+    "UnionType(?(Int),?(String))",
+    "def U UnionType(?(Int),?(String))\n0",
   ])
     assert.throws(() => run(source), /overlapping syntax/);
 });

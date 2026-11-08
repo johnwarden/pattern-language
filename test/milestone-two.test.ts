@@ -189,7 +189,7 @@ for (const [name, spec, value, result, expected] of [
   ],
   [
     "positional rest never consumes labels",
-    "Box(n :: Int,rest... :: Int*,color: c :: String,**)",
+    "Box(n :: Int,rest... :: *(Int),color: c :: String,**)",
     'Box(1,2,3,color: "red",extra: 9)',
     "rest",
     "[2, 3]",

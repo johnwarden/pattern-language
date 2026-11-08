@@ -110,12 +110,11 @@ export const postfix = (
 });
 export const isTypeModifierOperator = (name: string): boolean =>
   name === "*" || name === "?" || name === "^" || name === "!";
-/** Prefix apply *?^! and postfix *?^! share this peel; @ is postfix-only. */
+/** Prefix apply *?^! still names Option/List/error constructors. Postfix is a
+ * distinct tree and is not peeled here. */
 export function typeModifier(
   n: Syntax,
 ): { name: string; operand: Syntax } | undefined {
-  if (n.kind === "postfix" && isTypeModifierOperator(n.operator))
-    return { name: n.operator, operand: n.operand };
   if (
     n.kind === "apply" &&
     n.head.kind === "symbol" &&
@@ -208,6 +207,7 @@ export function implicitFieldCapture(field: Field<Syntax>): string | undefined {
 export function isTypeSpecification(n: Syntax): boolean {
   return (
     (n.kind === "symbol" && !n.quoted && /^\p{Lu}/u.test(n.name)) ||
+    (n.kind === "postfix" && isTypeSpecification(n.operand)) ||
     !!typeModifier(n) ||
     (n.kind === "form" && n.name === "TypeExpression") ||
     (n.kind === "sequence" &&

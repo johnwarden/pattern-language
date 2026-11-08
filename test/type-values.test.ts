@@ -93,11 +93,11 @@ test("primitive, union, list, labeled and capture-free type descriptions round t
     "Type",
     "Bool",
     ":None | :Some(Int)",
-    "Int*",
+    "*(Int)",
     ":Pair(x :: Int,y :: Int)",
     ":Triple(a :: Int,b :: Int,c :: Int)",
     ":R(a: Int,z: String)",
-    "[rest... :: Int*]",
+    "[rest... :: *(Int)]",
     ":(Recursive(Int))",
     ":Literal(Int)",
     ":Float64(Int)",
@@ -105,7 +105,7 @@ test("primitive, union, list, labeled and capture-free type descriptions round t
     ":(Type(Int))",
   ]) {
     assert.equal(
-      run(`t = type ${pattern}
+      run(`t = type (${pattern})
 parse(Type)(toString(Type)(t)) == t`),
       "True",
       pattern,
@@ -304,7 +304,7 @@ test("nested recursive boundaries retain references to enclosing binders", () =>
   const first = new Interpreter();
   const text = stringResult(
     first,
-    "def Tree type :Leaf(Int) | :Branch(Tree*)\ntoString(Type)(type Tree)",
+    "def Tree type :Leaf(Int) | :Branch(*(Tree))\ntoString(Type)(type Tree)",
   );
   assert.equal(
     text,

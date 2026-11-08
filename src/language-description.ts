@@ -3,10 +3,7 @@ import { TYPE_SCHEMA } from "./type-schema.ts";
 import {
   canonicalFields,
   fields as syntaxFields,
-  isTypeModifierOperator,
   LanguageError,
-  packOf,
-  symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { valLiteral, valSymbol, unwrap } from "./values.ts";
@@ -43,14 +40,14 @@ export const HOST_READERS = [
 ] as const;
 
 /** One executable tree schema serves grammar transport and expression inspection. */
-export const SYNTAX_SCHEMA = `def SyntaxNode type Name(String,Bool) | NumberLiteral(Float) | StringLiteral(String) | Apply(SyntaxNode,(type Field(String,SyntaxNode))*) | Pack((type Field(String,SyntaxNode))*) | Quote(SyntaxNode) | TypedQuote(SyntaxNode,SyntaxNode,Bool) | TextTemplate((type Text(String) | Hole(SyntaxNode,Int,String))*) | ReaderQuote(SyntaxNode,(type Text(String) | Hole(SyntaxNode,Int,String))*) | Sequence(SyntaxNode*) | Block(SyntaxNode*) | Form(String,SyntaxNode*,(type Capture(String,Bool,(type Field(String,SyntaxNode))*))*)
+export const SYNTAX_SCHEMA = `def SyntaxNode type Name(String,Bool) | NumberLiteral(Float) | StringLiteral(String) | Apply(SyntaxNode,*(type Field(String,SyntaxNode))) | Pack(*(type Field(String,SyntaxNode))) | Quote(SyntaxNode) | TypedQuote(SyntaxNode,SyntaxNode,Bool) | TextTemplate(*((type Text(String) | Hole(SyntaxNode,Int,String)))) | ReaderQuote(SyntaxNode,*((type Text(String) | Hole(SyntaxNode,Int,String)))) | Sequence(*(SyntaxNode)) | Block(*(SyntaxNode)) | Form(String,*(SyntaxNode),*(type Capture(String,Bool,*(type Field(String,SyntaxNode)))))
 `;
 
 /** Recursive source-language schema for the actual grammar transport format. */
-export const LANGUAGE_SCHEMA = `${SYNTAX_SCHEMA}def Rule type Rule(name: String,kind: Symbol,pattern: SyntaxNode*)
+export const LANGUAGE_SCHEMA = `${SYNTAX_SCHEMA}def Rule type Rule(name: String,kind: Symbol,pattern: *(SyntaxNode))
 def Reader type Reader(name: String,contract: String)
 def BlockPolicy type BlockPolicy(programTail: Symbol,replTail: Symbol,arms: Symbol)
-def Language Facet(type Language(start: Symbol,rules: Rule*,readers: Reader*,blocks: BlockPolicy,typeGrammar: SyntaxNode))
+def Language Facet(type Language(start: Symbol,rules: *(Rule),readers: *(Reader),blocks: BlockPolicy,typeGrammar: SyntaxNode))
 type Language
 `;
 
@@ -92,15 +89,6 @@ export function encodeSyntax(input: Syntax): Value {
       case "apply":
         return node("Apply", child(s.head), fields(s.body, depth));
       case "postfix":
-        // Public SyntaxNode has Apply, not Postfix. Type-modifier suffixes
-        // already existed as Apply; only distinct postfix such as @ stays
-        // host-only adapter debt.
-        if (isTypeModifierOperator(s.operator))
-          return node(
-            "Apply",
-            child(symbol(s.operator)),
-            fields(packOf(s.operand), depth),
-          );
         throw new LanguageError(
           "postfix syntax is not a public SyntaxNode variant",
           s.span,

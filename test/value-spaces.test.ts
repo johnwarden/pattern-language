@@ -41,15 +41,15 @@ test("physical labels matter but their order does not", () => {
   assert.equal(run("(type :R(x: Int)) == (type :R(y: Int))"), "False");
 });
 test("same syntax in different optional spaces is incomparable", () => {
-  incomparable("a = :None :: Int?\nb = :None :: String?\na == b");
-  incomparable("a = :None :: Int?\nb = :None :: String?\na < b");
+  incomparable("a = :None :: ?(Int)\nb = :None :: ?(String)\na == b");
+  incomparable("a = :None :: ?(Int)\nb = :None :: ?(String)\na < b");
   incomparable(
-    "def Empty type :None\na = :None :: Empty\nb = :None :: Int?\na == b",
+    "def Empty type :None\na = :None :: Empty\nb = :None :: ?(Int)\na == b",
   );
 });
 test("annotation cannot silently convert an already interpreted value", () => {
   assert.throws(
-    () => run("x = :None :: Int?\nx :: String?"),
+    () => run("x = :None :: ?(Int)\nx :: ?(String)"),
     /different concrete type/,
   );
 });
@@ -63,19 +63,19 @@ test("equal types in independent scopes interoperate through local accessors", (
 });
 test("generic arguments participate in identity even for empty containers", () => {
   incomparable(
-    "def Vector(t :: Type) type [values... :: t*]\na = [] :: Vector(Int)\nb = [] :: Vector(String)\na == b",
+    "def Vector(t :: Type) type [values... :: *(t)]\na = [] :: Vector(Int)\nb = [] :: Vector(String)\na == b",
   );
 });
 test("a subset preserves its base concrete space", () => {
   assert.equal(
     run(
-      "def NoInt Int? .where (v -> v .matches :None)\na = :None :: NoInt\nb = :None :: Int?\na == b",
+      "def NoInt (?(Int)) .where (v -> v .matches :None)\na = :None :: NoInt\nb = :None :: ?(Int)\na == b",
     ),
     "True",
   );
   assert.throws(
     () =>
-      run("def NoInt Int? .where (v -> v .matches :None)\nSome(3) :: NoInt"),
+      run("def NoInt (?(Int)) .where (v -> v .matches :None)\nSome(3) :: NoInt"),
     /subset/,
   );
 });
@@ -117,7 +117,7 @@ test("aliases and recursive aliases preserve their concrete identity", () => {
   );
   assert.equal(
     run(
-      "def NoInt Int? .where (v -> v .matches :None)\nemptyInt = type NoInt\na = :None :: emptyInt\nb = :None :: Int?\na == b",
+      "def NoInt (?(Int)) .where (v -> v .matches :None)\nemptyInt = type NoInt\na = :None :: emptyInt\nb = :None :: ?(Int)\na == b",
     ),
     "True",
   );

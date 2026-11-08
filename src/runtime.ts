@@ -1687,12 +1687,6 @@ export class Interpreter {
       }
     }
     if (n.kind === "postfix") {
-      const modifier = typeModifier(n);
-      if (modifier)
-        return this.evaluate(
-          apply(symbol(modifier.name), packOf(modifier.operand)),
-          env,
-        );
       return singleton({
         kind: "postfix",
         operator: valSymbol(n.operator),
@@ -3887,15 +3881,7 @@ export class Interpreter {
       return type;
     }
     if (n.kind === "quote") return this.anonymousType(n, env);
-    if (n.kind === "postfix") {
-      const modifier = typeModifier(n);
-      if (modifier && modifier.name !== "!")
-        return this.modifiedType(
-          modifier.name,
-          this.typeFromSyntax(modifier.operand, env),
-        );
-      return this.anonymousType(n, env);
-    }
+    if (n.kind === "postfix") return this.anonymousType(n, env);
     if (n.kind === "apply" || n.kind === "literal")
       return this.anonymousType(n, env);
     throw new LanguageError("expected a type expression", n.span);

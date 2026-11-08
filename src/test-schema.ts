@@ -2,7 +2,7 @@
 export const TEST_SCHEMA = `def Test type (:test (name :: String) (body :: Expression))
 def TestFileContent type
   first :: Test
-  rest :: Test*
+  rest :: *(Test)
   ...
 end
 def tests(f :: TestFileContent) [f.first,f.rest...]

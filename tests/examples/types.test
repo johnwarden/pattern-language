@@ -211,15 +211,15 @@ test "Ordinary factory with defaults"
 end
 
 test "Subset of an optional type"
-  def NoInt Int? .where (v -> v .matches :None)
+  def NoInt (?(Int)) .where (v -> v .matches :None)
   a = :None :: NoInt
-  b = :None :: Int?
+  b = :None :: ?(Int)
 
   assert a == b
 end
 
 test "Tuple type"
-  def Tuple(ts... :: Type*) type {ts…}
+  def Tuple(ts... :: *(Type)) type {ts…}
 
   expect {1, "hello"} :: Tuple(Int, String) result {1, "hello"} :: Tuple(Int, String)
 end

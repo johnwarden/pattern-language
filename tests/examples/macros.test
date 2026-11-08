@@ -47,7 +47,7 @@ test "Typed Code: recursive for each macro"
   end
 
   def Binding type (n :: Expression) .:in (e :: Expression)
-  def expandFor(bindings :: Binding*, body :: Expression)
+  def expandFor(bindings :: *(Binding), body :: Expression)
     match bindings
       [] -> Code$` $body
       [first, rest...] ->
@@ -57,7 +57,7 @@ test "Typed Code: recursive for each macro"
       end
     end
   end
-  macro (:for :each(bindings... :: Binding*) e :: Expression) expandFor(bindings, e)
+  macro (:for :each(bindings... :: *(Binding)) e :: Expression) expandFor(bindings, e)
 
   code = expandFor([:x .:in [1, 2, 3], :y .:in [4, 5, 6]], :(x * y))
   value = for each(x .in [1, 2, 3], y .in [4, 5, 6]) x * y

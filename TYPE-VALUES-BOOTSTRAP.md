@@ -64,7 +64,7 @@ Named type factories use the same parameter-pattern matcher:
 ```text
 def Option(T :: Type) type :None | Some(T)
 def List(T :: Type) type :Nil | Cons(T,List(T))
-def Tuple(ts... :: Type*) type {ts...}
+def Tuple(ts... :: *(Type)) type {ts...}
 (Option(Int),List(Int),Tuple(Int,String))
 ```
 
@@ -74,9 +74,10 @@ so V(3) and the type factory call V(Int) can coexist. Matching/interpretation ch
 whether that data belongs to the intended type. Empty applications remain distinct
 from bare names, and f(a)(b) remains distinct from f(a,b).
 
-The unary modifiers are ordinary applications too: Int* is *(Int), Int? is ?(Int),
-and Int^ is ^(Int). Their domains are disjoint from numeric operator packs.
-Postfix ! remains reserved for future action types. There is no generic AST node.
+Prefix `*(T)` / `?(T)` / `^(T)` are ordinary applications naming List/Option/error
+types. Their domains are disjoint from numeric operator packs. Tight postfix
+`Int*` / `Int?` / `Int^` / `Int!` / `T@` are a distinct construction, not those
+prefix applications. Prefix `!` is reserved for future action types.
 
 ## Normalization and identity
 

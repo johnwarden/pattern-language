@@ -40,7 +40,7 @@ test("untyped type captures require inference rather than implying Any", () => {
     "def Foo(t :: Type) type :Foo(_)\n0",
     "type :Foo(_)",
     "type :Foo(_ :: Int)",
-    "type :Foo(_... :: Int*)",
+    "type :Foo(_... :: *(Int))",
   ])
     assert.throws(
       () => run(source),
