@@ -58,7 +58,7 @@ test("ordinary type trees work in type positions without a preexisting matcher",
     run(
       "def L(t :: Type) type :Nil | :Cons(t,L(t))\nt = :Int\nCons(1,:Nil) :: L(t)",
     ),
-    "Cons(1, :Nil)",
+    "Cons(1, Nil)",
   );
 });
 

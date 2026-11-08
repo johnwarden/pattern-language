@@ -29,8 +29,8 @@ test "Factory defaults and complete types"
   def rectangle(w :: Int, h :: Int, color: Color = :Black) Rect(w, h, color: color) :: Rectangle
   r = rectangle(3, 4)
 
-  expect r result Rect(3, 4, color: :Black) :: Rectangle
-  expect r.color result :Black :: Color
+  expect r result Rect(3, 4, color: Black) :: Rectangle
+  expect r.color result Black :: Color
   # Legacy blocked: public descriptor text is still provisional.
   legacy expect toString(Type)(type Rectangle) result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: String
 
@@ -42,7 +42,7 @@ test "Optional labeled defaults"
   def Color type :Black | :White
   (size: s :: Int, color: c :: Color = :Black) = (size: 3)
 
-  expect c result :Black :: Color
+  expect c result Black :: Color
 end
 
 test "Type fields and ignored captures"
@@ -129,8 +129,8 @@ test "Option factory with ()"
   a = :None :: Option(Int)
   b = Some(5) :: Option(Int)
 
-  expect toString(Option(Int))(a) result ":None" :: String
-  todo expect toString(Option(Int))(a) result "None" :: String
+  expect toString(Option(Int))(a) result "None" :: String
+  expect a result None :: Option(Int)
   expect b result Some(5) :: Option(Int)
   expect Option(Int) result Type(:None | Some(Int)) :: Type
   (toString(Option(Int))(a), b, Option(Int))
@@ -174,7 +174,7 @@ end
 test "Recursive type"
   def List(t :: Type) type :Nil | :Cons(t, List(t))
 
-  expect Cons(1, Cons(2, :Nil)) :: List(Int) result Cons(1, Cons(2, :Nil)) :: List(Int)
+  expect Cons(1, Cons(2, :Nil)) :: List(Int) result Cons(1, Cons(2, Nil)) :: List(Int)
 end
 
 test "Local recursive type block"
@@ -183,7 +183,7 @@ test "Local recursive type block"
     List(Int)
   )) = Cons(5, :Nil)
 
-  expect x result Cons(5, :Nil) :: (parse(Type)("Type(Recursive(:Nil | Cons(Int,Recur(0))))"))
+  expect x result Cons(5, Nil) :: (parse(Type)("Type(Recursive(:Nil | Cons(Int,Recur(0))))"))
 end
 
 test "Portable recursive type"

@@ -29,6 +29,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | L7 | Author instruction on 7 November: integrate this record into the project docs and plan a small DSL-suite milestone covering these cases and cogent TypeScript migrations |
 | L8 | Author instruction on 8 November: parse directly into Expression; Expression number literals are exact Rationals; get rid of the lasting syntax-tree layer. This supersedes any pending public `NumberLiteral(Float)` redesign. Distinct postfix punctuation application is a separate smaller item, not blocked on full parser migration. |
 | W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
+| L9 | Author ruling on 9 November 2026, 12:01 Madrid: no special logic for absent option values; `None` is an ordinary symbol. Value text prints `None`; `:None` is only the code form where an unquoted name would bind. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -389,6 +390,23 @@ not be integrated as a confirmed decision. Todo candidates: `:5` and `:Bool` are
 not Code forms. No corresponding expected result is assigned for raw Expression
 computation, which may be omitted entirely.
 
+### D19. Symbol value text is unquoted; colon quotation is a code form — confirmed 9 November 2026
+
+There is no special printer or absent-option rule. `None` is an ordinary TitleCase
+symbol. Value text, including `toString`, is the name itself: `toString` of `None`
+is `"None"`. The quoted form `:None` is required in *code*, where an unquoted
+`None` would be read as a bound or type name, and in type-pattern descriptors for
+the same reason (`Type(:None | String)`). Source still writes `a = :None :: Int?`.
+
+The same split applies to other TitleCase symbols: code `:Black` / `:Widget`,
+value text `Black` / `Widget`. `toString(Expression)` and other code-domain text
+keep `:MissingType` / `:None`, because that text is code. Lowercase and
+punctuation still quote in data text so they are not read as captures, layout
+keywords, or operators. Union `::` tags stay the reconstruction rule (D07): keep
+the tag only when untagged text would not reconstruct the same member/value.
+Unique `None` in `String?` needs no tag; inner absence in `String??` still prints
+a `::` tag so parse reconstructs the inner member. **Source:** L9.
+
 ## Remaining and deferred items
 
 | Item | Precise status |
@@ -417,6 +435,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | --- | --- |
 | D01 application, packs, precedence | C24, C25; runtime packs remain distinct from generic parameters in C05 |
 | D02 primitives and quotation | C01; C27 is an **unaccepted lexical candidate**, not confirmed behavior |
+| D19 symbol value text vs code quotation | C01 Widget already uses unquoted value text; Option/`None` in types, postfix, nested-option and concrete-union specs |
 | D03 mandatory interpretation / parse into Expression | C04, C05; first-class Expression *value* computation remains optional; SyntaxNode numeric A/B superseded |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |

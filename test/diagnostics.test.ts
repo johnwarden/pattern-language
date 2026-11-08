@@ -34,7 +34,7 @@ test("nested mismatch reports actual field and method definition", () => {
   assert.equal(error.diagnostic.code, "E_NO_METHOD");
   assert.match(
     renderDiagnostic(error),
-    /argument 1.width: expected Int, received :Red/,
+    /argument 1.width: expected Int, received Red/,
   );
   assert.equal(error.diagnostic.primary?.column, 15);
   assert.equal(error.diagnostic.related[0].span?.line, 1);

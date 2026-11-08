@@ -214,7 +214,7 @@ test("global text does not depend on names; local aliases resolve in the caller 
     run(
       'def Rectangle type :Rect(Number,Number)\nparseLocal(Symbol)("Rectangle")',
     ),
-    ":Rectangle",
+    "Rectangle",
   );
 });
 

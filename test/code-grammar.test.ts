@@ -108,7 +108,7 @@ test("host Code evaluation is explicit, scope-isolated, and preserves result pac
   const code = single(
     i.run("x = 2\nCode`\n  x = 3\n  (x,x + 1,color: :Red)\nend"),
   );
-  assert.equal(displayResults(i.evaluateCode(code)), "(3, 4, color: :Red)");
+  assert.equal(displayResults(i.evaluateCode(code)), "(3, 4, color: Red)");
   assert.equal(displayResults(i.run("x")), "2");
   assert.equal(i.evaluateCode(single(i.run("Code` ()"))).length, 0);
   assert.throws(
@@ -200,7 +200,7 @@ test("ordinary patterns inspect application syntax in Code", () => {
     run(
       "c = Code` f(1)(2,color: :Red)\n(head :: Expression)(b,color: color) = c\nf(a) = head\n(a,b,color)",
     ),
-    "(1, 2, :Red)",
+    "(1, 2, Red)",
   );
   assert.equal(
     run(

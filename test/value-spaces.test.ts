@@ -110,7 +110,7 @@ test("type-producing blocks keep recursive self references alive", () => {
     run(
       "(x :: (\n  def List(t :: Type) type :Nil | :Cons(t,List(t))\n  List(Int)\n)) = Cons(5,:Nil)\nx",
     ),
-    "Cons(5, :Nil)",
+    "Cons(5, Nil)",
   );
 });
 test("union ambiguity still propagates rather than choosing the first branch", () => {
@@ -170,7 +170,7 @@ test("a failed refinement does not suppress a different union alternative", () =
     run(
       "def Small\n  (type Int) .where (x -> x < (5 :: Int))\nend\ndef Choice type Small | :Other\n:Other :: Choice",
     ),
-    ":Other",
+    "Other",
   );
   assert.throws(
     () =>

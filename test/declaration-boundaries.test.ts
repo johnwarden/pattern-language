@@ -13,7 +13,7 @@ const picture =
   "def Picture type :Picture(color: (type :Red | :Black),shape: Rectangle(w :: Number,h :: Number))\np = Picture(color: :Red,shape: Rectangle(3,4)) :: Picture\n";
 
 test("constructor subpatterns expose captures on Picture, not on a synthetic shape type", () => {
-  assert.equal(run(picture + "(p.color,p.w,h(p))"), "(:Red, 3, 4)");
+  assert.equal(run(picture + "(p.color,p.w,h(p))"), "(Red, 3, 4)");
   rejects(picture + "p.shape", "E_UNBOUND_NAME");
   assert.equal(
     run(picture + "Picture(shape: Rectangle(a,b),**) = p\n(a,b)"),
@@ -66,7 +66,7 @@ test("labeled structural patterns introduce only their own captures in every bin
   rejects("(shape: Rect(w,h)) = (shape: Rect(3,4))\nshape", "E_UNBOUND_NAME");
   assert.equal(
     run("(color: (type :Red | :Black)) = (color: :Red)\ncolor"),
-    ":Red",
+    "Red",
   );
 });
 

@@ -111,7 +111,7 @@ Duplicate/ambiguous alternatives remain errors.
 def Color type :Red | :Green
 (v :: :Green | :Red) = :Red
 v
-# :Red :: Color in the REPL
+# Red :: Color in the REPL
 ```
 
 Only one named declaration for an equal structural type identity may be visible.

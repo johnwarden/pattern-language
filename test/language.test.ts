@@ -22,7 +22,7 @@ const cases: [string, string, string][] = [
     '(x,foo: f) = (1,unused: 2,foo: "bar")\nf',
     '"bar"',
   ],
-  ["lowercase captures only", ":None = :None\n:None", ":None"],
+  ["lowercase captures only", ":None = :None\n:None", "None"],
   ["empty outfix", "[]", "[]"],
   [
     "repeated type",
@@ -52,7 +52,7 @@ const cases: [string, string, string][] = [
   [
     "recursive type",
     "def List(t :: Type) type :Nil | :Cons(t,List(t))\nCons(1,Cons(2,:Nil)) :: List(Int)",
-    "Cons(1, Cons(2, :Nil))",
+    "Cons(1, Cons(2, Nil))",
   ],
   [
     "field accessor",
@@ -106,7 +106,7 @@ const cases: [string, string, string][] = [
     "Type(Some(Int))",
   ],
   ["option", "1 :: Int?", "1"],
-  ["list of options", "[1,:None] :: [_... :: Int?*]", "[1, :None]"],
+  ["list of options", "[1,:None] :: [_... :: Int?*]", "[1, None]"],
   ["result", "Ok(1) :: Int^", "Ok(1)"],
 ];
 for (const [name, source, expected] of cases)
@@ -125,7 +125,7 @@ const failures: [string, string, RegExp][] = [
     /expected field|received 0/,
   ],
   ["wrong first pack", "def f(x,y)(z) z\nf(1)", /no applicable/],
-  ["uppercase is literal", ":None = Some(1)\n:None", /expected :None/],
+  ["uppercase is literal", ":None = Some(1)\n:None", /expected None/],
   ["repeat binding differs", "Pair(x,x) = Pair(1,2)\nx", /duplicate capture/],
   [
     "repeat type differs",
@@ -447,21 +447,21 @@ test("labeled defaults bind, override, and validate values", () => {
   const color = "def Color type :Black | :White\n";
   assert.equal(
     run(color + "(size: s :: Int,color: c :: Color = :Black) = (size: 3)\nc"),
-    ":Black",
+    "Black",
   );
   assert.equal(
     run(
       color +
         "def f(size: s :: Int,color: c :: Color = :Black) c\nf(size: 3,extra: 9)",
     ),
-    ":Black",
+    "Black",
   );
   assert.equal(
     run(
       color +
         "def f(size: s :: Int,color: c :: Color = :Black) c\nf(color: :White,size: 3)",
     ),
-    ":White",
+    "White",
   );
   assert.equal(run("(size: Int = 3) = ()\nsize"), "3");
   assert.equal(run("(size: s = 3) = ()\ns"), "3");
@@ -513,14 +513,14 @@ test("built-in concrete types require exact labels", () => {
 
 test("question mark preserves option type semantics in defaulted fields", () => {
   const color = "def Color type :Black | :White\n";
-  assert.equal(run(color + "(color: c :: Color? = :Black) = ()\nc"), ":Black");
+  assert.equal(run(color + "(color: c :: Color? = :Black) = ()\nc"), "Black");
   assert.equal(
     run(color + "def f(color: c :: Color? = :Black) c\nf()"),
-    ":Black",
+    "Black",
   );
   assert.equal(
     run(color + "def f(color: c :: Color? = :Black) c\nf(color: :White)"),
-    ":White",
+    "White",
   );
   assert.throws(
     () => run(color + "(color: c :: Color? = Some(:Black)) = ()\nc"),

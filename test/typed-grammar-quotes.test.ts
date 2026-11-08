@@ -35,7 +35,7 @@ test("triple colon quotes the ascription symbol in a structural pattern", () => 
   );
   assert.equal(
     run(expected + "o = ExpectedOutput` (1 / 0) :: MissingType\n(o.e,o.type)"),
-    "(1 / 0, :MissingType)",
+    "(1 / 0, MissingType)",
   );
 });
 test("ExpectedOutput stores a raw type expression without resolving or materializing it", () => {
@@ -43,7 +43,7 @@ test("ExpectedOutput stores a raw type expression without resolving or materiali
     run(
       expected + "o = ExpectedOutput` missing(x) :: Unknown(T)\n(o.e,o.type)",
     ),
-    "(missing(:x), Unknown(:T))",
+    "(missing(:x), Unknown(T))",
   );
   assert.equal(
     run(
@@ -106,7 +106,7 @@ test("a Test-shaped DSL retains nested code as raw Expression during migration",
   const source =
     expected +
     'def Test type :test name :: String code :: Expression :expect expected :: ExpectedOutput\nt = Test`\n  test "inert"\n    missing(1 / 0)\n  end\n  expect 3 :: MissingType\nend\n(t.name,t.expected.e,t.expected.type)';
-  assert.equal(run(source), '("inert", 3, :MissingType)');
+  assert.equal(run(source), '("inert", 3, MissingType)');
 });
 test("sidefix and deferred-expectation type/value text round trip without evaluation", () => {
   assert.equal(
@@ -145,7 +145,7 @@ test("type pattern bodies remain opaque while nested type forms remain valid", (
     displayResults(
       i.run(expected + "o = ExpectedOutput` 3 :: UnknownType\no.type"),
     ),
-    ":UnknownType",
+    "UnknownType",
   );
 
   assert.equal(parseSurface("T` value").kind, "block");

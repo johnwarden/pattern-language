@@ -105,7 +105,7 @@ test("ordinary recursive expression grammar exposes concrete applications and sy
   );
 });
 test("contextual interpretation of a symbol literal differs from converting a bound typed variable", () => {
-  assert.equal(run("def Color type :Red | :Black\n:Red :: Color"), ":Red");
+  assert.equal(run("def Color type :Red | :Black\n:Red :: Color"), "Red");
   assert.throws(
     () => run("def Color type :Red | :Black\nr = :Red\nr :: Color"),
     /different concrete/,

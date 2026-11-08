@@ -54,7 +54,7 @@ test("bound TitleCase names evaluate to their type values", () => {
 });
 
 test("constructor heads stay tags while bare symbols need quotation", () => {
-  assert.equal(run("(Foo(1), :Foo)"), "(Foo(1), :Foo)");
+  assert.equal(run("(Foo(1), :Foo)"), "(Foo(1), Foo)");
   assert.equal(
     run("def Rect type Rect(Float,Float)\nType(Rect(Float,Float)) == Rect"),
     "True",
@@ -89,7 +89,7 @@ test("type factories use the same parameter-pattern matcher", () => {
     run(
       "def Option(t :: Type) type :None | Some(t)\nt = Option(Int)\n(:None :: t,Some(3) :: t,t)",
     ),
-    "(:None, Some(3), Type(:None | Some(Int)))",
+    "(None, Some(3), Type(:None | Some(Int)))",
   );
   assert.equal(
     run(
@@ -181,7 +181,7 @@ test("local names abbreviate REPL type annotations, not structural type values",
     i.inspect(
       i.run("def Color type :Red | :Green\n(v :: :Green | :Red) = :Red\nv"),
     ),
-    ":Red :: Color",
+    "Red :: Color",
   );
   assert.equal(i.inspect(i.run("r = Color\nr")), "Type(:Green | :Red) :: Type");
 });
@@ -200,7 +200,7 @@ test("type defaults remain rejected while binding defaults remain capture-only",
     "type Rect(w :: Float,h :: Float,color: Symbol = :Red)",
     "E_TYPE_DEFAULT",
   );
-  assert.equal(run("(x,color: c :: Symbol = :Red) = (1)\n(x,c)"), "(1, :Red)");
+  assert.equal(run("(x,color: c :: Symbol = :Red) = (1)\n(x,c)"), "(1, Red)");
 });
 
 test("angle brackets no longer introduce a second application form", () => {

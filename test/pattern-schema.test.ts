@@ -93,9 +93,9 @@ test("pattern schema rejects malformed reserved constructors rather than accepti
 });
 
 test("quoted operator heads are literal patterns across matching contexts", () => {
-  assert.equal(run("def split(:|(a)(b))\n  (a,b)\nend\nsplit(:(X | Y))"), "(:X, :Y)");
-  assert.equal(run(":|(a)(b) = :(X | Y)\n(a,b)"), "(:X, :Y)");
-  assert.equal(run("match :(X | Y)\n  :|(a)(b) -> (a,b)\nend"), "(:X, :Y)");
+  assert.equal(run("def split(:|(a)(b))\n  (a,b)\nend\nsplit(:(X | Y))"), "(X, Y)");
+  assert.equal(run(":|(a)(b) = :(X | Y)\n(a,b)"), "(X, Y)");
+  assert.equal(run("match :(X | Y)\n  :|(a)(b) -> (a,b)\nend"), "(X, Y)");
   assert.equal(
     run("t =\n  type\n    :|(Symbol)(Symbol)\n  end\nend\nx = :(X | Y)\nx .matches t"),
     "True",

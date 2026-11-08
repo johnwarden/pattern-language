@@ -87,7 +87,7 @@ test("canonical commas have one following space without changing string contents
   );
   assert.equal(
     run("Rectangle(2, 3, color: :Black)"),
-    "Rectangle(2, 3, color: :Black)",
+    "Rectangle(2, 3, color: Black)",
   );
   assert.equal(
     normal(parseExpression("[1, {x: 2, y: 3}]")),

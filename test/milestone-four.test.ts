@@ -22,12 +22,12 @@ test("consecutive function definitions form a mutually recursive lexical group",
   );
 });
 test("mutually recursive constructor and parameterized types complete before validation", () => {
-  assert.equal(run(recursive + "A(B(:End)) :: A"), "A(B(:End))");
+  assert.equal(run(recursive + "A(B(:End)) :: A"), "A(B(End))");
   assert.equal(
     run(
       "def A(T :: Type) type :End | :A(T,B(T))\ndef B(T :: Type) type :B(A(T))\nA(1,B(:End)) :: A(Int)",
     ),
-    "A(1, B(:End))",
+    "A(1, B(End))",
   );
   assert.equal(
     run(recursive + "t = parse(Type)(toString(Type)(A))\nt == A"),
@@ -65,7 +65,7 @@ test("binding and macro boundaries end groups; failed groups roll back", () => {
   assert.throws(() => i.run("A", "repl"), /unbound name/);
   assert.equal(
     displayResults(i.run(recursive + "A(B(:End)) :: A")),
-    "A(B(:End))",
+    "A(B(End))",
   );
 });
 test("nonproductive recursive groups reject with source locations", () => {

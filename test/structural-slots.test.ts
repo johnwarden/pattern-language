@@ -38,7 +38,7 @@ test("positional and labeled ignore markers are independent", () => {
     run(
       'Rect(w,h,...,color: c,**) = Rect(2,3,4,5,color: :Black,note: "x")\n(w,h,c)',
     ),
-    "(2, 3, :Black)",
+    "(2, 3, Black)",
   );
   assert.throws(
     () => run("Rect(w,h,...) = Rect(2,3,color: :Black)\nw"),
@@ -89,14 +89,14 @@ test("rest captures collect only positional fields and may precede named pattern
         `(first,rest...,color: c) = (1${tail},color: :Black,note: "x")
 (rest,c)`,
       ),
-      `(${expected}, :Black)`,
+      `(${expected}, Black)`,
     );
     assert.equal(
       run(
         `Rect(first,rest...,color: c,**) = Rect(1${tail},color: :Black,note: "x")
 (rest,c)`,
       ),
-      `(${expected}, :Black)`,
+      `(${expected}, Black)`,
     );
   }
 });
@@ -106,13 +106,13 @@ test("rest fields have the same behavior in functions, match arms, and macros", 
     run(
       'def f(Rect(first,rest...,color: c,**))\n  (first,rest,c)\nend\nf(Rect(1,2,color: :Black,note: "x"))',
     ),
-    "(1, [2], :Black)",
+    "(1, [2], Black)",
   );
   assert.equal(
     run(
       'match Rect(1,2,color: :Black,note: "x")\n  Rect(first,rest...,color: c,**) -> (first,rest,c)\nend',
     ),
-    "(1, [2], :Black)",
+    "(1, [2], Black)",
   );
   assert.equal(
     run(
@@ -341,7 +341,7 @@ test("recursive facets preserve concrete children and survive descriptor reconst
       source +
         "(p :: Sequence) = r\nt = toString(Sequence)(p)\n(p.first,p.next,p == r,parse(Sequence)(t) == r,parse(Type)(toString(Type)(type Sequence)) == (type Sequence))",
     ),
-    "(2, :Nil, True, True, True)",
+    "(2, Nil, True, True, True)",
   );
   assert.equal(
     run(

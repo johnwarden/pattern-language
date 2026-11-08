@@ -2,6 +2,7 @@ import {
   primitiveNames,
   isSelfEvaluating,
   isCanonicalAtom,
+  isUnquotedValueSymbol,
 } from "./primitive-names.ts";
 import { parseExpression } from "./parser.ts";
 import { syntaxData, codeSource } from "./syntax-values.ts";
@@ -26,6 +27,22 @@ import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
 
 const singleton = (value: Syntax) => [{ label: "_1", value }];
+const symbolClasses = [
+  "LowerCamelSymbol",
+  "UpperCamelSymbol",
+  "UpperSnakeSymbol",
+  "PunctuationSymbol",
+];
+/** Expression/Code/Body text is code: quote names that would otherwise bind.
+ * Data text (Option, Color, …) prints TitleCase symbols unquoted (`None`).
+ */
+function quoteValueSymbol(name: string, expected?: TypeValue): boolean {
+  if (expected && symbolClasses.includes(expected.name))
+    return isSelfEvaluating(name);
+  if (expected && ["Expression", "Code", "Body"].includes(expected.name))
+    return !isCanonicalAtom(name);
+  return !isUnquotedValueSymbol(name);
+}
 const reserved = new Set([
   "Type",
   "UnionType",
@@ -293,16 +310,7 @@ export function valueText(
       return {
         kind: "symbol",
         name: v.name,
-        quoted:
-          expected &&
-          [
-            "LowerCamelSymbol",
-            "UpperCamelSymbol",
-            "UpperSnakeSymbol",
-            "PunctuationSymbol",
-          ].includes(expected.name)
-            ? isSelfEvaluating(v.name)
-            : !isCanonicalAtom(v.name),
+        quoted: quoteValueSymbol(v.name, expected),
       };
     if (v.kind === "pack")
       return {

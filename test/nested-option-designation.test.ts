@@ -60,7 +60,7 @@ end`,
 
 test("the source optional convention is unwrapped T | :None", () => {
   assert.equal(run('(present :: String?) = "Hello"\npresent'), '"Hello"');
-  assert.equal(run("(absent :: String?) = :None\nabsent"), ":None");
+  assert.equal(run("(absent :: String?) = :None\nabsent"), "None");
   rejects('(tagged :: String?) = Some("Hello")\ntagged', "E_PATTERN_MISMATCH");
 });
 

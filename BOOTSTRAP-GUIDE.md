@@ -166,7 +166,7 @@ precede named fields; ** is the final item. For example:
 ```text
 Rect(first,rest...,color: c,**) = Rect(1,2,color: :Black,note: 'extra')
 (rest,c)
-# ([2],:Black)
+# ([2], Black)
 ```
 
 Argument packs retain extra-label tolerance without **. Constructed rest captures
@@ -205,7 +205,7 @@ specification; structural subpatterns introduce only their own captures.
 def Picture type :Picture(color: (type :Red | :Black),shape: Rectangle(w :: Number,h :: Number))
 p = Picture(color: :Red,shape: Rectangle(3,4)) :: Picture
 (p.color,p.w,p.h)
-# (:Red,3,4)
+# (Red, 3, 4)
 ```
 
 Here color has an explicit nested type; shape contains a constructor subpattern.
@@ -387,7 +387,7 @@ production security sandbox. No source-language expression is passed to host eva
 def Color type :Black | :White
 (size: s :: Int, color: c :: Color = :Black) = (size: 3)
 c
-# :Black
+# Black
 ```
 
 A default applies only when its label is absent. A present value is validated,

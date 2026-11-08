@@ -14,7 +14,7 @@ test("explicit TitleCase captures specialize ordinary function and type factorie
     run(
       "def List(T :: Type) type :Nil | Cons(T,List(T))\nCons(3,:Nil) :: List(Int)",
     ),
-    "Cons(3, :Nil)",
+    "Cons(3, Nil)",
   );
 });
 test("TitleCase captures work in bindings, labeled parameters and match arms", () => {

@@ -24,7 +24,7 @@ test("postfix question mark has no optional meaning without a source definition"
     displayResults(
       ordinary.run("def (n :: Rational)? n + 1\n(2?, :None :: String?)"),
     ),
-    "(3, :None)",
+    "(3, None)",
   );
 });
 

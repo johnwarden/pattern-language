@@ -229,7 +229,7 @@ test("sidefix fields preserve deferred expected names inside typed quotes", () =
         "def Output type\n  (value :: Expression) ::: (expectedType :: Expression)\nend\ndef Expected type :expect subject :: Expression :result output :: Output\nt = Expected` expect missing() result 4 :: MissingType\n(t.output.value,t.output.expectedType)",
       ),
     ),
-    "(4, :MissingType)",
+    "(4, MissingType)",
   );
 });
 test("host calls preserve successive packs without exposing methods as values", () => {
