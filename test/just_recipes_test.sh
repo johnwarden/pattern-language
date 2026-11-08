@@ -72,6 +72,58 @@ printf '%s\n' "$list_out" | grep -q 'unknown option --' &&
 printf '%s\n' "$list_out" | grep -q 'Available recipes' &&
 	fail "just test-language --list was eaten by just --list"
 
+source_file_out="$(just test tests/examples/patterns.test)"
+grep -q 'FILE examples/patterns.test' <<<"$source_file_out" ||
+	fail "just test did not name the source file"
+grep -q 'PASS examples/patterns#' <<<"$source_file_out" ||
+	fail "just test did not run a source .test file"
+grep -q '0 tests failed' <<<"$source_file_out" ||
+	fail "just test source file reported failures: $source_file_out"
+
+source_dir_out="$(just test tests/examples)"
+grep -q 'PASS examples/patterns#' <<<"$source_dir_out" ||
+	fail "just test directory did not include pattern examples"
+grep -q 'PASS examples/expressions#' <<<"$source_dir_out" ||
+	fail "just test directory did not include expression examples"
+grep -q '0 tests failed' <<<"$source_dir_out" ||
+	fail "just test source directory reported failures: $source_dir_out"
+
+mkdir -p "$tmp/source suite"
+cp tests/examples/patterns.test "$tmp/source suite/patterns.test"
+spaced_test_out="$(just test "$tmp/source suite/patterns.test")"
+grep -q '0 tests failed' <<<"$spaced_test_out" ||
+	fail "just test with a spaced filename failed: $spaced_test_out"
+spaced_dir_out="$(just test "$tmp/source suite")"
+grep -q '0 tests failed' <<<"$spaced_dir_out" ||
+	fail "just test with a spaced directory failed: $spaced_dir_out"
+
+mkdir -p "$tmp/source suite/inbox"
+printf 'test "Draft"\n  (\nend\n' >"$tmp/source suite/inbox/draft.test"
+broad_out="$(just test "$tmp/source suite")"
+grep -q '0 tests failed' <<<"$broad_out" ||
+	fail "inbox drafts must not break broad source discovery: $broad_out"
+if just test "$tmp/source suite/inbox" >"$tmp/inbox.out" 2>&1; then
+	fail "explicit inbox selection must run the malformed draft"
+fi
+grep -q 'draft.test' "$tmp/inbox.out" ||
+	fail "explicit inbox failure did not name the draft file"
+
+host_test_out="$(just test test/indent-prefix.test.ts)"
+grep -q 'fail 0' <<<"$host_test_out" ||
+	fail "just test no longer runs a host TypeScript test: $host_test_out"
+
+printf 'test "Failing"\n  expect 1 result 2 :: Rational\nend\n' >"$tmp/failing.test"
+if just test "$tmp/failing.test" >"$tmp/failing.out" 2>&1; then
+	fail "just test must fail when a source assertion fails"
+fi
+grep -q '1 tests failed' "$tmp/failing.out" ||
+	fail "just test did not report the failed source assertion"
+if just test "$tmp/missing.test" >"$tmp/missing.out" 2>&1; then
+	fail "just test must fail for a missing source path"
+fi
+grep -q 'missing.test' "$tmp/missing.out" ||
+	fail "just test did not identify the missing source path"
+
 repl_out="$(printf ':Widget\n\n:quit\n' | just repl)"
 printf '%s\n' "$repl_out" | grep -q 'Widget :: UpperCamelSymbol' ||
 	fail "just repl unexpected output: $repl_out"

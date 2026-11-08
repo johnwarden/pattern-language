@@ -106,8 +106,8 @@ This repository has no application secrets. Do not add Bitwarden wiring or inven
 | `just run FILE` | Run a `.pattern` program through `src/cli.ts`. Extra CLI flags follow the filename (`just run demo.pattern --parse`). |
 | `just watch FILE` | Re-run FILE when it, `default.pattern`, or `src/**/*.ts` change (`entr`). |
 | `just repl` | Interactive CLI (`--repl`). |
-| `just test [path]` | Host tests (`test/*.test.ts`); optional single path. Full run also checks Dockerfile/devbox alignment and finite run/repl/watch smokes. |
-| `just test-language` | Source suite (`tests/**/*.test`). `just test-language --list` lists cases. |
+| `just test [path]` | A `.test` file or directory runs source-language tests; a TypeScript file runs host tests. No path runs host tests plus Dockerfile/devbox alignment and finite recipe smokes. |
+| `just test-language` | Source suite (`tests/**/*.test`, excluding inbox). `just test-language --list` lists cases. |
 | `just typecheck` | `tsc --noEmit`. |
 | `just build` | Generate the browser bundles. |
 | `just lint` | ShellCheck on repo shell scripts. |
@@ -115,7 +115,9 @@ This repository has no application secrets. Do not add Bitwarden wiring or inven
 
 On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
-The source suite is tests/**/*.test, grouped by topic. Assertions use
+The source suite is tests/**/*.test, grouped by topic. `tests/inbox` is optional:
+default host/source runs and pre-push exclude it. Run `just test tests/inbox`
+or select an inbox file to opt in. Source runs print each filename. Assertions use
 expect subject result expected :: Type, assert, and expect subject error "reason".
 Expected results are data, not expressions to execute. Todo assertions run and must
 fail; an unexpected success requires removing todo. Legacy assertions must pass

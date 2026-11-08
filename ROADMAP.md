@@ -81,8 +81,10 @@ until that membership is written. GRAMMAR.md's sketch is not an implementation
 and is not the former Float alias.
 
 Type declaration keywords, angle parameter sugar, MemberOf, bare-family facets,
-parameter recovery, singleton abstract policy, duplicate local names/accessor
-imports remain explicitly provisional/unresolved. First-class overload sets are
+parameter recovery and singleton abstract policy remain explicitly
+provisional/unresolved. Equivalent local declarations and accessor collisions
+remain errors for now; their replacement alias/import policy is deferred by the
+author. First-class overload sets are
 not accepted. Specialization is only a deferred optimization of already defined
 abstract-call semantics, never a source-visible overload generator. Whether
 ordinary programs expose a first-class runtime Expression *value* remains
@@ -93,8 +95,8 @@ optional; that is separate from the parser destination, which is Expression.
 The reference is TypeScript prototype 0.2. `tests/**/*.test` is the executable
 language corpus; runnable playground programs come from `tests/examples/`.
 `just check` runs the complete gate. `just test-language` reports passing assertions,
-legacy assertions and expected todo failures separately; totals are not duplicated
-through this document.
+legacy assertions and expected todo failures separately. Do not copy those
+figures into this document.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -113,8 +115,8 @@ through this document.
   finite Float32/Float64 conversion are implemented.
 - Explicit syntax-disjointness certification remains future work; general
   overlapping UnionType members are supported.
-- Old def/type construction and accessor products; duplicate structural declarations
-  rejected across visible scopes, with a replacement policy still unresolved.
+- Old def/type construction and accessor products. Duplicate structural declarations
+  and accessor collisions remain errors while their replacement policy is deferred.
 - Raw Expression compatibility values, legacy primitive-atom/cache equality and runtime
   subset checking; the revised identity/evidence/designation model is not yet integrated.
 - Ordinary parameter packs for generics; proposed angle sugar is not in the current parser.
@@ -214,9 +216,11 @@ feature is implemented merely by storing or attempting its assertion.
 
 The suite includes C01–C27, the distinct postfix regression, and the
 explicit-end layout contracts. The Widget observation is already an ordinary
-passing contract. C03's supported Float32 designation and C19's empty/singleton
-rest checks have no todo. C27 remains exploratory. Current bootstrap observations
-are explicitly legacy where they depend on raw Expression behavior.
+passing contract. C03's supported Float32/Float64 designation, C19's empty/singleton
+rest checks, C24's successive-pack results and C25's equal-precedence infix have no
+todo on those supported checks. C24 still records the intended two-result capture
+error; C27 remains exploratory. Current bootstrap observations are explicitly
+legacy where they depend on raw Expression behavior.
 
 Original source cases retain their intended payloads, with inaccurate type
 and expected-spelling assertions fixed. Migrated binding/default host tests
@@ -242,7 +246,9 @@ match-only projection. The unified source/host suite checks their composition.
 Remaining alignment slices:
 
 - Plain type values versus declaration/accessor products; explicit interpreted-value
-  boundaries and structural interop. Resolve alias/import policy before encoding it.
+  boundaries and structural interop. Preserve current equivalent-declaration and
+  accessor-collision errors while the replacement policy is deferred; this does
+  not block separating declaration effects from ordinary type construction.
 - Unambiguous DSL certification, separate from the implemented overlapping abstract unions.
 - Extend numeric family/width support without choosing deferred IEEE details or implicit rounding.
 - Extend the implemented designation/projection subset with checking evidence in milestone 7.
@@ -379,7 +385,7 @@ cases, the compiler rebuilds itself, and remaining host primitives/build steps a
 ## Evidence and guardrails
 
 Keep positive, negative and cross-context cases in the shared language corpus; keep
-host invariants where they can be checked meaningfully. Pending counts expose intended
+host invariants where they can be checked meaningfully. Pending todos expose intended
 coverage gaps instead of hiding them as passes. Public playground examples are executable
 cases, not promises copied from the design record. Changes to ambiguous union policy,
 primitive interpretation or accessors must replace obsolete expectations deliberately.

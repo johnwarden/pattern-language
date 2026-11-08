@@ -18,54 +18,30 @@ test "C23 supported global typed text preserves value identity"
 end
 
 test "C24 applications preserve complete successive packs"
-  expect
-    def combine(x, y)(z)
-      (x, y, z)
-    end
-    partial = combine("a", "b")
-    (a, b, c) = partial("c")
-    a
-  result "a" :: String
-
-  expect
-    def combine(x, y)(z)
-      (x, y, z)
-    end
-    partial = combine("a", "b")
-    (a, b, c) = partial("c")
-    b
-  result "b" :: String
-
-  expect
-    def combine(x, y)(z)
-      (x, y, z)
-    end
-    partial = combine("a", "b")
-    (a, b, c) = partial("c")
-    c
-  result "c" :: String
+  def combine(x, y)(z)
+    (x, y, z)
+  end
+  partial = combine(1, 2)
+  (a, b, c) = partial(3)
+  expect a result 1 :: Rational
+  expect b result 2 :: Rational
+  expect c result 3 :: Rational
+  def empty()
+    ()
+  end
+  () = empty()
 
   todo expect
-    def combine(x, y)(z)
-      (x, y, z)
-    end
-    partial = combine("a", "b")
-    (a, b, c) = partial("c")
-    def empty()
-      ()
-    end
-    () = empty()
-    x = ("a", "b")
-    x
+    x = (1, 2)
+    (one) = x
+    one
   error "one capture cannot consume two positional results"
 end
 
 test "C25 infix operators retain equal precedence"
   expect (2 :: Float64) * (3 :: Float64) + (4 :: Float64) result 14 :: Float64
-  expect
-    def select(a)(b) b
-    ("left" .select "right")
-  result "right" :: String
+  def select(a)(b) b
+  expect 1 .select 2 result 2 :: Rational
 end
 
 test "C26 todo assertions execute in isolated scopes"

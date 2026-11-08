@@ -55,8 +55,10 @@ The exact keyword/sugar remains provisional where the decision record says so.
 
 Local aliases and parameterized display names do not change structural identity.
 Functional equality alone does not justify banning multiple names for an equal
-descriptor. Collision/import/preferred-name policy remains unresolved. Do not treat
-the prototype's visible-scope duplicate-declaration ban as the final solution.
+descriptor. The author has deferred the replacement collision/import/preferred-name
+policy. For now, equivalent declarations and accessor collisions remain errors.
+Preserve that guard while separating declaration effects from plain type construction;
+it is a temporary policy, not the final alias/import design.
 
 ## Kinds and factories
 

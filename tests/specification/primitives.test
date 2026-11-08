@@ -54,7 +54,8 @@ test "C03 exact designation differs from rounding"
   expect 0.5 :: Float32 result 0.5 :: Float32
   expect float32(0.5) result 0.5 :: Float32
   todo expect 0f0.5 :: Decimal32 result 0.5 :: Decimal32
-  todo expect 0f0.1 :: Float64 result 0f0.1 :: Float64
+  expect 0f0.1 :: Float64 result 0x1.999999999999Ap-4 :: Float64
+  expect 0.1 :: Float64 error "not exactly representable as Float64"
   expect
     (0.1 :: Float32)
   error "not exactly representable as Float32"

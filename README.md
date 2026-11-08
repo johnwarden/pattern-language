@@ -169,7 +169,11 @@ just check
 just typecheck
 just build
 just test
-just test-language                 # recursively scans tests/**/*.test
+just test tests/examples/patterns.test # one source test file
+just test tests/examples              # source tests in a directory
+just test test/indent-prefix.test.ts  # one host test file
+just test tests/inbox                 # opt in to draft inbox tests
+just test-language                   # scans tests/**/*.test, excluding inbox
 just test-language --list
 just test-language tests/bindings
 ```
@@ -177,3 +181,8 @@ just test-language tests/bindings
 The browser and CLI use the same TypeScript modules. Host tests retain implementation
 invariants and actual-control checks for every playground example in fresh and
 restored sessions. Todo failures are counted separately from passing assertions.
+
+`tests/inbox/` is an optional staging area. Default host and source suite runs
+(including pre-push checks) exclude it. Select `tests/inbox` or a file inside it
+explicitly to run drafts. Source test runs print each `.test` filename before its
+cases; malformed files report the filename and source diagnostic.
