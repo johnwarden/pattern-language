@@ -266,9 +266,7 @@ case stays todo. The overlap policy itself does not depend on that spelling: exi
 their spaces. Union-typed values keep `::` only when ambiguous: when the untagged
 printed text would not reconstruct exactly the same member and value. Omit the tag
 when printed text designates a unique member. Keep it when that text is ambiguous
-or would parse as a different value, e.g. Float64 `0.1` vs Rational `1/10`. Public
-`syntaxTree`/`NumberLiteral(Float)` adapters are lossy for exact Rational spellings
-and are not this case's reconstruction path.
+or would parse as a different value, e.g. Float64 `0.1` vs Rational `1/10`.
 
 `toString(EitherFloat)(float32(0.5))` is `0.5 :: Float32` because untagged `0.5` is
 ambiguous between Float32 and Float64. `toString(EitherFloat)(float64(0.1))` is

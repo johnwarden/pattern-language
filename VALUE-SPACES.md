@@ -241,13 +241,6 @@ old type forms, and lacks the revised evidence/projection checker. These are
 implementation facts, not new accepted constraints. Details are in
 [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md).
 
-The public `NumberLiteral(Float)` syntax codec stores a JS Float payload and drops
-source spelling. Consequently `syntaxExpression(syntaxTree(0.1))` can equal `0f0.1`
-rather than exact Rational `0.1`, integers above 2^53 collapse, and equal Code trees
-from source `0.1` versus a spliced `0.1` can evaluate differently. That adapter
-limitation is queued for separate canonical numeric-spelling repair; overlapping-union
-text must not rely on those adapters for exactness.
-
 [The roadmap](ROADMAP.md) schedules alignment. [The decision record](design/LANGUAGE-DECISIONS.md)
 contains 27 named design cases; [the suite specification](design/TEST-SUITE.md) defines
 how all cases execute. Assertions can be ordinary, legacy (must pass until retired),

@@ -54,8 +54,6 @@ Same-space refinement unions remain rejected. Concrete pattern alternatives such
 `:A | :A` still require unique interpretations.
 
 [The bootstrap type reference](../TYPE-VALUES-BOOTSTRAP.md) documents working syntax.
-Public `NumberLiteral(Float)` adapters remain lossy for exact Rational spellings;
-union reconstruction must not use them as the exactness path.
 
 ## Syntax interpretation and Code
 
