@@ -12,8 +12,8 @@ const bodyGrammar = readFileSync(
   new URL("../examples/body-grammar.pattern", import.meta.url),
   "utf8",
 ).replace(/Body\s*$/, "");
-const todo = "def TodoList type :todo\n  todos :: *(String)\n  ...\nend\n";
-const matrix = "def Matrix type [\n  values... :: *(*(Float))\n  ...\n]\n";
+const todo = "def TodoList type :todo\n  todos :: String*\n  ...\nend\n";
+const matrix = "def Matrix type [\n  values... :: Float**\n  ...\n]\n";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 function rejects(source: string, code: string) {
   assert.throws(
@@ -44,13 +44,13 @@ test("vertical string captures are typed lists with empty and nonempty collectio
   assert.equal(
     run(
       todo +
-        't = TodoList`\n todo\n  "one"\n  "two"\n end\nend\n(toString(*(String))(t.todos),parse(TodoList)(toString(TodoList)(t)) == t)',
+        't = TodoList`\n todo\n  "one"\n  "two"\n end\nend\n(toString(type [_... :: String*])(t.todos),parse(TodoList)(toString(TodoList)(t)) == t)',
     ),
     '("[\\"one\\", \\"two\\"]", True)',
   );
   assert.equal(
     run(
-      todo + "t = TodoList` todo (\n\n)\n(t.todos, toString(*(String))(t.todos))",
+      todo + "t = TodoList` todo (\n\n)\n(t.todos, toString(type [_... :: String*])(t.todos))",
     ),
     '([], "[]")',
   );
@@ -60,14 +60,14 @@ test("horizontal and vertical captures preserve two dimensions, including empty 
   assert.equal(
     run(
       matrix +
-        "(m :: Matrix) = [\n 1,2\n 3,4\n]\n(toString(*(*(Float)))(m.values),parse(Matrix)(toString(Matrix)(m)) == m)",
+        "(m :: Matrix) = [\n 1,2\n 3,4\n]\n(toString(type [_... :: Float**])(m.values),parse(Matrix)(toString(Matrix)(m)) == m)",
     ),
     '("[[1, 2], [3, 4]]", True)',
   );
   assert.equal(
     run(
       matrix +
-        "m = Matrix` [\n ()\n (1,)\n 2,3,4\n]\ntoString(*(*(Float)))(m.values)",
+        "m = Matrix` [\n ()\n (1,)\n 2,3,4\n]\ntoString(type [_... :: Float**])(m.values)",
     ),
     '"[[], [1], [2, 3, 4]]"',
   );
@@ -81,7 +81,7 @@ test("row collection literals evaluate their fields while preserving every row",
   assert.equal(
     run(
       matrix +
-        "x = 3\n(m :: Matrix) = [\n x, x + 1\n x * 2, 9\n]\n(toString(*(*(Float)))(m.values),parse(Matrix)(toString(Matrix)(m)) == m)",
+        "x = 3\n(m :: Matrix) = [\n x, x + 1\n x * 2, 9\n]\n(toString(type [_... :: Float**])(m.values),parse(Matrix)(toString(Matrix)(m)) == m)",
     ),
     '("[[3, 4], [6, 9]]", True)',
   );
@@ -90,7 +90,7 @@ test("row collection literals evaluate their fields while preserving every row",
 test("repeated application rows collect heads and argument packs independently", () => {
   assert.equal(
     run(
-      "def Calls type\n (heads :: *(Symbol))(arguments... :: *(*(Float)))\n ...\nend\nx = Calls`\n f(1,2)\n g(3)\nend\n(toString(*(Symbol))(x.heads),toString(*(*(Float)))(x.arguments))",
+      "def Calls type\n (heads :: Symbol*)(arguments... :: Float**)\n ...\nend\nx = Calls`\n f(1,2)\n g(3)\nend\n(toString(type [_... :: Symbol*])(x.heads),toString(type [_... :: Float**])(x.arguments))",
     ),
     '("[f, g]", "[[1, 2], [3]]")',
   );
@@ -99,12 +99,12 @@ test("repeated application rows collect heads and argument packs independently",
 test("row reconstruction retains numeric interpretation through serialization", () => {
   assert.equal(
     run(
-      "def Matrix type [\n xs... :: *(*(Float32))\n ...\n]\n(m :: Matrix) = [\n float32(3.14), 1\n]\n(m.xs,toString(Matrix)(m),parse(Matrix)(toString(Matrix)(m)) == m)",
+      "def Matrix type [\n xs... :: Float32**\n ...\n]\n(m :: Matrix) = [\n float32(3.14), 1\n]\n(m.xs,toString(Matrix)(m),parse(Matrix)(toString(Matrix)(m)) == m)",
     ),
     '([[3.140000104904175, 1]], "[\\n  (3.140000104904175, 1)\\n]", True)',
   );
   rejects(
-    "def Matrix type [\n xs... :: *(*(Float32))\n ...\n]\n(m :: Matrix) = [\n 3.14, 1\n]",
+    "def Matrix type [\n xs... :: Float32**\n ...\n]\n(m :: Matrix) = [\n 3.14, 1\n]",
     "E_PATTERN_MISMATCH",
   );
 });
@@ -121,12 +121,12 @@ test("the playground Body case uses the published source grammar", () => {
 
 test("vertical annotations account for every dimension and duplicate declarations reject", () => {
   rejects(
-    "def Wrong type [\n values... :: *(Float)\n ...\n]\n0",
+    "def Wrong type [\n values... :: Float*\n ...\n]\n0",
     "E_SPREAD_DIMENSION",
   );
   rejects("def Wrong type\n ...\nend\n0", "E_VERTICAL_SPREAD");
   rejects(
-    "def Wrong type\n x :: *(String)\n ...\n x :: String\nend\n0",
+    "def Wrong type\n x :: String*\n ...\n x :: String\nend\n0",
     "E_DUPLICATE_CAPTURE",
   );
 });
@@ -145,7 +145,7 @@ test("bad vertical elements are rejected with their source location", () => {
 
 test("competing row partitions are errors rather than greedy selection", () => {
   rejects(
-    'def Ambiguous type\n a :: *(String)\n ...\n b :: *(String)\n ...\nend\nAmbiguous`\n "x"\nend',
+    'def Ambiguous type\n a :: String*\n ...\n b :: String*\n ...\nend\nAmbiguous`\n "x"\nend',
     "E_AMBIGUOUS_PATTERN",
   );
 });
@@ -154,7 +154,7 @@ test("typed Body exposes prefix statements and a multi-expression result row", (
   assert.equal(
     run(
       bodyGrammar +
-        "b = Body`\n y = 2\n z = 3\n (y * z,y)\nend\n(toString(*(Binding))(b.bindings),toString(*(ValueExpression))(b.resultExpression))",
+        "b = Body`\n y = 2\n z = 3\n (y * z,y)\nend\n(toString(type [_... :: Binding*])(b.bindings),toString(type [_... :: ValueExpression*])(b.resultExpression))",
     ),
     '("[y = 2, z = 3]", "[y * z, y]")',
   );
@@ -164,7 +164,7 @@ test("direct binding destructuring extracts a nested Body without resolving free
   assert.equal(
     run(
       bodyGrammar +
-        "b = DestructuringBinding`\n (a,b) =\n  y = 2\n  z = 3\n  (y * z,y)\n end\nend\n((first :: LowerCamelSymbol,second :: LowerCamelSymbol) := (body :: Body)) = b\n(first,second,toString(*(Binding))(body.bindings))",
+        "b = DestructuringBinding`\n (a,b) =\n  y = 2\n  z = 3\n  (y * z,y)\n end\nend\n((first :: LowerCamelSymbol,second :: LowerCamelSymbol) := (body :: Body)) = b\n(first,second,toString(type [_... :: Binding*])(body.bindings))",
     ),
     '(:a, :b, "[y = 2, z = 3]")',
   );

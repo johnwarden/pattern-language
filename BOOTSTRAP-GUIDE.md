@@ -121,7 +121,8 @@ not establish actual iOS lifecycle/storage behavior.
   spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
 - Prefix punctuation is a maximal symbol. Tight postfix `* ? ! ^ @ $ & ~` are
   distinct from prefix/infix application. `Int?*` is postfix `*` of postfix `?`
-  of `Int`, not the list type `*(Int?)`. Prefix `$` remains unquote;
+  of `Int`, not the list type `Int?*` as a `[]` rest annotation. Prefix `*(Int?)`
+  is ordinary prefix application, not a list type. Prefix `$` remains unquote;
   interpolating `T$` quotes stay lexer prefixes, not postfix `$`.
 - Outfix `[1,2]` and `{1,2}` have the unquoted heads `[]` and `{}`. They remain
   outfix in normalized output; `[](1,2)` has a different, nested expression head.
@@ -216,14 +217,14 @@ p = Picture(shape: Rectangle(3,4)) :: Picture
 ```
 
 ```text
-def Vector(t :: Type) type [values... :: *(t)]
+def Vector(t :: Type) type [values... :: t*]
 [1,2] :: Vector(Int)
 ```
 
-`*(T)` accepts zero or more elements. Type-argument spreading remains different:
+`[_... :: T*]` accepts zero or more elements. Type-argument spreading remains different:
 
 ```text
-def Tuple(ts... :: *(Type)) type {ts…}
+def Tuple(ts... :: Type*) type {ts…}
 {1,"hello"} :: Tuple(Int,String)
 ```
 
@@ -264,7 +265,7 @@ r.width * height(r)
 
 `width: Int` captures as `width`; `width: w :: Int` captures only as `w`.
 An explicit wildcard (`width: _`) suppresses capture. This rule also applies to
-function parameters and binding patterns. `rest: *(Int)` captures one labeled list;
+function parameters and binding patterns. `rest: type [_... :: Int*]` captures one labeled list;
 `rest...` captures the remaining argument fields (including zero fields).
 
 Named labels and explicit capture names are separate:

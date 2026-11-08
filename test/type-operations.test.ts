@@ -103,7 +103,7 @@ test("matches evaluates both arguments and uses the shared pattern specification
   );
   assert.equal(
     run(
-      "p = type [first :: Int,rest... :: *(Int)]\n([1,2] .matches p,[1,:Red] .matches p)",
+      "p = type [first :: Int,rest... :: Int*]\n([1,2] .matches p,[1,:Red] .matches p)",
     ),
     "(True, False)",
   );

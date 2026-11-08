@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Interpreter, displayResults, LanguageError } from "../src/index.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const expression = `def Atom unionType Number | String | Symbol
-def Application type (head :: ValueExpr)(args... :: *(ValueExpr))
+def Application type (head :: ValueExpr)(args... :: ValueExpr*)
 def ValueExpr unionType Atom | Application
 `;
 
@@ -65,7 +65,7 @@ test("unannotated raw union values select and retain exactly one concrete member
 test("union text and union container text omit redundant concrete tags", () => {
   assert.equal(
     run(
-      'def U unionType Int | String\n(x :: U) = 3\n(xs :: *(U)) = [1,"two"]\n(toString(U)(x),toString(*(U))(xs),parse(*(U))(toString(*(U))(xs)) == xs)',
+      'def U unionType Int | String\n(x :: U) = 3\n(xs :: [_... :: U*]) = [1,"two"]\n(toString(U)(x),toString(type [_... :: U*])(xs),parse(type [_... :: U*])(toString(type [_... :: U*])(xs)) == xs)',
     ),
     '("3", "[1, \\"two\\"]", True)',
   );
@@ -84,7 +84,7 @@ test("facets and Any still retain required concrete metadata", () => {
 test("overlapping alternatives reject at construction even when unused or annotated", () => {
   for (const source of [
     "def Option(T :: Type) type :None | Some(T)\nUnionType(Option(Int),Option(String))",
-    "UnionType(*(Int),*(String))",
+    "UnionType(type [_... :: Int*],type [_... :: String*])",
     "UnionType(Int,Float)",
     "def A type :X(Int)\ndef B type :X(Number)\nUnionType(A,B)",
     "def Option(T :: Type) type :None | Some(T)\ndef U unionType (Option(Int)) | (Option(String))\n0",
@@ -114,7 +114,7 @@ test("ordinary recursive expression grammar exposes concrete applications and sy
   assert.equal(
     run(
       expression +
-        "(head :: ValueExpr)(args... :: *(ValueExpr)) = ValueExpr` a + b\n(operator :: ValueExpr)(left... :: *(ValueExpr)) = head\n(toString(ValueExpr)(head),toString(*(ValueExpr))(args),toString(ValueExpr)(operator),toString(*(ValueExpr))(left))",
+        "(head :: ValueExpr)(args... :: ValueExpr*) = ValueExpr` a + b\n(operator :: ValueExpr)(left... :: ValueExpr*) = head\n(toString(ValueExpr)(head),toString(type [_... :: ValueExpr*])(args),toString(ValueExpr)(operator),toString(type [_... :: ValueExpr*])(left))",
     ),
     '("+(a)", "[b]", "+", "[a]")',
   );

@@ -1,5 +1,5 @@
 test "typed rest"
-  def copy(xs... :: *(Int)) [xs...] :: *(Int)
+  def copy(xs... :: Int*) [xs...] :: [_... :: Int*]
 
-  expect copy(1, 2) result [1, 2] :: *(Int)
+  expect copy(1, 2) result [1, 2] :: (type [_... :: Int*])
 end

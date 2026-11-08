@@ -48,6 +48,8 @@ test("AST transport distinguishes source quotation from similarly named applicat
     "(1,color: :Red)",
     "f()(3)",
     "if True\n  1\nelse\n  2\nend",
+    "1*",
+    "Int?",
   ]) {
     const tree = parseSurface(source, "program", {
       layoutForms: new Grammar().layoutForms(),
@@ -189,7 +191,7 @@ for (const [name, spec, value, result, expected] of [
   ],
   [
     "positional rest never consumes labels",
-    "Box(n :: Int,rest... :: *(Int),color: c :: String,**)",
+    "Box(n :: Int,rest... :: Int*,color: c :: String,**)",
     'Box(1,2,3,color: "red",extra: 9)',
     "rest",
     "[2, 3]",

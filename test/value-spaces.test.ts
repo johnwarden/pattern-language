@@ -72,7 +72,7 @@ test("equal types in independent scopes interoperate through local accessors", (
 });
 test("generic arguments participate in identity even for empty containers", () => {
   incomparable(
-    "def Vector(t :: Type) type [values... :: *(t)]\na = [] :: Vector(Int)\nb = [] :: Vector(String)\na == b",
+    "def Vector(t :: Type) type [values... :: t*]\na = [] :: Vector(Int)\nb = [] :: Vector(String)\na == b",
   );
 });
 test("a subset preserves its base concrete space", () => {

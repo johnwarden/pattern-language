@@ -19,29 +19,19 @@ end
 
 test "Postfix star question caret bang are distinct from prefix application"
   def PostfixStar type (Int)*
-  def PrefixStar type (*(Int))
   def PostfixOpt type (String)?
   def PrefixOpt type (?(String))
   def PostfixCaret type (Int)^
-  def PrefixCaret type (^(Int))
   def PostfixBang type (Int)!
   (star :: PostfixStar) = 1*
-  (xs :: PrefixStar) = [1]
   (opt :: PostfixOpt) = "hi"?
   (preOpt :: PrefixOpt) = ?("bar")
   (caret :: PostfixCaret) = 2^
-  (ok :: PrefixCaret) = Ok(2)
   (bang :: PostfixBang) = 3!
-  expect
-    star == xs
-  error "Can't compare types"
-  end
+  expect (*(2)(3)) result 6 :: Rational
+  expect (^(2)(3)) result 8 :: Rational
   expect
     opt == preOpt
-  error "Can't compare types"
-  end
-  expect
-    caret == ok
   error "Can't compare types"
   end
   n = match star

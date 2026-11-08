@@ -26,22 +26,22 @@ const cases: [string, string, string][] = [
   ["empty outfix", "[]", "[]"],
   [
     "repeated type",
-    "def Vector(t :: Type) type [values... :: *(t)]\n[1,2] :: Vector(Int)",
+    "def Vector(t :: Type) type [values... :: t*]\n[1,2] :: Vector(Int)",
     "[1, 2]",
   ],
   [
     "nested vector",
-    "def Vector(t :: Type) type [values... :: *(t)]\n[[1,2],[]] :: Vector(Vector(Int))",
+    "def Vector(t :: Type) type [values... :: t*]\n[[1,2],[]] :: Vector(Vector(Int))",
     "[[1, 2], []]",
   ],
   [
     "tuple type args",
-    'def Tuple(ts... :: *(Type)) type {ts…}\n{1,"a"} :: Tuple(Int,String)',
+    'def Tuple(ts... :: Type*) type {ts…}\n{1,"a"} :: Tuple(Int,String)',
     '{1, "a"}',
   ],
   [
     "empty tuple type args",
-    "def Tuple(ts... :: *(Type)) type {ts…}\n{} :: Tuple()",
+    "def Tuple(ts... :: Type*) type {ts…}\n{} :: Tuple()",
     "{}",
   ],
   [
@@ -71,7 +71,7 @@ const cases: [string, string, string][] = [
   ],
   [
     "rest accessor returns list",
-    "def Vector(t :: Type) type [values... :: *(t)]\nv = [1,2] :: Vector(Int)\n[a,b] = v.values\na + b",
+    "def Vector(t :: Type) type [values... :: t*]\nv = [1,2] :: Vector(Int)\n[a,b] = v.values\na + b",
     "3",
   ],
   [
@@ -107,8 +107,8 @@ const cases: [string, string, string][] = [
     "Type(Some(Int))",
   ],
   ["option", "1? :: Int?", "1?"],
-  ["list of options", "[1?,2?] :: *(type Int?)", "[1?, 2?]"],
-  ["result", "Ok(1) :: ^(Int)", "Ok(1)"],
+  ["list of options", "[1?,2?] :: [_... :: Int?*]", "[1?, 2?]"],
+  ["result", "1^ :: Int^", "1^"],
 ];
 for (const [name, source, expected] of cases)
   test(name, () => assert.equal(run(source), expected));
@@ -134,7 +134,7 @@ const failures: [string, string, RegExp][] = [
   ],
   [
     "bad vector element",
-    'def Vector(t :: Type) type [values... :: *(t)]\n[1,"bad"] :: Vector(Int)',
+    'def Vector(t :: Type) type [values... :: t*]\n[1,"bad"] :: Vector(Int)',
     /expected Vector\(Int\)/,
   ],
   [
@@ -209,7 +209,7 @@ test("custom grammar rejects duplicate captures", () => {
   );
 });
 test("grammar repetition", () => {
-  const g = new Grammar("def Many type :Many(xs... :: *(Int))");
+  const g = new Grammar("def Many type :Many(xs... :: Int*)");
   assert.equal(normal(g.parseAs("Many(1, 2)", "Many")), "Many(1, 2)");
 });
 test("REPL permits a binding and commits only on success", () => {
@@ -243,7 +243,7 @@ test("untyped grammar rejects duplicate captures", () => {
 test("empty grammar repetition", () =>
   assert.equal(
     normal(
-      new Grammar("def Many type :Many(xs... :: *(Int))").parseAs(
+      new Grammar("def Many type :Many(xs... :: Int*)").parseAs(
         "Many()",
         "Many",
       ),
@@ -281,7 +281,10 @@ test("opaque partial applications cannot use host identity as equality", () =>
 test("labels supply default captures in bindings and function parameters", () => {
   assert.equal(run("(width: Int) = (width: 3)\nwidth"), "3");
   assert.equal(run("def f(width: Int) width\nf(width: 3)"), "3");
-  assert.equal(run("def f(rest: *(Int)) rest\nf(rest: [2,3])"), "[2, 3]");
+  assert.equal(
+    run("def f(rest: type [_... :: Int*]) rest\nf(rest: [2,3])"),
+    "[2, 3]",
+  );
   assert.throws(() => run("(tag: :Red) = (tag: :Red)\ntag"), /unbound name/);
 });
 
@@ -293,7 +296,9 @@ test("implicit named type captures define accessors", () => {
     "12",
   );
   assert.equal(
-    run("def R type :Rect(rest: *(Int))\nr = Rect(rest: [2,3]) :: R\nr.rest"),
+    run(
+      "def R type :Rect(rest: type [_... :: Int*])\nr = Rect(rest: [2,3]) :: R\nr.rest",
+    ),
     "[2, 3]",
   );
 });
@@ -407,14 +412,14 @@ test("rest captures are list values at every length and binding boundary", () =>
     assert.equal(run(`(y,rest...) = (1${tail})\nrest`), expected);
     assert.equal(run(`def f(y,rest...) rest\nf(1${tail})`), expected);
     assert.equal(
-      run(`def V type [y :: Int,rest... :: *(Int)]\nv = [1${tail}] :: V\nv.rest`),
+      run(`def V type [y :: Int,rest... :: Int*]\nv = [1${tail}] :: V\nv.rest`),
       expected,
     );
     assert.equal(run(`[y,rest...] = [1${tail}]\nrest == ${expected}`), "True");
   }
   assert.equal(run("[y,rest...] = [1,2]\n[0,rest...]"), "[0, 2]");
   assert.equal(
-    run("def one(x :: *(Int)) x\n[y,rest...] = [1,2]\none(rest)"),
+    run("def one(x :: [_... :: Int*]) x\n[y,rest...] = [1,2]\none(rest)"),
     "[2]",
   );
 });
@@ -495,8 +500,8 @@ test("binding defaults preserve inputs and type definitions reject defaults", ()
 test("built-in concrete types require exact labels", () => {
   for (const source of [
     "Some(1,meta: 2) :: (type :Some(Int))",
-    "Ok(1,meta: 2) :: ^(Int)",
-    "[1,2,meta: 3] :: *(Int)",
+    "Ok(1,meta: 2) :: (type :Ok(Int))",
+    "[1,2,meta: 3] :: [_... :: Int*]",
   ])
     assert.throws(() => run(source), /unexpected labeled field/);
   assert.throws(() => run("Some(meta: 2) :: (type :Some(Int))"), /expected/);

@@ -128,10 +128,12 @@ explicit layout termination, including shared string/if terminator ownership.
 - Implemented distinct postfix application for the current suffix inventory
   (`* ? ! ^ @ $ & ~`) through Syntax/Value adapters. Suffixes are one character
   each: T** is (T*)*, and String?*^! wraps from the nearest suffix outward.
-  Postfix punctuation is not prefix/infix `Apply`. Public `SyntaxNode` has no
-  Postfix variant. Option types are written `T?` by convention (the postfix
-  tree). List/error types stay prefix `*(T)` / `^(T)`. Prefix `?(T)` is not
-  Option. Prefix `$` remains unquote; interpolating quotes stay lexer prefixes.
+  Postfix punctuation is not prefix/infix `Apply`. Public `SyntaxNode` includes
+  `Postfix(String, SyntaxNode)` so type-grammar transport can carry postfix
+  trees. Option, List, and error types are written `T?` / `T*` / `T^`
+  by convention (the postfix trees themselves, not factories). Prefix `?(T)` /
+  `*(T)` / `^(T)` are ordinary prefix application, not those types. Prefix `$`
+  remains unquote; interpolating quotes stay lexer prefixes.
   Full parser migration is not a prerequisite and is not done.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.

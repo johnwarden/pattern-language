@@ -14,7 +14,7 @@ import {
   spread,
   normal,
   syntaxKey,
-  typeModifier,
+  listLayer,
   symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
@@ -124,12 +124,7 @@ export class Grammar {
     return new PatternCompiler<Syntax>(
       {
         bareCaptures: true,
-        expression: (n) => {
-          const modifier = typeModifier(n);
-          return modifier && ["*", "^"].includes(modifier.name)
-            ? this.compiler(typeDefinition).domain.atom(n)
-            : undefined;
-        },
+        expression: () => undefined,
         defaultValue: (n) => n,
         head: (n, depth = 0) =>
           n.kind === "symbol"
@@ -141,8 +136,8 @@ export class Grammar {
             : this.compiler(typeDefinition, depth).compile(n),
         annotation: (n, dimensions = 0) => {
           for (let i = 0; i < dimensions; i++) {
-            const layer = typeModifier(n);
-            if (layer?.name !== "*")
+            const layer = listLayer(n);
+            if (!layer)
               throw new LanguageError(
                 "vertical capture annotation requires a list layer",
                 n.span,
@@ -153,66 +148,21 @@ export class Grammar {
         },
         repeatedElement: (n, dimensions = 0) => {
           for (let i = 0; i < dimensions; i++) {
-            const layer = typeModifier(n);
-            if (layer?.name !== "*")
+            const layer = listLayer(n);
+            if (!layer)
               throw new LanguageError(
                 "vertical capture annotation requires a list layer",
                 n.span,
               );
             n = layer.operand;
           }
-          const rest = typeModifier(n);
-          if (rest?.name !== "*")
-            throw new LanguageError("rest annotation requires *(T)");
+          const rest = listLayer(n);
+          if (!rest)
+            throw new LanguageError("rest annotation requires T*");
           return this.compilePattern(rest.operand);
         },
         expand: () => undefined,
         atom: (n) => {
-          const modifier = typeModifier(n);
-          if (modifier?.name === "^") {
-            const tagged = (
-              name: string,
-              pattern: Pattern<Syntax>,
-            ): Pattern<Syntax> => ({
-              kind: "node",
-              head: {
-                kind: "test",
-                name,
-                test: (v) => v.kind === "symbol" && v.name === name,
-              },
-              body: {
-                kind: "fields",
-                parts: [{ kind: "label", label: "_1", pattern }],
-              },
-            });
-            const element = this.compilePattern(modifier.operand);
-            return {
-              kind: "union",
-              choices: [tagged("Ok", element), tagged("Error", { kind: "any" })],
-            };
-          }
-          if (modifier?.name === "*")
-            return {
-              kind: "node",
-              head: {
-                kind: "test",
-                name: "[]",
-                test: (v) => v.kind === "symbol" && v.name === "[]",
-              },
-              body: {
-                kind: "fields",
-                parts: [
-                  {
-                    kind: "repeat",
-                    pattern: {
-                      kind: "label",
-                      label: "_1",
-                      pattern: this.compilePattern(modifier.operand),
-                    },
-                  },
-                ],
-              },
-            };
           if (n.kind === "symbol")
             return n.quoted
               ? {

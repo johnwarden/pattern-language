@@ -240,7 +240,7 @@ test "User-defined if"
 end
 
 test "Vector"
-  def Vector(t :: Type) type [values... :: *(t)]
+  def Vector(t :: Type) type [values... :: t*]
   (v :: Vector(Number)) = [1, 2]
 
   expect v result [1, 2] :: Vector(Float)

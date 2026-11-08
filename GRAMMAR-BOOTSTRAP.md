@@ -148,7 +148,7 @@ f = x ->
   (y,y)
 end
 
-def Vector(t :: Type) type [values... :: *(t)]
+def Vector(t :: Type) type [values... :: t*]
 def Rectangle type :Rect(width: w :: Int,height: h :: Int)
 ```
 
@@ -172,7 +172,7 @@ A label with a type specification implicitly captures its field: `width: Int` bi
 width. Explicit captures (`width: w :: Int`) and ignored captures (`width: _`) override
 this default. A label with a structural pattern introduces only the pattern's own
 captures: `shape: Rect(w,h)` binds w and h, not shape. `rest...` consumes remaining
-fields and always captures only positional values. `rest: *(Int)` matches a single labeled list value.
+fields and always captures only positional values. `rest: type [_... :: Int*]` matches a single labeled list value.
 
 Named field order is irrelevant to matching. Canonical output orders named fields alphabetically after positional fields. Duplicate explicit labels are surface syntax errors, including in patterns.
 
@@ -292,8 +292,8 @@ splicing and portable captured environments remain later work.
 
 No new sidefix alternation or repetition is supported. A sidefix signature has a
 fixed sequence of keywords/readers. Spread is an argument-pack operation:
-`:all Pair(xs... :: *(Int))` may match Pair(), Pair(1), or Pair(1,2), but
-`:all (xs... :: *(Int))` is rejected at declaration time. `x :: *(Int)` matches one
+`:all Pair(xs... :: Int*)` may match Pair(), Pair(1), or Pair(1,2), but
+`:all (xs... :: Int*)` is rejected at declaration time. `x :: [_... :: Int*]` matches one
 list-shaped expression, never a variable-length sequence of integers.
 
 Non-generic declarative type patterns introduced with `def Name type Pattern`
@@ -523,8 +523,8 @@ use e :: T and the REPL still uses the current inspection layout.
 
 A standalone ... pattern row repeats the immediately preceding row at the same
 indentation. Horizontal name... repeats positional fields within a pack. Each
-dimension contributes one list layer to the capture annotation: todos :: *(String)
-followed by vertical ... collects strings; values... :: *(*(Float)) followed by ...
+dimension contributes one list layer to the capture annotation: todos :: String*
+followed by vertical ... collects strings; values... :: Float** followed by ...
 collects rows of floats. An annotation with too few list layers is an error.
 
 Balanced delimiters with an opening newline preserve separate rows, except where

@@ -220,7 +220,7 @@ test "Subset of an optional type"
 end
 
 test "Tuple type"
-  def Tuple(ts... :: *(Type)) type {ts…}
+  def Tuple(ts... :: Type*) type {ts…}
 
   expect {1, "hello"} :: Tuple(Int, String) result {1, "hello"} :: Tuple(Int, String)
 end

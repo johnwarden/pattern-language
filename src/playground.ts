@@ -28,8 +28,10 @@ value .matches pattern  → matches(value)(pattern)
 
 # Subsets keep their base type's concrete space
 Number .where (n -> isInt64(n))
-# Option types are written T? by convention (the postfix tree)
+# Option, List, and error types are written T? / T* / T^ by convention
 Int?
+Int*
+Int^
 
 # Pattern test returns True or False
 Some(3) .matches (type :Some(Int))`;

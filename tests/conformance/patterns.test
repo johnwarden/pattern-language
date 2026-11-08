@@ -7,15 +7,15 @@ test "independent captures"
 end
 
 test "list rest empty"
-  def copy(xs... :: *(Int)) [xs...] :: *(Int)
+  def copy(xs... :: Int*) [xs...] :: [_... :: Int*]
 
-  expect copy() result [] :: *(Int)
+  expect copy() result [] :: (type [_... :: Int*])
 end
 
 test "list rest singleton"
-  def copy(xs... :: *(Int)) [xs...] :: *(Int)
+  def copy(xs... :: Int*) [xs...] :: [_... :: Int*]
 
-  expect copy(1) result [1] :: *(Int)
+  expect copy(1) result [1] :: (type [_... :: Int*])
 end
 
 test "single pattern grouping"

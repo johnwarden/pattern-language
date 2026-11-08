@@ -96,7 +96,7 @@ export const apply = (head: Syntax, body: Field<Syntax>[]): Syntax => ({
   head,
   body,
 });
-/** Tight one-character suffixes. Host-only; not a public SyntaxNode variant. */
+/** Tight one-character suffixes. Transported as SyntaxNode Postfix(String, SyntaxNode). */
 export const POSTFIX_SUFFIX = /^[?*!^@$&~]+$/;
 export const postfix = (
   operator: string,
@@ -108,22 +108,14 @@ export const postfix = (
   operand,
   span: span ?? operand.span,
 });
-export const isTypeModifierOperator = (name: string): boolean =>
-  name === "*" || name === "^" || name === "!";
-/** Prefix apply *^! still names List/error constructors (and reserved !).
- * Postfix is a distinct tree and is not peeled here. Option types are written
- * T? by convention: that spelling is the postfix tree, not a factory. */
-export function typeModifier(
+/** Rest/vertical list layers are postfix `*` / `**` (T* / T**).
+ * Option/List/error types are written T? / T* / T^ by convention (the postfix
+ * tree itself, not a prefix factory). */
+export function listLayer(
   n: Syntax,
-): { name: string; operand: Syntax } | undefined {
-  if (
-    n.kind === "apply" &&
-    n.head.kind === "symbol" &&
-    !n.head.quoted &&
-    isTypeModifierOperator(n.head.name) &&
-    n.body.length === 1
-  )
-    return { name: n.head.name, operand: n.body[0].value };
+): { operand: Syntax } | undefined {
+  if (n.kind === "postfix" && n.operator === "*")
+    return { operand: n.operand };
   return undefined;
 }
 export function operator(
@@ -209,7 +201,6 @@ export function isTypeSpecification(n: Syntax): boolean {
   return (
     (n.kind === "symbol" && !n.quoted && /^\p{Lu}/u.test(n.name)) ||
     (n.kind === "postfix" && isTypeSpecification(n.operand)) ||
-    !!typeModifier(n) ||
     (n.kind === "form" && n.name === "TypeExpression") ||
     (n.kind === "sequence" &&
       n.items[0]?.kind === "symbol" &&

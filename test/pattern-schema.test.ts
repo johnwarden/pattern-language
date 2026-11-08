@@ -56,7 +56,7 @@ test("recursive pattern schema covers portable descriptors without Expression pl
     "type :Rect(x: Int,y: String)",
     "type :Some(Int) | :None",
     "type :Pair(x :: Int,y :: Int)",
-    "type [rest... :: *(Int)]",
+    "type [rest... :: Int*]",
     "type :String([65])",
     "UnionType(Int,String)",
   ]) {

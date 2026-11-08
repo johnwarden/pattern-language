@@ -863,61 +863,61 @@ These are isolated lexical blocks, not a new source-module syntax. The consumer 
 ```text
 test "C19 horizontal rest remains a typed positional list"
   expect
-    def copy(xs... :: *(Float32)) ([xs...] :: *(Float32))
+    def copy(xs... :: Float32*) ([xs...] :: [_... :: Float32*])
     copy()
   result
     (
       []
     ) :: (
-      def copy(xs... :: *(Float32)) ([xs...] :: *(Float32))
-      *(Float32)
+      def copy(xs... :: Float32*) ([xs...] :: [_... :: Float32*])
+      type [_... :: Float32*]
     )
   end
 
   expect
-    def copy(xs... :: *(Float32)) ([xs...] :: *(Float32))
+    def copy(xs... :: Float32*) ([xs...] :: [_... :: Float32*])
     copy(0.5)
   result
     (
       [0.5]
     ) :: (
-      def copy(xs... :: *(Float32)) ([xs...] :: *(Float32))
-      *(Float32)
+      def copy(xs... :: Float32*) ([xs...] :: [_... :: Float32*])
+      type [_... :: Float32*]
     )
   end
 
   todo expect
-    def copy(xs... :: *(Float32)) ([xs...] :: *(Float32))
+    def copy(xs... :: Float32*) ([xs...] :: [_... :: Float32*])
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
     packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
-    Packet(first, rest... :: *(Float32), color: c, **) = packet
+    Packet(first, rest... :: Float32*, color: c, **) = packet
     rest
   result
     (
       [1]
     ) :: (
-      def copy(xs... :: *(Float32)) ([xs...] :: *(Float32))
+      def copy(xs... :: Float32*) ([xs...] :: [_... :: Float32*])
       type Packet concrete Packet(Float32, Float32, color: String, note: String)
       packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
-      Packet(first, rest... :: *(Float32), color: c, **) = packet
-      *(Float32)
+      Packet(first, rest... :: Float32*, color: c, **) = packet
+      type [_... :: Float32*]
     )
   end
 
   todo expect
-    def copy(xs... :: *(Float32)) ([xs...] :: *(Float32))
+    def copy(xs... :: Float32*) ([xs...] :: [_... :: Float32*])
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
     packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
-    Packet(first, rest... :: *(Float32), color: c, **) = packet
+    Packet(first, rest... :: Float32*, color: c, **) = packet
     c
   result
     (
       "blue"
     ) :: (
-      def copy(xs... :: *(Float32)) ([xs...] :: *(Float32))
+      def copy(xs... :: Float32*) ([xs...] :: [_... :: Float32*])
       type Packet concrete Packet(Float32, Float32, color: String, note: String)
       packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
-      Packet(first, rest... :: *(Float32), color: c, **) = packet
+      Packet(first, rest... :: Float32*, color: c, **) = packet
       String
     )
   end
@@ -934,7 +934,7 @@ Capture dimensions are retained; mirrored vertical spreading is R's proposed ext
 test "C20 row capture and spreading are mirror images"
   todo expect
     type Matrix concrete [
-      cells... :: *(*(Float32))
+      cells... :: Float32**
       ...
     ]
     x = ([
@@ -948,7 +948,7 @@ test "C20 row capture and spreading are mirror images"
       [[0.5, 1], [2, 4]]
     ) :: (
       type Matrix concrete [
-        cells... :: *(*(Float32))
+        cells... :: Float32**
         ...
       ]
       x = ([
@@ -956,13 +956,13 @@ test "C20 row capture and spreading are mirror images"
         2, 4
       ] :: Matrix)
       rows = x.cells
-      *(*(Float32))
+      type [_... :: Float32**]
     )
   end
 
   todo assert
     type Matrix concrete [
-      cells... :: *(*(Float32))
+      cells... :: Float32**
       ...
     ]
     x = ([
@@ -979,7 +979,7 @@ test "C20 row capture and spreading are mirror images"
 
   todo expect
     type Matrix concrete [
-      cells... :: *(*(Float32))
+      cells... :: Float32**
       ...
     ]
     x = ([
@@ -1003,7 +1003,7 @@ test "C20 row capture and spreading are mirror images"
       []
     ) :: (
       type Matrix concrete [
-        cells... :: *(*(Float32))
+        cells... :: Float32**
         ...
       ]
       x = ([
@@ -1021,13 +1021,13 @@ test "C20 row capture and spreading are mirror images"
       oneEmptyRow = ([
         ()
       ] :: Matrix)
-      *(*(Float32))
+      type [_... :: Float32**]
     )
   end
 
   todo expect
     type Matrix concrete [
-      cells... :: *(*(Float32))
+      cells... :: Float32**
       ...
     ]
     x = ([
@@ -1051,7 +1051,7 @@ test "C20 row capture and spreading are mirror images"
       [[]]
     ) :: (
       type Matrix concrete [
-        cells... :: *(*(Float32))
+        cells... :: Float32**
         ...
       ]
       x = ([
@@ -1069,13 +1069,13 @@ test "C20 row capture and spreading are mirror images"
       oneEmptyRow = ([
         ()
       ] :: Matrix)
-      *(*(Float32))
+      type [_... :: Float32**]
     )
   end
 
   todo assert
     type Matrix concrete [
-      cells... :: *(*(Float32))
+      cells... :: Float32**
       ...
     ]
     x = ([
@@ -1106,7 +1106,7 @@ The annotation is `Float32**`, not `Float32*`. It describes the aggregate captur
 test "C21 vertical-only capture is a list of items"
   todo expect
     type TodoList concrete :todo
-      todos :: *(String)
+      todos :: String*
       ...
     end
     items = TodoList`
@@ -1121,7 +1121,7 @@ test "C21 vertical-only capture is a list of items"
       ["first", "second"]
     ) :: (
       type TodoList concrete :todo
-        todos :: *(String)
+        todos :: String*
         ...
       end
       items = TodoList`
@@ -1130,7 +1130,7 @@ test "C21 vertical-only capture is a list of items"
           "second"
         end
       end
-      *(String)
+      type [_... :: String*]
     )
   end
 end
@@ -1344,7 +1344,7 @@ No corresponding expected result is assigned for raw Expression computation, whi
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
 | Test DSL modifiers | Implemented assertion-level todo/legacy execution and reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
-| Postfix vs prefix punctuation application | **Decided.** Every current suffix (`* ? ! ^ @ $ & ~`) is a distinct postfix construction. Option types are written `T?` by convention (the postfix tree itself, not a factory). List/error types stay prefix `*(T)` / `^(T)`. Prefix `?(T)` is ordinary prefix application, not Option. Prefix `$` remains unquote; interpolating quotes are lexer prefixes. `T+` is not in the current suffix inventory. |
+| Postfix vs prefix punctuation application | **Decided.** Every current suffix (`* ? ! ^ @ $ & ~`) is a distinct postfix construction. Option, List, and error types are written `T?` / `T*` / `T^` by convention (the postfix trees themselves, not factories). Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those types. Prefix `$` remains unquote; interpolating quotes are lexer prefixes. `T+` is not in the current suffix inventory. |
 
 Obvious draft slips are normalized only to express the intended rules: String/sqrt examples meant an integer type; inconsistent normalizer names refer to one function; the Float union's self-reference is not a proposed recursive numeric member; mismatched id widths and Matrix dimensions are corrected explicitly. No semantic decision is extracted from those slips.
 

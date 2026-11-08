@@ -36,19 +36,21 @@ expect t result "bar" :: String
 
 `"foo"@` and `@("bar")` are distinct constructions. Matching the corresponding
 patterns yields the String payloads. Current `def Name type` needs `(@(String))`
-because a spaced punctuation operator is infix, not a prefix constructor. A host
-`Syntax` postfix node, if present, is temporary adapter debt; do not freeze a
-public `SyntaxNode` Postfix variant.
+because a spaced punctuation operator is infix, not a prefix constructor. Public
+`SyntaxNode` includes `Postfix(String, SyntaxNode)` so bootstrap type-grammar
+transport can carry `T?` / `T*` / `T^` rest and type annotations.
 
 The current suffix inventory is parser `POSTFIX_SUFFIX`:
 `* ? ! ^ @ $ & ~`. Each is a distinct postfix construction, not prefix/infix
-`Apply`. Option types are written `T?` by convention: that spelling *is* the
-postfix tree, not a mapping onto a named `Option(T)` factory. List/error types
-stay prefix `*(T)` / `^(T)`. Prefix `?(T)` is ordinary prefix application, not
-Option. Postfix `Int*` / `Int^` / `Int!` / `Int$` / `Int&` / `Int~` are
-incomparable with the corresponding prefix applications. `T+` nonempty-list
+`Apply`. Option, List, and error types are written `T?` / `T*` / `T^` by
+convention: those spellings *are* the postfix trees, not mappings onto named
+factories. Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not
+those types. Postfix `Int*` / `Int?` / `Int^` / `Int!` / `Int$` / `Int&` / `Int~`
+are incomparable with the corresponding prefix applications. `T+` nonempty-list
 meaning remains later work; `+` is not in the current suffix set and stays
-prefix/infix.
+prefix/infix. Actual `[]` lists still use rest form `[_... :: T*]` (or
+`xs... :: T*`); the postfix tree `T*` is the list-type convention, not the `[]`
+value.
 
 Prefix `$` / `$(…)` / infix `$` remain unquote (`E_UNQUOTE_CONTEXT` outside
 quotation). Interpolating `` T$` ``, `$"…"`, and `$'…'` are lexer quote prefixes

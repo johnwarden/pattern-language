@@ -1,7 +1,7 @@
 def Rectangle type :Rect(w :: Number,h :: Number)
 def area(r :: Rectangle) r.w * r.h
 
-def Vector(t :: Type) type [values... :: *(t)]
+def Vector(t :: Type) type [values... :: t*]
 vector = [1,2,3] :: Vector(Int)
 
 (result,description: label) = (area(Rect(3,4)),description: "rectangle")

@@ -57,7 +57,7 @@ import {
   apply,
   symbol,
   packOf,
-  typeModifier,
+  listLayer,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { Matcher, Mismatch, any } from "./pattern.ts";
@@ -727,15 +727,6 @@ export class Interpreter {
         accessors: [],
       });
     }
-    for (const name of ["*", "^"])
-      scope.functions.set(name, [
-        this.native(
-          name,
-          [1],
-          ([value]) => this.modifiedType(name, this.materializeType(value)!),
-          (xs) => !!this.materializeType(xs[0].value),
-        ),
-      ]);
     scope.functions.set("language", [
       this.native("language", [0], () => this.grammar.description()),
     ]);
@@ -2443,20 +2434,40 @@ export class Interpreter {
           ? lexicalScopes.get(n.operand)
           : undefined) ??
       env;
+    const peelListLayers = (n: Syntax, dimensions: number): Syntax => {
+      for (let i = 0; i < dimensions; i++) {
+        const layer = listLayer(n);
+        if (!layer)
+          throw new LanguageError(
+            "capture annotation needs one list layer per spread dimension",
+            n.span,
+            { code: "E_SPREAD_DIMENSION", phase: "declaration" },
+          );
+        n = layer.operand;
+      }
+      return n;
+    };
+    const listType = (n: Syntax): TypeValue => {
+      let layers = 0,
+        element = n;
+      while (listLayer(element)) {
+        layers++;
+        element = listLayer(element)!.operand;
+      }
+      let type = this.typeFromSyntax(element, env);
+      for (let i = 0; i < layers; i++) type = this.modifiedType("*", type);
+      return type;
+    };
     const reference = (n: Syntax, dimensions = 0): Pattern<Value> => {
       if (typeMode) this.inlineTypeDepth++;
       try {
-        let type = this.typeFromSyntax(n, env);
-        for (let i = 0; i < dimensions; i++) {
-          if (type.modifier !== "*" || !type.element)
-            throw new LanguageError(
-              "capture annotation needs one list layer per spread dimension",
-              n.span,
-              { code: "E_SPREAD_DIMENSION", phase: "declaration" },
-            );
-          type = type.element;
-        }
-        return this.typePattern(type, !typeMode);
+        const peeled = peelListLayers(n, dimensions);
+        return this.typePattern(
+          listLayer(peeled)
+            ? listType(peeled)
+            : this.typeFromSyntax(peeled, env),
+          !typeMode,
+        );
       } finally {
         if (typeMode) this.inlineTypeDepth--;
       }
@@ -2465,7 +2476,7 @@ export class Interpreter {
       {
         bareCaptures: true,
         captureWrapper: (annotation) => {
-          const type = this.typeFromSyntax(annotation, env);
+          const type = listType(annotation);
           return (value) => single(this.check(type, value));
         },
         validateTypedCapture: (name, annotation) => {
@@ -2505,8 +2516,6 @@ export class Interpreter {
             const type = this.materializeType(value);
             return type ? this.typePattern(type) : literalPattern(value);
           }
-          const modifier = typeModifier(n);
-          if (modifier) return reference(n);
           if (n.kind === "apply") {
             const binding =
               n.head.kind === "symbol" && !n.head.quoted

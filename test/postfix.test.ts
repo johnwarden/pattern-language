@@ -7,6 +7,7 @@ import {
   normal,
   LanguageError,
   encodeSyntax,
+  decodeSyntax,
 } from "../src/index.ts";
 import { syntaxKey } from "../src/syntax.ts";
 
@@ -32,11 +33,10 @@ test("tight suffix punctuation is postfix, prefix remains apply", () => {
     assert.notEqual(syntaxKey(post), syntaxKey(pre));
     assert.equal(normal(post), postSource);
     assert.equal(normal(pre), preSource);
-    assert.throws(
-      () => encodeSyntax(post),
-      (e: unknown) =>
-        e instanceof LanguageError &&
-        e.diagnostic.code === "E_VALUE_SERIALIZATION",
+    assert.equal(
+      syntaxKey(decodeSyntax(encodeSyntax(post))),
+      syntaxKey(post),
+      postSource,
     );
   }
   assert.equal(parseExpression("2 * 3").kind, "apply");
@@ -62,20 +62,8 @@ end
 `),
     "1",
   );
-  assert.throws(
-    () =>
-      run(`
-def PostfixStar type (Int)*
-def PrefixStar type (*(Int))
-(star :: PostfixStar) = 1*
-(xs :: PrefixStar) = [1]
-star == xs
-`),
-    (e: unknown) =>
-      e instanceof LanguageError &&
-      e.diagnostic.code === "E_INCOMPARABLE_TYPES" &&
-      e.message.includes("Can't compare types"),
-  );
+  assert.equal(run("*(2)(3)"), "6");
+  assert.equal(run("^(2)(3)"), "8");
   assert.throws(
     () => run("!(1)"),
     (e: unknown) =>
@@ -153,6 +141,7 @@ test("keyword rest is prefix ** and postfix rest** is two stars", () => {
   assert.equal(parseExpression("**rest").kind, "apply");
   assert.equal(normal(parseExpression("**rest")), "**(rest)");
   assert.equal(normal(parseExpression("** rest")), "**(rest)");
+  assert.equal(syntaxKey(parseExpression("**x")), syntaxKey(parseExpression("** x")));
   assert.equal(parseExpression("**(x)").kind, "apply");
   assert.equal(normal(parseExpression("**(x)")), "**(x)");
   const post = parseExpression("rest**");
@@ -169,5 +158,33 @@ test("keyword rest is prefix ** and postfix rest** is two stars", () => {
     (e: unknown) =>
       e instanceof LanguageError &&
       e.diagnostic.code === "E_KEYWORD_REST_UNSUPPORTED",
+  );
+});
+
+test("postfix T* / T** and prefix **x do not share a spaced tree", () => {
+  assert.equal(parseExpression("T*").kind, "postfix");
+  assert.equal(normal(parseExpression("T*")), "T*");
+  assert.throws(
+    () => parseExpression("T *"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /infix operators require spaces on both sides/.test(e.message),
+  );
+  assert.equal(parseExpression("T**").kind, "postfix");
+  assert.equal(normal(parseExpression("T**")), "T**");
+  assert.equal(
+    syntaxKey(parseExpression("T**")),
+    syntaxKey(parseExpression("(T*)*")),
+  );
+  assert.equal(parseExpression("**x").kind, "apply");
+  assert.equal(normal(parseExpression("**x")), "**(x)");
+  assert.equal(normal(parseExpression("* *x")), "*(*(x))");
+  assert.notEqual(
+    syntaxKey(parseExpression("T**")),
+    syntaxKey(parseExpression("T * *")),
+  );
+  assert.notEqual(
+    syntaxKey(parseExpression("**x")),
+    syntaxKey(parseExpression("* *x")),
   );
 });
