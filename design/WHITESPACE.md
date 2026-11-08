@@ -102,7 +102,7 @@ width.
 | Newlines outside balanced delimiters | Separate rows / statements; joining or splitting rows can intentionally change a program. |
 | Newlines inside collection delimiters | Can distinguish vertical rows from comma continuation; row boundaries can change collection rank. |
 | Spaces around infix operators | Both sides are required; a+b is invalid, not a different addition expression. |
-| Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Suffixes wrap in source order. |
+| Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Suffixes wrap in source order. Prefix `+Int` and `+(Int)` are the same application tree; tight `Int+` is not that wrap. |
 | Tight function calls versus sidefix operands | f(x) is application; f (x) is a space-separated sequence requiring a grammar, not automatic application. |
 | Dot notation | a.b and a .b c follow the stated call/pack rules; arbitrary spacing around dot is not permitted. |
 | Label colon | Must touch its label. Separating it is not an alternative label spelling and may only have meaning in another explicitly selected grammar. |
@@ -143,3 +143,8 @@ remains an ordinary check. Host test/layout-ends.test.ts keeps Grammar-object
 `parseSurface` (including `:otherwise` vs `:else`) and sequential session macros
 for probe/then success. test/repl.test.ts covers grammar-driven REPL completeness.
 test/indent-prefix.test.ts keeps the prefix-relation unit checks.
+tests/layout/postfix-suffixes.test covers current suffix wrapping (`T*` / `T**`),
+spaced infix, keyword-rest `**`, ellipsis, and that prefix `+Int` / `+(Int)` are
+the same tree while tight `Int+` is not rewritten to prefix `+`. Host
+test/postfix-suffixes.test.ts keeps `syntaxKey` / `normal`. Distinct postfix
+application, including tight `Int+` as a postfix tree, remains later work.

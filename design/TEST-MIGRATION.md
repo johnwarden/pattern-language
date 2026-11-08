@@ -59,6 +59,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Revised primitives, value spaces, proof evidence, projections, facets and spreads | tests/specification/*.test; C01–C27 execute assertion-level todos, C27 explicitly exploratory |
 | PR9 layout behavior (EOF/`end`/quoted clauses/mixed indent/incomplete infix/extra `end`) | tests/layout/*.test via live eval and `expect parse`; host keeps Grammar-object `parseSurface`, session-macro probe/then success, REPL completeness, and indent-prefix unit checks |
 | Parse-error harness (`expect parse` quoted payload, not outer-file parse) | test/test-suite.test.ts plus tests/layout/explicit-ends.test `infix` |
+| Suffix wrapping, prefix `+Int`/`+(Int)` identity, tight `Int+` not prefix `+` | tests/layout/postfix-suffixes.test; host test/postfix-suffixes.test.ts keeps `syntaxKey`/`normal` |
 
 No whole-file migration is claimed for candidate files outside the selected batch.
 Lower TypeScript-only counts do not imply lost semantic coverage; expected failures
