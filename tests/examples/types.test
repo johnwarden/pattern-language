@@ -136,6 +136,19 @@ test "Option factory with ()"
   (toString(Option(Int))(a), b, Option(Int))
 end
 
+test "Primitive aliases stay quoted in symbol value text"
+  def Choice type :Number | :None
+  x = :Number :: Choice
+  y = :None :: Choice
+
+  expect toString(Choice)(x) result ":Number" :: String
+  expect toString(Choice)(y) result "None" :: String
+  expect x result :Number :: Choice
+  expect y result None :: Choice
+  assert parse(Choice)(toString(Choice)(x)) == x
+  assert parse(Choice)(toStringLocal(Choice)(x)) == x
+end
+
 test "Type arguments use ordinary packs"
   def nonZero(T :: Type)(n :: T) n != (0 :: T)
 

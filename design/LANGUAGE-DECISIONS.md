@@ -399,10 +399,12 @@ is `"None"`. The quoted form `:None` is required in *code*, where an unquoted
 the same reason (`Type(:None | String)`). Source still writes `a = :None :: Int?`.
 
 The same split applies to other TitleCase symbols: code `:Black` / `:Widget`,
-value text `Black` / `Widget`. `toString(Expression)` and other code-domain text
-keep `:MissingType` / `:None`, because that text is code. Lowercase and
-punctuation still quote in data text so they are not read as captures, layout
-keywords, or operators. Union `::` tags stay the reconstruction rule (D07): keep
+value text `Black` / `Widget`. Primitive aliases still quote in value text:
+unquoted `Number` decodes as the Float type, so a `:Number` member prints
+`":Number"`. `toString(Expression)` and other code-domain text keep
+`:MissingType` / `:None`, because that text is code. Lowercase and punctuation
+still quote in data text so they are not read as captures, layout keywords, or
+operators. Union `::` tags stay the reconstruction rule (D07): keep
 the tag only when untagged text would not reconstruct the same member/value.
 Unique `None` in `String?` needs no tag; inner absence in `String??` still prints
 a `::` tag so parse reconstructs the inner member. **Source:** L9.

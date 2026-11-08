@@ -25,12 +25,14 @@ export const isCanonicalAtom = (name: string): boolean =>
   constantNames.has(name) || primitiveNames.get(name) === name;
 
 /** Value text of a TitleCase symbol is the name itself (`None`, `Widget`).
- * Colon quotation is a code form, used when an unquoted name would bind.
+ * Primitive type names and aliases still quote: unquoted `Number` decodes as
+ * the Float type, not the symbol. Colon quotation is otherwise a code form.
  * Lowercase and punctuation still quote in value text so they are not read as
  * captures, layout keywords, or operators.
  */
 export const isUnquotedValueSymbol = (name: string): boolean =>
-  isCanonicalAtom(name) || /^\p{Lu}[\p{L}\p{M}\p{N}]*$/u.test(name);
+  isCanonicalAtom(name) ||
+  (/^\p{Lu}[\p{L}\p{M}\p{N}]*$/u.test(name) && !primitiveNames.has(name));
 
 /** Bootstrap syntax domains are defaults that source grammars may replace lexically. */
 export const bootstrapTypeNames = new Set(["Expression", "Body"]);
