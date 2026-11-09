@@ -1,13 +1,18 @@
 /** Test result annotations are grammar data, never evaluated as ascriptions. */
 export const TEST_SCHEMA = `def Test type :test name :: String body :: Expression
+def TodoTest type :todo :test name :: String body :: Expression
+def TestBlock unionType Test | TodoTest
 def TestFileContent type
-  first :: Test
-  rest :: Test*
+  first :: TestBlock
+  rest :: TestBlock*
   ...
 end
 def tests(f :: TestFileContent) [f.first,f.rest...]
 def testParts(t :: Test)
-  (t.name, t.body)
+  ("check", t.name, t.body)
+end
+def testParts(t :: TodoTest)
+  ("todo", t.name, t.body)
 end
 def ExpectedResult type
   (expected :: Expression) ::: (expectedType :: Expression)
