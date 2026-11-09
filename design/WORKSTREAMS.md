@@ -23,6 +23,37 @@ to edit ...` on that PR. Keep one owner per branch. Progress comments should nam
 the commit, validation, changed scope and actual blockers. Release or transfer a
 claim explicitly. Do not force-push another owner's branch.
 
+## Current priority and parked handoffs
+
+Implement accepted existing specification todos before starting new foundations.
+The concrete/abstract declaration syntax in C05/C06/C13/C15/C16, its plain
+type-producing counterpart, and parameterized C05/C12/C18 cases are explicit
+roadmap targets. #31, #32 and #39 already own the overlapping value, declaration
+product and concrete-boundary work; coordinate their integration as above.
+
+Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): accepted specification, focused
+executable contracts, implementation, then deliberate todo removal. Claim an
+implementation by naming its existing cases and shared methods. If a contract is
+missing, write it before implementing. A documentation-only draft and a green
+expected-failure count are not feature progress.
+
+The following later handoffs are **parked**, unclaimed and not active implementation
+work. Do not start them until the current specification priorities are addressed
+and each proposed slice has executable acceptance tests.
+
+| Parked PR                                                     | Proposed later work                   | Remaining boundary                                                                 |
+| ------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------- |
+| [#43](https://github.com/johnwarden/pattern-language/pull/43) | Internal unambiguous-grammar analysis | Public qualifier/protocol remains provisional; preserve general overlapping unions |
+| [#44](https://github.com/johnwarden/pattern-language/pull/44) | Expected-grammar fields beyond String | Current specification todos have priority over this expansion                      |
+| [#45](https://github.com/johnwarden/pattern-language/pull/45) | Internal one-or-more matching         | `T+` source integration and public representation remain open                      |
+
+Inbox submissions are inputs to this process, not a parallel implementation queue.
+Route confirmed bugs to regressions/fixes, accepted changes to specification todo
+tests, and supported usage to runnable examples. Record unclear semantics and the
+missing decision; do not manufacture behavior to empty the inbox. Keep inbox
+optional by default and runnable explicitly. See its
+[triage register](../tests/inbox/README.md).
+
 ## Shared files
 
 `src/runtime.ts` is the main overlap. Workstream 2 owns literal evaluation and

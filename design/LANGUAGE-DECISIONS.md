@@ -165,8 +165,9 @@ AR proposes a concrete union of NaN/infinities and finite Rational carveouts whe
 ## D18. Test assertions and migration contracts
 
 Files contain ordinary test blocks with shared setup. Assertions may use expect,
-assert, expected-error and single-result forms. Modifiers apply to assertions,
-never tests. Plain and legacy assertions must pass. Legacy identifies a current
+assert, expected-error and single-result forms. Todo can also modify a whole test,
+and a file may contain a single todo test. Legacy modifies assertions/setup, not
+whole tests. Plain and legacy assertions must pass. Legacy identifies a current
 compatibility contract to be explicitly retired as the roadmap advances. Todo
 assertions execute and are required to fail; their failures emit no diagnostics.
 A success fails the suite: “This assertion now passes; remove todo.” Pending is not
@@ -187,9 +188,11 @@ match those files byte-for-byte. Supported assertions already pass as ordinary
 checks, retained bootstrap observations are legacy, and unfinished contracts carry
 todo. In particular Widget already has UpperCamelSymbol, so that expectation is not
 todo. Numeric cases assume the proposed exact Rational model and finite numeric
-vocabulary only as future contracts. Provisional type/angle/qualifier spellings do
-not become approved language features just because their failing assertions are
-stored and attempted. C27 remains an exploratory lexical candidate. Each executable
+vocabulary only as future contracts. The author's specification-first priority
+makes the concrete/abstract declaration forms and simple C05/C12/C18 parameterized
+forms explicit implementation targets. Other provisional qualifiers, generic
+constraints and policies do not become approved merely because a failing assertion
+mentions them. C27 remains an exploratory lexical candidate. Each executable
 subject repeats any needed future setup in an isolated scope; unavailable future
 types are not installed in shared setup merely to allow an assertion to be recorded.
 
@@ -222,7 +225,9 @@ The first annotation supplies context. The second binding deliberately supplies 
 
 Todo. A named `type Rectangle concrete Rect(w :: Rational, h :: Rational)` equals
 the capture-free `concrete Rect(Rational, Rational)`. `Box<String>` equals
-`concrete Box(String)`, and `Box("hello") :: Box<String>` destructures to `"hello"`.
+`concrete Box(String)`, and an explicit match opens
+`Box("hello") :: Box<String>` to obtain `"hello"`. An ordinary constructor binding
+does not open that concrete boundary.
 This does not compare an Expression-typed descriptor with a type, or decide bare-family membership.
 
 ### C06 — alternative sets determine concrete identity
