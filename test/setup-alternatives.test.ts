@@ -9,16 +9,14 @@ const read = (body: string) =>
   })[0];
 
 test("a todo result pack remains a trial instead of becoming playground output", () => {
-  const report = runTest(
-    read("  todo\n    (1, 2)\n  end"),
-  );
+  const report = runTest(read("  todo\n    (1, 2)\n  end"));
   assert.equal(report.passed, false);
   assert.match(report.message, /setup now succeeds/);
 });
 
-test("future setup uses its source schema and keeps the current definition", () => {
+test("future generic setup uses its source schema and keeps the current definition", () => {
   const value = read(`  legacy def Color type :Black | :White
-  todo type Color concrete :Black | :White
+  todo type Color<T> concrete :Black | :White
   expect Color result Type(:Black | :White) :: Type`);
   assert.deepEqual(
     value.steps.map((s) => [s.kind, s.mode]),
@@ -35,6 +33,15 @@ test("future setup uses its source schema and keeps the current definition", () 
     ["expected-failure", "passed"],
   );
   assert.equal(value.source, "def Color type :Black | :White\nColor");
+});
+
+test("ordinary type declarations are setup rather than obsolete assertion clauses", () => {
+  const value = read(`  type Color concrete :Black | :White
+  expect :Black :: Color result Black :: Color`);
+  assert.equal(value.steps[0].kind, "setup");
+  assert.equal(value.steps[0].mode, "check");
+  const report = runTest(value);
+  assert.equal(report.passed, true, report.message);
 });
 test("an implemented replacement is not hidden by the legacy type's duplicate name", () => {
   const report = runTest(

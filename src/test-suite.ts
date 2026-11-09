@@ -296,7 +296,7 @@ class TestReader {
           n.kind === "symbol" &&
           !n.quoted &&
           (this.starts.has(n.name) ||
-            ["test", "value", "type", "results", "result"].includes(n.name))
+            ["test", "value", "results", "result"].includes(n.name))
         )
           throw problem(
             "incomplete assert/expect/todo/legacy form; group compound operands or use indented blocks",

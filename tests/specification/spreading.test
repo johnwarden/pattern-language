@@ -23,7 +23,7 @@ test "C19 horizontal rest remains a typed positional list"
     )
   end
 
-  todo expect
+  expect
     def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
     packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
@@ -41,7 +41,7 @@ test "C19 horizontal rest remains a typed positional list"
     )
   end
 
-  todo expect
+  expect
     def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
     packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
@@ -61,7 +61,7 @@ test "C19 horizontal rest remains a typed positional list"
 end
 
 test "C20 row capture and spreading are mirror images"
-  todo expect
+  expect
     type Matrix concrete [
       cells... :: Float32**
       ...
@@ -227,7 +227,7 @@ test "C20 row capture and spreading are mirror images"
 end
 
 test "C21 vertical-only capture is a list of items"
-  todo expect
+  expect
     type TodoList concrete :todo
       todos :: String*
       ...

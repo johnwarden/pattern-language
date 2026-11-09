@@ -34,6 +34,12 @@ chat and approved spec records; its branch is preserved for reference. #48 is th
 next declaration-syntax handoff. The spec queue lives directly in `specs/` on
 master; #52's draft is retired after carrying its content onto master.
 
+[#48](https://github.com/johnwarden/pattern-language/pull/48) is claimed by
+session `/root/declaration_syntax_48`, targeting the existing C05/C06/C13/C16
+declaration and type-expression assertions. Its
+[scope](workstreams/07-declaration-syntax-conformance.md) records shared methods
+and validation. The separate test-migration agent retains its own branch.
+
 Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): discuss decisions in the project
 chat, commit them to `specs/approved/` on master, write or revise executable contracts,
 then implement and remove fulfilled todos. Move a decision to `specs/implemented/`

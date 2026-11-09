@@ -46,6 +46,10 @@ import type { Value } from "./values.ts";
 export const DEFAULT_GRAMMAR = `def Definition type :def signature :: Signature body :: Body
 def MacroRegistration type :macro signature :: Signature body :: Body
 def TypeExpression type :type pattern :: PatternBody
+def ConcreteTypeDeclaration type :type signature :: Signature :concrete pattern :: PatternBody
+def AbstractTypeDeclaration type :type signature :: Signature :abstract pattern :: PatternBody
+def ConcreteTypeExpression type :concrete pattern :: PatternBody
+def AbstractTypeExpression type :abstract pattern :: PatternBody
 def UnionTypeExpression type :unionType pattern :: PatternBody
 def IfExpression type :if condition :: Expression consequent :: Body :else alternative :: Body
 def MatchExpression type :match subject :: Expression arms :: Arms`;
@@ -97,7 +101,7 @@ export class Grammar {
   rules = new Map<string, Pattern<Syntax>>();
   private ruleSyntax = new Map<string, Syntax[]>();
   private structuralNames = new Set<string>();
-  keywords = new Map<string, string>();
+  keywords = new Map<string, string[]>();
   constructor(
     source = DEFAULT_GRAMMAR,
     options: { opaqueExpressions?: boolean } = {},
@@ -122,11 +126,10 @@ export class Grammar {
           throw new LanguageError(
             "a sidefix form starts with a quoted keyword",
           );
-        if (this.keywords.has(first.name))
-          throw new LanguageError(
-            "duplicate sidefix starting keyword: " + first.name,
-          );
-        this.keywords.set(first.name, name.name);
+        this.keywords.set(first.name, [
+          ...(this.keywords.get(first.name) ?? []),
+          name.name,
+        ]);
       }
     }
   }
@@ -301,7 +304,7 @@ export class Grammar {
           if (
             value.kind === "symbol" &&
             !value.quoted &&
-            this.keywords.get(value.name) === "TypeExpression"
+            this.keywords.get(value.name)?.includes("TypeExpression")
           )
             return this.readForm(items, pos, matcher);
           const taken = this.takeOpaqueSequence(items, pos, {
@@ -392,6 +395,54 @@ export class Grammar {
       };
     throw new LanguageError("unknown grammar reference: " + name);
   }
+  /** Concrete/abstract forms elaborate to the existing declaration/type operations.
+   * Keep original items and spans so source printing and inert inspection remain lossless. */
+  private elaborateTypeForm(
+    n: Extract<Syntax, { kind: "form" }>,
+    sourceItems: Syntax[],
+  ): Syntax {
+    if (n.name === "ConcreteTypeExpression")
+      return { ...n, name: "TypeExpression", items: sourceItems };
+    if (n.name === "AbstractTypeExpression")
+      return { ...n, name: "UnionTypeExpression", items: sourceItems };
+    if (
+      !["ConcreteTypeDeclaration", "AbstractTypeDeclaration"].includes(n.name)
+    )
+      return n;
+    const signature = n.captures.get("signature");
+    const name = signature?.fields[0]?.value;
+    if (
+      !name ||
+      name.kind !== "symbol" ||
+      name.quoted ||
+      !/^\p{Lu}/u.test(name.name)
+    )
+      throw new LanguageError(
+        "type declaration requires a bare UpperCamel name; parameterized declarations remain unsupported",
+        name?.span ?? n.span,
+        { code: "E_TYPE_DECLARATION_SIGNATURE", phase: "declaration" },
+      );
+    const pattern = n.captures.get("pattern")!;
+    const body: Syntax = {
+      kind: "form",
+      name:
+        n.name === "ConcreteTypeDeclaration"
+          ? "TypeExpression"
+          : "UnionTypeExpression",
+      captures: new Map([["pattern", pattern]]),
+      items: sourceItems.slice(2),
+      span: sourceItems[2]?.span ?? n.span,
+    };
+    return {
+      ...n,
+      name: "Definition",
+      items: sourceItems,
+      captures: new Map([
+        ["signature", signature!],
+        ["body", { rest: false, fields: [entry(body)] }],
+      ]),
+    };
+  }
   private readForm(
     items: Field<Syntax>[],
     pos: number,
@@ -400,23 +451,27 @@ export class Grammar {
     const n = items[pos]?.value;
     if (!n) return [];
     if (n.kind === "symbol" && !n.quoted && this.keywords.has(n.name)) {
-      const name = this.keywords.get(n.name)!;
-      return matcher.scan(this.rules.get(name)!, items, pos).map((m) => ({
-        end: m.end,
-        fields: [
-          entry(
-            {
-              kind: "form",
-              name,
-              captures: m.captures,
-              items: m.fields.map((e) => e.value),
-              span: n.span,
-            },
-            items[pos].label,
-          ),
-        ],
-        captures: new Map(),
-      }));
+      return this.keywords.get(n.name)!.flatMap((name) =>
+        matcher.scan(this.rules.get(name)!, items, pos).map((m) => ({
+          end: m.end,
+          fields: [
+            entry(
+              this.elaborateTypeForm(
+                {
+                  kind: "form",
+                  name,
+                  captures: m.captures,
+                  items: m.fields.map((e) => e.value),
+                  span: n.span,
+                },
+                items.slice(pos, m.end).map((e) => e.value),
+              ),
+              items[pos].label,
+            ),
+          ],
+          captures: new Map(),
+        })),
+      );
     }
     const resolved = this.resolveOperand(n, items, pos + 1, matcher);
     return [
@@ -556,15 +611,20 @@ export class Grammar {
   /** Runtime staging: accept each form before reading the next, with nested bodies deferred. */
   private describeForm(input: Syntax): string | undefined {
     const first = input.kind === "sequence" ? input.items[0] : input;
-    const name =
+    const names =
       first?.kind === "symbol" ? this.keywords.get(first.name) : undefined;
-    const pattern = name && this.ruleSyntax.get(name);
-    if (!pattern) return;
+    if (!names) return;
+    const alternatives = names.map((name) => ({
+      name,
+      pattern: this.ruleSyntax.get(name),
+    }));
     return (
       "incomplete or invalid " +
-      name +
+      names.join(" or ") +
       "; expected grammar " +
-      pattern.map(normal).join(" ") +
+      alternatives
+        .map(({ pattern }) => pattern?.map(normal).join(" "))
+        .join(" OR ") +
       "; found " +
       normal(input)
     );
@@ -729,15 +789,14 @@ export class Grammar {
       if (kind.name === "Structural") grammar.structuralNames.add(name);
       else if (pattern.length > 1) {
         const first = pattern[0];
-        if (
-          first.kind !== "symbol" ||
-          !first.quoted ||
-          grammar.keywords.has(first.name)
-        )
+        if (first.kind !== "symbol" || !first.quoted)
           throw new LanguageError(
-            "sidefix rule requires a unique quoted starting keyword: " + name,
+            "sidefix rule requires a quoted starting keyword: " + name,
           );
-        grammar.keywords.set(first.name, name);
+        grammar.keywords.set(first.name, [
+          ...(grammar.keywords.get(first.name) ?? []),
+          name,
+        ]);
       }
       grammar.ruleSyntax.set(name, pattern);
       grammar.rules.set(
@@ -773,7 +832,7 @@ export class Grammar {
       name,
       sequencePattern(signature.items.map((n) => this.compilePattern(n))),
     );
-    this.keywords.set(first.name, name);
+    this.keywords.set(first.name, [name]);
   }
   /** Start keywords and extra clause keywords from this grammar's sidefix rules. */
   layoutForms(): LayoutForms {
