@@ -32,15 +32,15 @@ test "Named function values retain a finite mutually recursive group"
   def even(n :: Int) if n == (0 :: Int) True else odd(n - (1 :: Int))
   def odd(n :: Int) if n == (0 :: Int) False else even(n - (1 :: Int))
 
-  todo expect
+  todo assert
     f = even
     f(8 :: Int)
-  result True :: Bool
+  end
 
-  todo expect
+  todo assert
     f = even
-    f(9 :: Int)
-  result False :: Bool
+    False == (f(9 :: Int))
+  end
 end
 
 test "Named function values preserve successive argument packs"
@@ -127,11 +127,11 @@ test "Different implementations do not become equal from equivalent behavior"
   def unchanged(n :: Int) n
   def addZero(n :: Int) n + (0 :: Int)
 
-  todo expect
+  todo assert
     f = unchanged
     g = addZero
-    f == g
-  result False :: Bool
+    False == (f == g)
+  end
 end
 
 test "A named function can be passed and returned as a value"

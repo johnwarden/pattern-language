@@ -7,19 +7,17 @@ test "C01 intrinsic primitive values"
   expect :Widget result Widget :: UpperCamelSymbol
   expect :foo result foo :: LowerCamelSymbol
   expect :Symbol result Symbol :: UpperCamelSymbol
-  expect Int .matches ReservedSymbol result True :: Bool
-  expect Int .matches UpperCamelSymbol result False :: Bool
-  expect Int .matches Symbol result False :: Bool
-  expect True .matches UpperCamelSymbol result False :: Bool
-  expect True .matches ReservedSymbol result False :: Bool
-  expect False .matches Bool result True :: Bool
-  expect :Widget .matches UpperCamelSymbol result True :: Bool
-  expect :Widget .matches ReservedSymbol result False :: Bool
-  expect :Widget .matches Symbol result True :: Bool
-  expect :foo .matches Symbol result True :: Bool
-  expect
-    (type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)
-  result True :: Bool
+  assert Int .matches ReservedSymbol
+  assert False == (Int .matches UpperCamelSymbol)
+  assert False == (Int .matches Symbol)
+  assert False == (True .matches UpperCamelSymbol)
+  assert False == (True .matches ReservedSymbol)
+  assert False .matches Bool
+  assert :Widget .matches UpperCamelSymbol
+  assert False == (:Widget .matches ReservedSymbol)
+  assert :Widget .matches Symbol
+  assert :foo .matches Symbol
+  assert (type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)
   legacy expect
     type Bool
   result Bool :: Type
@@ -30,22 +28,22 @@ test "C01 intrinsic primitive values"
 end
 
 test "Literal and computed Booleans share one Bool type"
-  expect True == (1 == 1) result True :: Bool
-  expect True != (1 == 1) result False :: Bool
-  expect (1 == 1) == True result True :: Bool
-  expect (1 == 1) != True result False :: Bool
-  expect True == (1 == 2) result False :: Bool
-  expect True != (1 == 2) result True :: Bool
-  expect (1 == 2) == True result False :: Bool
-  expect (1 == 2) != True result True :: Bool
-  expect False == (1 == 1) result False :: Bool
-  expect False != (1 == 1) result True :: Bool
-  expect (1 == 1) == False result False :: Bool
-  expect (1 == 1) != False result True :: Bool
-  expect False == (1 == 2) result True :: Bool
-  expect False != (1 == 2) result False :: Bool
-  expect (1 == 2) == False result True :: Bool
-  expect (1 == 2) != False result False :: Bool
+  assert True == (1 == 1)
+  assert False == (True != (1 == 1))
+  assert (1 == 1) == True
+  assert False == ((1 == 1) != True)
+  assert False == (True == (1 == 2))
+  assert True != (1 == 2)
+  assert False == ((1 == 2) == True)
+  assert (1 == 2) != True
+  assert False == (False == (1 == 1))
+  assert False != (1 == 1)
+  assert False == ((1 == 1) == False)
+  assert (1 == 1) != False
+  assert False == (1 == 2)
+  assert False == (False != (1 == 2))
+  assert (1 == 2) == False
+  assert False == ((1 == 2) != False)
   expect
     True == Int
   error "E_INCOMPARABLE_TYPES"
@@ -116,8 +114,8 @@ test "String operations keep intrinsic String identity"
   (first, second) = ("a", "b")
   expect first result "a" :: String
   expect second result "b" :: String
-  expect ["hello"] .matches (type [_... :: String*]) result True :: Bool
-  expect "hello" .matches String result True :: Bool
+  assert ["hello"] .matches (type [_... :: String*])
+  assert "hello" .matches String
   expect
     "hello" :: Int
   error "expected Int"
@@ -144,11 +142,11 @@ test "C03 exact designation differs from rounding"
   expect
     (0.1 :: Float32)
   error "not exactly representable as Float32"
-  expect 0.5 .matches Float32 result True :: Bool
-  expect 0.1 .matches Float32 result False :: Bool
-  expect 0.5 .matches Float result True :: Bool
-  expect 0.1 .matches Float result False :: Bool
-  expect 0f0.1 .matches Float result True :: Bool
+  assert 0.5 .matches Float32
+  assert False == (0.1 .matches Float32)
+  assert 0.5 .matches Float
+  assert False == (0.1 .matches Float)
+  assert 0f0.1 .matches Float
   expect 0.5 :: Float result 0.5 :: Float
 
   todo expect

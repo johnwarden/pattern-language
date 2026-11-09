@@ -42,7 +42,7 @@ end
 test "Unspellable 1/3 stays exact as a NumberLiteral payload"
   NumberLiteral(n) = NumberLiteral((1 / 3) * 1)
   assert (n * 3) == 1
-  expect ((1 / 3) * 3) == 1 result True :: Bool
+  assert ((1 / 3) * 3) == 1
   expect
     1 / 3
   error "E_VALUE_SERIALIZATION"

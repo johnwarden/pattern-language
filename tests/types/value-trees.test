@@ -40,7 +40,7 @@ end
 test "Type construction sees Int through abstract storage"
   (t :: Any) = Int
 
-  expect Type(t) == Type(Int) result True :: Bool
+  assert Type(t) == Type(Int)
 end
 
 test "Canonical alternatives put symbols before literals and applications"
@@ -53,11 +53,11 @@ test "Compiled type trees equal quoted trees"
   a = Type(Rect(Float, Float))
   b = :(Type(Rect(Float, Float)))
 
-  expect a == b result True :: Bool
-  expect toString(Expression)(a) == toString(Expression)(b) result True :: Bool
-  expect UnionType(Int, String) == :(UnionType(Int, String)) result True :: Bool
-  expect Type(Int) == Int result False :: Bool
-  expect Type(10) < Type(2) result False :: Bool
+  assert a == b
+  assert toString(Expression)(a) == toString(Expression)(b)
+  assert UnionType(Int, String) == :(UnionType(Int, String))
+  assert False == (Type(Int) == Int)
+  assert False == (Type(10) < Type(2))
 end
 
 test "A quoted type tree can be installed as a named type"
@@ -68,8 +68,8 @@ test "A quoted type tree can be installed as a named type"
 end
 
 test "Invalid type-shaped data is not a Type"
-  expect :(Primitive(Bogus)) .matches (type Type) result False :: Bool
-  expect Int .matches (type Type) result True :: Bool
+  assert False == (:(Primitive(Bogus)) .matches (type Type))
+  assert Int .matches (type Type)
 
   x = :(UnionType(1, 2))
   assert parse(Expression)(toString(Expression)(x)) == x
@@ -81,10 +81,10 @@ test "A bound type value is a matcher"
   def accept(u :: Type) 1 .matches u
   def L(u :: Type) type :Nil | :Cons(u, L(u))
 
-  expect t .matches (type Type) result True :: Bool
-  expect x .matches t result True :: Bool
-  expect parse(t)(toString(t)(x)) == x result True :: Bool
-  expect accept(Int) result True :: Bool
+  assert t .matches (type Type)
+  assert x .matches t
+  assert parse(t)(toString(t)(x)) == x
+  assert accept(Int)
   expect Cons(1, :Nil) :: L(t) result Cons(1, Nil) :: L(Int)
 end
 
@@ -94,7 +94,7 @@ test "Postfix type descriptions are not prefix quotation"
     :*(Int)
   end
 
-  expect Suffix == Prefix result False :: Bool
+  assert False == (Suffix == Prefix)
 end
 
 test "Reserved primitive names cannot be redeclared"

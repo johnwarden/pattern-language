@@ -1,11 +1,11 @@
 test "An explicit inner absence projects once without becoming outer absence"
   (x :: String??) = :None :: String?
 
-  expect
+  assert
     match x
       (inner :: String?) -> inner == (:None :: String?)
     end
-  result True :: Bool
+  end
 end
 
 test "A direct constructor arm wins over an inward path"
@@ -15,8 +15,8 @@ test "A direct constructor arm wins over an inward path"
   (inner :: Outer) = Box("x") :: Inner
   (same, roundTrip) = (direct == inner, parse(Outer)(toString(Outer)(inner)) == inner)
 
-  expect same result False :: Bool
-  expect roundTrip result True :: Bool
+  assert False == same
+  assert roundTrip
 end
 
 test "A direct constructor arm wins regardless of branch order"
@@ -26,8 +26,8 @@ test "A direct constructor arm wins regardless of branch order"
   (inner :: Outer) = Box("x") :: Inner
   (same, roundTrip) = (direct == inner, parse(Outer)(toString(Outer)(inner)) == inner)
 
-  expect same result False :: Bool
-  expect roundTrip result True :: Bool
+  assert False == same
+  assert roundTrip
 end
 
 test "Already typed payloads can be designated inward without binding projection"
@@ -36,13 +36,13 @@ test "Already typed payloads can be designated inward without binding projection
   (s :: String) = "x"
   (outer :: Outer) = s
 
-  expect
+  assert
     match outer
       (inner :: Inner) -> match inner
         (payload :: String) -> payload == s
       end
     end
-  result True :: Bool
+  end
 end
 
 test "Peer optional absence is ambiguous regardless of branch order"

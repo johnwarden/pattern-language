@@ -40,10 +40,10 @@ end
 test "A quoted name is a literal match head"
   x = :name
 
-  expect
+  assert
     match x
       :name -> True
       _ -> False
     end
-  result True :: Bool
+  end
 end

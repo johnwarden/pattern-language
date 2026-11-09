@@ -8,7 +8,7 @@ test "Type identity excludes declaration and capture names"
     B
   )
 
-  expect a == b result True :: Bool
+  assert a == b
 end
 
 test "Recursive identity is alpha invariant"
@@ -22,15 +22,13 @@ test "Recursive identity is alpha invariant"
   )
   type Other concrete :Nil | :Cons(String, Other)
 
-  expect a == b result True :: Bool
-  expect a == Other result False :: Bool
+  assert a == b
+  assert False == (a == Other)
 end
 
 test "Physical labels matter but their order does not"
-  expect
-    (type :R(x: Int, y: String)) == (type :R(y: String, x: Int))
-  result True :: Bool
-  expect (type :R(x: Int)) == (type :R(y: Int)) result False :: Bool
+  assert (type :R(x: Int, y: String)) == (type :R(y: String, x: Int))
+  assert False == ((type :R(x: Int)) == (type :R(y: Int)))
 end
 
 test "Capture names erase against a capture-free type"
@@ -39,7 +37,7 @@ test "Capture names erase against a capture-free type"
     A
   )
 
-  expect a == (type :Pair(Int, Int)) result True :: Bool
+  assert a == (type :Pair(Int, Int))
 end
 
 test "Equal types in independent scopes share accessors"
@@ -53,14 +51,14 @@ test "Equal types in independent scopes share accessors"
 
   (same, w, h) = (a == b, width(a), height(b))
 
-  expect same result True :: Bool
+  assert same
   expect w result 3 :: Int
   expect h result 4 :: Int
 end
 
 test "unionType normalizes like UnionType"
-  expect (unionType String | Int) == UnionType(Int, String) result True :: Bool
-  expect (unionType Int | String | Int) == UnionType(String, Int) result True :: Bool
+  assert (unionType String | Int) == UnionType(Int, String)
+  assert (unionType Int | String | Int) == UnionType(String, Int)
   expect
     unionType Int | foo
   error "unbound"
@@ -70,5 +68,5 @@ test "Quoted symbols stay distinct from reserved type names in Any"
   (symbol :: Any) = :Widget
   (typeValue :: Any) = Int
 
-  expect symbol == typeValue result False :: Bool
+  assert False == (symbol == typeValue)
 end
