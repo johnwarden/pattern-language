@@ -8,8 +8,9 @@ This is the integrated decision record authorized by the author. Confirmed and r
 
 The `.test` files are the language specification. This record preserves rationale
 and links to cases; it must not evolve into a competing prose contract. New rules
-receive executable todo tests before their implementation PR is opened, with
-adjacent explanations where needed. See
+are discussed in the project chat and recorded in `specs/approved/` before a PR
+turns them into tests. Write or revise executable contracts before implementation,
+with adjacent explanations where needed. See [the lifecycle](../specs/README.md) and
 [the specification index](../tests/specification/README.md).
 
 - **Confirmed:** an explicit author decision or subsequent clarification.

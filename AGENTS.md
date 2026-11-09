@@ -142,18 +142,28 @@ implementation. Existing accepted todos in `tests/specification/` take priority
 over new roadmap foundations. Name the target cases in each implementation PR;
 remove todo only when the intended behavior passes, not an unrelated setup failure.
 
+Discuss and clarify new language decisions with Jonathan in the project chat.
+Once agreed, record the decision and examples in `specs/approved/` before opening
+a PR for one or more approved specs. New proposals belong in `specs/inbox/`;
+existing `tests/inbox/` drafts remain optional until triaged. Remove a corresponding
+inbox file when its content is fully captured; split out unresolved content first.
+
 When possible, every implementation PR implements named cases in a `.test` file.
-Write and commit missing todo contracts before opening that implementation PR;
-use one active specification-queue PR for new contracts. Existing cases already
-on master satisfy this requirement. Tooling/host-only work should explain briefly
-why its observation needs a host test rather than inventing a language example.
+Add or revise the actual tests before changing implementation; the approved spec
+may illustrate a rule or require mass edits rather than add a new case. Move the
+spec to `specs/implemented/` with links when those tests are written in the PR.
+That records conversion into tests, not runtime completion: tests may remain todo.
+Existing cases on master satisfy the contract requirement. Tooling/host-only work
+should explain why its observation needs a host test rather than a language example.
 
-The `.test` files are the language specification. Keep necessary explanations
-adjacent to the tests and link them from roadmap/grammar/decision prose. Update
-tests and explanations together; do not maintain a competing prose specification.
+The `.test` files are the executable language specification. Approved records guide
+changes not yet captured in tests; implemented records preserve decisions and link
+to the resulting cases. Keep necessary explanations adjacent to tests and update
+them together; do not maintain a competing prose specification.
 
-Triage `tests/inbox/` into bug regressions/fixes, accepted specification todo tests,
-or supported runnable examples. Record the destination and PR; leave unclear
+Triage inbox submissions into bug regressions/fixes, approved specs and their
+specification todo tests, or supported runnable examples. Record the destination
+and PR; leave unclear
 semantics explicitly pending with the missing decision. Comments and placeholder
 assertions do not cover the proposal. Keep inbox optional in default runs and
 runnable by explicit path. Do not change an expected result to observed output.

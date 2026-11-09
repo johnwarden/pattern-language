@@ -28,11 +28,14 @@ claim explicitly. Do not force-push another owner's branch.
 Implement accepted existing specification todos before starting new foundations.
 The concrete/abstract declaration syntax in C05/C06/C13/C15/C16, its plain
 type-producing counterpart, and parameterized C05/C12/C18 cases are explicit
-roadmap targets. #31, #32 and #39 already own the overlapping value, declaration
-product and concrete-boundary work; coordinate their integration as above.
+roadmap targets. #31's value alignment and #32's declaration-product separation
+are integrated. #39's concrete-boundary regressions remain pending; #48 is the
+next declaration-syntax handoff, and #52 holds the current spec queue.
 
-Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): accepted specification, focused
-executable contracts, implementation, then deliberate todo removal. Claim an
+Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): discuss decisions in the project
+chat, record them in `specs/approved/`, write or revise executable contracts,
+then implement and remove fulfilled todos. Move a decision to `specs/implemented/`
+when actual tests capture it; that does not claim runtime completion. Claim an
 implementation by naming its existing cases and shared methods. If a contract is
 missing, write it before implementing. A documentation-only draft and a green
 expected-failure count are not feature progress.

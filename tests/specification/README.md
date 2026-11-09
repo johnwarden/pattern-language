@@ -2,8 +2,11 @@
 
 The `.test` files in this directory define the language contracts, including
 accepted behavior that remains todo. Implementation PRs should name the files
-and cases they implement. Write and commit missing todo tests before opening an
-implementation PR, using the active specification-queue PR for new contracts.
+and cases they implement. Discuss new rules in the project chat, then record the
+agreed change in [`specs/approved/`](../../specs/approved/) before opening its PR.
+Write or revise missing tests before changing implementation. When those tests
+exist in the PR, move the record to `specs/implemented/` and link the cases; todo
+tests still describe unfinished runtime behavior. See [the spec lifecycle](../../specs/README.md).
 
 Adjacent notes, such as [application-heads.md](application-heads.md), explain a
 test's intent, phase boundary or unresolved question when the code alone is not

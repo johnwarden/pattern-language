@@ -8,8 +8,10 @@ and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
 
 The executable [`.test` specification](tests/specification/README.md) is the
 language contract. This roadmap and the linked prose explain its decisions and
-track implementation, rather than maintain an independent specification. Write
-missing todo tests in the specification queue before opening implementation PRs.
+track implementation, rather than maintain an independent specification. Discuss
+new rules in the project chat, record settled changes in `specs/approved/`, then
+open a PR to write or revise their tests before changing implementation. See
+[the specification lifecycle](specs/README.md).
 
 ## Vision and accepted direction
 
@@ -157,9 +159,10 @@ The current declaration syntax includes these targets:
 | `type Box<T> concrete Box(T)` and `Box<String>` | C05/C12/C18: parameterized structural type values and independent-scope interoperability |
 | `type NonZero refinement Rational .where nonZero` | C07-C10: refinement syntax, then the separately specified evidence and overload rules |
 
-First finish #31's value alignment and #32's declaration-product work, with #39's
-concrete binding/match regressions coordinated at their shared matcher boundary.
-Next make the concrete/abstract declaration and type-producing syntax above work
+#31's value alignment and #32's declaration-product separation are integrated.
+#39's concrete binding/match regressions remain pending at the shared matcher
+boundary. #48 is the next declaration-syntax handoff; #52 holds the active spec
+queue. Make the concrete/abstract declaration and type-producing syntax above work
 against its existing cases; isolate parser support from later generic/evidence
 obligations so failures identify the actual missing feature. Preserve current
 equivalent-declaration/accessor-collision errors and the deferred public inspection

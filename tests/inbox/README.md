@@ -6,6 +6,12 @@ content to a bugfix regression, a specification todo, or a runnable example.
 Pending decisions remain explicit; comments and placeholder assertions are not
 coverage. Record destination cases and a PR before calling an item resolved.
 
+New proposals belong in [`specs/inbox/`](../../specs/inbox/). Discuss and clarify
+them in the project chat; accepted changes get a record in `specs/approved/`.
+Retire the corresponding inbox file when that record preserves all of its intent;
+split unresolved portions first. Existing drafts here retain their explicit-path
+runner support during triage. See [the lifecycle](../../specs/README.md).
+
 | Submission                                                    | Current disposition                                                                      | Destination / next action                                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `2026-raw-and-typed-expressions.test`                         | Split: concrete-boundary regression; raw-expression mode remains pending                 | [#39](https://github.com/johnwarden/pattern-language/pull/39) seeds `tests/bindings/concrete-value-boundary.test`: ordinary bindings/dispatch cannot open a concrete value; explicit match can. The two negative cases need implementation. Keep the optional raw runtime Expression mode question open. |

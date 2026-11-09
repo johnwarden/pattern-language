@@ -1,5 +1,9 @@
 # Pending expectation vocabulary migration
 
+The [approved change](../../specs/approved/expect-predicates.md) records the settled
+rename and scope; [the pending contains proposal](../../specs/inbox/contains-predicate.md)
+records the remaining question for discussion in the project chat.
+
 [expect-predicates.test](expect-predicates.test) illustrates the target `is` and
 `fails` surface in actual `.test` syntax. It is a pending runner-input fixture,
 outside default `tests/` discovery because the current runner cannot yet parse
