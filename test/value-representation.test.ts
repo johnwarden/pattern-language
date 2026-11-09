@@ -33,9 +33,9 @@ test("equal trees have equal global text regardless of compiled caches", () => {
       "(True, True, True)",
     );
   }
-  assert.equal(
-    run("b = :Int\nparse(Expression)(toString(Expression)(b)) == b"),
-    "True",
+  assert.throws(
+    () => run("b = :Int\nparse(Expression)(toString(Expression)(b)) == b"),
+    /quoted Int is not a symbol/,
   );
 });
 

@@ -28,7 +28,11 @@ test "C01 intrinsic primitive values"
 end
 
 test "Quoted primitive names in Code"
+  expect :Int error "E_QUOTED_PRIMITIVE"
+  expect :True error "E_QUOTED_PRIMITIVE"
+  expect Int == :Int error "E_QUOTED_PRIMITIVE"
   expect :(Int) result Int :: Expression
+  expect parse(Code)(":Int") result :Int :: Code
   expect parse(Code)(":(Int)") result :(Int) :: Code
   todo expect parse(Code)(":Foo") result :Foo :: QuotedSymbol
   todo expect parse(Code)(":(Int)") result :(Int) :: QuotedSymbol

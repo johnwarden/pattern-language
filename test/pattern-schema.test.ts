@@ -30,7 +30,7 @@ test("language schema gates descriptor shapes without consulting the user scope"
   );
   // Explicit Apply describes a literal reserved head without ambiguity.
   assert.equal(
-    run("Type(Apply(Literal(:String),Fields(:A))) == (type :String(:A))"),
+    run("Type(Apply(Literal(String),Fields(:A))) == (type :String(:A))"),
     "True",
   );
 });

@@ -1590,7 +1590,19 @@ export class Interpreter {
       return this.ascribeRational(valRational(r.n, r.d));
     }
     if (n.kind === "symbol") {
-      if (n.quoted) return singleton(this.symbolValue(n.name));
+      if (n.quoted) {
+        if (isSelfEvaluating(n.name))
+          throw new LanguageError(
+            "quoted " +
+              n.name +
+              " is not a symbol; " +
+              n.name +
+              " is a primitive",
+            n.span,
+            { code: "E_QUOTED_PRIMITIVE", phase: "evaluate" },
+          );
+        return singleton(this.symbolValue(n.name));
+      }
       const primitive = primitiveNames.get(n.name);
       if (
         primitive &&
