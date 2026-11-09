@@ -1,6 +1,6 @@
 test "Unwrapped nested option designates a unique String"
-  def Inner type String | :None
-  def Nested type Inner | :None
+  type Inner concrete String | :None
+  type Nested concrete Inner | :None
   (outer :: Nested) = "Hello"
 
   expect outer result "Hello" :: Nested
@@ -9,8 +9,8 @@ test "Unwrapped nested option designates a unique String"
 end
 
 test "Bare nested absence selects the direct outer arm"
-  def Inner type String | :None
-  def Nested type Inner | :None
+  type Inner concrete String | :None
+  type Nested concrete Inner | :None
   (outer :: Nested) = :None
   (inner :: Nested) = :None :: Inner
 
@@ -20,8 +20,8 @@ test "Bare nested absence selects the direct outer arm"
 end
 
 test "Match projects one unwrapped option boundary"
-  def Inner type String | :None
-  def Nested type Inner | :None
+  type Inner concrete String | :None
+  type Nested concrete Inner | :None
   (outer :: Nested) = "Hello"
 
   expect
@@ -40,8 +40,8 @@ test "Match projects one unwrapped option boundary"
 end
 
 test "Ordinary binding and dispatch do not unwrap Nested"
-  def Inner type String | :None
-  def Nested type Inner | :None
+  type Inner concrete String | :None
+  type Nested concrete Inner | :None
   (outer :: Nested) = "Hello"
 
   expect
@@ -56,8 +56,8 @@ test "Ordinary binding and dispatch do not unwrap Nested"
 end
 
 test "Match-arm defaults do not inherit projection"
-  def Inner type String | :None
-  def Nested type Inner | :None
+  type Inner concrete String | :None
+  type Nested concrete Inner | :None
   (outer :: Nested) = "Hello"
   def take(x :: Inner) True
 
@@ -70,8 +70,8 @@ test "Match-arm defaults do not inherit projection"
 end
 
 test "Match-arm predicates do not inherit projection"
-  def Inner type String | :None
-  def Nested type Inner | :None
+  type Inner concrete String | :None
+  type Nested concrete Inner | :None
   (outer :: Nested) = "Hello"
   def take(x :: Inner) True
   def Refined Nested .where (x -> take(outer))
@@ -85,8 +85,8 @@ test "Match-arm predicates do not inherit projection"
 end
 
 test "Match does not skip two unwrapped option boundaries"
-  def Inner type String | :None
-  def Nested type Inner | :None
+  type Inner concrete String | :None
+  type Nested concrete Inner | :None
   (outer :: Nested) = "Hello"
 
   expect
@@ -126,9 +126,12 @@ end
 test "Nested postfix absence preserves explicit member evidence"
   (outer :: String??) = :None
   (inner :: String??) = :None :: String?
+  (same :: String??) = :None :: String??
 
   expect outer result None :: String??
   expect inner result (None :: String?) :: String??
+  expect same result None :: String??
+  expect outer == same result True :: Bool
   expect outer == inner result False :: Bool
 end
 

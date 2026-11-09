@@ -1,0 +1,54 @@
+test "An explicit inner absence projects once without becoming outer absence"
+  (x :: String??) = :None :: String?
+
+  expect
+    match x
+      (inner :: String?) -> inner == (:None :: String?)
+    end
+  result True :: Bool
+end
+
+test "A direct constructor arm wins over an inward path"
+  type Inner concrete :Box(String) | :Absent
+  type Outer concrete Inner | :Box(String)
+  (direct :: Outer) = Box("x")
+  (inner :: Outer) = Box("x") :: Inner
+  (same, roundTrip) = (direct == inner, parse(Outer)(toString(Outer)(inner)) == inner)
+
+  expect same result False :: Bool
+  expect roundTrip result True :: Bool
+end
+
+test "A direct constructor arm wins regardless of branch order"
+  type Inner concrete :Box(String) | :Absent
+  type Outer concrete :Box(String) | Inner
+  (direct :: Outer) = Box("x")
+  (inner :: Outer) = Box("x") :: Inner
+  (same, roundTrip) = (direct == inner, parse(Outer)(toString(Outer)(inner)) == inner)
+
+  expect same result False :: Bool
+  expect roundTrip result True :: Bool
+end
+
+test "Already typed payloads can be designated inward without binding projection"
+  type Inner concrete String | :None
+  type Outer concrete Inner | :None
+  (s :: String) = "x"
+  (outer :: Outer) = s
+
+  expect
+    match outer
+      (inner :: Inner) -> match inner
+        (payload :: String) -> payload == s
+      end
+    end
+  result True :: Bool
+end
+
+test "Peer optional absence is ambiguous regardless of branch order"
+  type MyType concrete Float? | String?
+
+  expect
+    :None :: MyType
+  error "E_AMBIGUOUS_PATTERN"
+end
