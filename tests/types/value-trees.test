@@ -1,0 +1,118 @@
+test "A type-argument pack is not a merged pack"
+  def f(t :: Type)(x :: t, y :: t) x + y
+
+  expect f(Int)(2, 3) result 5 :: Int
+  expect
+    f(Int, 2, 3)
+  error "E_NO_METHOD"
+end
+
+test "A specialized type-argument function still checks the member"
+  def nonZero(t :: Type)(n :: t) n != (0 :: t)
+
+  expect
+    nonZero(Int)("five")
+  error "E_NO_METHOD"
+end
+
+test "Factory accessors remain visible to earlier functions"
+  def Box(t :: Type) type Box(value: t)
+  def f(b :: Box(Int)) b.value
+  def g(b :: Box(String)) b.value
+
+  (intValue, stringValue) = (f(Box(value: 3)), g(Box(value: "hi")))
+
+  expect intValue result 3 :: Int
+  expect stringValue result "hi" :: String
+end
+
+test "Bound values substitute in type patterns"
+  t = Int
+  type Box concrete Box(t)
+
+  expect Box(3) :: Box result Box(3) :: Box
+
+  n = 3
+  u = type Box(n)
+  expect Box(3) :: u result Box(3) :: u
+end
+
+test "Type construction sees Int through abstract storage"
+  (t :: Any) = Int
+
+  assert Type(t) == Type(Int)
+end
+
+test "Canonical alternatives put symbols before literals and applications"
+  expect
+    type Some(Int) | 10 | :None | 2
+  result Type(:None | 2 | 10 | Some(Int)) :: Type
+end
+
+test "Compiled type trees equal quoted trees"
+  a = Type(Rect(Float, Float))
+  b = :(Type(Rect(Float, Float)))
+
+  assert a == b
+  assert toString(Expression)(a) == toString(Expression)(b)
+  assert UnionType(Int, String) == :(UnionType(Int, String))
+  assert False == (Type(Int) == Int)
+  assert False == (Type(10) < Type(2))
+end
+
+test "A quoted type tree can be installed as a named type"
+  def factory() :(Type(Rect(Int)))
+  def R factory()
+
+  expect Rect(3) :: R result Rect(3) :: R
+end
+
+test "Invalid type-shaped data is not a Type"
+  assert False == (:(Primitive(Bogus)) .matches (type Type))
+  assert Int .matches (type Type)
+
+  x = :(UnionType(1, 2))
+  assert parse(Expression)(toString(Expression)(x)) == x
+end
+
+test "A bound type value is a matcher"
+  t = Int
+  (x :: t) = 3
+  def accept(u :: Type) 1 .matches u
+  def L(u :: Type) type :Nil | :Cons(u, L(u))
+
+  assert t .matches (type Type)
+  assert x .matches t
+  assert parse(t)(toString(t)(x)) == x
+  assert accept(Int)
+  expect Cons(1, :Nil) :: L(t) result Cons(1, Nil) :: L(Int)
+end
+
+test "Postfix type descriptions are not prefix quotation"
+  type Suffix concrete Int*
+  type Prefix concrete
+    :*(Int)
+  end
+
+  assert False == (Suffix == Prefix)
+end
+
+test "Reserved primitive names cannot be redeclared"
+  expect
+    type Int concrete Box(Float)
+    0
+  error "E_RESERVED_PRIMITIVE"
+end
+
+test "Reserved constants cannot be redeclared"
+  expect
+    type True concrete Box(Int)
+    0
+  error "E_RESERVED_CONSTANT"
+end
+
+test "Ordinary type construction rejects binding defaults"
+  expect
+    type Rect(w :: Float, h :: Float, color: Symbol = :Red)
+  error "E_TYPE_DEFAULT"
+end

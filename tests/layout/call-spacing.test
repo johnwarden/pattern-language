@@ -42,7 +42,7 @@ end
 
 test "Infix operator then grouped operand stays valid"
   expect 5 - (2) result 3 :: Rational
-  expect 1 == (1) result True :: Bool
+  assert 1 == (1)
 end
 
 test "Prefix operator then spaced parenthesis is a syntax error"

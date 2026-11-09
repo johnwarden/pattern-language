@@ -1,0 +1,72 @@
+test "Type identity excludes declaration and capture names"
+  a = (
+    type A concrete :Rect(w :: Float, h :: Float)
+    A
+  )
+  b = (
+    type B concrete :Rect(width :: Float, height :: Float)
+    B
+  )
+
+  assert a == b
+end
+
+test "Recursive identity is alpha invariant"
+  a = (
+    type A concrete :Nil | :Cons(Int, A)
+    A
+  )
+  b = (
+    type B concrete :Nil | :Cons(Int, B)
+    B
+  )
+  type Other concrete :Nil | :Cons(String, Other)
+
+  assert a == b
+  assert False == (a == Other)
+end
+
+test "Physical labels matter but their order does not"
+  assert (type :R(x: Int, y: String)) == (type :R(y: String, x: Int))
+  assert False == ((type :R(x: Int)) == (type :R(y: Int)))
+end
+
+test "Capture names erase against a capture-free type"
+  a = (
+    type A concrete :Pair(x :: Int, y :: Int)
+    A
+  )
+
+  assert a == (type :Pair(Int, Int))
+end
+
+test "Equal types in independent scopes share accessors"
+  def produce()
+    type A concrete :Rect(w :: Int, h :: Int)
+    Rect(3, 4) :: A
+  end
+  a = produce()
+  type B concrete :Rect(width :: Int, height :: Int)
+  (b :: B) = Rect(3, 4)
+
+  (same, w, h) = (a == b, width(a), height(b))
+
+  assert same
+  expect w result 3 :: Int
+  expect h result 4 :: Int
+end
+
+test "unionType normalizes like UnionType"
+  assert (unionType String | Int) == UnionType(Int, String)
+  assert (unionType Int | String | Int) == UnionType(String, Int)
+  expect
+    unionType Int | foo
+  error "unbound"
+end
+
+test "Quoted symbols stay distinct from reserved type names in Any"
+  (symbol :: Any) = :Widget
+  (typeValue :: Any) = Int
+
+  assert False == (symbol == typeValue)
+end

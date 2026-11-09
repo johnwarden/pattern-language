@@ -9,21 +9,22 @@ migrations. All 57 have a file-level classification below; assertion-level
 migrations are claimed only for the mapped macro/registration, language,
 cross-context matching/availability, generated-grammar staging,
 quotes/postfix, spreading/schema-evaluation, nested-option/concrete-union,
-and rational-primitive membership observations.
+rational-primitive membership, and type-identity/value-tree observations.
 The method is file-level inspection and targeted assertion review, supported by a
 search for parser, representation, diagnostic, state, process and UI observations.
 A file classified as mixed still needs an assertion-level pass before
 further migration, except language, matching/availability, staging,
-quotes/postfix, spreading/schema-evaluation, nested-option/concrete-union
-and rational-primitives, which now have that mapping.
+quotes/postfix, spreading/schema-evaluation, nested-option/concrete-union,
+rational-primitives and the type-identity/value-tree slice of the value
+group, which now have that mapping.
 
 The completed coverage map remains [TEST-MIGRATION.md](TEST-MIGRATION.md). Only
 implemented, passing source checks belong in that map. This document also records
 work that remains available or deliberately deferred. Macro/registration and
 language, matching, availability, staging, quotes/postfix,
-spreading/schema-evaluation, nested-option/concrete-union and
-rational-primitives now have assertion-level mappings there; other mixed
-files still need that pass.
+spreading/schema-evaluation, nested-option/concrete-union,
+rational-primitives and type-identity/value-trees now have
+assertion-level mappings there; other mixed files still need that pass.
 
 ## First bounded batch
 
@@ -65,7 +66,7 @@ that every individual assertion in those files has already been mapped.
 | quotes, postfix, postfix-conventions                                                                                             | Implemented assertion-level pass; mixed remainder            | Portable quotation interpolation, typed-quote expansion, reader-block text, postfix payload matching, prefix `*`/`^`, infix `&`/`~`, optional type printing and custom `?` coexistence live in `tests/quotes/` and `tests/postfix/`. Syntax kind/key/encode-decode, empty-prelude readers, exact `E_UNQUOTE_CONTEXT` / `E_RESERVED_OPERATOR` / `E_KEYWORD_REST_UNSUPPORTED` and hole/name locations stay. |
 | pattern-schema, milestone-two, vertical-spread                                                                                   | Implemented assertion-level pass; mixed remainder            | Quoted operator heads, open-label/rest matching, type-description evaluation, dispatch defaults, empty/evaluated matrix rows, application-row capture and Body final-row rules live in `tests/matching/`, `tests/types/descriptions.test` and `tests/spreading/`. Schema/decoder, Grammar objects, exact dimension/duplicate/type-description codes, Float32 serialization, fresh-interpreter transport and ambiguous row partitions stay. Keyword-rest `{**rest}` was not selected. |
 | nested-option-designation, concrete-unions                                                                                       | Implemented assertion-level pass; mixed remainder            | Existing `tests/bindings/nested-option-designation.test` and `tests/specification/concrete-unions.test` cover the shared positives. Unique inner-absence projection, constructor-vs-inward arms, already-typed inward designation and reverse-order peer ambiguity live in `tests/unions/concrete.test`. Exact `E_PATTERN_MISMATCH` / `E_NO_METHOD` / `E_AMBIGUOUS_PATTERN`, fresh-interpreter typed-text transport and test-harness expected-data stay. |
-| abstract-values, disjoint-unions, structural-slots, type-atoms, value-representation, value-spaces                               | Defer active value/inspection work                           | Many assertions are language-shaped, but intrinsic values, reserved symbols, raw Expression compatibility, concrete identity and descriptor printing are changing. Do not freeze old behavior through a migration or invent replacements.                                             |
+| abstract-values, disjoint-unions, structural-slots, type-atoms, value-representation, value-spaces                               | Assertion-level pass started; mixed remainder                | Unique D05 identity, `unionType` normalization, type-argument packs, bound type matchers and compiled/quoted type trees live in `tests/types/identity.test` and `tests/types/value-trees.test`. `inspect`/`parseLocal`/REPL names, `env.bindings` surgery, `parseExpression` trees, optional/numeric concrete-identity incomparability, facet metadata and function-value printing stay. `True(1)`/`1(1)` heads were not frozen. |
 | declaration-boundaries, type-definition-evaluation, description-scope, milestone-four, type-operations, type-unions, type-values | Defer active declaration/transport work                      | Separate portable semantics from declaration/accessor products and representation/transport checks after #31/#32 stabilize. Equivalent declarations and accessor collisions remain errors.                                                                                            |
 | rational-primitives                                                                                                              | Implemented assertion-level pass; mixed remainder            | Unique Float membership/designation and `((1 / 3) * 3) == 1` live in `tests/specification/primitives.test` C03 and `tests/numeric/syntax-tree.test`. Direct Rational/binary64 helpers, `syntaxTree(0f0.1)` display, exact `E_VALUE_SERIALIZATION` and `0.5 :: Int` until D07 stay. IEEE/family/edge policy is not chosen by migration. |
 | binding-defaults, minus, titlecase-captures                                                                                      | Prior migrations; retain remainder                           | Remaining host invocation/default evaluation, parser forms, Interpreter.evaluateCode, exact diagnostics and hygiene checks were deliberately retained by earlier batches. Do not treat these files as unreviewed easy deletions.                                                      |

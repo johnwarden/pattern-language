@@ -16,9 +16,9 @@ test "Alternative branch captures erase without shared slots"
   u = parse(Type)(toString(Type)(t))
   (same, a, b) = (t == u, A(1) .matches u, B(2) .matches u)
 
-  expect same result True :: Bool
-  expect a result True :: Bool
-  expect b result True :: Bool
+  assert same
+  assert a
+  assert b
 end
 
 test "A nested alternative still matches after reconstruction"
@@ -33,8 +33,8 @@ test "Refinements preserve the concrete member selected by a union"
   (a :: r) = (1 :: Int)
   (member, union) = (a .matches (type Int), a .matches u)
 
-  expect member result True :: Bool
-  expect union result True :: Bool
+  assert member
+  assert union
   assert (a :: Int) == (1 :: Int)
 end
 
@@ -76,13 +76,13 @@ test "The language schema round-trips as a type and as Expression"
   s = toString(Type)(t)
   u = parse(Type)(s)
   (same, matches) = (t == u, language() .matches u)
-  expect same result True :: Bool
-  expect matches result True :: Bool
+  assert same
+  assert matches
 
   l = language()
   text = toString(Expression)(l)
   restored = parse(Expression)(text)
   (sameText, schema) = (restored == l, restored .matches languageSchema())
-  expect sameText result True :: Bool
-  expect schema result True :: Bool
+  assert sameText
+  assert schema
 end

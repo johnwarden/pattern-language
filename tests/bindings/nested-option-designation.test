@@ -16,7 +16,7 @@ test "Bare nested absence selects the direct outer arm"
 
   expect outer result None :: Nested
   expect inner result (None :: Inner) :: Nested
-  expect outer == inner result False :: Bool
+  assert False == (outer == inner)
 end
 
 test "Match projects one unwrapped option boundary"
@@ -131,8 +131,8 @@ test "Nested postfix absence preserves explicit member evidence"
   expect outer result None :: String??
   expect inner result (None :: String?) :: String??
   expect same result None :: String??
-  expect outer == same result True :: Bool
-  expect outer == inner result False :: Bool
+  assert outer == same
+  assert False == (outer == inner)
 end
 
 test "Match projects one postfix option boundary"
