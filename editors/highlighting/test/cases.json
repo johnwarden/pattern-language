@@ -53,6 +53,33 @@
     ]
   },
   {
+    "name": "tight UpperCamel call heads are constructor-like symbols after built-ins",
+    "source": "Some(Int)\nOuter(Some(String), Pair(Float, Rational))\nInt(String) Float(Rational) Type(Bool)\nSome Some (Int)\nFactory(Int) Factory\nABC(Int) A_(String)\n:Some(Int) :Int(String)\nSome?(Int)",
+    "checks": [
+      { "line": 0, "text": "Some", "scope": "constant.other.symbol.constructor", "not": ["entity.name.type"] },
+      { "line": 0, "text": "Int", "scope": "support.type", "not": ["constant.other.symbol"] },
+      { "line": 1, "text": "Outer", "scope": "constant.other.symbol.constructor" },
+      { "line": 1, "text": "Some", "scope": "constant.other.symbol.constructor" },
+      { "line": 1, "text": "Pair", "scope": "constant.other.symbol.constructor" },
+      { "line": 1, "text": "String", "scope": "support.type" },
+      { "line": 1, "text": "Float", "scope": "support.type" },
+      { "line": 1, "text": "Rational", "scope": "support.type" },
+      { "line": 2, "text": "Int", "scope": "support.type", "not": ["constant.other.symbol"] },
+      { "line": 2, "text": "Float", "scope": "support.type", "not": ["constant.other.symbol"] },
+      { "line": 2, "text": "Type", "scope": "support.type", "not": ["constant.other.symbol"] },
+      { "line": 2, "text": "Bool", "scope": "support.type", "not": ["constant.other.symbol"] },
+      { "line": 3, "text": "Some", "scope": "entity.name.type", "not": ["constant.other.symbol"] },
+      { "line": 3, "text": "Some (Int)", "length": 4, "scope": "entity.name.type", "not": ["constant.other.symbol"] },
+      { "line": 4, "text": "Factory", "scope": "constant.other.symbol.constructor" },
+      { "line": 4, "text": "Factory", "from": 12, "scope": "entity.name.type", "not": ["constant.other.symbol"] },
+      { "line": 5, "text": "ABC", "scope": "constant.other.symbol.upper-snake" },
+      { "line": 5, "text": "A_", "scope": "constant.other.symbol.upper-snake" },
+      { "line": 6, "text": ":Some", "offset": 1, "scope": "constant.other.symbol", "not": ["constant.other.symbol.constructor"] },
+      { "line": 6, "text": ":Int", "offset": 1, "scope": "constant.other.symbol", "not": ["support.type"] },
+      { "line": 7, "text": "Some", "scope": "entity.name.type", "not": ["constant.other.symbol"] }
+    ]
+  },
+  {
     "name": "patterns bindings macros and test DSL use ordinary lexical scopes",
     "source": "todo test \"captures\"\n  def Vector(T, Ns...) type [T...]\n  macro accessor(x) x.width\n  match x (s :: String)@\n  expect [s, tail…] result {name: s, rest: tail} :: Vector(String)\n  assert True error \"mismatch\"\n  legacy expect False result False :: Bool\nend\nconcrete refinement FutureKeyword\n{label:value, other:None} :::String",
     "checks": [

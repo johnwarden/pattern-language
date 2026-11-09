@@ -1,0 +1,67 @@
+{
+  "name": "Pattern Language Dark",
+  "globals": {
+    "background": "#303841",
+    "foreground": "#E0E6ED",
+    "caret": "#FFFFFF",
+    "selection": "#465363",
+    "line_highlight": "#35404B",
+  },
+  "rules": [
+    {
+      "name": "Comments",
+      "scope": "source.pattern-language comment",
+      "foreground": "#98A6B3",
+    },
+    {
+      "name": "String text",
+      "scope": "source.pattern-language string",
+      "foreground": "#E0C98B",
+    },
+    {
+      "name": "Escapes",
+      "scope": "source.pattern-language constant.character.escape",
+      "foreground": "#F0D9A0",
+    },
+    {
+      "name": "Numbers: orange",
+      "scope": "source.pattern-language constant.numeric.pattern-language",
+      "foreground": "#F4A261",
+    },
+    {
+      "name": "UpperCamel and type names: cyan",
+      "scope": "source.pattern-language entity.name.type.pattern-language, source.pattern-language support.type.pattern-language",
+      "foreground": "#62D6E8",
+    },
+    {
+      "name": "Control, declaration and test words: purple",
+      "scope": "source.pattern-language keyword.control.pattern-language, source.pattern-language keyword.other.test.pattern-language, source.pattern-language storage.type.pattern-language",
+      "foreground": "#C792EA",
+    },
+    {
+      "name": "Quoted, UpperSnake and constructor-like symbols: green",
+      "scope": "source.pattern-language constant.other.symbol",
+      "foreground": "#B7D97A",
+    },
+    {
+      "name": "Boolean constants",
+      "scope": "source.pattern-language constant.language.pattern-language",
+      "foreground": "#F4A1BF",
+    },
+    {
+      "name": "Reader names and record labels",
+      "scope": "source.pattern-language entity.name.function.reader.pattern-language, source.pattern-language entity.name.tag.pattern-language",
+      "foreground": "#9FC5F8",
+    },
+    {
+      "name": "Operators and separators",
+      "scope": "source.pattern-language keyword.operator.pattern-language, source.pattern-language punctuation",
+      "foreground": "#C0CAD5",
+    },
+    {
+      "name": "Names in interpolated expressions",
+      "scope": "source.pattern-language variable.other.pattern-language",
+      "foreground": "#E0E6ED",
+    },
+  ],
+}
