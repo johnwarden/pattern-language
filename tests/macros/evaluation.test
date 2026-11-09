@@ -1,0 +1,75 @@
+test "Sidefix macros receive syntax and recursively expand Code"
+  macro :twice Args(x) Code$` $(x) + $(x)
+  expect
+    (twice Args(3))
+  result 6 :: Rational
+
+  macro :ignore Args(x) Code` 42
+  expect
+    (ignore Args(unknown(1 / 0)))
+  result 42 :: Rational
+
+  macro :outer Args(x) Code$` twice Args($(x))
+  expect
+    (outer Args(4))
+  result 8 :: Rational
+
+  macro :choose Args(c, a, b) Code$` if $(c) $(a) else $(b)
+  expect
+    (choose Args(True, 42, 1 / 0))
+  result 42 :: Rational
+end
+
+test "User-defined if expands into match and leaves the other branch inert"
+  macro :if c :: Expression v :: Body :else a :: Body
+    Code$`
+      match $(c)
+        True -> $(v)
+        False -> $(a)
+      end
+    end
+  end
+
+  expect
+    if True 42 else 1 / 0
+  result 42 :: Rational
+end
+
+test "Only registered expansion suppresses argument evaluation"
+  def ignoreCode(e) Code` 42
+  macro :ignore Args(e)
+    ignoreCode(e)
+  end
+
+  expect
+    (ignore Args(missing))
+  result 42 :: Rational
+end
+
+test "Sidefix registration delegates to an ordinary Code builder"
+  def twiceCode(e) Code$` $(e) + $(e)
+  macro :twice e :: Expression
+    twiceCode(e)
+  end
+
+  expect
+    twice 9
+  result 18 :: Rational
+end
+
+test "Quoted runtime references and inserted syntax stay available"
+  def outer(x)
+    macro :reference Args() Code` x
+    (reference Args())
+  end
+  expect outer(7) result 7 :: Rational
+
+  def twiceCode(e) Code$` $(e) + $(e)
+  macro :twice Args(e)
+    twiceCode(e)
+  end
+  def twiceRuntime(x)
+    (twice Args(x))
+  end
+  expect twiceRuntime(7) result 14 :: Rational
+end
