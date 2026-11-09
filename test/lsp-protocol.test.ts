@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { readFileSync } from "node:fs";
 import {
   createProtocolConnection,
   CancellationTokenSource,
@@ -18,6 +19,54 @@ const root = new URL("../", import.meta.url);
 const server = new URL("../dist/pattern-language-lsp.mjs", import.meta.url);
 const unresponsive = new URL("data:text/javascript,while(true)%7B%7D");
 const snapshot = { uri: "file:///queued.pattern", version: 1, text: "1" };
+
+test(
+  "stdio LSP returns the real types.test outline and reports invalid top-level edits",
+  { timeout: 20000 },
+  async (t) => {
+    const c = await client();
+    t.after(() => c.dispose());
+    const uri = "file:///tests/examples/types.test";
+    const source = readFileSync(
+      new URL("../tests/examples/types.test", import.meta.url),
+      "utf8",
+    );
+    await c.open(uri, source, 0);
+    const symbols = await c.connection.sendRequest<DocumentSymbol[]>(
+      "textDocument/documentSymbol",
+      { textDocument: { uri } },
+    );
+    assert.ok(
+      symbols.some((symbol) => symbol.name === "Canonical type alternatives"),
+    );
+    assert.ok(
+      symbols.some((symbol) => symbol.name === "Numeric spaces and conversion"),
+    );
+    assert.ok(symbols.length > 20);
+    const valid = await c.waitDiagnostic(
+      (report) => report.uri === uri && report.version === 0,
+    );
+    assert.deepEqual(valid.diagnostics, []);
+    await c.connection.sendNotification("textDocument/didChange", {
+      textDocument: { uri, version: 1 },
+      contentChanges: [{ text: "foo 1 2\n" + source }],
+    });
+    const bad = await c.waitDiagnostic(
+      (report) => report.uri === uri && report.version === 1,
+    );
+    assert.equal(bad.diagnostics[0].code, "E_TEST_FILE");
+    assert.deepEqual(bad.diagnostics[0].range.start, { line: 0, character: 0 });
+    await c.connection.sendNotification("textDocument/didChange", {
+      textDocument: { uri, version: 2 },
+      contentChanges: [{ text: source }],
+    });
+    const fixed = await c.waitDiagnostic(
+      (report) => report.uri === uri && report.version === 2,
+    );
+    assert.deepEqual(fixed.diagnostics, []);
+    await c.finish();
+  },
+);
 
 async function client(hierarchical = true) {
   const child = spawn(process.execPath, [server.pathname, "--stdio"], {
