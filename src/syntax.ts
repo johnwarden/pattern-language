@@ -48,6 +48,12 @@ export type Syntax =
       span?: Span;
     }
   | { kind: "apply"; head: Syntax; body: Field<Syntax>[]; span?: Span }
+  | {
+      kind: "postfix";
+      operator: string;
+      operand: Syntax;
+      span?: Span;
+    }
   | { kind: "pack"; body: Field<Syntax>[]; span?: Span }
   | { kind: "sequence"; items: Syntax[]; span?: Span }
   | { kind: "block"; lines: Syntax[]; span?: Span }
@@ -69,9 +75,11 @@ export const isName = (n: Syntax, name: string): boolean =>
 export function quotePatternHead(node: Syntax): Syntax {
   return node.kind === "apply"
     ? { ...node, head: quotePatternHead(node.head) }
-    : node.kind === "symbol"
-      ? { ...node, quoted: true }
-      : node;
+    : node.kind === "postfix"
+      ? { ...node, operand: quotePatternHead(node.operand) }
+      : node.kind === "symbol"
+        ? { ...node, quoted: true }
+        : node;
 }
 export const isCapture = (name: string): boolean =>
   name.startsWith("\0macro") ||
@@ -88,6 +96,28 @@ export const apply = (head: Syntax, body: Field<Syntax>[]): Syntax => ({
   head,
   body,
 });
+/** Tight one-character suffixes. Transported as SyntaxNode Postfix(String, SyntaxNode). */
+export const POSTFIX_SUFFIX = /^[?*!^@$&~]+$/;
+export const postfix = (
+  operator: string,
+  operand: Syntax,
+  span?: Span,
+): Extract<Syntax, { kind: "postfix" }> => ({
+  kind: "postfix",
+  operator,
+  operand,
+  span: span ?? operand.span,
+});
+/** Rest/vertical list layers are postfix `*` / `**` (T* / T**).
+ * Type T? is concrete T | :None. Postfix ? is that type constructor; present
+ * values are unwrapped. Type T* is a list; type T^ is Ok|Error. */
+export function listLayer(
+  n: Syntax,
+): { operand: Syntax } | undefined {
+  if (n.kind === "postfix" && n.operator === "*")
+    return { operand: n.operand };
+  return undefined;
+}
 export function operator(
   n: Syntax,
   name: string,
@@ -170,10 +200,7 @@ export function implicitFieldCapture(field: Field<Syntax>): string | undefined {
 export function isTypeSpecification(n: Syntax): boolean {
   return (
     (n.kind === "symbol" && !n.quoted && /^\p{Lu}/u.test(n.name)) ||
-    (n.kind === "apply" &&
-      n.head.kind === "symbol" &&
-      ["*", "?", "^", "!"].includes(n.head.name) &&
-      n.body.length === 1) ||
+    (n.kind === "postfix" && isTypeSpecification(n.operand)) ||
     (n.kind === "form" && n.name === "TypeExpression") ||
     (n.kind === "sequence" &&
       n.items[0]?.kind === "symbol" &&
@@ -367,6 +394,15 @@ export function normal(n: Syntax, indent = 0): string {
         " ".repeat(indent) +
         ")"
       );
+    case "postfix": {
+      const inner = normal(n.operand, indent);
+      return n.operand.kind === "apply" ||
+        n.operand.kind === "sequence" ||
+        n.operand.kind === "form" ||
+        n.operand.kind === "pack"
+        ? "(" + inner + ")" + n.operator
+        : inner + n.operator;
+    }
     case "apply": {
       if (
         n.head.kind === "symbol" &&
@@ -426,6 +462,8 @@ export function syntaxKey(n: Syntax): string {
           key(n.head),
           canonicalFields(n.body).map((e) => [e.label, key(e.value)]),
         ];
+      case "postfix":
+        return ["postfix", n.operator, key(n.operand)];
       case "pack":
         return [
           "pack",

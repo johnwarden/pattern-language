@@ -76,9 +76,15 @@ so V(3) and the type factory call V(Int) can coexist. Matching/interpretation ch
 whether that data belongs to the intended type. Empty applications remain distinct
 from bare names, and f(a)(b) remains distinct from f(a,b).
 
-The unary modifiers are ordinary applications too: Int* is *(Int), Int? is ?(Int),
-and Int^ is ^(Int). Their domains are disjoint from numeric operator packs.
-Postfix ! remains reserved for future action types. There is no generic AST node.
+Type `T?` is `concrete T | :None` (postfix `?` is only the type constructor;
+present values are unwrapped). List `T*` and error `T^` are those type
+constructors (`[1, 2] :: Int*`). Prefix `?(T)` / `*(T)` / `^(T)` are ordinary
+prefix application, not those types.
+Their domains are disjoint from numeric operator packs. Tight postfix `Int*` /
+`Int?` / `Int^` / `Int!` / `T@` /
+`T$` / `T&` / `T~` are a distinct construction, not prefix application. Prefix
+`!` is reserved for future action types. Prefix `$` remains unquote. Actual `[]`
+lists still use rest form `[_... :: T*]` or `xs... :: T*`.
 
 ## Normalization and identity
 

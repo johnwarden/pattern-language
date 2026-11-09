@@ -27,6 +27,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | R2 | [Reviewer reply](https://chatgpt.com/library?file_id=libfile_ff4abc7dd604819185664bd581ab04cb&account_id=personal) — clarifications and recommendations, not automatically decisions |
 | L | Author clarification on 6 November: table constructedBy; settle designation/projection as stated below; defer IEEE details; add todo to the intended test DSL |
 | L7 | Author instruction on 7 November: integrate this record into the project docs and plan a small DSL-suite milestone covering these cases and cogent TypeScript migrations |
+| L8 | Author instruction on 8 November: parse directly into Expression; Expression number literals are exact Rationals; get rid of the lasting syntax-tree layer. This supersedes any pending public `NumberLiteral(Float)` redesign. Distinct postfix punctuation application is a separate smaller item, not blocked on full parser migration. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -44,11 +45,13 @@ P proposes self-evaluating `PrimitiveType`, including `Bool :: PrimitiveType` an
 
 A proposes rejecting redundant `:5` and quoted primitive atoms in Code while permitting their raw syntax in the Expression parsing domain. R2 notes that preserving primitive values under quotation would also be coherent. **The prohibition itself has not been finally chosen.** Ordinary symbolic quotation, raw colon quotation, explicit typed interpolation and separation of quotation from execution otherwise remain unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved Symbols,” AR; R2.
 
-### D03. Structured runtime values require concrete interpretation — confirmed; runtime Expression deferred
+### D03. Structured runtime values require concrete interpretation — confirmed; parse into Expression
 
 A structured expression cannot become a runtime value with unspecified concrete identity. An explicit annotation, typed quotation or a sufficiently informative context must determine its interpretation. Thus an unconstrained `z = Rect(2,2)` is rejected; `Rect(2,2) :: Rectangle` can succeed. Primitive literals already have intrinsic interpretations.
 
-The raw domain used for parsing/pattern recognition need not itself be an exposed runtime concrete Expression type. The author may omit runtime computation over Expression. If an explicit concrete Expression interpretation is retained, its relationship to evaluated type values still needs specification: no decision says that an Expression-typed descriptor automatically equals the type it describes. R2's recommendation to require explicit decoding remains a recommendation. **Sources:** A “Require Annotation…,” P “Raw Expressions…,” AR “Expression”; R2.
+The parser destination is Expression. Number literals in that domain are exact Rationals (D04). The bootstrap currently has three trees: host `Syntax` (parser product, including quote/sequence/block/form), runtime `Value` (`term` ≈ `apply`, plus packs/literals/symbols), and public `SyntaxNode` transport (`NumberLiteral(Float) | Apply | …`, via `syntaxTree` / `syntaxExpression` / `parseSyntax`). Those Syntax layers are adapters to remove after staged consumer migration with behavior preserved. The migration is not implemented yet and is not a prerequisite for distinct postfix application.
+
+Whether ordinary programs expose a first-class Expression *value* to compute over remains optional. If they do, an Expression-typed descriptor does not automatically equal the type it describes. R2's recommendation to require explicit decoding remains a recommendation. There is no pending public `NumberLiteral(Float)` A/B redesign. **Sources:** A “Require Annotation…,” P “Raw Expressions…,” AR “Expression”; R2; L8.
 
 ### D04. All numeric literals denote exact Rational values — confirmed
 
@@ -56,7 +59,7 @@ Decimal, hexadecimal and binary spellings denote exact values. `0f` first select
 
 Explicit converters such as `float32` and `float64` return their fixed-precision typed values. Exact designation must not silently round: `0.1 :: Float32` fails, whereas an explicit converter may round. Finite fixed-precision types are concrete carveouts of representable Rational values with their own operations. Cross-space operations/conversions must be explicit; base arithmetic is not inherited merely because a Rational representation exists.
 
-Default short type names, the Number union's exact membership, complete format families, ties/overflow policies, integer wrap/check policies, numeric separators and canonical numeric spelling remain to be finalized. Hexadecimal canonical output and nearest-ties-to-even are proposals, not ratified here. Rational runtime arithmetic may be omitted; literal representation, equality and projection still require a defined model. Non-dyadic exact results such as `1/3` keep their internal Rational value; they currently have no ratified source spelling, so formatting reports `E_VALUE_SERIALIZATION` rather than inventing a fraction form. **Sources:** P, N, K “Refinement Type vs Carveouts,” AR “0f” and “Rationals and IEEE Floats.”
+Default short type names, the Number union's exact membership, complete format families, ties/overflow policies, integer wrap/check policies, numeric separators and canonical numeric spelling remain to be finalized. Hexadecimal canonical output and nearest-ties-to-even are proposals, not ratified here. Rational runtime arithmetic may be omitted; literal representation, equality and projection still require a defined model. Non-dyadic exact results such as `1/3` keep their internal Rational value; they currently have no ratified source spelling, so formatting reports `E_VALUE_SERIALIZATION` rather than inventing a fraction form. Exact Rational literals belong on Expression; there is no pending public `SyntaxNode` `NumberLiteral(Float)` A/B redesign (L8). **Sources:** P, N, K “Refinement Type vs Carveouts,” AR “0f” and “Rationals and IEEE Floats”; L8.
 
 ### D05. Structural descriptor identity remains the rule — confirmed/retained
 
@@ -88,7 +91,7 @@ The author accepted that functional equality alone does not justify banning all 
 
 ### D09. Designation and projection are settled, different operations — confirmed
 
-Designation into an expected concrete type may recursively establish the necessary inward interpretations **when there is exactly one justified path**. Predicate constraints along that path require evidence. This does not license missing required fields, arbitrary rounding or branch priority. Nested optional designation from a String is permitted when unique; nested `None` is rejected when it could identify different absence levels. C12 uses unwrapped optional branches for direct typed-branch projection; it must not be read as silently stripping Some nodes from a tagged representation.
+Designation into an expected concrete type may recursively establish the necessary inward interpretations **when there is exactly one justified path**. Predicate constraints along that path require evidence. This does not license missing required fields, arbitrary rounding or branch priority. Nested optional designation from a String is permitted when unique; nested `None` is rejected when it could identify different absence levels. Type `T?` is `concrete T | :None`. Postfix `?` is only that type constructor; a present value needs no postfix (`"x" :: String?`, `:None :: String?`), and `"x"?` is a generic postfix tree, not an inhabitant of `String?`. Nested `T??` is `(T | :None) | :None`. There are no Some/None factories. C12's unwrapped optional branches are this representation; match-only nested projection lives in #21.
 
 Projection crosses **exactly one explicitly requested concrete boundary**. It is performed by explicit match-based extraction, not by an ordinary typed binding or by function dispatch. Repeated boundaries require repeated explicit projections. An unannotated capture preserves the value rather than stripping wrappers. Single-arm extraction must be guaranteed over its admitted input domain; otherwise a multi-arm match or additional evidence is required.
 
@@ -122,7 +125,7 @@ Independently scoped declarations with equivalent capture-free descriptions exch
 
 The horizontal/vertical capture contract is retained: one repeated dimension contributes one list layer to the aggregate capture. A horizontal rest alone has `T*`; horizontal rest repeated over rows has `T**`. The author corrected the specialization Matrix example's `N*` to the two-dimensional rule. Zero rows, one empty row and a flat empty pack remain distinct.
 
-R proposes mirrored row spreading/capture and a keyword remainder represented by an actual typed record preserving its field labels and concrete field types. These are **intended proposals, not implemented guarantees**. Postfix `...` is preferred; postfix keyword-rest/spread `**`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
+R proposes mirrored row spreading/capture and a keyword remainder represented by an actual typed record preserving its field labels and concrete field types. These are **intended proposals, not implemented guarantees**. Postfix `...` is preferred; prefix keyword-rest/spread `**rest` / `**(x)` / `**rest: {**}`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
 
 ### D16. constructedBy is tabled entirely — deferred by latest decision
 
@@ -354,9 +357,10 @@ one list layer, not a nested matrix.
 
 ### C22 — keyword remainder is a typed record
 
-**Proposal, not an implemented or fully spelled feature.** The `rest**: {**}`
-capture syntax follows R's sketch and still needs grammar approval. Todo sketch:
-destructuring `{name, id, rest**: {**}}` from a Person view of a PersonRecord
+**Proposal, not an implemented or fully spelled feature.** Prefix keyword-rest
+`**rest: {**}` follows R's sketch and still needs grammar approval; postfix `T**`
+is `(T*)*`, so remainder capture cannot occupy that suffix. Todo sketch:
+destructuring `{name, id, **rest: {**}}` from a Person view of a PersonRecord
 yields `{age: 48}` at the remaining record type. This corrects R's inconsistent
 id-width example. It makes no claim that specialization is required to give
 `rest` a descriptor or that its shape is always statically known. Keyword spread
@@ -405,13 +409,15 @@ computation, which may be omitted entirely.
 | Bare generic-family facets, MemberOf and parameter recovery | **Proposed.** Constraint vocabulary, structural matching and non-injective cases remain unresolved. |
 | Duplicate local type names, accessor bundles/imports and preferred display names | **Unresolved policy.** Functional equality is not a sufficient reason for a blanket ban; no alternative has been ratified. |
 | Singleton abstract unions and qualifiers narrowed to one member | **Unresolved.** Author proposed rejecting explicit singleton unions; normalization is only a reviewer recommendation. |
-| Runtime Expression and descriptor/value comparison | **Optional/unresolved.** May disappear from ordinary programs if runtime Expression computation is omitted. |
+| Runtime Expression *value* computation and descriptor/value comparison | **Optional.** Ordinary programs may omit computing over Expression. Separate from the parser destination, which is Expression (L8); Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
+| Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |
 | Specialization | **Deferred optimization only.** No source-visible generated overload semantics. |
 | First-class overload sets | **Unaccepted proposal.** No approved bare-name callable-value behavior change. |
 | Numeric aliases/families, rounding edge policies and canonical spelling | **Provisional.** Do not infer these from isolated draft typos or examples. |
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
 | Test DSL modifiers | Implemented assertion-level todo/legacy execution and reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
+| Postfix vs prefix punctuation application | **Decided.** Every current suffix (`* ? ! ^ @ $ & ~`) is a distinct postfix construction. Type `T?` is `concrete T | :None` (postfix `?` is only the type constructor; present values are unwrapped; `"x"?` is not an inhabitant). List `T*` and error `T^` are the type constructors from #18. Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those types. Prefix `$` remains unquote; interpolating quotes are lexer prefixes. `T+` is not in the current suffix inventory. |
 
 Obvious draft slips are normalized only to express the intended rules: String/sqrt examples meant an integer type; inconsistent normalizer names refer to one function; the Float union's self-reference is not a proposed recursive numeric member; mismatched id widths and Matrix dimensions are corrected explicitly. No semantic decision is extracted from those slips.
 
@@ -421,7 +427,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | --- | --- |
 | D01 application, packs, precedence | C24, C25; runtime packs remain distinct from generic parameters in C05 |
 | D02 primitives and quotation | C01; C27 is an **unaccepted lexical candidate**, not confirmed behavior |
-| D03 mandatory interpretation / optional Expression | C04, C05; no expected result assigned to the unresolved Expression/type comparison |
+| D03 mandatory interpretation / parse into Expression | C04, C05; first-class Expression *value* computation remains optional; SyntaxNode numeric A/B superseded |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |
 | D06 concrete/refinement/abstract kinds | C06, C07, C13, C15; singleton policy deliberately unassigned |

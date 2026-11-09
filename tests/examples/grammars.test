@@ -193,7 +193,7 @@ test "Vertical spreading: Two-dimensional lists"
     3, 4
   ]
 
-  expect m.values result [[1, 2], [3, 4]] :: *(*(Float))
+  expect m.values result [[1, 2], [3, 4]] :: Float**
 
   assert parse(Matrix)(toString(Matrix)(m)) == m
 
@@ -212,7 +212,7 @@ test "Vertical spreading: TodoList"
     end
   end
 
-  expect list.todos result ["item 1", "item 2"] :: *(String)
+  expect list.todos result ["item 1", "item 2"] :: String*
 
   assert parse(TodoList)(toString(TodoList)(list)) == list
 

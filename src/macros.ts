@@ -28,6 +28,7 @@ export function hasLexicalOrigins(n: Syntax): boolean {
       hasLexicalOrigins(n.head) ||
       n.body.some((f) => hasLexicalOrigins(f.value))
     );
+  if (n.kind === "postfix") return hasLexicalOrigins(n.operand);
   if (n.kind === "pack") return n.body.some((f) => hasLexicalOrigins(f.value));
   if (n.kind === "template")
     return (
@@ -133,6 +134,8 @@ export function quote(
         };
       if (x.kind === "apply")
         return { ...x, head: rewrite(x.head, true), body: fields(x.body) };
+      if (x.kind === "postfix")
+        return { ...x, operand: rewrite(x.operand) };
       if (x.kind === "pack") return { ...x, body: fields(x.body) };
       if (x.kind === "sequence")
         return { ...x, items: x.items.map((e) => rewrite(e)) };
@@ -234,6 +237,8 @@ export function quote(
         head: renameOnly(x.head, names),
         body: x.body.map((f) => ({ ...f, value: renameOnly(f.value, names) })),
       };
+    if (x.kind === "postfix")
+      return { ...x, operand: renameOnly(x.operand, names) };
     if (x.kind === "pack")
       return {
         ...x,
@@ -275,6 +280,8 @@ export function quote(
           head: signaturePattern(n.head),
           body: patternFields(n.body, local),
         };
+      if (n.kind === "postfix")
+        return { ...n, operand: signaturePattern(n.operand) };
       if (n.kind === "sequence") return pattern(n, local);
       return walk(n, local);
     };
@@ -292,6 +299,8 @@ export function quote(
         head: rawData(x.head, names),
         body: x.body.map((f) => ({ ...f, value: rawData(f.value, names) })),
       };
+    if (x.kind === "postfix")
+      return { ...x, operand: rawData(x.operand, names) };
     if (x.kind === "pack")
       return {
         ...x,
@@ -471,6 +480,8 @@ export function quote(
         head: walk(x.head, names),
         body: bodyFields(x.body, names),
       };
+    if (x.kind === "postfix")
+      return { ...x, operand: walk(x.operand, names) };
     if (x.kind === "block")
       return { ...x, lines: x.lines.map((e) => walk(e, names)) };
     if (x.kind === "pack") return { ...x, body: bodyFields(x.body, names) };

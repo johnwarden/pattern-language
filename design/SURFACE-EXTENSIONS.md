@@ -6,26 +6,83 @@ tracked in ROADMAP.md; examples here do not imply that the bootstrap implements 
 ## Postfix expressions and type names
 
 Postfix application is a distinct surface-tree form, alongside ordinary application
-and sidefix sequences. Every postfix punctuation symbol uses the same type-name /
-constructor-head rule. A bare name resolves its type binding; a constructor head
-retains its symbol identity. No colon is needed just because a head is punctuation.
-Type definitions, quotation, binding patterns and match patterns share this tree.
+and sidefix sequences. It is not prefix/infix `Apply` and is not blocked on
+parse-into-Expression (see ROADMAP.md). Every postfix punctuation symbol uses the
+same type-name / constructor-head rule. A bare name resolves its type binding; a
+constructor head retains its symbol identity. No colon is needed just because a
+head is punctuation. Type definitions, quotation, binding patterns and match
+patterns share this tree.
+
+Authoritative sample (comparison is the bound `x` / `y`; `foo` / `bar` in the
+informal sketch were unbound):
+
+```text
+def PostfixAt type (String)@
+def PrefixAt type (@(String))
+(x :: PostfixAt) = "foo"@
+(y :: PrefixAt) = @("bar")
+expect
+  x == y
+error "Can't compare types"
+s = match x
+  (captured :: String)@ -> captured
+end
+expect s result "foo" :: String
+t = match y
+  @(captured :: String) -> captured
+end
+expect t result "bar" :: String
+```
+
+`"foo"@` and `@("bar")` are distinct constructions. Matching the corresponding
+patterns yields the String payloads. Current `def Name type` needs `(@(String))`
+because a spaced punctuation operator is infix, not a prefix constructor. Public
+`SyntaxNode` includes `Postfix(String, SyntaxNode)` so bootstrap type-grammar
+transport can carry `T?` / `T*` / `T^` rest and type annotations.
+
+The current suffix inventory is parser `POSTFIX_SUFFIX`:
+`* ? ! ^ @ $ & ~`. Each is a distinct postfix construction, not prefix/infix
+`Apply`. Type `T?` is `concrete T | :None`: postfix `?` is only that type
+constructor, present values need no postfix, and `"x"?` is a generic postfix tree,
+not an inhabitant of `String?`. List `T*` and error `T^` are the type constructors
+from #18 (`[1, 2] :: Int*`). Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix
+application, not those types. Postfix `Int*` / `Int?` / `Int^` / `Int!` / `Int$` /
+`Int&` / `Int~` are incomparable with the corresponding prefix applications. `T+`
+nonempty-list meaning remains later work; `+` is not in the current suffix set and
+stays prefix/infix. Actual `[]` lists are inhabitants of `T*`; rest form
+`xs... :: T*` / `[_... :: T*]` still annotates remaining positions.
+
+Prefix `$` / `$(…)` / infix `$` remain unquote (`E_UNQUOTE_CONTEXT` outside
+quotation). Interpolating `` T$` ``, `$"…"`, and `$'…'` are lexer quote prefixes
+(the `$` is not an operator token) and are not postfix `$`. Tight `T$` without a
+quote delimiter is postfix. Do not treat postfix `$` as interpolation or unquote.
+
+Spaced `A & B` and `x ~ y` stay infix application. They are not facet-combination
+or equivalence operators merely because those spellings appear in later design
+notes.
+
+Other punctuation (`= / +` and similar) stays prefix/infix until listed as a
+suffix.
+
+The Question/`String?` sketch is the option type `concrete T | :None`. Postfix
+`?` is only the type constructor; a present value is unwrapped:
 
 ```text
 type Question String?
-q = "Does this actually work"? :: Question
-expect q result "Does this actually work"? :: Question
-match q s :: String?
-expect s result "Does this actually work" :: String
+q = "Does this actually work" :: Question
+expect q result "Does this actually work" :: Question
+absent = :None :: Question
+expect ("Does this actually work"? .matches Question) result False :: Bool
 ```
 
 Tight postfix punctuation is one symbol per character. Each suffix wraps the
-expression immediately to its left: String?*^! is (((String?)*)^)!, or an action
-returning a fallible result of a list of optional strings. T** is (T*)* and not a
+expression immediately to its left: String?*^! is (((String?)*)^)!, postfix
+wrapping of those suffixes, not prefix `*(String?)` / `^(…)`. T** is (T*)* and not a
 new two-character postfix operator. Prefix punctuation still forms maximal symbols.
 The surface reader recognizes ... and bare ** markers; their repetition/openness
-meaning belongs to interpretation. Keyword remainder capture/spread remains later
-work and cannot silently change this suffix rule. Effects are still deferred.
+meaning belongs to interpretation. Keyword remainder capture/spread is prefix
+`**rest` / `**(x)` / `**rest: pattern` and remains later work; it cannot silently
+change the suffix rule that T** is (T*)*. Effects are still deferred.
 
 T+ denotes a nonempty list, refining T* without creating a new concrete list space.
 Vertical repetition remains explicit; a list annotation alone is not row repetition:

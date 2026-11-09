@@ -102,14 +102,11 @@ end
 
 test "Binding defaults preserve option semantics"
   def Color type :Black | :White
+  def f(color: Color? = :Black) color
+  def g(color: Color? = :Black?) color
 
+  expect f() result :Black :: Color
   expect
-    def f(color: Color? = Some(:Black)) color
-    f()
-  result Some(:Black) :: ?(Color)
-
-  expect
-    def f(color: Color? = :Black) color
-    f()
+    g()
   error "default for color"
 end

@@ -48,6 +48,8 @@ test("AST transport distinguishes source quotation from similarly named applicat
     "(1,color: :Red)",
     "f()(3)",
     "if True\n  1\nelse\n  2\nend",
+    "1*",
+    "Int?",
   ]) {
     const tree = parseSurface(source, "program", {
       layoutForms: new Grammar().layoutForms(),

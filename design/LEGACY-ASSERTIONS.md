@@ -5,8 +5,8 @@ supported behavior as ordinary expect/assert checks. When the replacement is
 settled, put an executable todo for the same subject beside the legacy assertion.
 Each still has its own required outcome: legacy must pass and todo must fail.
 
-The source suite retains 54 legacy assertions: 33 have a same-subject todo and
-21 are listed below because their exact replacement is not yet specified. A host
+Every legacy assertion in the source suite either has a same-subject todo or is
+listed below because its exact replacement is not yet specified. A host
 check verifies this inventory against every legacy assertion in tests/**/*.test.
 Adding a blanket failing placeholder is not a replacement specification.
 

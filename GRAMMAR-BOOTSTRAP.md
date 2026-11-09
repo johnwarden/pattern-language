@@ -70,7 +70,7 @@ expression    = postfix, [spacedOperator, expression] ;
 postfix       = atom, {arguments | tightDot | typeSuffix | spread} ;
 arguments     = "(", [fields], ")" ;
 tightDot      = ".", identifier ;
-typeSuffix    = "*" | "?" | "!" | "^" ;
+typeSuffix    = "*" | "?" | "!" | "^" | "@" | "$" | "&" | "~" ;
 spread        = "…" | "..." ;
 atom          = symbol | literal | grouped | outfix | prefixApplication ;
 grouped       = "(", macroOrExpression, ")" | "(", newline, block, ")" ;
@@ -103,11 +103,10 @@ inference is implemented, type definitions require explicit capture types,
 including rest captures. Binding, parameter, and match captures may remain
 unannotated without boxing their inputs. `_` cannot define a type field.
 
-Type suffixes apply left to right: `Int?*` is `(Int?)*`, and `T**` is `(T*)*`.
-The current bootstrap still rewrites those suffixes into prefix application
-nodes (`Int?*` as `*(?(Int))`); distinct postfix trees replace that
-normalization. List `T*`, Option `T?`, and error `T^` are postfix by
-convention.
+Type suffixes apply left to right as postfix trees: `Int?*` is `(Int?)*`, and
+`T**` is `(T*)*`. In type position, `T?` is `concrete T | :None`, `T*` is a list
+type, and `T^` is `Ok(T) | Error(_)`. Prefix `?(T)` / `*(T)` / `^(T)` are ordinary
+prefix application, not those types.
 
 Prefix `+Int` and `+(Int)` are the same application tree. Tight `Int+` is not a
 typeSuffix here. Angle brackets have no application role; spaced `<` and `>`
@@ -201,13 +200,14 @@ Defaults are valid only in binding patterns, including parameters and match arms
 They populate captures without modifying input values. Type expressions reject them
 with E_TYPE_DEFAULT. An ordinary factory function can accept defaulted parameters
 and explicitly return a complete value; type annotations never complete fields.
-`T?` always means `?(T)`, with no field-specific interpretation. Defaults must
-match the annotated type. A label in a binding pattern may be absent because it has a default, not
-because its type is `T?`. Type fields remain required.
+Type `T?` is `concrete T | :None`, with no field-specific interpretation. Prefix
+`?(T)` is not Option. A present optional value needs no postfix. Defaults must match
+the annotated type. A label in a binding pattern may be absent because it has a
+default, not because its type is `T?`. Type fields remain required.
 
 Names use ASCII lower camel, upper camel or upper snake; capital runs are allowed.
-Lower-snake words and malformed underscore separators reject. `!` still
-parses as an ordinary postfix application, but evaluating its type is reserved. Assignment binds
+Lower-snake words and malformed underscore separators reject. Prefix `!` is
+reserved. Tight postfix `!` is a distinct postfix construction. Assignment binds
 only as a direct block statement; it has no general expression-level binding
 behavior. User-authored macros are implemented. Static type checking is not;
 concrete-type inference, pattern membership rules, and restrictions on overlapping named interpretations
@@ -407,7 +407,7 @@ It retains the complete concrete input and creates only scoped accessor definiti
 Type(Pattern) describes complete concrete values and cannot disguise open constraints.
 The portable OpenFields(Fields(...),labels: Bool,positional: Bool) description records
 both kinds of openness. Literal punctuation symbols and constructor heads use the
-ordinary quoted-head/Apply escapes; keyword rest capture/spread remains unsupported.
+ordinary quoted-head/Apply escapes; prefix keyword rest capture/spread remains unsupported.
 
 ## Name lookup and type normalization
 

@@ -78,7 +78,10 @@ test("refinement predicates are lexical closures and never create accessors", ()
     "def isSmall(x) x < 5\ndef Small\n  (type Int) .where isSmall\nend\n0",
     "E_FUNCTION_NOT_VALUE",
   );
-  errorCode("def NoInt Int? .where (_ .matches :None)\n0", "E_UNBOUND_NAME");
+  errorCode(
+    "def NoInt Int? .where (_ .matches :None)\n0",
+    "E_UNBOUND_NAME",
+  );
 });
 
 test("matches evaluates both arguments and uses the shared pattern specification", () => {

@@ -1,0 +1,187 @@
+test "Postfix punctuation distinct from prefix/infix"
+  def PostfixAt type
+    (String)@
+  end
+  def PrefixAt type
+    @(String)
+  end
+  (x :: PostfixAt) = "foo"@
+  (y :: PrefixAt) = @("bar")
+  expect
+    x == y
+  error "Can't compare types"
+  s = match x
+    (captured :: String)@ -> captured
+  end
+  expect s result "foo" :: String
+  t = match y
+    @(captured :: String) -> captured
+  end
+  expect t result "bar" :: String
+end
+
+test "Postfix star question caret bang are distinct from prefix application"
+  def PrefixOpt type
+    ?(String)
+  end
+  def PostfixBang type
+    (Int)!
+  end
+  star = 1*
+  (preOpt :: PrefixOpt) = ?("bar")
+  caret = 2^
+  (bang :: PostfixBang) = 3!
+  product = *(2)(3)
+  power = ^(2)(3)
+  listed = [1, 2] :: Int*
+  starIsList = 1* .matches (type Int*)
+  expect product result 6 :: Rational
+  expect power result 8 :: Rational
+  expect listed result [1, 2] :: Int*
+  expect starIsList result False :: Bool
+  present = "hi" :: String?
+  absent = :None :: String?
+  expect present result "hi" :: (type String?)
+  expect absent result :None :: (type String?)
+  expect
+    "hi"? :: String?
+  error "expected String"
+  expect
+    present == preOpt
+  error "Can't compare types"
+  n = match star
+    (captured :: Int)* -> captured
+  end
+  expect n result 1 :: Int
+  q = match "hi"?
+    (captured :: String)? -> captured
+  end
+  expect q result "hi" :: String
+  c = match caret
+    (captured :: Int)^ -> captured
+  end
+  expect c result 2 :: Int
+  b = match bang
+    (captured :: Int)! -> captured
+  end
+  expect b result 3 :: Int
+end
+
+test "Postfix question constructs T | :None"
+  present = "x" :: String?
+  absent = :None :: String?
+  expect present result "x" :: (type String?)
+  expect absent result :None :: (type String?)
+  expect toString(Type)(type String?) result "Type(:None | String)" :: Expression
+  expect toString(Type)(type String??) result "Type(:None | Type(:None | String))" :: Expression
+  expect "x"? .matches (type String?) result False :: Bool
+  expect Some("x") .matches (type String?) result False :: Bool
+  t = parse(Type)(toString(Type)(type String?))
+  expect "x" .matches t result True :: Bool
+  expect :None .matches t result True :: Bool
+  expect "x"? .matches t result False :: Bool
+end
+
+test "Spaced infix star is not postfix"
+  expect 2 * 3 result 6 :: Rational
+  expect parse(Code)("T *") error "Missing second argument to infix operation"
+  expect parse(Code)("2*3") error "infix operators require spaces"
+end
+
+test "Postfix type descriptions round trip inhabitants"
+  def T type
+    (Int)@
+  end
+  t = parse(Type)(toString(Type)(T))
+  expect T == t result True :: Bool
+  expect 1@ .matches T result True :: Bool
+  expect 1@ .matches t result True :: Bool
+  expect Postfix(:@, 1) .matches t result False :: Bool
+end
+
+test "Postfix values can be type factory arguments"
+  def Box(x) type :Box(x)
+  t = Box(1@)
+  expect t == parse(Type)(toString(Type)(t)) result True :: Bool
+  expect :Box(1@) .matches t result True :: Bool
+  expect :Box(Postfix(:@, 1)) .matches t result False :: Bool
+end
+
+test "Prefix plus forms are the same tree; tight Int+ is not"
+  assert parse(Code)("+Int") == parse(Code)("+(Int)")
+  expect parse(Code)("Int+") error "infix operators require spaces"
+  expect parse(Code)("Int*+") error "infix operators require spaces"
+  expect parse(Code)("a+") error "infix operators require spaces"
+  expect parse(Code)("a+b") error "infix operators require spaces"
+end
+
+test "Postfix dollar amp tilde are distinct from prefix/infix"
+  def PostfixDollar type
+    (Int)$
+  end
+  def PostfixAmp type
+    (Int)&
+  end
+  def PrefixAmp type
+    &(Int)
+  end
+  def PostfixTilde type
+    (Int)~
+  end
+  def PrefixTilde type
+    ~(Int)
+  end
+  (dollar :: PostfixDollar) = 1$
+  (amp :: PostfixAmp) = 2&
+  (preAmp :: PrefixAmp) = &(3)
+  (tilde :: PostfixTilde) = 4~
+  (preTilde :: PrefixTilde) = ~(5)
+  expect
+    amp == preAmp
+  error "Can't compare types"
+  expect
+    tilde == preTilde
+  error "Can't compare types"
+  assert parse(Code)("Int$") != parse(Code)("$(Int)")
+  d = match dollar
+    (captured :: Int)$ -> captured
+  end
+  expect d result 1 :: Int
+  a = match amp
+    (captured :: Int)& -> captured
+  end
+  expect a result 2 :: Int
+  pa = match preAmp
+    &(captured :: Int) -> captured
+  end
+  expect pa result 3 :: Int
+  t = match tilde
+    (captured :: Int)~ -> captured
+  end
+  expect t result 4 :: Int
+  pt = match preTilde
+    ~(captured :: Int) -> captured
+  end
+  expect pt result 5 :: Int
+  expect $(1) error "$ is only valid inside quotation"
+  expect 6 $ 7 error "$ is only valid inside quotation"
+end
+
+test "Spaced infix amp and tilde are not postfix"
+  infAmp = 1 & 2
+  postAmp = (1&)
+  infTilde = 3 ~ 4
+  postTilde = (3~)
+  expect
+    infAmp == postAmp
+  result False :: Bool
+  expect
+    infTilde == postTilde
+  result False :: Bool
+end
+
+test "Interpolating dollar quote is not postfix dollar"
+  name = "Jo"
+  greeting = $"Hi $name"
+  expect greeting result "Hi Jo" :: Expression
+end

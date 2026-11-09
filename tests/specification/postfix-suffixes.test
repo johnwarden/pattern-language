@@ -22,8 +22,10 @@ test "A pack field ** is not a suffix wrap on the previous field"
   assert parse(Code)("Rect(w, h, **)") != parse(Code)("Rect(w, h**)")
 end
 
-test "Tight bang currently rejects as reserved"
-  expect ()! error "E_RESERVED_OPERATOR"
+test "Prefix bang stays reserved; postfix bang is a postfix tree"
+  expect
+    !()
+  error "E_RESERVED_OPERATOR"
 end
 
 test "Int* is a list type"

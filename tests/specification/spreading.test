@@ -264,7 +264,7 @@ test "C22 keyword remainder retains its record field types"
     type Person abstract {name: String, id: Int64, **}
     type AgeInfo concrete {age: Int8}
     def extra(person :: Person)
-      {name: name, id: id, rest**: {**}} = person
+      {name: name, id: id, **rest: {**}} = person
       rest
     end
     john = ({name: "John", id: 5, age: 48} :: PersonRecord)
@@ -277,7 +277,7 @@ test "C22 keyword remainder retains its record field types"
       type Person abstract {name: String, id: Int64, **}
       type AgeInfo concrete {age: Int8}
       def extra(person :: Person)
-        {name: name, id: id, rest**: {**}} = person
+        {name: name, id: id, **rest: {**}} = person
         rest
       end
       john = ({name: "John", id: 5, age: 48} :: PersonRecord)

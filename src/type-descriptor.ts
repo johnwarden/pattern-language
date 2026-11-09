@@ -67,6 +67,8 @@ export function typeIdentity(type: TypeValue): string {
       }
       case "node":
         return ["node", encode(p.head), encode(p.body)];
+      case "postfix":
+        return ["postfix", encode(p.operator), encode(p.operand)];
       case "label":
         return ["label", p.label, p.defaultIdentity ?? null, encode(p.pattern)];
       case "row":

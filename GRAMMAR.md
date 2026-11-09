@@ -51,7 +51,7 @@ parameters, arms, macros and grammar interpretation. Context policies are explic
 Unannotated capture types are an inference obligation, not implicit Any. Existing
 bootstrap TitleCase captures require explicit Type annotations; proposed angle type
 parameters would supply the declaration role without changing ordinary bare-name
-lookup. Keyword-rest record capture/spread and its postfix spelling remain proposals.
+lookup. Keyword-rest record capture/spread is prefix `**rest` / `**(x)` and remains a proposal.
 
 ## Type-producing forms and declarations
 

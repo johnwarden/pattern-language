@@ -10,6 +10,7 @@ import {
   positional,
   normal,
   quotePatternHead,
+  symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { any } from "./pattern.ts";
@@ -32,6 +33,8 @@ export interface PatternDomain<T> {
   defaultValue?: (node: Syntax) => T;
   defaultIdentity?: (node: Syntax) => string;
   validateTypedCapture?: (name: string, annotation: Syntax) => void;
+  optionType?: (operand: Syntax) => Pattern<T>;
+  typeModifier?: (operator: string, operand: Syntax) => Pattern<T>;
 }
 export class PatternCompiler<T> {
   domain: PatternDomain<T>;
@@ -198,11 +201,28 @@ export class PatternCompiler<T> {
       return {
         kind: "node",
         head: this.domain.head(n.head, this.dimensions),
-        body: this.fields(n.body, false),
+        body: this.fields(n.body, false, n.head),
       };
+    if (n.kind === "postfix") {
+      const typePosition =
+        this.domain.requireCaptureTypes || isTypeSpecification(n.operand);
+      if (n.operator === "?" && this.domain.optionType && typePosition)
+        return this.domain.optionType(n.operand);
+      if (
+        (n.operator === "*" || n.operator === "^") &&
+        this.domain.typeModifier &&
+        typePosition
+      )
+        return this.domain.typeModifier(n.operator, n.operand);
+      return {
+        kind: "postfix",
+        operator: this.domain.head(symbol(n.operator), this.dimensions),
+        operand: this.compile(n.operand),
+      };
+    }
     return this.domain.atom(n);
   }
-  fields(xs: Field<Syntax>[], openLabels = true): Pattern<T> {
+  fields(xs: Field<Syntax>[], openLabels = true, head?: Syntax): Pattern<T> {
     const parts: Pattern<T>[] = [];
     let hasRest = false,
       ignorePositions = false;
@@ -276,12 +296,16 @@ export class PatternCompiler<T> {
           this.domain.allowIgnoredCaptures === false &&
           rest.kind === "symbol" &&
           rest.name === "_"
-        )
-          throw new LanguageError(
-            "_ ignores a capture and is not allowed in a type definition",
-            e.value.span,
-            { code: "E_TYPE_FIELD", phase: "declaration" },
-          );
+        ) {
+          const listType =
+            head?.kind === "symbol" && !head.quoted && head.name === "[]";
+          if (!listType)
+            throw new LanguageError(
+              "_ ignores a capture and is not allowed in a type definition",
+              e.value.span,
+              { code: "E_TYPE_FIELD", phase: "declaration" },
+            );
+        }
         if (hasRest || ignorePositions)
           throw new LanguageError(
             "only one positional rest or ignore marker is allowed",

@@ -8,6 +8,8 @@ import {
   fields,
   packOf,
   isName,
+  postfix,
+  POSTFIX_SUFFIX,
 } from "./syntax.ts";
 import type { Syntax, Field, Span } from "./syntax.ts";
 import {
@@ -74,6 +76,8 @@ function quotedLayoutNames(n: Syntax): string[] {
         ...quotedLayoutNames(n.head),
         ...n.body.flatMap((field) => quotedLayoutNames(field.value)),
       ];
+    case "postfix":
+      return quotedLayoutNames(n.operand);
     case "quote":
       return quotedLayoutNames(n.value);
     case "block":
@@ -653,17 +657,11 @@ class Reader {
       } else if (
         t.kind === "op" &&
         !t.quoted &&
-        /^[?*!^]+$/.test(t.text) &&
+        POSTFIX_SUFFIX.test(t.text) &&
         this.suffixBoundary()
       ) {
         this.take();
-        for (const c of t.text)
-          n = {
-            kind: "apply",
-            head: symbol(c),
-            body: packOf(n),
-            span: n.span,
-          };
+        for (const c of t.text) n = postfix(c, n, n.span);
       } else break;
     }
     const end = this.tokens[this.pos - 1];
@@ -778,15 +776,19 @@ class Reader {
       let label = "_" + (result.length + 1);
       let keywordRest = false;
       if (
-        this.options.specification &&
-        this.peek()?.kind === "name" &&
-        this.peek(1)?.text === "**" &&
-        this.peek(2)?.kind === ":" &&
-        this.peek()!.end === this.peek(1)!.start &&
-        this.peek(1)!.end === this.peek(2)!.start
+        this.peek()?.text === "**" &&
+        !this.peek()?.quoted &&
+        this.peek(1)?.kind === "name" &&
+        this.peek(2)?.kind === ":"
       ) {
-        label = this.take().text;
         this.take();
+        const name = this.take();
+        if (!labelName(name.text))
+          throw new LanguageError(
+            "labels must be lowercase camelCase names",
+            name,
+          );
+        label = name.text;
         this.take();
         keywordRest = true;
       }
@@ -810,7 +812,7 @@ class Reader {
         throw new LanguageError("expected an argument", this.peek());
       const rawValue = seq.items.length === 1 ? seq.items[0] : seq;
       const value = keywordRest
-        ? apply(symbol("KeywordRest", true), [{ label: "_1", value: rawValue }])
+        ? apply(symbol("**"), [{ label: "_1", value: rawValue }])
         : rawValue;
       if (value.kind === "symbol" && !value.quoted && value.name === "**") {
         if (!/^_\d+$/.test(label))
@@ -1155,6 +1157,7 @@ function readSurface(
     const visit = (n: Syntax) => {
       if (n.span) attachSource(n.span, document);
       if (n.kind === "apply") visit(n.head);
+      if (n.kind === "postfix") visit(n.operand);
       if (n.kind === "apply" || n.kind === "pack")
         for (const e of n.body) {
           if (e.span) attachSource(e.span, document);

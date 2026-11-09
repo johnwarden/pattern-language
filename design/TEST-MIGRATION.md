@@ -1,7 +1,7 @@
 # Test migration inventory
 
 Current conformance homes for milestone 5a.1. `.test` case IDs are path-relative to
-`tests/`. All 90 existing source expectations are retained; the mappings below let
+`tests/`. Existing source expectations are retained; the mappings below let
 a reader locate them after grouping. This is coverage accounting, not a language
 semantics changelog.
 
@@ -191,9 +191,8 @@ predicate assertion. Empty returns use an explicit destructuring assertion. Host
 coverage retains exact complete-pack label/arity observations rather than assuming
 separate checks prove every pack property.
 
-The same 128 cases execute, with 249 passing assertions (70 legacy) and 117 todo
-expected failures. Higher assertion counts reflect split checks, not additional
-language features. All 76 examples remain runnable; final ordinary packs expose
+Higher assertion counts after splitting pack checks do not add language
+features. Playground examples remain runnable; final ordinary packs expose
 already captured results. Strict type/data checks and assertion-level modifiers are
 unchanged. Canonical printer goldens were adjusted only for comma spacing, preserving
 literal string contents and canonical round-trip checks.

@@ -9,10 +9,11 @@ interpreter/compiler. The TypeScript implementation is the bootstrap reference.
 
 ## Design and implementation status
 
-The revised value model extends beyond the bootstrap.
-A fulfilled todo fails the suite and requests removal of its marker. All 76
-playground examples share this corpus. TypeScript retains host/API/DOM checks.
-Build and type checking also pass.
+The revised value model extends beyond the bootstrap. The source suite under
+`tests/` is the shared language corpus; playground examples use the same files.
+A fulfilled todo fails the suite and requests removal of its marker. TypeScript
+retains host/API/DOM checks. `just check` is the full CI gate: lint, typecheck,
+build, host tests and the source suite.
 
 | Intended contract | Current bootstrap |
 | --- | --- |

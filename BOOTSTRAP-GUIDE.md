@@ -119,8 +119,12 @@ not establish actual iOS lifecycle/storage behavior.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
 - All infix operators have equal precedence and associate right. They require
   spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
-- Prefix punctuation is a maximal symbol. Postfix `* ? ! ^` are separate type
-  modifiers. `Int?*` means a list of optional integers.
+- Prefix punctuation is a maximal symbol. Tight postfix `* ? ! ^ @ $ & ~` are
+  distinct from prefix/infix application. In type position, `T?` is
+  `concrete T | :None` and `T*` / `T^` are the list and error type constructors.
+  Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those types.
+  Prefix `$` remains unquote; interpolating `T$` quotes stay lexer prefixes, not
+  postfix `$`.
 - Outfix `[1,2]` and `{1,2}` have the unquoted heads `[]` and `{}`. They remain
   outfix in normalized output; `[](1,2)` has a different, nested expression head.
 - `()` is an empty argument/result pack, not a unit value. `(x)` is grouping.
@@ -358,10 +362,14 @@ This is an experimental interpreter, not a compiler or a statically typed langua
 - Overlapping pattern alternatives that produce multiple complete matches are
   rejected as ambiguous. This is a conservative matcher policy, not set-theoretic
   union simplification or a subtype solver.
-- `T?` uses `None | Some(T)` and `T^` uses `Ok(T) | Error(_)` as provisional
-  conventions. Postfix `!` is reserved for future action types; action values and
-  execution are not implemented. No console, file, network, or library-import
-  capabilities are supplied.
+- Type `T?` is `concrete T | :None`. Postfix `?` is only that type constructor;
+  `"x" :: String?` and `:None :: String?` inhabit it, while `"x"?` is a generic
+  postfix tree and is not an inhabitant. There are no Some/None factories. List
+  `T*` and error `T^` are the type constructors from #18. A separately named
+  `def Option(T :: Type) type :None | Some(T)` tagged union is not what `?`
+  maps to. Postfix `!` is reserved for future action types; action
+  values and execution are not implemented. No console, file, network, or
+  library-import capabilities are supplied.
 - Recursive declaration groups are supported. Per-type parse/toString function
   synthesis remains planned.
 
@@ -383,10 +391,11 @@ scope only when needed, must produce one value, and is checked by the same
 pattern. It cannot refer to sibling captures from the same argument pack.
 Explicit captures and implicit label captures both work: `color: c :: Color = Black`
 and `color: Color = Black`. A default itself makes a label optional, so
-`size: Int = 3` also works. `T?` always means `?(T)` (currently `None | Some(T)`),
-including in defaulted fields. A default must inhabit the annotated type:
-`color: c :: Color? = Some(Black)` is valid; `color: c :: Color? = Black` is not.
-Omitting a default keeps a label required, even if its value type is `T?`.
+`size: Int = 3` also works. Type `T?` is `concrete T | :None`, including in
+defaulted fields. A default must inhabit the annotated type: `color: c :: Color? =
+Black` is valid; `color: c :: Color? = Black?` is not, because `Black?` is a
+generic postfix tree. Omitting a default keeps a label required, even if its
+value type is `T?`. Prefix `?(T)` is not Option.
 
 
 Defaults are permitted in binding patterns: destructuring bindings, function
@@ -982,7 +991,7 @@ An empty-return assertion can bind () to the call, then return True. Ordinary pa
 shape and label rules remain covered by host tests. There is no results expectation
 or separate value/type keyword pair. Errors still use expect subject error "reason".
 
-All 76 playground examples remain standalone programs, with setup and optional final return packs included in their
+Playground examples remain standalone programs, with setup and optional final return packs included in their
 editable source. The build embeds source without running it to regenerate expected
 answers. Actual controls exercise every option from fresh/restored sessions, and
 saved drafts retain their storage identity. A bounded source-only reader stores
