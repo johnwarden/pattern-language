@@ -102,7 +102,7 @@ const cases: [string, string, string][] = [
   ["match", "match Some(2)\n  :Some(v) -> v\n  :None -> 0\nend", "2"],
   [
     "anonymous type macro",
-    "t = t -> type :Some(value :: t)\nt(type Int)",
+    "t = t -> type :Some(t)\nt(type Int)",
     "Type(Some(Int))",
   ],
   ["option", "1 :: Int?", "1"],

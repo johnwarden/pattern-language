@@ -78,7 +78,7 @@ test("named nested types own their accessors; constructor subpatterns share the 
 test("nested accessor names erase from portable type values", () => {
   assert.equal(
     run(
-      "a = type :Outer(:Leaf(x :: Int))\nb = type :Outer(:Leaf(y :: Int))\n(a == b,parse(Type)(toString(Type)(a)) == a)",
+      "a =\n  def A type :Outer(:Leaf(x :: Int))\n  type A\nend\nb =\n  def B type :Outer(:Leaf(y :: Int))\n  type B\nend\n(a == b,parse(Type)(toString(Type)(a)) == a)",
     ),
     "(True, True)",
   );
@@ -128,7 +128,7 @@ test("nested type accessor declarations do not leak from function-local evaluati
 test("named declarations install accessors independently of cached unions", () => {
   assert.equal(
     run(
-      "a = UnionType(type :R(x :: Int))\ndef R type :R(y :: Int)\ndef B UnionType(type R)\nr = R(3) :: R\nr.y",
+      "a = UnionType(type :R(Int))\ndef R type :R(y :: Int)\ndef B UnionType(type R)\nr = R(3) :: R\nr.y",
     ),
     "3",
   );

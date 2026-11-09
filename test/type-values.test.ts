@@ -150,10 +150,10 @@ test("primitive, union, list, labeled and capture-free type descriptions round t
     "Bool",
     ":None | :Some(Int)",
     "[_... :: Int*]",
-    ":Pair(x :: Int,y :: Int)",
-    ":Triple(a :: Int,b :: Int,c :: Int)",
+    ":Pair(Int,Int)",
+    ":Triple(Int,Int,Int)",
     ":R(a: Int,z: String)",
-    "[rest... :: Int*]",
+    ":R(Int,**)",
     ":(Recursive(Int))",
     ":Literal(Int)",
     "Float64(Int)",
@@ -376,13 +376,13 @@ test("nested recursive boundaries retain references to enclosing binders", () =>
 test("root aliases collapse while nested aliases preserve one type boundary", () => {
   assert.equal(
     run(
-      "def A type :Point(x :: Int)\nb = type A\n(type :Box(A)) == (type :Box(value :: b))",
+      "def A type :Point(x :: Int)\nb = type A\n(type :Box(A)) == (type :Box(b))",
     ),
     "True",
   );
   assert.equal(
     run(
-      "def A type :Point(x :: Int)\nc = type :Point(y :: Int)\ntoString(Type)(type :Box(A)) == toString(Type)(type :Box(value :: c))",
+      "boxA =\n  def A type :Point(x :: Int)\n  type :Box(A)\nend\nboxC =\n  def C type :Point(y :: Int)\n  type :Box(C)\nend\ntoString(Type)(boxA) == toString(Type)(boxC)",
     ),
     "True",
   );
@@ -427,7 +427,9 @@ test("unsupported predicate environments fail explicitly", () => {
 
 test("capture names do not create constraints across mutually exclusive alternatives", () => {
   assert.equal(
-    run("(type :A(x :: Int) | :B(x :: Int)) == (type :A(Int) | :B(Int))"),
+    run(
+      "t =\n  def T type :A(x :: Int) | :B(x :: Int)\n  type T\nend\nt == (type :A(Int) | :B(Int))",
+    ),
     "True",
   );
 });
