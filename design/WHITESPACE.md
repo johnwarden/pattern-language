@@ -118,44 +118,39 @@ fixity and literal-content distinctions visible in the grammar.
 
 ## Call spacing
 
-A term (a name, including any sidefix keyword, or any other completed postfix
-expression) immediately followed by whitespace and then `(` is a syntax error.
-This holds in executable code, quotation `:(...)`, `parse(Code)`, sidefix/surface
-grammars, and `.test` files. Formatting mistakes must not become logic errors:
-adding or removing a space or newline may only flip valid↔invalid, never
-valid→valid with a different parse tree.
+The surface grammar allows `:keyword MICRO_EXPRESSION` but not
+`:keyword (MICRO_EXPRESSION)`. A spaced `(` after a keyword is valid only when
+that group *starts* the operand and the micro-expression continues; wrapping the
+entire operand is a syntax error. That way `assert (x)` cannot mean `assert x`,
+and adding or removing those parentheses cannot flip one valid tree into another.
+Tight `f(x)` is application. A non-keyword term then spaced `(` is always an
+error. The same rule holds in Code, quotation `:(...)`, `parse(Code)`,
+sidefix/surface grammars, and `.test` files.
 
 ```text
-f(x)          # application
-f x           # sidefix operand or sequence, as the grammar allows
-f (x)         # error
-assert True   # sidefix operand
-assert (True) # error
-type Point    # type form
-type(Point)   # application of type
-type (Point)  # error
-a - (b)       # valid: the token before '(' is an operator
-- (x)         # valid: prefix operator, same tree as -(x)
-x = (1, 2)    # valid: pack after '='
+f(x)                    # application
+f x                     # sidefix operand or sequence
+f (x)                   # error: term then spaced (
+f(x) (y)                # error: a completed application is a term
+assert True             # keyword operand
+assert (1 + 2) == 3     # valid: the operand begins with a group and continues
+assert (x)              # error: the operand is only a parenthesized group
+assert ((1 + 2) == 3)   # error: same, the whole operand is grouped
+if (x)                  # error
+type Point              # type form
+type(Point)             # application of type
+type (Point)            # error
+todo()                  # tight empty call
+todo ()                 # error, including todo ( / newline / )
+a - (b)                 # valid: operator then group
+- (x)                   # valid: prefix operator, same tree as -(x)
+x = (1, 2)              # valid: pack after =
+expect e result (1 + 1) :: Expression   # valid: result operand continues
 ```
 
-A completed application is a term, so `f(x) (y)` and `def f() (x, y)` are the
-same error; indent the pack or write tight `f(x)(y)` when a second call is meant.
-
-Write an indented operand when a group must start with `(` after a keyword:
-
-```text
-def f()
-  (x, y)
-end
-
-expect e result
-  (1 + 1) :: Expression
-end
-```
-
-Same-indent `f` then `(x)` on the next line are two rows, not this error. Postfix
-suffixes stay tight (`T?`, `T*`, `T^`).
+`def f() (x, y)` is the term error (`f()` then spaced `(`); indent the pack.
+Same-indent `f` then `(x)` on the next line are two rows. Postfix suffixes stay
+tight (`T?`, `T*`, `T^`).
 
 The REPL treats a buffer as ready when the active grammar can parse it as a
 finished entry. It must not wait for an extra blank line after `end` or after a

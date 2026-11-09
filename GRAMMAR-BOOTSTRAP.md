@@ -123,7 +123,14 @@ remain prefix; outfix forms keep their brackets. Expression-value display shares
 this rule, including quoted code and refinement predicates.
 
 A line is initially a neutral sequence of micro expressions. Macro interpretation
-uses the selected grammar. A block is an indented sequence of lines, terminated by
+uses the selected grammar. A sidefix form is a keyword followed by
+micro-expressions: `:keyword MICRO_EXPRESSION` is allowed, `:keyword (MICRO_EXPRESSION)`
+is not. An operand may begin with a grouping when the expression continues
+(`assert (1 + 2) == 3`); a wholly parenthesized operand (`assert (x)`, `if (x)`)
+is a syntax error. A non-keyword term then spaced `(` is rejected (`f (x)`).
+Tight `todo()` is an empty call; spaced `todo ()` is an error.
+
+A block is an indented sequence of lines, terminated by
 dedent or `end`. A block following a trailing binary operator becomes its final
 operand. Parentheses can group a macro or enclose a multiline block.
 

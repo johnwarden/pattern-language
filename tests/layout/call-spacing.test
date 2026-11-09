@@ -21,15 +21,23 @@ test "Sidefix uses a spaced operand without parentheses"
   assert True
 end
 
-test "Spaced parenthesis after assert is a syntax error"
-  expect parse "assert (True)" error "a term cannot be followed by a spaced '('"
+test "A keyword operand may begin with a grouping if it continues"
+  assert (1 + 2) == 3
+  expect 1 + 2 result (3) :: Rational
+end
+
+test "A wholly parenthesized keyword operand is a syntax error"
+  expect parse "if (x)" error "a keyword operand cannot be a single parenthesized group"
+  expect parse "if ((1 + 2) == 3)" error "a keyword operand cannot be a single parenthesized group"
+  expect parse "assert (x)" error "a term cannot be followed by a spaced '('"
+  expect parse "assert ((1 + 2) == 3)" error "a term cannot be followed by a spaced '('"
 end
 
 test "type form versus type call"
   observed = type Int
 
   expect observed result Int :: Type
-  expect parse "type (Int)" error "a term cannot be followed by a spaced '('"
+  expect parse "type (Int)" error "a keyword operand cannot be a single parenthesized group"
 end
 
 test "Infix operator then grouped operand stays valid"
@@ -60,10 +68,10 @@ test "Spaced application inside Code quotation is a syntax error"
   expect parse "Code` f (1)" error "a term cannot be followed by a spaced '('"
 end
 
-test "User-grammar keyword then spaced parenthesis is a syntax error"
-  macro :hold body :: Body Code$` $(body)
+test "User-grammar keyword then a wholly parenthesized operand is a syntax error"
+  macro :hold x :: Expression Code$` $(x)
 
-  expect parse "hold (1)" error "a term cannot be followed by a spaced '('"
+  expect parse "hold (1)" error "a keyword operand cannot be a single parenthesized group"
 end
 
 test "A pack body after a micro signature is indented, not spaced"
@@ -89,14 +97,14 @@ test "Infix .matches then grouped type stays valid"
   assert n .matches (type Int)
 end
 
-test "A grouped expected result is indented after result"
+test "A grouped expected result may be indented after result"
   expect 1 + 2 result
     (3) :: Rational
   end
 end
 
-test "Spaced parenthesis after result is a syntax error"
-  expect parse "expect 1 result (3) :: Rational" error "a term cannot be followed by a spaced '('"
+test "Tight todo() is the empty call; a spaced empty group is an error"
+  expect parse "todo ()" error "a term cannot be followed by a spaced '('"
 end
 
 test "Removing the space from a spaced call is a different tree, not a second valid parse"

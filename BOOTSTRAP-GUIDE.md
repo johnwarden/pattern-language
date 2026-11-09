@@ -974,10 +974,8 @@ printing rules and are explicitly legacy where their behavior is expected to cha
 
 Result expectations require exactly one positional value, its exact observed type,
 and canonical expected data: expect r.w result 2 :: Float. An expected symbolic
-binary tree must be grouped after `result` by indenting, not by a spaced `(`:
-legacy expect e result
-  (1 + 1) :: Expression
-end. It is data,
+binary tree after `result` may begin with a grouping when the operand continues
+(`result (1 + 1) :: Expression`) and may still be indented. It is data,
 not a calculation producing 2. Predicate checks use assert rather than boolean
 expectations. Destructure multiple returns once, then check each capture separately.
 An empty-return assertion can bind () to the call, then return True. Ordinary pack

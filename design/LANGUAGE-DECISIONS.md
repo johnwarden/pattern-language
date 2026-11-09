@@ -136,24 +136,23 @@ AR proposes a concrete union of NaN/infinities and finite Rational carveouts whe
 
 ### D19. A term then spaced `(` is never a second valid parse — confirmed
 
-A term or name, including keywords such as `assert`, `type`, `if`, `def`, `expect`,
-`match`, and any user-grammar keyword, immediately followed by whitespace and then
-`(` is a syntax error everywhere (Code, `:(...)`, `parse(Code)`, sidefix/surface
-grammars, `.test` files). Tight `f(x)` is application. `f x` is a keyword/sidefix
-operand or sequence as today.
+The surface grammar allows `:keyword MICRO_EXPRESSION` but not
+`:keyword (MICRO_EXPRESSION)`. A keyword operand may begin with `(…)` only when
+the micro-expression continues (`assert (1 + 2) == 3`). A spaced group that *is*
+the whole operand is a syntax error (`assert (x)`, `assert ((1 + 2) == 3)`,
+`if (x)`). A non-keyword term then spaced `(` remains an error (`f (x)`,
+`f(x) (y)`). Tight `f(x)` is application. `f x` is a keyword/sidefix operand or
+sequence as today.
 
 This exists so the compiler does not have to check whether `a(b)` and `a b` both
-have meaning. Previously `assert (x)` / `type (Point)` meant `assert x` /
-`type Point` while tight `assert(...)` / `type(Point)` were calls: adding or
-removing a space flipped one valid tree into another. The rule removes that
-valid→valid path. Infix and prefix operators are not terms, so `a - (b)`,
-`x == (y)`, and `- (x)` stay valid; `- (x)` is the same tree as `-(x)`. Packs
-after `=`, `->`, `:`, or commas stay valid. A completed application is a term, so
-`f(x) (y)` and `def f() (x, y)` are this error; indent the pack. Postfix suffixes
-remain tight. A group that must start with `(` after a keyword is indented
-(`expect e result` then `(1 + 1) :: Expression`), not written as spaced `result (`.
+have meaning, and so `assert (x)` cannot mean `assert x`. Infix and prefix
+operators are not terms, so `a - (b)`, `x == (y)`, and `- (x)` stay valid.
+Packs after `=`, `->`, `:`, or commas stay valid. Tight `todo()` is the empty
+call; spaced `todo ()` and an empty vertical pack `todo (` / `)` stay errors.
+Postfix suffixes remain tight. No indented-operand exception is required for
+parenthesized-prefix operands.
 
-**Sources:** AR (call-spacing ratification).
+**Sources:** AR (call-spacing ratification; 2026-11-09 operand-continues clarification).
 
 ## D18. Test assertions and migration contracts
 
