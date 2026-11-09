@@ -1,0 +1,41 @@
+test "Prefix minus negates and infix minus subtracts"
+  expect
+    -1
+  result
+    -1 :: Rational
+  end
+
+  expect
+    -(1)
+  result
+    -1 :: Rational
+  end
+
+  x = 3
+  expect
+    -x
+  result
+    -3 :: Rational
+  end
+
+  expect
+    -(x)
+  result
+    -3 :: Rational
+  end
+
+  expect 1 - x
+  result
+    -2 :: Rational
+  end
+  expect 1 - -x result 4 :: Rational
+  expect 1 - -2 result 3 :: Rational
+end
+
+test "Prefix and infix minus survive Code text round trips"
+  negative = Code` -1
+  assert parse(Code)(toString(Code)(negative)) == negative
+
+  subtraction = Code` 1 - -x
+  assert parse(Code)(toString(Code)(subtraction)) == subtraction
+end
