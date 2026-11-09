@@ -1,0 +1,112 @@
+test "A named structural pattern works as an ascription"
+  def Point type :Point(x :: Int)
+
+  expect Point(1) :: Point result Point(1) :: Point
+end
+
+test "A named structural pattern works in a binding"
+  def Point type :Point(x :: Int)
+  (p :: Point) = Point(1)
+
+  expect p result Point(1) :: Point
+end
+
+test "A named structural pattern works as a function parameter"
+  def Point type :Point(x :: Int)
+  def f(p :: Point) p
+
+  expect f(Point(1)) result Point(1) :: Point
+end
+
+test "A named structural pattern works as a constructor-shaped macro parameter"
+  def Point type :Point(x :: Int)
+  macro :f Args(p :: Point) Code$` $(p)
+
+  expect
+    (f Args(Point(1)))
+  result Point(1) :: Expression
+end
+
+test "A named structural pattern works as a direct sidefix parameter"
+  def Point type :Point(x :: Int)
+  macro :f p :: Point q :: Point Code$` $(p)
+
+  expect
+    f Point(1) Point(2)
+  result Point(1) :: Expression
+end
+
+test "A named structural pattern works in a match arm"
+  def Point type :Point(x :: Int)
+
+  expect
+    match Point(1)
+      (p :: Point) -> p
+    end
+  result Point(1) :: Point
+end
+
+test "One positional and rest pattern agrees in a binding"
+  Pair(first :: Int, rest... :: Int*) = Pair(1, 2, 3)
+
+  expect rest result [2, 3] :: (type [_... :: Int*])
+end
+
+test "One positional and rest pattern agrees in a function parameter"
+  def f(Pair(first :: Int, rest... :: Int*)) rest
+
+  expect f(Pair(1, 2, 3)) result [2, 3] :: (type [_... :: Int*])
+end
+
+test "One positional and rest pattern agrees in a match arm"
+  expect
+    match Pair(1, 2, 3)
+      Pair(first :: Int, rest... :: Int*) -> rest
+    end
+  result [2, 3] :: (type [_... :: Int*])
+end
+
+test "One positional and rest pattern agrees as a type accessor"
+  def P type Pair(first :: Int, rest... :: Int*)
+  p = Pair(1, 2, 3) :: P
+
+  expect p.rest result [2, 3] :: (type [_... :: Int*])
+end
+
+test "One positional and rest pattern agrees in a macro parameter"
+  macro :take Args(Pair(first :: Int, rest... :: Int*)) Code$` [$(rest...)]
+
+  expect
+    (take Args(Pair(1, 2, 3)))
+  result [2, 3] :: Expression
+end
+
+test "Head quoting and structural interpolation produce the same data"
+  x = 3
+
+  expect
+    :foo(x)
+  result foo(3) :: Expression
+  expect
+    Expression$` foo($x)
+  result foo(3) :: Expression
+end
+
+test "Quoted root heads agree at runtime types"
+  def Op type
+    :|(Int)(Int)
+  end
+
+  assert :(1 | 2) .matches Op
+end
+
+test "Quoted root heads agree in a macro signature"
+  def Op type
+    :|(Int)(Int)
+  end
+  macro :take v :: Op Code` 1
+
+  expect
+    take 1 | 2
+  result 1 :: Rational
+end

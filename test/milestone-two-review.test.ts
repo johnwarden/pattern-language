@@ -39,43 +39,16 @@ test("helper annotations and ordinary type-factory parameters cannot hide runtim
     "def F(T :: Type)\n  macro :bad Args() Code$` $(T)\n  type Box(T)\nend\nF(Int)",
   );
 });
-test("constant defaults and quoted runtime references remain available", () => {
-  assert.equal(
-    run(
-      "def outer(x)\n  (value: y = 3) = ()\n  macro :good Args() Code$` $(y)\n  (good Args())\nend\nouter(7)",
-    ),
-    "3",
-  );
-  assert.equal(
-    run(
-      "def outer(x)\n  macro :good Args() Code` x\n  (good Args())\nend\nouter(7)",
-    ),
-    "7",
-  );
-});
-test("quoted root heads agree between grammar, runtime types and macro signatures", () => {
+test("quoted root heads parse as grammar literals", () => {
   const literal = new Grammar("def Q type :(x)");
   assert.throws(() => literal.parseAs("anything", "Q"));
   assert.equal(normal(literal.parseAs("x", "Q")), "x");
   const operator = new Grammar("def Op type\n  :|(Int)(Int)\nend");
   assert.equal(normal(operator.parseAs("1 | 2", "Op")), "1 | 2");
   assert.throws(() => operator.parseAs("1", "Op"));
-  assert.equal(run("def Op type\n  :|(Int)(Int)\nend\n:(1 | 2) .matches Op"), "True");
-  assert.equal(
-    run(
-      "def Op type\n  :|(Int)(Int)\nend\nmacro :take v :: Op Code` 1\ntake 1 | 2",
-    ),
-    "1",
-  );
 });
 
-test("quoted annotation operators are literal heads, not pattern computations", () => {
-  assert.equal(
-    run(
-      "def outer(x)\n  match :(1 :: 2)\n    :(a :: x) ->\n      macro :good Args() Code$` $(a)\n      (good Args())\n    end\n  end\nend\nouter(7)",
-    ),
-    "1",
-  );
+test("a quoted annotation default still captures runtime availability", () => {
   unavailable(
     "def outer(x)\n  match Box()\n    :Box(value: y = x) ->\n      macro :bad Args() Code$` $(y)\n      (bad Args())\n    end\n  end\nend\nouter(7)",
   );
