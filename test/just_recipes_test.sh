@@ -13,9 +13,9 @@ fail() {
 }
 
 listed="$(just --list)"
-printf '%s\n' "$listed" | grep -q 'run ' || fail "just --list missing run"
-printf '%s\n' "$listed" | grep -q 'watch ' || fail "just --list missing watch"
-printf '%s\n' "$listed" | grep -q 'repl' || fail "just --list missing repl"
+grep -q 'run ' <<<"$listed" || fail "just --list missing run"
+grep -q 'watch ' <<<"$listed" || fail "just --list missing watch"
+grep -q 'repl' <<<"$listed" || fail "just --list missing repl"
 
 grep -q 'git config core.hooksPath .githooks' justfile ||
 	fail "just setup must install core.hooksPath"
@@ -45,32 +45,36 @@ cp -R .githooks "$tmpgit/.githooks"
 ) || fail "hook install failed or is not idempotent"
 
 run_out="$(just run demo.pattern)"
-printf '%s\n' "$run_out" | grep -q '12 :: Float' ||
+grep -q '12 :: Float' <<<"$run_out" ||
 	fail "just run demo.pattern unexpected output: $run_out"
 
 parse_out="$(just run demo.pattern --parse)"
-printf '%s\n' "$parse_out" | grep -q 'def Rectangle' ||
+grep -q 'def Rectangle' <<<"$parse_out" ||
 	fail "just run demo.pattern --parse unexpected output: $parse_out"
 
 cp demo.pattern "$tmp/demo file.pattern"
 space_out="$(just run "$tmp/demo file.pattern")"
-printf '%s\n' "$space_out" | grep -q '12 :: Float' ||
+grep -q '12 :: Float' <<<"$space_out" ||
 	fail "just run with a spaced filename failed: $space_out"
 
 cp default.pattern "$tmp/custom grammar.pattern"
 grammar_out="$(just run demo.pattern --grammar "$tmp/custom grammar.pattern")"
-printf '%s\n' "$grammar_out" | grep -q '12 :: Float' ||
+grep -q '12 :: Float' <<<"$grammar_out" ||
 	fail "just run --grammar with a spaced filename failed: $grammar_out"
-printf '%s\n' "$grammar_out" | grep -q '/custom$' &&
+grep -q '/custom$' <<<"$grammar_out" &&
 	fail "just run --grammar split a spaced filename"
 
 list_out="$(just test-language --list)"
-printf '%s\n' "$list_out" | grep -q 'bindings/defaults' ||
+grep -q 'bindings/defaults' <<<"$list_out" ||
 	fail "just test-language --list did not list cases"
-printf '%s\n' "$list_out" | grep -q 'unknown option --' &&
+grep -q 'unknown option --' <<<"$list_out" &&
 	fail "just test-language --list forwarded an extra --"
-printf '%s\n' "$list_out" | grep -q 'Available recipes' &&
+grep -q 'Available recipes' <<<"$list_out" &&
 	fail "just test-language --list was eaten by just --list"
+
+pipe_out="$(printf 'bindings/defaults\n%0*d\n' 70000 0)"
+grep -q 'bindings/defaults' <<<"$pipe_out" ||
+	fail "large here-string grep failed"
 
 source_file_out="$(just test tests/examples/patterns.test)"
 grep -q 'FILE examples/patterns.test' <<<"$source_file_out" ||
@@ -125,10 +129,10 @@ grep -q 'missing.test' "$tmp/missing.out" ||
 	fail "just test did not identify the missing source path"
 
 repl_out="$(printf ':Widget\n\n:quit\n' | just repl)"
-printf '%s\n' "$repl_out" | grep -q 'Widget :: UpperCamelSymbol' ||
+grep -q 'Widget :: UpperCamelSymbol' <<<"$repl_out" ||
 	fail "just repl unexpected output: $repl_out"
 ready_out="$(printf '1\n:quit\n' | just repl)"
-printf '%s\n' "$ready_out" | grep -q '1 :: Rational' ||
+grep -q '1 :: Rational' <<<"$ready_out" ||
 	fail "just repl did not submit a finished form on its last line: $ready_out"
 
 command -v timeout >/dev/null || fail "timeout is required for watch smoke tests"

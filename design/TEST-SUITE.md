@@ -3,6 +3,11 @@
 The external TypeScript runner reads ordinary source-defined test data. All assertions
 execute; the suite does not install source code.evaluate or runtime introspection.
 
+Development follows [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): turn accepted
+specifications into executable tests before implementation, prioritize existing
+specification todos, and triage inbox submissions into regressions, todo contracts
+or runnable examples. Inbox is optional in default runs and runnable explicitly.
+
 ## Files and basic forms
 
 The runner recursively discovers tests/**/*.test, grouped by broad topic. Each file

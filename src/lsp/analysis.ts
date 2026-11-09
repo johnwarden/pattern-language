@@ -309,6 +309,23 @@ export function analyze(snapshot: Snapshot): Analysis {
     return symbols;
   };
   if (specification) {
+    const invalidEnvelope = (span?: Span) => {
+      result.status = "partial";
+      result.diagnostics.push(
+        readerDiagnostic(
+          {
+            code: "E_TEST_FILE",
+            phase: "parse",
+            message:
+              "At the top level, a .test file requires a named test or todo test block.",
+            primary: span,
+            notes: [],
+            related: [],
+          },
+          positions,
+        ),
+      );
+    };
     try {
       specification.grammar.elaborate(
         surface,
@@ -317,10 +334,7 @@ export function analyze(snapshot: Snapshot): Analysis {
             form.kind !== "form" ||
             !["Test", "TodoTest"].includes(form.name)
           ) {
-            markUnknown(
-              "Test envelope unknown; expected a named test or todo test block.",
-              form,
-            );
+            invalidEnvelope(form.span);
             return;
           }
           const name = capture(form, "name"),
@@ -330,10 +344,7 @@ export function analyze(snapshot: Snapshot): Analysis {
             typeof name.value !== "string" ||
             body?.kind !== "block"
           ) {
-            markUnknown(
-              "Test envelope unknown; only literal names and indented bodies are recognized.",
-              form,
-            );
+            invalidEnvelope(form.span);
             return;
           }
           result.symbols.push({
@@ -352,9 +363,16 @@ export function analyze(snapshot: Snapshot): Analysis {
       );
     } catch (error) {
       if (!(error instanceof LanguageError)) throw error;
-      markUnknown(
-        "Test envelope unknown: the schema did not recognize the complete source.",
-      );
+      if (
+        ["E_LANGUAGE", "E_SYNTAX", "E_PATTERN_MISMATCH"].includes(
+          error.diagnostic.code,
+        )
+      )
+        invalidEnvelope(error.diagnostic.primary);
+      else
+        markUnknown(
+          "Test envelope unknown: the schema did not recognize the complete source.",
+        );
     }
     markUnknown(
       "Test assertions, setup, todo operands and expected types are source data; semantic analysis is unavailable.",

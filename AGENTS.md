@@ -133,3 +133,17 @@ replacement in design/LEGACY-ASSERTIONS.md. Supported behavior uses ordinary che
 Use the common pattern compiler/matcher and source schemas. Preserve complete
 argument-pack semantics and canonical printing, including spaces after commas.
 Keep credentials out of source and browser bundles. CI requires no application secrets.
+
+## Specification-first development and inbox triage
+
+Follow [the development workflow](design/TESTING-WORKFLOW.md). Turn accepted
+specification changes into focused executable `.test` contracts before changing
+implementation. Existing accepted todos in `tests/specification/` take priority
+over new roadmap foundations. Name the target cases in each implementation PR;
+remove todo only when the intended behavior passes, not an unrelated setup failure.
+
+Triage `tests/inbox/` into bug regressions/fixes, accepted specification todo tests,
+or supported runnable examples. Record the destination and PR; leave unclear
+semantics explicitly pending with the missing decision. Comments and placeholder
+assertions do not cover the proposal. Keep inbox optional in default runs and
+runnable by explicit path. Do not change an expected result to observed output.
