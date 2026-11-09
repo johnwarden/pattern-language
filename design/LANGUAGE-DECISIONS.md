@@ -134,6 +134,26 @@ The author has now tabled the feature until decoding values of constructedBy ref
 
 The target type shape is a concrete union of NaN/infinities with a Rational `.where` carveout, e.g. `type Float32 concrete NaN | Inf | Rational .where fitsFloat32` (Float64 with `fitsFloat64`; integer widths `Int .where` the range). Signed zero, NaN equality/payloads, exact special-value vocabulary and finite-only versus IEEE-complete scope remain deferred. Do not ratify the reviewer's finite-only or reflexive-NaN recommendations. **Sources:** P, N, AR; L; 9 November 2026.
 
+### D19. A term then spaced `(` is never a second valid parse — confirmed
+
+The surface grammar allows `:keyword MICRO_EXPRESSION` but not
+`:keyword (MICRO_EXPRESSION)`. A keyword operand may begin with `(…)` only when
+the micro-expression continues (`assert (1 + 2) == 3`). A spaced group that *is*
+the whole operand is a syntax error (`assert (x)`, `assert ((1 + 2) == 3)`,
+`if (x)`). A non-keyword term then spaced `(` remains an error (`f (x)`,
+`f(x) (y)`). Tight `f(x)` is application. `f x` is a keyword/sidefix operand or
+sequence as today.
+
+This exists so the compiler does not have to check whether `a(b)` and `a b` both
+have meaning, and so `assert (x)` cannot mean `assert x`. Infix and prefix
+operators are not terms, so `a - (b)`, `x == (y)`, and `- (x)` stay valid.
+Packs after `=`, `->`, `:`, or commas stay valid. Tight `todo()` is the empty
+call; spaced `todo ()` and an empty vertical pack `todo (` / `)` stay errors.
+Postfix suffixes remain tight. No indented-operand exception is required for
+parenthesized-prefix operands.
+
+**Sources:** AR (call-spacing ratification; 2026-11-09 operand-continues clarification).
+
 ## D18. Test assertions and migration contracts
 
 Files contain ordinary test blocks with shared setup. Assertions may use expect,

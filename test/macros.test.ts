@@ -34,81 +34,81 @@ test("ordinary functions may return quoted data without becoming macros", () => 
 });
 test("sidefix macros receive unevaluated arguments and recursively expand Code", () => {
   assert.equal(
-    run("macro (:twice Args(x)) Code$` $(x) + $(x)\n(twice Args(3))"),
+    run("macro :twice Args(x) Code$` $(x) + $(x)\n(twice Args(3))"),
     "6",
   );
   assert.equal(
-    run("macro (:ignore Args(x)) Code` 42\n(ignore Args(unknown(1 / 0)))"),
+    run("macro :ignore Args(x) Code` 42\n(ignore Args(unknown(1 / 0)))"),
     "42",
   );
   assert.equal(
     run(
-      "macro (:twice Args(x)) Code$` $(x) + $(x)\nmacro (:outer Args(x)) Code$` twice (Args($(x)))\n(outer Args(4))",
+      "macro :twice Args(x) Code$` $(x) + $(x)\nmacro :outer Args(x) Code$` twice Args($(x))\n(outer Args(4))",
     ),
     "8",
   );
   assert.equal(
     run(
-      "macro (:choose Args(c,a,b)) Code$` if ($(c)) ($(a)) else ($(b))\n(choose Args(True,42,1 / 0))",
+      "macro :choose Args(c,a,b) Code$` if $(c) $(a) else $(b)\n(choose Args(True,42,1 / 0))",
     ),
     "42",
   );
 });
 test("macro patterns match expression structure and labels", () => {
   assert.equal(
-    run("macro (:peel Args(:Some(x))) Code$` $(x)\n(peel Args(Some(2 + 3)))"),
+    run("macro :peel Args(:Some(x)) Code$` $(x)\n(peel Args(Some(2 + 3)))"),
     "5",
   );
   assert.equal(
     run(
-      "macro (:take Args(value: x :: Expression,**)) Code$` $(x)\n(take Args(extra: missing,value: 5))",
+      "macro :take Args(value: x :: Expression,**) Code$` $(x)\n(take Args(extra: missing,value: 5))",
     ),
     "5",
   );
   fails(
-    "macro (:peel Args(:Some(x))) Code$` $(x)\n(peel Args(:None))",
+    "macro :peel Args(:Some(x)) Code$` $(x)\n(peel Args(:None))",
     "E_LANGUAGE",
   );
   fails(
-    "macro (:f Args(x)) Code$` $(x)\nmacro (:f Args(y)) Code$` $(y)\n(f Args(3))",
+    "macro :f Args(x) Code$` $(x)\nmacro :f Args(y) Code$` $(y)\n(f Args(3))",
     "E_SIDEFIX_KEYWORD",
   );
 });
 test("macros and ordinary functions cannot share a method name in either order", () => {
   fails(
-    "def f(x) x\nmacro (:f Args(x)) Code$` $(x)\n0",
+    "def f(x) x\nmacro :f Args(x) Code$` $(x)\n0",
     "E_MACRO_FUNCTION_CONFLICT",
   );
   fails(
-    "macro (:f Args(x)) Code$` $(x)\ndef f(x) x\n0",
+    "macro :f Args(x) Code$` $(x)\ndef f(x) x\n0",
     "E_MACRO_FUNCTION_CONFLICT",
   );
   fails(
-    "macro (:toString Args(x)) Code$` $(x)\n0",
+    "macro :toString Args(x) Code$` $(x)\n0",
     "E_MACRO_FUNCTION_CONFLICT",
   );
   fails(
-    "macro (:w Args(x)) Code$` $(x)\ndef R type :Rect(w :: Int)\n0",
+    "macro :w Args(x) Code$` $(x)\ndef R type :Rect(w :: Int)\n0",
     "E_MACRO_FUNCTION_CONFLICT",
   );
   fails(
-    "f = x -> x\nmacro (:f Args(x)) Code$` $(x)\n0",
+    "f = x -> x\nmacro :f Args(x) Code$` $(x)\n0",
     "E_MACRO_FUNCTION_CONFLICT",
   );
   fails("macro f(x)(y) Code$` $(x)\n0", "E_MACRO_SIGNATURE");
 });
 test("sidefix signatures define syntax for inline expressions and blocks", () => {
   const def =
-    "macro (:unless (c :: Expression) (v :: Body)) Code$` if ($(c)) 0 else ($(v))\n";
+    "macro :unless c :: Expression v :: Body Code$` if $(c) 0 else $(v)\n";
   assert.equal(run(def + "unless False 9"), "9");
-  assert.equal(run(def + "unless True (1 / 0)"), "0");
+  assert.equal(run(def + "unless True 1 / 0"), "0");
   assert.equal(run(def + "unless False\n  x = 3\n  x + 1\nend"), "4");
-  fails("macro (:unless (c :: Expression)) 42\nunless True", "E_MACRO_RESULT");
+  fails("macro :unless c :: Expression 42\nunless True", "E_MACRO_RESULT");
 });
 test("a user-defined if expands into match and keeps the other branch unevaluated", () => {
   assert.equal(
     run(
-      "macro (:if (c :: Expression) (v :: Body) :else (a :: Body))\n  Code$` (\n  match ($(c)) (\n    (True -> $(v))\n    (False -> $(a))\n  )\n)\nend\nif True 42 else (1 / 0)",
+      "macro :if c :: Expression v :: Body :else a :: Body\n  Code$`\n    match $(c)\n      True -> $(v)\n      False -> $(a)\n    end\n  end\nend\nif True 42 else 1 / 0",
     ),
     "42",
   );
@@ -116,13 +116,13 @@ test("a user-defined if expands into match and keeps the other branch unevaluate
 test("quotation keeps caller names separate from template lambda binders", () => {
   assert.equal(
     run(
-      "macro (:withTemp Args(x)) Code$` (temp -> $(x))(99)\ntemp = 7\n(withTemp Args(temp))",
+      "macro :withTemp Args(x) Code$` (temp -> $(x))(99)\ntemp = 7\n(withTemp Args(temp))",
     ),
     "7",
   );
   assert.equal(
     run(
-      "macro (:twice Args(x)) Code$` (temp -> temp + temp)($(x))\n(twice Args(5))",
+      "macro :twice Args(x) Code$` (temp -> temp + temp)($(x))\n(twice Args(5))",
     ),
     "10",
   );
@@ -130,7 +130,7 @@ test("quotation keeps caller names separate from template lambda binders", () =>
 test("template free functions resolve in the macro definition scope", () => {
   assert.equal(
     run(
-      "def helper(x) x + 1\nmacro (:wrap Args(x)) Code$` helper($(x))\ndef f(x)\n  helper = x -> 99\n  (wrap Args(x))\nend\nf(4)",
+      "def helper(x) x + 1\nmacro :wrap Args(x) Code$` helper($(x))\ndef f(x)\n  helper = x -> 99\n  (wrap Args(x))\nend\nf(4)",
     ),
     "5",
   );
@@ -138,13 +138,13 @@ test("template free functions resolve in the macro definition scope", () => {
 test("macro grammar survives REPL entries, but parse-only and failed entries do not mutate it", () => {
   const interpreter = new Interpreter();
   const def =
-    "macro (:unless (c :: Expression) (v :: Body)) Code$` if ($(c)) 0 else ($(v))";
+    "macro :unless c :: Expression v :: Body Code$` if $(c) 0 else $(v)";
   interpreter.parse(def, "repl");
   assert.throws(() => interpreter.run("unless False 7"));
   interpreter.run(def, "repl");
   assert.equal(displayResults(interpreter.run("unless False 7")), "7");
   assert.throws(() =>
-    interpreter.run("macro (:oops (x :: Expression)) Code$` $(x)\nmissing"),
+    interpreter.run("macro :oops x :: Expression Code$` $(x)\nmissing"),
   );
   assert.throws(() => interpreter.run("oops 7"));
   assert.equal(displayResults(interpreter.run("unless False 8")), "8");
@@ -152,7 +152,7 @@ test("macro grammar survives REPL entries, but parse-only and failed entries do 
 test("macro errors include call and definition locations; recursive expansion is bounded", () => {
   const interpreter = new Interpreter();
   interpreter.run(
-    "macro (:broken Args(x)) Code$` unknown($(x))",
+    "macro :broken Args(x) Code$` unknown($(x))",
     "repl",
     "definitions",
   );
@@ -172,12 +172,12 @@ test("macro errors include call and definition locations; recursive expansion is
     },
   );
   fails(
-    "macro (:loop Args(x)) Code$` loop (Args($(x)))\n(loop Args(1))",
+    "macro :loop Args(x) Code$` loop Args($(x))\n(loop Args(1))",
     "E_MACRO_LIMIT",
   );
 });
 test("macro syntax normal form parses back to the same result", () => {
-  const source = "macro (:twice Args(x)) Code$` $(x) + $(x)\n(twice Args(5))";
+  const source = "macro :twice Args(x) Code$` $(x) + $(x)\n(twice Args(5))";
   const interpreter = new Interpreter(),
     tree = interpreter.parse(source);
   assert.equal(tree.kind, "block");
@@ -186,7 +186,7 @@ test("macro syntax normal form parses back to the same result", () => {
 });
 
 test("quoted rest insertion preserves all arguments, including singleton and empty lists", () => {
-  const def = "macro (:list Args(xs...)) Code$` [$(…(xs))]\n";
+  const def = "macro :list Args(xs...) Code$` [$(…(xs))]\n";
   assert.equal(run(def + "(list Args(1,2 + 3))"), "[1, 5]");
   assert.equal(run(def + "(list Args(1))"), "[1]");
   assert.equal(run(def + "(list Args())"), "[]");
@@ -194,13 +194,13 @@ test("quoted rest insertion preserves all arguments, including singleton and emp
 test("template block bindings and defaulted lambda labels are hygienic", () => {
   assert.equal(
     run(
-      "macro (:withTemp Args(x))\n  Code$` (\n  (temp = 99)\n  (temp + $(x))\n)\nend\ntemp = 7\n(withTemp Args(temp))",
+      "macro :withTemp Args(x)\n  Code$` (\n  (temp = 99)\n  (temp + $(x))\n)\nend\ntemp = 7\n(withTemp Args(temp))",
     ),
     "106",
   );
   assert.equal(
     run(
-      "macro (:make Args(x)) Code` (size: Int = 3) -> size\nf = (make Args(1))\nf()",
+      "macro :make Args(x) Code` (size: Int = 3) -> size\nf = (make Args(1))\nf()",
     ),
     "3",
   );
@@ -208,13 +208,13 @@ test("template block bindings and defaulted lambda labels are hygienic", () => {
 test("local sidefix declarations do not escape their function block", () => {
   assert.equal(
     run(
-      "def f()\n  macro (:answer (x :: Expression)) Code$` $(x)\n  answer 7\nend\nf()",
+      "def f()\n  macro :answer x :: Expression Code$` $(x)\n  answer 7\nend\nf()",
     ),
     "7",
   );
   assert.throws(() =>
     run(
-      "def f()\n  macro (:answer (x :: Expression)) Code$` $(x)\n  answer 7\nend\nanswer 8",
+      "def f()\n  macro :answer x :: Expression Code$` $(x)\n  answer 7\nend\nanswer 8",
     ),
   );
 });
@@ -222,7 +222,7 @@ test("local sidefix declarations do not escape their function block", () => {
 test("macro templates retain locally declared sidefix grammars", () => {
   assert.equal(
     run(
-      "def f()\n  macro (:answer (x :: Expression)) Code$` $(x)\n  macro (:wrap Args(x)) Code$` answer ($(x))\n  (wrap Args(7))\nend\nf()",
+      "def f()\n  macro :answer x :: Expression Code$` $(x)\n  macro :wrap Args(x) Code$` answer $(x)\n  (wrap Args(7))\nend\nf()",
     ),
     "7",
   );
@@ -230,7 +230,7 @@ test("macro templates retain locally declared sidefix grammars", () => {
 test("macro expansion supports definitions in a generated local block", () => {
   assert.equal(
     run(
-      "macro (:make Args()) Code` (\n  def (f(x)) x\n  (f(1))\n)\n(make Args())",
+      "macro :make Args() Code` (\n  def f(x) x\n  (f(1))\n)\n(make Args())",
     ),
     "1",
   );

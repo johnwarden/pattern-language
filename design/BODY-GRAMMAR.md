@@ -118,7 +118,9 @@ value or nested Body. This bounded subset does not claim full Code coverage.
 
 ```text
 def Binding unionType DestructuringBinding | Definition
-def DestructuringBinding type (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+def DestructuringBinding type
+  (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+end
 
 def Body type
   bindings :: Binding*

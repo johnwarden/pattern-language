@@ -5,7 +5,7 @@ import { single, unwrap } from "../src/values.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const recursive = "def A type :End | :A(B)\ndef B type :B(A)\n";
 const math =
-  "def Sum type (a :: MathExp) :+ (b :: MathExp)\ndef Product type (a :: MathExp) :* (b :: MathExp)\ndef MathExp UnionType(Sum,Product,Symbol,Number)\n";
+  "def Sum type\n  (a :: MathExp) :+ (b :: MathExp)\nend\ndef Product type\n  (a :: MathExp) :* (b :: MathExp)\nend\ndef MathExp UnionType(Sum,Product,Symbol,Number)\n";
 
 test("consecutive function definitions form a mutually recursive lexical group", () => {
   assert.equal(
@@ -120,7 +120,7 @@ test("generated type patterns honor the lexical origin of aliases and private na
           binding +
           "\n  Code` type Box(" +
           name +
-          ")\nend\nmacro (:make Args()) build()\nmake Args()",
+          ")\nend\nmacro :make Args()\n  build()\nend\nmake Args()",
       ),
       /Type\(Box\(/,
     );
@@ -131,7 +131,7 @@ test("raw colon data is not renamed by macro hygiene", () => {
     const ordinary = run("f = x -> " + quote + "\nf(1)");
     assert.equal(
       run(
-        "macro (:make Args()) Code` (x -> " +
+        "macro :make Args() Code` (x -> " +
           quote +
           ")\nf = make Args()\nf(1)",
       ),
@@ -140,7 +140,7 @@ test("raw colon data is not renamed by macro hygiene", () => {
   }
   assert.equal(
     run(
-      "n = 5\nmacro (:make Args()) Code$` (x -> :(Box(x,$n)))\nf = make Args()\nf(1)",
+      "n = 5\nmacro :make Args() Code$` (x -> :(Box(x,$n)))\nf = make Args()\nf(1)",
     ),
     "Box(:x, 5)",
   );
@@ -148,14 +148,14 @@ test("raw colon data is not renamed by macro hygiene", () => {
 test("named macro helpers bind their own parameters; defaults still see outer dependencies", () => {
   assert.equal(
     run(
-      "def outer(x)\n  macro (:answer Args())\n    def helper(x) Code$` $x\n    helper(7)\n  end\n  answer Args()\nend\nouter(99)",
+      "def outer(x)\n  macro :answer Args()\n    def helper(x) Code$` $x\n    helper(7)\n  end\n  answer Args()\nend\nouter(99)",
     ),
     "7",
   );
   assert.throws(
     () =>
       run(
-        "def outer(x)\n  macro (:answer Args())\n    def helper(value: x = x) Code$` $x\n    helper()\n  end\n  answer Args()\nend\nouter(99)",
+        "def outer(x)\n  macro :answer Args()\n    def helper(value: x = x) Code$` $x\n    helper()\n  end\n  answer Args()\nend\nouter(99)",
       ),
     /runtime binding/,
   );

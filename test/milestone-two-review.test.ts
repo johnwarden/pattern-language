@@ -18,37 +18,37 @@ const unavailable = (s: string) =>
 
 test("omitted destructuring defaults retain the availability of their inputs", () => {
   unavailable(
-    "def outer(x)\n  (value: y = x) = ()\n  macro (:bad Args()) Code$` $(y)\n  (bad Args())\nend\nouter(7)",
+    "def outer(x)\n  (value: y = x) = ()\n  macro :bad Args() Code$` $(y)\n  (bad Args())\nend\nouter(7)",
   );
 });
 test("match captures retain runtime scrutinee availability", () => {
   unavailable(
-    "def outer(x)\n  match x\n    y ->\n      macro (:bad Args()) Code$` $(y)\n      (bad Args())\n    end\n  end\nend\nouter(7)",
+    "def outer(x)\n  match x\n    y ->\n      macro :bad Args() Code$` $(y)\n      (bad Args())\n    end\n  end\nend\nouter(7)",
   );
 });
 test("helper defaults are checked when registering a macro, even before invocation", () => {
   unavailable(
-    "def outer(x)\n  def build(value: e = x) Code$` $(e)\n  macro (:bad Args()) build()\n  0\nend\nouter(7)",
+    "def outer(x)\n  def build(value: e = x) Code$` $(e)\n  macro :bad Args()\n    build()\n  end\n  0\nend\nouter(7)",
   );
 });
 test("helper annotations and ordinary type-factory parameters cannot hide runtime captures", () => {
   unavailable(
-    "def outer(T :: Type)\n  def build(x :: T) Code` 1\n  macro (:bad Args()) build(3)\n  0\nend\nouter(Int)",
+    "def outer(T :: Type)\n  def build(x :: T) Code` 1\n  macro :bad Args()\n    build(3)\n  end\n  0\nend\nouter(Int)",
   );
   unavailable(
-    "def F(T :: Type)\n  macro (:bad Args()) Code$` $(T)\n  type Box(T)\nend\nF(Int)",
+    "def F(T :: Type)\n  macro :bad Args() Code$` $(T)\n  type Box(T)\nend\nF(Int)",
   );
 });
 test("constant defaults and quoted runtime references remain available", () => {
   assert.equal(
     run(
-      "def outer(x)\n  (value: y = 3) = ()\n  macro (:good Args()) Code$` $(y)\n  (good Args())\nend\nouter(7)",
+      "def outer(x)\n  (value: y = 3) = ()\n  macro :good Args() Code$` $(y)\n  (good Args())\nend\nouter(7)",
     ),
     "3",
   );
   assert.equal(
     run(
-      "def outer(x)\n  macro (:good Args()) Code` x\n  (good Args())\nend\nouter(7)",
+      "def outer(x)\n  macro :good Args() Code` x\n  (good Args())\nend\nouter(7)",
     ),
     "7",
   );
@@ -57,13 +57,13 @@ test("quoted root heads agree between grammar, runtime types and macro signature
   const literal = new Grammar("def Q type :(x)");
   assert.throws(() => literal.parseAs("anything", "Q"));
   assert.equal(normal(literal.parseAs("x", "Q")), "x");
-  const operator = new Grammar("def Op type (:|(Int)(Int))");
+  const operator = new Grammar("def Op type\n  :|(Int)(Int)\nend");
   assert.equal(normal(operator.parseAs("1 | 2", "Op")), "1 | 2");
   assert.throws(() => operator.parseAs("1", "Op"));
-  assert.equal(run("def Op type (:|(Int)(Int))\n:(1 | 2) .matches Op"), "True");
+  assert.equal(run("def Op type\n  :|(Int)(Int)\nend\n:(1 | 2) .matches Op"), "True");
   assert.equal(
     run(
-      "def Op type (:|(Int)(Int))\nmacro (:take (v :: Op)) Code` 1\ntake (1 | 2)",
+      "def Op type\n  :|(Int)(Int)\nend\nmacro :take v :: Op Code` 1\ntake 1 | 2",
     ),
     "1",
   );
@@ -72,11 +72,11 @@ test("quoted root heads agree between grammar, runtime types and macro signature
 test("quoted annotation operators are literal heads, not pattern computations", () => {
   assert.equal(
     run(
-      "def outer(x)\n  match :(1 :: 2)\n    :(a :: x) ->\n      macro (:good Args()) Code$` $(a)\n      (good Args())\n    end\n  end\nend\nouter(7)",
+      "def outer(x)\n  match :(1 :: 2)\n    :(a :: x) ->\n      macro :good Args() Code$` $(a)\n      (good Args())\n    end\n  end\nend\nouter(7)",
     ),
     "1",
   );
   unavailable(
-    "def outer(x)\n  match Box()\n    :Box(value: y = x) ->\n      macro (:bad Args()) Code$` $(y)\n      (bad Args())\n    end\n  end\nend\nouter(7)",
+    "def outer(x)\n  match Box()\n    :Box(value: y = x) ->\n      macro :bad Args() Code$` $(y)\n      (bad Args())\n    end\n  end\nend\nouter(7)",
   );
 });

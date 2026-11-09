@@ -63,7 +63,7 @@ test("default and edited grammars round trip through ordinary language-descripti
   for (const grammar of [
     new Grammar(),
     new Grammar(
-      "def Choice type :choose (a :: Expression) :otherwise (b :: Expression)",
+      "def Choice type :choose a :: Expression :otherwise b :: Expression",
     ),
   ]) {
     const restored = Grammar.fromDescription(grammar.description(), validate);
@@ -91,7 +91,7 @@ test("source parseSyntax uses the transported grammar without evaluating source"
 test("scoped sidefix and structural rules are reflected without transporting macro implementations", () => {
   const i = new Interpreter();
   i.run(
-    "def Box type Box(value :: Int)\nmacro (:answer Args(x)) Code$` $(x)\n0",
+    "def Box type Box(value :: Int)\nmacro :answer Args(x) Code$` $(x)\n0",
   );
   const restored = Grammar.fromDescription(i.grammar.description(), validate);
   assert.equal(normal(restored.parseAs("Box(3)", "Box")), "Box(3)");
@@ -162,11 +162,11 @@ test("AST codec has an explicit recursion budget", () => {
 
 const contexts = (spec: string, value: string, result: string) => [
   spec + " = " + value + "\n" + result,
-  "def f(" + spec + ") " + result + "\nf(" + value + ")",
+  "def f(" + spec + ")\n  " + result + "\nend\nf(" + value + ")",
   "match " + value + "\n  " + spec + " -> " + result + "\nend",
-  "macro (:take Args(" +
+  "macro :take Args(" +
     spec +
-    ")) Code$` (" +
+    ") Code$` (" +
     result.replace(/\b(n|c|rest)\b/g, (name) => "$" + name) +
     ")\n(take Args(" +
     value +

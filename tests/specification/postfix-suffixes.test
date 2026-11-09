@@ -1,10 +1,10 @@
 test "Tight suffixes wrap one character at a time"
-  assert (parse(Code)("Int**") == parse(Code)("(Int*)*"))
-  assert (parse(Code)("String?*^!") == parse(Code)("(((String?)*)^)!"))
+  assert parse(Code)("Int**") == parse(Code)("(Int*)*")
+  assert parse(Code)("String?*^!") == parse(Code)("(((String?)*)^)!")
 end
 
 test "Prefix plus forms are the same tree; tight Int+ is not"
-  assert (parse(Code)("+Int") == parse(Code)("+(Int)"))
+  assert parse(Code)("+Int") == parse(Code)("+(Int)")
   expect parse(Code)("Int+") error "infix operators require spaces"
   expect parse(Code)("Int*+") error "infix operators require spaces"
   expect parse(Code)("a+") error "infix operators require spaces"
@@ -12,14 +12,14 @@ end
 
 test "Spaced plus and star remain infix"
   expect parse(Code)("a+b") error "infix operators require spaces"
-  assert (parse(Code)("a + b") == parse(Code)("+(a)(b)"))
-  assert (parse(Code)("T * U") == parse(Code)("*(T)(U)"))
-  expect (2 * 3) result 6 :: Rational
-  expect (2 + 3) result 5 :: Rational
+  assert parse(Code)("a + b") == parse(Code)("+(a)(b)")
+  assert parse(Code)("T * U") == parse(Code)("*(T)(U)")
+  expect 2 * 3 result 6 :: Rational
+  expect 2 + 3 result 5 :: Rational
 end
 
 test "A pack field ** is not a suffix wrap on the previous field"
-  assert (parse(Code)("Rect(w, h, **)") != parse(Code)("Rect(w, h**)"))
+  assert parse(Code)("Rect(w, h, **)") != parse(Code)("Rect(w, h**)")
 end
 
 test "Tight bang currently rejects as reserved"
@@ -27,5 +27,5 @@ test "Tight bang currently rejects as reserved"
 end
 
 test "Int* is a list type"
-  expect ([1, 2] :: Int*) result [1, 2] :: Int*
+  expect [1, 2] :: Int* result [1, 2] :: Int*
 end

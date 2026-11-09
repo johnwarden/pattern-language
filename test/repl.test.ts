@@ -93,10 +93,10 @@ end`,
 test("user-defined grammar drives the same REPL completeness rule", () => {
   const i = new Interpreter();
   i.run(
-    "macro (:probe (body :: Body) :then (result :: Expression)) Code$` $(result)",
+    "macro :probe body :: Body :then result :: Expression Code$` $(result)",
     "repl",
   );
-  i.run("macro (:hold (body :: Body)) Code$` $(body)", "repl");
+  i.run("macro :hold body :: Body Code$` $(body)", "repl");
   assert.equal(ready("probe 1 then 2", i), true);
   assert.equal(ready("probe\n  1\nthen 2", i), true);
   assert.equal(ready("probe\n  1\nthen 2\nend", i), true);

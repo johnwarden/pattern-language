@@ -130,7 +130,9 @@ not establish actual iOS lifecycle/storage behavior.
   layout block. Normalized output uses this to preserve block operands.
 
 ```text
-def pair(x) (x,x)
+def pair(x)
+  (x,x)
+end
 (a,b) = pair(3)
 a + b
 ```
@@ -288,11 +290,11 @@ contains the executable grammar. Full Code coverage and code.evaluate follow lat
 The grammar file uses the same declaration spelling as type definitions:
 
 ```text
-def Definition type :def (signature :: Signature) (body :: Body)
-def MacroRegistration type :macro (signature :: Signature) (body :: Body)
-def TypeExpression type :type (pattern :: PatternBody)
-def IfExpression type :if (condition :: Expression) (consequent :: Body) :else (alternative :: Body)
-def MatchExpression type :match (subject :: Expression) (arms :: Arms)
+def Definition type :def signature :: Signature body :: Body
+def MacroRegistration type :macro signature :: Signature body :: Body
+def TypeExpression type :type pattern :: PatternBody
+def IfExpression type :if condition :: Expression consequent :: Body :else alternative :: Body
+def MatchExpression type :match subject :: Expression arms :: Arms
 ```
 
 This small declaration bootstrap is explicit. Macro starting keywords must be
@@ -556,12 +558,12 @@ macro, regardless of the function's body or result. Registration is explicit:
 
 ```text
 def twiceCode(e) Code$` $e + $e
-macro (:twice (e :: Expression)) twiceCode(e)
+macro :twice e :: Expression twiceCode(e)
 (twiceCode(2 + 3),(twice (2 + 3)))
 # (5 + 5,10)
 ```
 
-`twiceCode` evaluates its arguments and returns data. `macro (:twice (e :: Expression)) ...` installs
+`twiceCode` evaluates its arguments and returns data. `macro :twice e :: Expression ...` installs
 a transformer under the name `twice`; its parameters match unevaluated syntax,
 its body computes `Code`, and its result is expanded at the call site. The body
 may call ordinary helper functions, use local bindings, or select a result with
@@ -573,7 +575,7 @@ Sidefix registrations also install a parsing rule:
 
 ```text
 def unlessCode(c,v) Code$` if $c 0 else $v
-macro (:unless (c :: Expression) (v :: Body)) unlessCode(c,v)
+macro :unless c :: Expression v :: Body unlessCode(c,v)
 unless False
   x = 3
   x + 1
@@ -729,7 +731,7 @@ phase remain planned; consecutive ordinary defs now form recursive groups, as sp
 ### Generated local grammar
 
 ```text
-macro (:install :answer) Code` macro (:answer (x :: Expression)) Code$` $x
+macro :install :answer Code` macro :answer x :: Expression Code$` $x
 def demo()
   install answer
   answer 42
@@ -771,7 +773,7 @@ x.toInt == y
 ```
 
 ```text
-def NoInt Int? .where (v -> v .matches :None)
+def NoInt Int? .where v -> v .matches :None
 a = :None :: NoInt
 b = :None :: Int?
 a == b
@@ -851,7 +853,9 @@ Milestone 2 review: [CODE-REVIEW-MILESTONE-2.md](CODE-REVIEW-MILESTONE-2.md).
 ## Grammar-directed DSL quotes and Code
 
 ```text
-def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
+def ExpectedOutput type
+  (e :: Expression) ::: (type :: Expression)
+end
 expected = ExpectedOutput` (1 / 0) :: MissingType
 (expected.e,expected.type)
 # (1 / 0,:MissingType)
@@ -970,7 +974,8 @@ printing rules and are explicitly legacy where their behavior is expected to cha
 
 Result expectations require exactly one positional value, its exact observed type,
 and canonical expected data: expect r.w result 2 :: Float. An expected symbolic
-binary tree must be grouped: expect e result (1 + 1) :: Expression. It is data,
+binary tree after `result` may begin with a grouping when the operand continues
+(`result (1 + 1) :: Expression`) and may still be indented. It is data,
 not a calculation producing 2. Predicate checks use assert rather than boolean
 expectations. Destructure multiple returns once, then check each capture separately.
 An empty-return assertion can bind () to the call, then return True. Ordinary pack
@@ -1005,8 +1010,12 @@ bindings are not visible in earlier definitions. Groups are local to their block
 or REPL submission. Nonproductive type aliases reject, and failed groups roll back.
 
 ```text
-def Sum type (a :: MathExp) :+ (b :: MathExp)
-def Product type (a :: MathExp) :* (b :: MathExp)
+def Sum type
+  (a :: MathExp) :+ (b :: MathExp)
+end
+def Product type
+  (a :: MathExp) :* (b :: MathExp)
+end
 def MathExp UnionType(Sum,Product,Symbol,Number)
 MathExp
 ```

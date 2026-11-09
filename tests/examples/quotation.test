@@ -15,7 +15,7 @@ test "Quoted expression values"
   b = :f(1)
   c = :(f(1))
 
-  assert (b == c)
+  assert b == c
   legacy expect b result f(1) :: Expression
 
   ((b == c), b)
@@ -24,9 +24,12 @@ end
 test "Raw and interpolated typed Code"
   name = "Jo"
 
-  expect (Code` hello($name)) result hello($(name)) :: Code
-  expect (Code$` hello($name)) result hello("Jo") :: Code
-  ((Code` hello($name)), (Code$` hello($name)))
+  quoted = Code` hello($name)
+  interpolated = Code$` hello($name)
+
+  expect quoted result hello($(name)) :: Code
+  expect interpolated result hello("Jo") :: Code
+  (quoted, interpolated)
 end
 
 test "Reader interpolation"
@@ -58,8 +61,12 @@ test "Typed expression quotes"
   raw = Code` x ^ 2
   expanded = Code$` $x ^ 2
 
-  expect raw result (x ^ 2) :: Code
-  expect expanded result (2 ^ 2) :: Code
+  expect raw result
+    (x ^ 2) :: Code
+  end
+  expect expanded result
+    (2 ^ 2) :: Code
+  end
   (raw, expanded)
 end
 
@@ -71,7 +78,7 @@ test "Typed parse / toString round-trip"
   legacy expect text result "Rect(3, 4)" :: Expression
   todo expect text result "Rect(3, 4)" :: String
 
-  assert (parse(Rectangle)(text) == value)
+  assert parse(Rectangle)(text) == value
 
   (text, (parse(Rectangle)(text) == value))
 end

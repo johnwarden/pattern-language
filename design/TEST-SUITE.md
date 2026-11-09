@@ -17,7 +17,7 @@ test "A value and a predicate"
   def Rectangle type Rect(w :: Float, h :: Float)
   r = Rect(2, 3) :: Rectangle
   expect r.w result 2 :: Float
-  assert (r.h == 3)
+  assert r.h == 3
 end
 
 test "Current and future literals"
@@ -32,8 +32,10 @@ TestFileContent has a required first Test row and a vertical Test* tail. Expecte
 uses an ordinary pattern containing literal ::, quoted ::: in its definition:
 
 ```text
-def ExpectedResult type (expected :: Expression) ::: (expectedType :: Expression)
-def ResultExpectation type (:expect (subject :: Expression) :result (result :: ExpectedResult))
+def ExpectedResult type
+  (expected :: Expression) ::: (expectedType :: Expression)
+end
+def ResultExpectation type :expect subject :: Expression :result result :: ExpectedResult
 ```
 
 The result delimiter is required. There are no value/type keyword clauses or results
@@ -46,7 +48,9 @@ failures of quoted source below.
 ```text
 test "Symbolic expression data"
   e = :(1 + 1)
-  legacy expect e result (1 + 1) :: Expression
+  legacy expect e result
+    (1 + 1) :: Expression
+  end
 end
 ```
 
@@ -64,7 +68,7 @@ surface grouping/formatting normalization. In particular :Widget produces Widget
 in UpperCamelSymbol. Quoting Widget in that expected data rejects. The shared printer
 uses a space after every comma, without changing the content of string values.
 
-Use assert condition for predicates and assert (condition == False) for negative
+Use assert condition for predicates and assert condition == False for negative
 predicates. Assert requires one positional value of the actual Bool space, not a
 same-spelled constructor from another type and not truthiness. Keep a result check
 when the boolean's own type or literal representation is the point being tested.
@@ -73,14 +77,18 @@ when the boolean's own type or literal representation is the point being tested.
 
 ```text
 test "Separate return values"
-  def dimensions() (2 :: Float, 3 :: Float)
+  def dimensions()
+    (2 :: Float, 3 :: Float)
+  end
   (width, height) = dimensions()
   expect width result 2 :: Float
   expect height result 3 :: Float
 end
 
 test "No return values"
-  def nothing() ()
+  def nothing()
+    ()
+  end
   assert
     () = nothing()
     True

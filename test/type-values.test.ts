@@ -392,7 +392,7 @@ test("singleton types include arbitrary strings and negative numbers", () => {
     );
   }
   assert.equal(
-    run("t = type (:-(1))\nparse(Type)(toString(Type)(t)) == t"),
+    run("t =\n  type\n    :-(1)\n  end\nend\nparse(Type)(toString(Type)(t)) == t"),
     "True",
   );
 });

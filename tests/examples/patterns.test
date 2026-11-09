@@ -57,9 +57,10 @@ test "Picture: nested pattern captures"
   def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle(w :: Number, h :: Number))
   p = Picture(color: :Red, shape: Rectangle(3, 4)) :: Picture
 
-  expect p.color result :Red :: (type (:Red | :Black))
+  expect p.color result :Red :: (type :Red | :Black)
   expect p.w result 3 :: Float
   expect p.h result 4 :: Float
-  expect (type Picture) result Type(Picture(color: Type(:Black | :Red), shape: Rectangle(Float, Float))) :: Type
+  observed = type Picture
+  expect observed result Type(Picture(color: Type(:Black | :Red), shape: Rectangle(Float, Float))) :: Type
   (p.color, p.w, p.h, (type Picture))
 end

@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { Interpreter, displayResults } from "../src/index.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const expression = `def Atom unionType Number | String | Symbol
-def Application type (head :: ValueExpr)(args... :: ValueExpr*)
+def Application type
+  (head :: ValueExpr)(args... :: ValueExpr*)
+end
 def ValueExpr unionType Atom | Application
 `;
 

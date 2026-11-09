@@ -19,7 +19,7 @@ test("head-only and whole-expression quotation remain distinct", () => {
 test("typed quote blocks expand macro templates with explicit interpolation", () => {
   assert.equal(
     run(
-      "macro (:addOne Args(x))\n  Code$`\n    y = $x\n    y + 1\n  end\nend\n(addOne Args(4))",
+      "macro :addOne Args(x)\n  Code$`\n    y = $x\n    y + 1\n  end\nend\n(addOne Args(4))",
     ),
     "5",
   );

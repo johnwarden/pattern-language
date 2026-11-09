@@ -377,16 +377,48 @@ export function quote(
       x.items[0].kind === "symbol" &&
       ["def", "macro"].includes(x.items[0].name)
     ) {
+      let sigEnd = 2;
+      if (
+        x.items[0].name === "macro" &&
+        x.items[1]?.kind === "symbol" &&
+        x.items[1].quoted
+      ) {
+        while (sigEnd < x.items.length) {
+          const n = x.items[sigEnd]!;
+          if (
+            n.kind === "block" ||
+            n.kind === "typedQuote" ||
+            n.kind === "template" ||
+            n.kind === "literal" ||
+            n.kind === "form"
+          )
+            break;
+          sigEnd++;
+        }
+      }
+      const signature: Syntax =
+        sigEnd === 2
+          ? x.items[1]!
+          : {
+              kind: "sequence",
+              items: x.items.slice(1, sigEnd),
+              span: x.items[1]?.span,
+            };
+      const rest = x.items.slice(sigEnd);
       const body: Syntax =
-        x.items.length === 3
-          ? x.items[2]
-          : { kind: "sequence", items: x.items.slice(2) };
-      const [signature, rewritten] = declaration(x.items[1], body, names);
+        rest.length === 1
+          ? rest[0]!
+          : { kind: "sequence", items: rest, span: rest[0]?.span };
+      const [rewrittenSignature, rewritten] = declaration(
+        signature,
+        body,
+        names,
+      );
       return {
         ...x,
         items: [
           x.items[0],
-          signature,
+          rewrittenSignature,
           ...(rewritten.kind === "sequence" ? rewritten.items : [rewritten]),
         ],
       };

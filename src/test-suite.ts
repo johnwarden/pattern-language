@@ -336,10 +336,13 @@ class TestReader {
             kind: scalarString(kind.value) as "setup",
             mode: scalarString(mode.value) as AssertionMode,
             subject: dataSyntax(value.value),
-            source: source.replace(
-              new RegExp("^" + setupRule.keyword + "[ \\t]+", "m"),
-              "",
-            ),
+            source:
+              statement.kind === "block"
+                ? testSourceText(statement)
+                : source.replace(
+                    new RegExp("^" + setupRule.keyword + "[ \\t]+", "m"),
+                    "",
+                  ),
           });
         } else
           result.push({

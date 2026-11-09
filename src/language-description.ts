@@ -13,7 +13,7 @@ import type { Value } from "./values.ts";
 export const HOST_READERS = [
   [
     "PatternBody",
-    "One opaque pattern operand (micro, grouped sidefix or block), or a nested type form.",
+    "One opaque pattern operand (micro, ungrouped quoted-keyword tail, or one-line block), or a nested type form.",
   ],
   [
     "Expression",

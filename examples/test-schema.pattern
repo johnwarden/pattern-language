@@ -1,32 +1,58 @@
-def Test type (:test (name :: String) (body :: Expression))
+def Test type :test name :: String body :: Expression
 def TestFileContent type
   first :: Test
   rest :: Test*
   ...
 end
 def tests(f :: TestFileContent) [f.first,f.rest...]
-def testParts(t :: Test) (t.name,t.body)
-def ExpectedResult type (expected :: Expression) ::: (expectedType :: Expression)
-def ResultExpectation type (:expect (subject :: Expression) :result (result :: ExpectedResult))
-def stepParts(e :: ResultExpectation) ("result","check",e.subject,e.result.expected,e.result.expectedType)
-def ErrorExpectation type (:expect (subject :: Expression) :error (reason :: String))
-def stepParts(e :: ErrorExpectation) ("error","check",e.subject,e.reason)
-def Assertion type (:assert (condition :: Expression))
-def stepParts(e :: Assertion) ("assert","check",e.condition)
-def LegacyResultExpectation type (:legacy :expect (subject :: Expression) :result (result :: ExpectedResult))
-def stepParts(e :: LegacyResultExpectation) ("result","legacy",e.subject,e.result.expected,e.result.expectedType)
-def LegacyErrorExpectation type (:legacy :expect (subject :: Expression) :error (reason :: String))
-def stepParts(e :: LegacyErrorExpectation) ("error","legacy",e.subject,e.reason)
-def LegacyAssertion type (:legacy :assert (condition :: Expression))
-def stepParts(e :: LegacyAssertion) ("assert","legacy",e.condition)
-def TodoResultExpectation type (:todo :expect (subject :: Expression) :result (result :: ExpectedResult))
-def stepParts(e :: TodoResultExpectation) ("result","todo",e.subject,e.result.expected,e.result.expectedType)
-def TodoErrorExpectation type (:todo :expect (subject :: Expression) :error (reason :: String))
-def stepParts(e :: TodoErrorExpectation) ("error","todo",e.subject,e.reason)
-def TodoAssertion type (:todo :assert (condition :: Expression))
-def stepParts(e :: TodoAssertion) ("assert","todo",e.condition)
-def LegacySetup type (:legacy (statement :: Expression))
-def stepParts(e :: LegacySetup) ("setup","legacy",e.statement)
-def TodoSetup type (:todo (statement :: Expression))
-def stepParts(e :: TodoSetup) ("setup","todo",e.statement)
+def testParts(t :: Test)
+  (t.name, t.body)
+end
+def ExpectedResult type
+  (expected :: Expression) ::: (expectedType :: Expression)
+end
+def ResultExpectation type :expect subject :: Expression :result result :: ExpectedResult
+def stepParts(e :: ResultExpectation)
+  ("result", "check", e.subject, e.result.expected, e.result.expectedType)
+end
+def ErrorExpectation type :expect subject :: Expression :error reason :: String
+def stepParts(e :: ErrorExpectation)
+  ("error", "check", e.subject, e.reason)
+end
+def Assertion type :assert condition :: Expression
+def stepParts(e :: Assertion)
+  ("assert", "check", e.condition)
+end
+def LegacyResultExpectation type :legacy :expect subject :: Expression :result result :: ExpectedResult
+def stepParts(e :: LegacyResultExpectation)
+  ("result", "legacy", e.subject, e.result.expected, e.result.expectedType)
+end
+def LegacyErrorExpectation type :legacy :expect subject :: Expression :error reason :: String
+def stepParts(e :: LegacyErrorExpectation)
+  ("error", "legacy", e.subject, e.reason)
+end
+def LegacyAssertion type :legacy :assert condition :: Expression
+def stepParts(e :: LegacyAssertion)
+  ("assert", "legacy", e.condition)
+end
+def TodoResultExpectation type :todo :expect subject :: Expression :result result :: ExpectedResult
+def stepParts(e :: TodoResultExpectation)
+  ("result", "todo", e.subject, e.result.expected, e.result.expectedType)
+end
+def TodoErrorExpectation type :todo :expect subject :: Expression :error reason :: String
+def stepParts(e :: TodoErrorExpectation)
+  ("error", "todo", e.subject, e.reason)
+end
+def TodoAssertion type :todo :assert condition :: Expression
+def stepParts(e :: TodoAssertion)
+  ("assert", "todo", e.condition)
+end
+def LegacySetup type :legacy statement :: Expression
+def stepParts(e :: LegacySetup)
+  ("setup", "legacy", e.statement)
+end
+def TodoSetup type :todo statement :: Expression
+def stepParts(e :: TodoSetup)
+  ("setup", "todo", e.statement)
+end
 TestFileContent

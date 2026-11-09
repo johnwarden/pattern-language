@@ -147,6 +147,13 @@ function owningClauses(
   const form = owningForm(names, forms);
   return form ? new Set(form.clauses) : undefined;
 }
+/** Start or clause keyword from the active surface grammar, not a hardcoded list. */
+function isLayoutKeyword(name: string, forms: LayoutForms | undefined): boolean {
+  if (!forms?.size) return false;
+  if (forms.has(name)) return true;
+  for (const clauses of forms.values()) if (clauses.has(name)) return true;
+  return false;
+}
 function unquotedNames(tokens: Token[]): string[] {
   return tokens
     .filter((token) => token.kind === "name" && !token.quoted)
@@ -510,8 +517,50 @@ class Reader {
   }
   sequence(stops = new Set<string>()): Syntax {
     const items: Syntax[] = [];
-    while (!this.stop(stops)) items.push(this.expression(stops));
+    while (!this.stop(stops)) {
+      const startPos = this.pos;
+      const start = this.peek();
+      const prev = items.at(-1);
+      const n = this.expression(stops);
+      if (
+        prev &&
+        this.isKeywordTerm(prev) &&
+        start?.kind === "(" &&
+        startPos > 0 &&
+        this.tokens[startPos - 1]!.end !== start.start &&
+        this.whollyParenthesized(startPos, this.pos - 1)
+      )
+        throw new LanguageError(
+          "a keyword operand cannot be a single parenthesized group; write the operand without wrapping parentheses, or continue after the group",
+          start,
+        );
+      items.push(n);
+    }
     return { kind: "sequence", items, span: items[0]?.span };
+  }
+  private isKeywordTerm(n: Syntax): boolean {
+    return (
+      n.kind === "symbol" &&
+      !n.quoted &&
+      isLayoutKeyword(n.name, this.options.layoutForms)
+    );
+  }
+  /** True when tokens [from, to] are exactly one outer `(...)` group. */
+  private whollyParenthesized(from: number, to: number): boolean {
+    if (from > to) return false;
+    if (this.tokens[from]?.kind !== "(" || this.tokens[to]?.kind !== ")")
+      return false;
+    let depth = 0;
+    for (let i = from; i <= to; i++) {
+      const kind = this.tokens[i]!.kind;
+      if (kind === "(") depth++;
+      else if (kind === ")") {
+        depth--;
+        if (depth < 0) return false;
+        if (depth === 0) return i === to;
+      }
+    }
+    return false;
   }
   expression(stops: Set<string>): Syntax {
     const start = this.peek();
@@ -575,7 +624,14 @@ class Reader {
     while (!this.stop(stops)) {
       const t = this.peek()!,
         tight = this.tokens[this.pos - 1].end === t.start;
-      if (!tight) break;
+      if (!tight) {
+        if (t.kind === "(" && !this.isKeywordTerm(n))
+          throw new LanguageError(
+            "a term cannot be followed by a spaced '('; write f(x) for a call or f x for a sidefix operand",
+            t,
+          );
+        break;
+      }
       if (this.options.specification && t.kind === "op" && t.text === "<") {
         this.take();
         n = { ...apply(n, this.arguments(">")), span: n.span };
@@ -1137,14 +1193,26 @@ export function parseExpression(source: string, sidefix = false): Syntax {
   return expressionFromNormalized(normalizeSource(source), sidefix);
 }
 function expressionFromNormalized(source: string, sidefix = false): Syntax {
+  if (sidefix) {
+    const root = layout(groups(scan(source)), true);
+    if (root.kind !== "block" || !root.lines.length)
+      throw new LanguageError("expected one expression");
+    const items = root.lines.flatMap((n) =>
+      n.kind === "sequence" ? n.items : [n],
+    );
+    if (!items.length) throw new LanguageError("expected one expression");
+    return items.length === 1
+      ? items[0]
+      : { kind: "sequence", items, span: root.span };
+  }
   const seq = new Reader(
     groups(scan(source)).filter((t) => t.kind !== "newline"),
   ).sequence();
   if (
     seq.kind !== "sequence" ||
     !seq.items.length ||
-    (!sidefix && seq.items.length !== 1)
+    seq.items.length !== 1
   )
     throw new LanguageError("expected one expression");
-  return seq.items.length === 1 ? seq.items[0] : seq;
+  return seq.items[0];
 }

@@ -1,7 +1,8 @@
 test "Float64 is a distinct primitive and float64 converts"
   expect float64(0.5) result 0.5 :: Float64
   expect float32(0.5) result 0.5 :: Float32
-  expect (type Float64) result Float64 :: Type
+  observed = type Float64
+  expect observed result Float64 :: Type
   expect
     type Num
   error "E_UNBOUND_TYPE"

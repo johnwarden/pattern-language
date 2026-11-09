@@ -14,7 +14,7 @@ import {
 import { syntaxKey } from "../src/syntax.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 const expected =
-  "def ExpectedOutput type (e :: Expression) ::: (type :: Expression)\n";
+  "def ExpectedOutput type\n  (e :: Expression) ::: (type :: Expression)\nend\n";
 
 test("triple colon quotes the ascription symbol in a structural pattern", () => {
   const expr = parseExpression("left ::: right");
@@ -82,11 +82,11 @@ test("recursive symbolic operators in application heads are structural, not type
 });
 test("ordinary sidefix types quote and destructure without installing a Code keyword", () => {
   const decl =
-    "def Entry type (:test (name :: String) :expect (value :: Expression))\n";
+    "def Entry type :test name :: String :expect value :: Expression\n";
   assert.equal(
     run(
       decl +
-        'v = Entry` test "one" expect missing(x)\n(:test (name :: String) :expect (value :: Expression)) = v\n(name,value)',
+        'v = Entry` test "one" expect missing(x)\n(:test name :: String :expect value :: Expression) = v\n(name,value)',
     ),
     '("one", missing(:x))',
   );
@@ -97,7 +97,7 @@ test("ordinary sidefix types quote and destructure without installing a Code key
   assert.equal(
     run(
       decl +
-        'macro (:test (x :: Expression)) Code$` $(x)\nv = Entry` test "one" expect 3\ntest 42',
+        'macro :test x :: Expression Code$` $(x)\nv = Entry` test "one" expect 3\ntest 42',
     ),
     "42",
   );
@@ -105,14 +105,14 @@ test("ordinary sidefix types quote and destructure without installing a Code key
 test("a Test-shaped DSL retains nested code as raw Expression during migration", () => {
   const source =
     expected +
-    'def Test type (:test (name :: String) (code :: Expression) :expect (expected :: ExpectedOutput))\nt = Test`\n  test "inert"\n    missing(1 / 0)\n  end\n  expect 3 :: MissingType\nend\n(t.name,t.expected.e,t.expected.type)';
+    'def Test type :test name :: String code :: Expression :expect expected :: ExpectedOutput\nt = Test`\n  test "inert"\n    missing(1 / 0)\n  end\n  expect 3 :: MissingType\nend\n(t.name,t.expected.e,t.expected.type)';
   assert.equal(run(source), '("inert", 3, :MissingType)');
 });
 test("sidefix and deferred-expectation type/value text round trip without evaluation", () => {
   assert.equal(
     run(
       expected +
-        'def Entry type (:test (name :: String) :expect (value :: ExpectedOutput))\nv = Entry` test "round trip" expect (1 + 2) :: MissingType\nt = parse(Type)(toString(Type)(Entry))\nw = parse(t)(toString(Entry)(v))\nv == w',
+        'def Entry type :test name :: String :expect value :: ExpectedOutput\nv = Entry`\n  test "round trip"\n  expect\n    (1 + 2) :: MissingType\n  end\nend\nt = parse(Type)(toString(Type)(Entry))\nw = parse(t)(toString(Entry)(v))\nv == w',
     ),
     "True",
   );

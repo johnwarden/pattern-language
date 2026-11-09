@@ -278,7 +278,11 @@ value. If default omission is later accepted, define its raw space before its
 normalizer. Specification-level example:
 
 ```text
-RectRaw = type (Rect(Float,Float) | Rect(Float,Float,color: Color))
+RectRaw =
+  type
+    Rect(Float,Float) | Rect(Float,Float,color: Color)
+  end
+end
 # omitBlack leaves a missing color missing, removes an explicit black color,
 # and retains every other supplied color. Black is a quoted Color symbol.
 RectCanonical = Where(RectRaw)(r -> omitBlack(r) == r)

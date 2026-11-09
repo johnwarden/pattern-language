@@ -21,7 +21,7 @@ test("explicit registration composes with an ordinary transformer function", () 
   assert.equal(
     run(
       builder +
-        "\nmacro (:twice Args(e)) twiceCode(e)\n((twice Args(2 + 3)),twiceCode(2 + 3))",
+        "\nmacro :twice Args(e)\n  twiceCode(e)\nend\n((twice Args(2 + 3)),twiceCode(2 + 3))",
     ),
     "(10, 5 + 5)",
   );
@@ -35,7 +35,7 @@ test("ordinary code builders may capture runtime parameters", () => {
 test("only explicit registration suppresses argument evaluation", () => {
   assert.equal(
     run(
-      "def ignoreCode(e) Code` 42\nmacro (:ignore Args(e)) ignoreCode(e)\n(ignore Args(missing))",
+      "def ignoreCode(e) Code` 42\nmacro :ignore Args(e)\n  ignoreCode(e)\nend\n(ignore Args(missing))",
     ),
     "42",
   );
@@ -44,19 +44,19 @@ test("only explicit registration suppresses argument evaluation", () => {
 test("the produced value, not its function body's syntax, determines expansion validity", () => {
   assert.equal(
     run(
-      "def chooseCode(e)\n  c = Code$` $(e)\n  c\nend\nmacro (:chosen Args(e)) chooseCode(e)\n(chosen Args(8))",
+      "def chooseCode(e)\n  c = Code$` $(e)\n  c\nend\nmacro :chosen Args(e)\n  chooseCode(e)\nend\n(chosen Args(8))",
     ),
     "8",
   );
-  fails("macro (:invalid Args(e)) 42\n(invalid Args(1))", "E_MACRO_RESULT");
+  fails("macro :invalid Args(e)\n  42\nend\n(invalid Args(1))", "E_MACRO_RESULT");
 });
 test("sidefix registration can delegate to an ordinary code builder", () => {
   assert.equal(
-    run(builder + "\nmacro (:twice (e :: Expression)) twiceCode(e)\ntwice 9"),
+    run(builder + "\nmacro :twice e :: Expression\n  twiceCode(e)\nend\ntwice 9"),
     "18",
   );
   fails(
-    "def (:twice (e :: Expression)) Code$` $(e)\n0",
+    "def :twice e :: Expression Code$` $(e)\n0",
     "E_MACRO_REGISTRATION",
   );
 });
@@ -64,7 +64,7 @@ test("registered aliases are lexical and leave the original function ordinary", 
   const i = new Interpreter();
   i.run(
     builder +
-      "\ndef local()\n  macro (:twice Args(e)) twiceCode(e)\n  (twice Args(3))\nend",
+      "\ndef local()\n  macro :twice Args(e)\n    twiceCode(e)\n  end\n  (twice Args(3))\nend",
     "repl",
   );
   assert.equal(displayResults(i.run("local()")), "6");
@@ -73,48 +73,48 @@ test("registered aliases are lexical and leave the original function ordinary", 
 });
 test("registration rejects runtime lexical reads at their source location", () => {
   fails(
-    "def outer(x)\n  macro (:bad Args()) Code$` $(x)\n  0\nend\nouter(7)",
+    "def outer(x)\n  macro :bad Args() Code$` $(x)\n  0\nend\nouter(7)",
     "E_MACRO_RUNTIME_CAPTURE",
   );
 });
 test("capture checking follows helper functions rather than banning lexical names", () => {
   fails(
-    "def outer(x)\n  def build() Code$` $(x)\n  macro (:bad Args()) build()\n  0\nend\nouter(7)",
+    "def outer(x)\n  def build() Code$` $(x)\n  macro :bad Args()\n    build()\n  end\n  0\nend\nouter(7)",
     "E_MACRO_RUNTIME_CAPTURE",
   );
   assert.equal(
     run(
-      "def outer(x)\n  n = 5\n  def build() Code$` $(n) + x\n  macro (:answer Args()) build()\n  (answer Args())\nend\nouter(7)",
+      "def outer(x)\n  n = 5\n  def build() Code$` $(n) + x\n  macro :answer Args()\n    build()\n  end\n  (answer Args())\nend\nouter(7)",
     ),
     "12",
   );
 });
 test("runtime dependencies propagate through local bindings", () => {
   fails(
-    "def outer(x)\n  n = x + 1\n  macro (:bad Args()) Code$` $(n)\n  0\nend\nouter(7)",
+    "def outer(x)\n  n = x + 1\n  macro :bad Args() Code$` $(n)\n  0\nend\nouter(7)",
     "E_MACRO_RUNTIME_CAPTURE",
   );
 });
 test("raw references and macro syntax arguments do not read runtime values", () => {
   assert.equal(
     run(
-      "def outer(x)\n  macro (:reference Args()) Code` x\n  (reference Args())\nend\nouter(7)",
+      "def outer(x)\n  macro :reference Args() Code` x\n  (reference Args())\nend\nouter(7)",
     ),
     "7",
   );
   assert.equal(
     run(
       builder +
-        "\nmacro (:twice Args(e)) twiceCode(e)\ndef outer(x) (twice Args(x))\nouter(7)",
+        "\nmacro :twice Args(e)\n  twiceCode(e)\nend\ndef outer(x)\n  (twice Args(x))\nend\nouter(7)",
     ),
     "14",
   );
 });
 test("macro registration is a declaration and failed registration rolls back", () => {
-  fails("macro (:answer Args()) Code` 1", "E_SYNTAX");
+  fails("macro :answer Args() Code` 1", "E_SYNTAX");
   const i = new Interpreter();
   assert.throws(() =>
-    i.run("macro (:newWord (e :: Expression)) Code$` $(e)\nmissing"),
+    i.run("macro :newWord e :: Expression Code$` $(e)\nmissing"),
   );
   assert.throws(() => i.run("newWord 3"), /grammar|form/);
 });
@@ -124,7 +124,7 @@ test("runtime code generation no longer has the macro single-pack limitation", (
 test("registered transformers retain hygienic helper references", () => {
   assert.equal(
     run(
-      "def helper(x) x + 1\ndef build(e) Code$` helper($(e))\nmacro (:wrapped Args(e)) build(e)\ndef f(x)\n  helper = x -> 99\n  (wrapped Args(x))\nend\nf(4)",
+      "def helper(x) x + 1\ndef build(e) Code$` helper($(e))\nmacro :wrapped Args(e)\n  build(e)\nend\ndef f(x)\n  helper = x -> 99\n  (wrapped Args(x))\nend\nf(4)",
     ),
     "5",
   );
@@ -132,18 +132,18 @@ test("registered transformers retain hygienic helper references", () => {
 
 test("runtime captures in macro parameter defaults are rejected on registration", () => {
   fails(
-    "def outer(x)\n  macro (:bad Args(value: e :: Expression = x)) Code$` $(e)\n  0\nend\nouter(7)",
+    "def outer(x)\n  macro :bad Args(value: e :: Expression = x) Code$` $(e)\n  0\nend\nouter(7)",
     "E_MACRO_RUNTIME_CAPTURE",
   );
 });
 
 test("micro signatures cannot register macros and sidefix signatures cannot define functions", () => {
   fails("macro f(x) Code$` $(x)\n0", "E_MACRO_SIGNATURE");
-  fails("def (:f (x :: Expression)) Code$` $(x)\n0", "E_MACRO_REGISTRATION");
+  fails("def :f x :: Expression Code$` $(x)\n0", "E_MACRO_REGISTRATION");
 });
 test("registered macros reject micro call syntax", () => {
   fails(
-    "macro (:twice (e :: Expression)) Code$` $(e) + $(e)\ntwice(3)",
+    "macro :twice e :: Expression Code$` $(e) + $(e)\ntwice(3)",
     "E_MACRO_CALL_SYNTAX",
   );
 });

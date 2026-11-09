@@ -15,7 +15,7 @@ test("type defaults are rejected in named, generic, anonymous, nested, and refin
     "t = type :R(x: Int = 1)\n0",
     "type :Outer(:Inner(x: Int = 1))",
     "type :Outer(inner: (type :Inner(x: Int = 1)))",
-    "def R (type :R(x: Int = 1)) .where (r -> True)\n0",
+    "def R\n  (type :R(x: Int = 1)) .where (r -> True)\nend\n0",
     "def make() type :R(x: Int = 1)\nmake()",
     "type :R(x: Int = 1) | :None",
     "type :R(x: n :: Int = 1)",

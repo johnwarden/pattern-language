@@ -20,7 +20,7 @@ test("incomplete built-in forms show the active expected grammar and input locat
 test("user-defined forms contribute their own signature to diagnostics", () => {
   const i = new Interpreter();
   i.run(
-    "macro (:choose (a :: Expression) :otherwise (b :: Expression)) Code$` $(a)",
+    "macro :choose a :: Expression :otherwise b :: Expression Code$` $(a)",
     "repl",
   );
   assert.throws(

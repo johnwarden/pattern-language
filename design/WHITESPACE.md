@@ -53,8 +53,8 @@ end
 ```
 
 needs the aligned `end` because `assert`'s grammar has no later clause to close
-the indented operand. A user-defined form with the same shape (`:hold (body ::
-Body)` vs `:probe (body :: Body) :then (result :: Expression)`) follows the same
+the indented operand. A user-defined form with the same shape (`:hold body ::
+Body` vs `:probe body :: Body :then result :: Expression`) follows the same
 rule. Do not special-case assert or expect.
 
 When a later clause itself takes an indented operand, that operand still needs
@@ -103,7 +103,7 @@ width.
 | Newlines inside collection delimiters | Can distinguish vertical rows from comma continuation; row boundaries can change collection rank. |
 | Spaces around infix operators | Both sides are required; a+b is invalid, not a different addition expression. |
 | Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Suffixes wrap in source order. Prefix `+Int` and `+(Int)` are the same application tree; tight `Int+` is not that wrap. |
-| Tight function calls versus sidefix operands | f(x) is application; f (x) is a space-separated sequence requiring a grammar, not automatic application. |
+| Tight function calls versus sidefix operands | `f(x)` is application. A non-keyword term then spaced `(` is an error (`f (x)`, `f(x) (y)`). A keyword operand may begin with a grouping only if the operand continues (`assert (1 + 2) == 3`); a wholly parenthesized operand (`assert (x)`, `if (x)`) is an error. Infix/prefix operators may still be followed by a grouped operand (`a - (b)`, `- (x)`). |
 | Dot notation | a.b and a .b c follow the stated call/pack rules; arbitrary spacing around dot is not permitted. |
 | Label colon | Must touch its label. Separating it is not an alternative label spelling and may only have meaning in another explicitly selected grammar. |
 | Quotation / reader prefixes | Tight T` and reader quote prefixes select syntax; adding spaces does not preserve that interpretation automatically. |
@@ -115,6 +115,42 @@ width.
 The goal is not to make every whitespace edit harmless. It is to reject accidental
 block-scope changes that lack explicit closure, while keeping intentional row,
 fixity and literal-content distinctions visible in the grammar.
+
+## Call spacing
+
+The surface grammar allows `:keyword MICRO_EXPRESSION` but not
+`:keyword (MICRO_EXPRESSION)`. A spaced `(` after a keyword is valid only when
+that group *starts* the operand and the micro-expression continues; wrapping the
+entire operand is a syntax error. That way `assert (x)` cannot mean `assert x`,
+and adding or removing those parentheses cannot flip one valid tree into another.
+Tight `f(x)` is application. A non-keyword term then spaced `(` is always an
+error. The same rule holds in Code, quotation `:(...)`, `parse(Code)`,
+sidefix/surface grammars, and `.test` files.
+
+```text
+f(x)                    # application
+f x                     # sidefix operand or sequence
+f (x)                   # error: term then spaced (
+f(x) (y)                # error: a completed application is a term
+assert True             # keyword operand
+assert (1 + 2) == 3     # valid: the operand begins with a group and continues
+assert (x)              # error: the operand is only a parenthesized group
+assert ((1 + 2) == 3)   # error: same, the whole operand is grouped
+if (x)                  # error
+type Point              # type form
+type(Point)             # application of type
+type (Point)            # error
+todo()                  # tight empty call
+todo ()                 # error, including todo ( / newline / )
+a - (b)                 # valid: operator then group
+- (x)                   # valid: prefix operator, same tree as -(x)
+x = (1, 2)              # valid: pack after =
+expect e result (1 + 1) :: Expression   # valid: result operand continues
+```
+
+`def f() (x, y)` is the term error (`f()` then spaced `(`); indent the pack.
+Same-indent `f` then `(x)` on the next line are two rows. Postfix suffixes stay
+tight (`T?`, `T*`, `T^`).
 
 The REPL treats a buffer as ready when the active grammar can parse it as a
 finished entry. It must not wait for an extra blank line after `end` or after a
@@ -142,7 +178,8 @@ and quote-indent stripping. tests/layout/custom-grammar.test installs a session
 `end` through `parse(Code)` (default Code grammar, not session macros). Required
 infix spacing remains an ordinary check. Host test/layout-ends.test.ts keeps
 Grammar-object `parseSurface` (including `:otherwise` vs `:else`) and sequential
-session macros for probe/then success and extra-`end` parse failure.
+session macros for probe/then success, extra `end` after `then`, `hold` without
+`end`, and a wholly parenthesized `hold` operand.
 test/repl.test.ts covers grammar-driven REPL completeness.
 test/indent-prefix.test.ts keeps the prefix-relation unit checks.
 tests/specification/postfix-suffixes.test covers suffix wrap order (`T**` is

@@ -34,12 +34,12 @@ import {
 } from "./language-description.ts";
 import { valLiteral, valSymbol, equal, unwrap } from "./values.ts";
 import type { Value } from "./values.ts";
-export const DEFAULT_GRAMMAR = `def Definition type :def (signature :: Signature) (body :: Body)
-def MacroRegistration type :macro (signature :: Signature) (body :: Body)
-def TypeExpression type :type (pattern :: PatternBody)
-def UnionTypeExpression type :unionType (pattern :: PatternBody)
-def IfExpression type :if (condition :: Expression) (consequent :: Body) :else (alternative :: Body)
-def MatchExpression type :match (subject :: Expression) (arms :: Arms)`;
+export const DEFAULT_GRAMMAR = `def Definition type :def signature :: Signature body :: Body
+def MacroRegistration type :macro signature :: Signature body :: Body
+def TypeExpression type :type pattern :: PatternBody
+def UnionTypeExpression type :unionType pattern :: PatternBody
+def IfExpression type :if condition :: Expression consequent :: Body :else alternative :: Body
+def MatchExpression type :match subject :: Expression arms :: Arms`;
 const syntaxAdapter: Adapter<Syntax> = {
   equal: (a, b) => syntaxKey(a) === syntaxKey(b),
   decompose: (n) =>
@@ -287,28 +287,23 @@ export class Grammar {
           const value = items[pos]?.value;
           if (!value) return [];
           // Only nested type forms are interpreted here. Other pattern operands
-          // stay opaque; a grouped sidefix sequence is one surface operand.
+          // stay opaque. Ungrouped quoted-keyword tails replace the banned
+          // `type :assert …` grouping; a one-line block unwraps to that line.
           if (
             value.kind === "symbol" &&
             !value.quoted &&
             this.keywords.get(value.name) === "TypeExpression"
           )
             return this.readForm(items, pos, matcher);
-          const block = items[pos + 1]?.value;
-          const attached =
-            value.kind === "symbol" && value.quoted && block?.kind === "block";
+          const taken = this.takeOpaqueSequence(items, pos, {
+            attachBlock: true,
+          });
           return [
             {
-              end: pos + (attached ? 2 : 1),
+              end: taken.end,
               fields: [
                 entry(
-                  attached
-                    ? {
-                        kind: "sequence",
-                        items: [value, block],
-                        span: value.span,
-                      }
-                    : value,
+                  this.unwrapPatternOperand(taken.value),
                   items[pos].label,
                 ),
               ],
@@ -319,14 +314,34 @@ export class Grammar {
       };
     if (name === "Signature")
       return {
-        kind: "test",
+        kind: "reader",
         name,
-        test: (n) => {
-          if (n.kind === "sequence")
-            return n.items[0]?.kind === "symbol" && n.items[0].quoted;
-          let head: Syntax = n;
-          while (head.kind === "apply") head = head.head;
-          return head.kind === "symbol" && !head.quoted;
+        read: (items, pos) => {
+          const n = items[pos]?.value;
+          if (!n) return [];
+          if (this.microSignature(n) || this.sidefixSignature(n))
+            return [
+              {
+                end: pos + 1,
+                fields: [entry(n, items[pos].label)],
+                captures: new Map(),
+              },
+            ];
+          if (n.kind === "symbol" && n.quoted) {
+            const taken = this.takeOpaqueSequence(items, pos, {
+              stopBeforeBlock: true,
+              stopBeforeBody: true,
+            });
+            if (taken.end > pos)
+              return [
+                {
+                  end: taken.end,
+                  fields: [entry(taken.value, items[pos].label)],
+                  captures: new Map(),
+                },
+              ];
+          }
+          return [];
         },
       };
     if (["Expression", "Form", "Body", "Arms"].includes(name))
@@ -728,6 +743,108 @@ export class Grammar {
     const forms = emptyLayoutForms();
     for (const items of this.ruleSyntax.values()) addLayoutForm(forms, items);
     return forms;
+  }
+  /** Unquoted start/clause names that close an ungrouped sidefix pattern tail. */
+  private formStops(): Set<string> {
+    const stops = new Set<string>();
+    for (const [start, clauses] of this.layoutForms()) {
+      stops.add(start);
+      for (const clause of clauses) stops.add(clause);
+    }
+    return stops;
+  }
+  private microSignature(n: Syntax): boolean {
+    let head: Syntax = n;
+    while (head.kind === "apply") head = head.head;
+    return head.kind === "symbol" && !head.quoted;
+  }
+  private sidefixSignature(n: Syntax): boolean {
+    return n.kind === "sequence" &&
+      n.items[0]?.kind === "symbol" &&
+      !!n.items[0].quoted;
+  }
+  /** A one-line pattern block is the same operand as the inline line. */
+  private unwrapPatternOperand(n: Syntax): Syntax {
+    if (n.kind === "block" && n.lines.length === 1) {
+      const line = n.lines[0];
+      const inner =
+        line.kind === "sequence" && line.items.length === 1
+          ? line.items[0]
+          : line;
+      // A block whose only line is `...` is vertical spread, not a bare rest.
+      if (inner.kind === "symbol" && inner.name === "…") return n;
+      return inner;
+    }
+    return n;
+  }
+  /**
+   * Quoted-keyword sidefix tails used to be grouped as `(:assert x)`. The spaced
+   * `(` after a term is now illegal, so the same sequence is the remaining items.
+   * Macro signatures stop before an indented body.
+   */
+  private takeOpaqueSequence(
+    items: Field<Syntax>[],
+    pos: number,
+    options: {
+      attachBlock?: boolean;
+      stopBeforeBlock?: boolean;
+      stopBeforeBody?: boolean;
+    } = {},
+  ): { end: number; value: Syntax } {
+    const value = items[pos]!.value;
+    const block = items[pos + 1]?.value;
+    if (
+      options.attachBlock &&
+      value.kind === "symbol" &&
+      value.quoted &&
+      block?.kind === "block"
+    )
+      return {
+        end: pos + 2,
+        value: {
+          kind: "sequence",
+          items: [value, block],
+          span: value.span,
+        },
+      };
+    if (value.kind !== "symbol" || !value.quoted)
+      return { end: pos + 1, value };
+    const stops = this.formStops();
+    const seq: Syntax[] = [value];
+    let end = pos + 1;
+    while (end < items.length) {
+      const n = items[end].value;
+      if (
+        options.stopBeforeBlock &&
+        (n.kind === "block" ||
+          n.kind === "typedQuote" ||
+          n.kind === "template")
+      )
+        break;
+      if (
+        options.stopBeforeBody &&
+        (n.kind === "literal" || n.kind === "form")
+      )
+        break;
+      // Flattened program items from later rows are the next statement, not a
+      // continuation of an ungrouped `type :keyword …` / `macro :keyword …` tail.
+      if (
+        value.span?.line !== undefined &&
+        n.span?.line !== undefined &&
+        n.span.line !== value.span.line
+      )
+        break;
+      if (n.kind === "symbol" && !n.quoted && stops.has(n.name)) break;
+      seq.push(n);
+      end++;
+    }
+    return {
+      end,
+      value:
+        seq.length === 1
+          ? seq[0]
+          : { kind: "sequence", items: seq, span: value.span },
+    };
   }
   parse(
     source: string,

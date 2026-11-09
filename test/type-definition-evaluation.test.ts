@@ -36,7 +36,7 @@ test("named type declarations retain generated local accessors", () => {
   );
   assert.equal(
     run(
-      "def Positive (type :P(n :: Int)) .where (P(n) -> n > (0 :: Int))\np = P(3) :: Positive\np.n",
+      "def Positive where(type :P(n :: Int))(P(n) -> n > (0 :: Int))\np = P(3) :: Positive\np.n",
     ),
     "3",
   );
@@ -87,7 +87,7 @@ test("nested accessor names erase from portable type values", () => {
 test("registered syntax types keep nested accessor scopes private to their types", () => {
   assert.equal(
     run(
-      "def Left type :Left(x :: Int)\ndef Right type :Right(x :: Int)\ndef Outer type :Outer(Left,Right)\nmacro (:get (r :: Outer)) Code` 1\nget Outer(Left(2),Right(3))",
+      "def Left type :Left(x :: Int)\ndef Right type :Right(x :: Int)\ndef Outer type :Outer(Left,Right)\nmacro :get r :: Outer Code` 1\nget Outer(Left(2),Right(3))",
     ),
     "1",
   );

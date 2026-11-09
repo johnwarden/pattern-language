@@ -1,6 +1,8 @@
 # Test is inert data. The external test harness executes its Code body.
-def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
-def Test type (:test (name :: String) (code :: Code) :expect (expected :: ExpectedOutput))
+def ExpectedOutput type
+  (e :: Expression) ::: (type :: Expression)
+end
+def Test type :test name :: String code :: Code :expect expected :: ExpectedOutput
 
 t = Test`
   test "Typed code body"

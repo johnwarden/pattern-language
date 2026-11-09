@@ -6,7 +6,7 @@ test "Explicit factories supply defaults and complete typed values"
   expect rectangle(2, 3, color: "white") result Rect(2, 3, color: "white") :: Rectangle
   expect rectangle(2, 3).color result "black" :: String
 
-  assert (rectangle(2, 3) == (Rect(2, 3, color: "black") :: Rectangle))
+  assert rectangle(2, 3) == (Rect(2, 3, color: "black") :: Rectangle)
 end
 
 test "Declarations cannot rewrite symbolic construction"

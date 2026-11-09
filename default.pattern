@@ -2,10 +2,10 @@
 # Ordinary dot-infix application: a .f b -> f(a)(b).
 # Examples: T .where (x -> predicate(x)), value .matches (type :Some(Int)).
 # No words are reserved as infix operators.
-def Definition type :def (signature :: Signature) (body :: Body)
-def TypeExpression type :type (pattern :: PatternBody)
-def UnionTypeExpression type :unionType (pattern :: PatternBody)
-def IfExpression type :if (condition :: Expression) (consequent :: Body) :else (alternative :: Body)
-def MatchExpression type :match (subject :: Expression) (arms :: Arms)
+def Definition type :def signature :: Signature body :: Body
+def TypeExpression type :type pattern :: PatternBody
+def UnionTypeExpression type :unionType pattern :: PatternBody
+def IfExpression type :if condition :: Expression consequent :: Body :else alternative :: Body
+def MatchExpression type :match subject :: Expression arms :: Arms
 
-def MacroRegistration type :macro (signature :: Signature) (body :: Body)
+def MacroRegistration type :macro signature :: Signature body :: Body

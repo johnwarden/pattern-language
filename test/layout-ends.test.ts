@@ -16,7 +16,7 @@ const isUnexpectedEnd = (error: unknown) =>
 
 test("clause keywords come from the active grammar object, not a hardcoded else list", () => {
   const otherwise = new Grammar(
-    "def IfExpression type :if (condition :: Expression) (consequent :: Body) :otherwise (alternative :: Body)",
+    "def IfExpression type :if condition :: Expression consequent :: Body :otherwise alternative :: Body",
   ).layoutForms();
   parseSurface(
     `if True
@@ -75,7 +75,7 @@ end`,
 
 test("a grammar object's layout forms close probe/then without end", () => {
   const forms = new Grammar(
-    "def Probe type :probe (body :: Body) :then (result :: Expression)\ndef Hold type :hold (body :: Body)",
+    "def Probe type :probe body :: Body :then result :: Expression\ndef Hold type :hold body :: Body",
   ).layoutForms();
   parseSurface(
     `probe
@@ -119,10 +119,10 @@ end`,
 test("session macros make probe/then complete without end; hold still needs end", () => {
   const i = new Interpreter();
   i.run(
-    "macro (:probe (body :: Body) :then (result :: Expression)) Code$` $(result)",
+    "macro :probe body :: Body :then result :: Expression Code$` $(result)",
     "repl",
   );
-  i.run("macro (:hold (body :: Body)) Code$` $(body)", "repl");
+  i.run("macro :hold body :: Body Code$` $(body)", "repl");
   assert.equal(
     displayResults(
       i.run(
@@ -165,4 +165,18 @@ end`,
       ),
     isUnexpectedEnd,
   );
+});
+
+test("session hold rejects a wholly parenthesized operand and accepts a continuing group", () => {
+  const i = new Interpreter();
+  i.run("macro :hold x :: Expression Code$` $(x)", "repl");
+  assert.throws(
+    () => i.parse("hold (1)", "repl"),
+    (error: unknown) =>
+      error instanceof LanguageError &&
+      error.message.includes(
+        "a keyword operand cannot be a single parenthesized group",
+      ),
+  );
+  assert.equal(displayResults(i.run("hold (1) + 2", "repl")), "3");
 });

@@ -9,7 +9,9 @@ const read = (body: string) =>
   })[0];
 
 test("a todo result pack remains a trial instead of becoming playground output", () => {
-  const report = runTest(read("  todo (1, 2)"));
+  const report = runTest(
+    read("  todo\n    (1, 2)\n  end"),
+  );
   assert.equal(report.passed, false);
   assert.match(report.message, /setup now succeeds/);
 });

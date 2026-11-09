@@ -11,7 +11,7 @@ import {
 const run = (s: string) => displayResults(new Interpreter().run(s));
 const cases: [string, string, string][] = [
   ["function value", "f = () -> 42\nf", "<function>"],
-  ["empty results", "def f() ()\nf()", "()"],
+  ["empty results", "def f()\n  ()\nend\nf()", "()"],
   ["empty lambda", "f = x -> ()\nf(1)", "()"],
   ["multiple results", "f = x -> (x,x)\n(a,b) = f(3)\na + b", "6"],
   ["block result pack", "(a,b) =\n  y = 1\n  (y,y)\nend\na + b", "2"],
@@ -355,7 +355,7 @@ test("named matching ignores declaration and argument order", () => {
   for (const pattern of ["a: Int,z: Int", "z: Int,a: Int"]) {
     for (const args of ["a: 1,z: 2", "z: 2,a: 1"]) {
       assert.equal(
-        run(`def f(x,${pattern}) (x,a,z)\nf(9,${args})`),
+        run(`def f(x,${pattern})\n  (x,a,z)\nend\nf(9,${args})`),
         "(9, 1, 2)",
       );
       assert.equal(run(`(${pattern}) = (${args})\n(a,z)`), "(1, 2)");
@@ -642,7 +642,7 @@ test("equals binds only in a block interpretation", () => {
   assert.throws(() => run("R(z: (x = 1),a: x)"), /unbound name/);
   assert.throws(() => run("def f(x) x\nf(y = 1)"), /unbound name/);
   assert.equal(
-    run("def Syntax type (:=(Int)(Int))\n(:=(1)(2)) :: Syntax"),
+    run("def Syntax type\n  :=(Int)(Int)\nend\n(:=(1)(2)) :: Syntax"),
     "1 = 2",
   );
 });

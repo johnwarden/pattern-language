@@ -7,6 +7,18 @@ export interface BootstrapDeclaration {
   pattern: Syntax[];
 }
 
+/** A one-line indented pattern is the same operand as the inline line. */
+function unwrapGrammarPattern(pattern: Syntax[]): Syntax[] {
+  if (pattern.length !== 1 || pattern[0].kind !== "block") return pattern;
+  const block = pattern[0];
+  if (block.lines.length !== 1) return pattern;
+  const line = block.lines[0];
+  const inner =
+    line.kind === "sequence" && line.items.length === 1 ? line.items[0] : line;
+  if (inner.kind === "symbol" && inner.name === "…") return pattern;
+  return inner.kind === "sequence" ? inner.items : [inner];
+}
+
 /** Host seed reader. It uses only surface syntax, never the grammar it installs. */
 export function readBootstrap(source: string): BootstrapDeclaration[] {
   const root = parseSurface(source, "grammar");
@@ -26,6 +38,6 @@ export function readBootstrap(source: string): BootstrapDeclaration[] {
     const name = line.items[1];
     if (name.kind !== "symbol" || name.quoted || !/^\p{Lu}/u.test(name.name))
       throw new LanguageError("expected a type name", name.span);
-    return { name, pattern: line.items.slice(3) };
+    return { name, pattern: unwrapGrammarPattern(line.items.slice(3)) };
   });
 }

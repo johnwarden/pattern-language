@@ -17,7 +17,7 @@ test("duplicate captures are rejected across language contexts", () => {
     "def f(x,x: Int) x\n0",
     "match Pair(1,1)\n  Pair(x,x) -> x\nend",
     "type :Pair(x :: Int,x :: Int)",
-    "macro (:twice (x :: Expression) (x :: Expression)) Code` 0\n0",
+    "macro :twice x :: Expression x :: Expression Code` 0\n0",
   ])
     assert.throws(() => run(source), /duplicate capture/, source);
 });

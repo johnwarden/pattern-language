@@ -94,10 +94,10 @@ test("primitive lifting preserves the value's concrete interpretation", () => {
 });
 
 test("macro results require interpreted Code, not a similarly spelled tag", () => {
-  assert.equal(run("macro (:answer Args()) Code` 42\nanswer Args()"), "42");
-  assert.equal(run("macro (:answer Args()) Code` 42\nanswer Args()"), "42");
+  assert.equal(run("macro :answer Args() Code` 42\nanswer Args()"), "42");
+  assert.equal(run("macro :answer Args() Code` 42\nanswer Args()"), "42");
   assert.throws(
-    () => run("macro (:fake Args()) :Code(42)\nfake Args()"),
+    () => run("macro :fake Args()\n  :Code(42)\nend\nfake Args()"),
     (e: unknown) =>
       e instanceof LanguageError && e.diagnostic.code === "E_MACRO_RESULT",
   );
@@ -184,7 +184,7 @@ test("typed Code fields and abstract slots reconstruct without evaluation", () =
 
 test("Test data can contain typed Code and deferred expected syntax", () => {
   const source =
-    'def ExpectedOutput type (e :: Expression) ::: (type :: Expression)\ndef Test type (:test (name :: String) (code :: Code) :expect (expected :: ExpectedOutput))\nt = Test`\n  test "body"\n    x = 3\n    x + 1\n  end\n  expect 4 :: Int\nend\n';
+    'def ExpectedOutput type\n  (e :: Expression) ::: (type :: Expression)\nend\ndef Test type :test name :: String code :: Code :expect expected :: ExpectedOutput\nt = Test`\n  test "body"\n    x = 3\n    x + 1\n  end\n  expect 4 :: Int\nend\n';
   assert.equal(
     run(
       source +
@@ -243,7 +243,7 @@ test("facet inspection interprets captures without rewriting Code", () => {
 
 test("Code scalar patterns and scoped facet accessors use the shared matcher", () => {
   assert.equal(
-    run("match (Code` 42)\n  42 -> True\n  _ -> False\nend"),
+    run("match Code` 42\n  42 -> True\n  _ -> False\nend"),
     "True",
   );
   assert.equal(

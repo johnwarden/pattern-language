@@ -15,7 +15,7 @@ Type definitions, quotation, binding patterns and match patterns share this tree
 type Question String?
 q = "Does this actually work"? :: Question
 expect q result "Does this actually work"? :: Question
-match q (s :: String)?
+match q s :: String?
 expect s result "Does this actually work" :: String
 ```
 
@@ -77,7 +77,7 @@ promise of portable runtime environment/refinement serialization.
 type BooleanExpression(env :: LexicalEnvironment) refinement
   (expression :: Expression) env.typeOf(expression) is Bool
 end
-def expandMacro(env :: LexicalEnvironment)(:unless (condition :: BooleanExpression(env)) (body :: Body))
+def expandMacro(env :: LexicalEnvironment)(:unless condition :: BooleanExpression(env) body :: Body)
   Code$` if($condition, $zeroValue, $body)
 end
 ```
@@ -96,7 +96,7 @@ Field expressions evaluate normally; dollar holes are for quotations, not ordina
 variable references. No expected grammar means no arbitrary selection among DSLs.
 
 ```text
-def MyDsl type (:do String :with String)
+def MyDsl type :do String :with String
 x = MyDsl` do "Foo" with "bar"
 name = "bar"
 (y :: MyDsl) = do "Foo" with name

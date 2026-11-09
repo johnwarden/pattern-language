@@ -123,7 +123,7 @@ Some(3) .matches (type :Some(Int))`;
         : s.version! <= 3 &&
             s.grammar ===
               DEFAULT_GRAMMAR.replace(
-                "def UnionTypeExpression type :unionType (pattern :: PatternBody)\n",
+                "def UnionTypeExpression type :unionType pattern :: PatternBody\n",
                 "",
               )
           ? DEFAULT_GRAMMAR

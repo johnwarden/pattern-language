@@ -37,7 +37,7 @@ The following must reject with `E_MACRO_RUNTIME_CAPTURE` at registration:
 ```text
 def outer(x)
   (value: y = x) = ()
-  macro (:bad Args()) Code(:($y))
+  macro :bad Args() Code(:($y))
   (bad Args())
 end
 outer(7)
@@ -46,7 +46,7 @@ outer(7)
 ```text
 def outer(x)
   def build(value: e = x) Code(:($e))
-  macro (:bad Args()) build()
+  macro :bad Args() build()
   0
 end
 outer(7)
@@ -59,7 +59,7 @@ in the pattern is a capture rather than a read of the outer parameter:
 def outer(x)
   match :(1 :: 2)
     :(a :: x) ->
-      macro (:good Args()) Code(:($a))
+      macro :good Args() Code(:($a))
       (good Args())
     end
   end

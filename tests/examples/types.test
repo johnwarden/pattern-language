@@ -2,11 +2,11 @@ test "Canonical type alternatives"
   a = type :Red | :Black
   b = type :Black | :Red
 
-  assert (a == b)
+  assert a == b
   # Legacy blocked: public descriptor text is still provisional; retain normalization and round-trip checks.
   legacy expect toString(Type)(a) result "Type(:Black | :Red)" :: Expression
 
-  assert (parse(Type)(toString(Type)(a)) == b)
+  assert parse(Type)(toString(Type)(a)) == b
 
   ((a == b), toString(Type)(a), (parse(Type)(toString(Type)(a)) == b))
 end
@@ -50,7 +50,8 @@ test "Type fields and ignored captures"
   r = Rect(3, 4) :: Rectangle
   Rect(_, h) = r
 
-  expect (type Rectangle) result Type(Rect(Float, Float)) :: Type
+  observed = type Rectangle
+  expect observed result Type(Rect(Float, Float)) :: Type
   expect h result 4 :: Float
   ((type Rectangle), h)
 end
@@ -75,16 +76,20 @@ test "Local and global type text"
   # Legacy blocked: local alias policy and global descriptor spelling are still provisional.
   legacy expect global result "Type(Rect(Float, Float))" :: Expression
 
-  assert (parseLocal(Type)(local) == t)
+  assert parseLocal(Type)(local) == t
 
-  assert (parse(Type)(global) == t)
+  assert parse(Type)(global) == t
 
   (local, global, (parseLocal(Type)(local) == t), (parse(Type)(global) == t))
 end
 
 test "Mutually recursive mathematical expression types"
-  def Sum type (a :: MathExp) :+ (b :: MathExp)
-  def Product type (a :: MathExp) :* (b :: MathExp)
+  def Sum type
+    (a :: MathExp) :+ (b :: MathExp)
+  end
+  def Product type
+    (a :: MathExp) :* (b :: MathExp)
+  end
   def MathExp UnionType(Sum, Product, Symbol, Number)
   (one :: MathExp) = 1 :: Number
   (two :: MathExp) = 2 :: Number
@@ -93,9 +98,9 @@ test "Mutually recursive mathematical expression types"
   expression = (sum :* three) :: Product
   text = toString(Product)(expression)
 
-  assert (parse(Product)(text) == expression)
+  assert parse(Product)(text) == expression
 
-  assert (parse(Type)(toString(Type)(MathExp)) == MathExp)
+  assert parse(Type)(toString(Type)(MathExp)) == MathExp
 
   ((parse(Product)(text) == expression), (parse(Type)(toString(Type)(MathExp)) == MathExp))
 end
@@ -147,11 +152,11 @@ test "Types use ordinary value equality"
   tree = :Int
   value = 3 :: tree
 
-  assert (cached == tree)
+  assert cached == tree
 
-  assert (toString(Type)(cached) == toString(Type)(tree))
+  assert toString(Type)(cached) == toString(Type)(tree)
 
-  assert (parse(tree)(toString(tree)(value)) == value)
+  assert parse(tree)(toString(tree)(value)) == value
 
   ((cached == tree), (toString(Type)(cached) == toString(Type)(tree)), (parse(tree)(toString(tree)(value)) == value))
 end
@@ -191,9 +196,9 @@ test "Portable recursive type"
   # Legacy blocked: public recursive descriptor text is still provisional.
   legacy expect text result "Type(Recursive(:Nil | Cons(Int, Recur(0))))" :: Expression
 
-  assert (restored == t)
+  assert restored == t
 
-  assert (parse(restored)(toString(restored)(value)) == value)
+  assert parse(restored)(toString(restored)(value)) == value
 
   (text, (restored == t), (parse(restored)(toString(restored)(value)) == value))
 end
@@ -211,7 +216,7 @@ test "Ordinary factory with defaults"
 end
 
 test "Subset of an optional type"
-  def NoInt Int? .where (v -> v .matches :None)
+  def NoInt Int? .where v -> v .matches :None
   a = :None :: NoInt
   b = :None :: Int?
 
@@ -245,10 +250,13 @@ end
 test "Type normalization and wrappers"
   def Rect type Rect(Float, Float)
 
-  expect (type Int) result Int :: Type
-  expect (type type Int) result Int :: Type
+  observedInt = type Int
+  observedTypeInt = type type Int
+  observedTypeRect = type type Rect
+  expect observedInt result Int :: Type
+  expect observedTypeInt result Int :: Type
   expect Type(Int) result Type(Int) :: Type
-  expect (type type Rect) result Type(Rect(Float, Float)) :: Type
+  expect observedTypeRect result Type(Rect(Float, Float)) :: Type
   ((type Int), (type type Int), Type(Int), (type type Rect))
 end
 
@@ -257,9 +265,9 @@ test "Types as ordinary values"
   t = Type(Rect(Float, Float))
   Type(pattern) = t
 
-  assert (Type(pattern) == t)
+  assert Type(pattern) == t
 
-  assert (t == (type Rectangle))
+  assert t == (type Rectangle)
   # Legacy blocked: public descriptor text is still provisional.
   legacy expect toString(Type)(t) result "Type(Rect(Float, Float))" :: Expression
 
@@ -273,7 +281,7 @@ test "Inspect a typed code binding without evaluating it"
       _ -> False
     end
   end
-  def Binding Code .where (e -> isBinding(e))
+  def Binding Code .where e -> isBinding(e)
 
   code = Code` f = x -> x * 2
   (patternText, bodyText) =

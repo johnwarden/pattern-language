@@ -1,5 +1,5 @@
 test "User-defined hold still needs an aligned end"
-  macro (:hold (body :: Body)) Code$` $(body)
+  macro :hold body :: Body Code$` $(body)
 
   expect
     hold

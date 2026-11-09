@@ -11,7 +11,7 @@ test("surface syntax is independent of installed language forms", () => {
   if (surface.kind !== "block") return;
   assert.equal(surface.lines[0].kind, "sequence");
   const grammar = new Grammar(
-    "def Choice type :choose (a :: Expression) :otherwise (b :: Expression)",
+    "def Choice type :choose a :: Expression :otherwise b :: Expression",
   );
   const form = grammar.parseAs(source, "Form");
   assert.equal(form.kind, "form");
@@ -59,7 +59,7 @@ test("generic block elaboration does not impose the language's final-result poli
 
 test("bootstrap declarations can describe def without an installed def grammar", () => {
   const [declaration] = readBootstrap(
-    "def Definition type :def (signature :: Signature) (body :: Body)",
+    "def Definition type :def signature :: Signature body :: Body",
   );
   assert.equal(declaration.name.name, "Definition");
   assert.equal(declaration.pattern.length, 3);

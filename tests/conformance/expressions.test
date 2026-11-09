@@ -1,12 +1,15 @@
 test "arithmetic"
-  expect (1 :: Int) + (2 :: Int) result 3 :: Int
+  a = 1 :: Int
+  b = 2 :: Int
+
+  expect a + b result 3 :: Int
 end
 
 test "dot is function call"
   def b(x) y -> x + y
   a = 1 :: Int
 
-  expect a .b (2 :: Int) result 3 :: Int
+  expect a .b 2 :: Int result 3 :: Int
 end
 
 test "empty call"
@@ -22,14 +25,18 @@ test "explicit named function parameter"
 end
 
 test "multiple packs"
-  def f(x :: Int, y :: Int)(z :: Int) (x + y) * z
+  def f(x :: Int, y :: Int)(z :: Int)
+    (x + y) * z
+  end
   g = f(1, 2)
 
   expect g(3) result 9 :: Int
 end
 
 test "no eager execution"
-  def f() (1 / 0)
+  def f()
+    (1 / 0)
+  end
 
   expect 7 result 7 :: Rational
 end
@@ -42,7 +49,11 @@ test "parameter interpretation"
 end
 
 test "same precedence"
-  expect (2 :: Int) * (3 :: Int) + (4 :: Int) result 14 :: Int
+  a = 2 :: Int
+  b = 3 :: Int
+  c = 4 :: Int
+
+  expect a * b + c result 14 :: Int
 end
 
 test "single grouping"
