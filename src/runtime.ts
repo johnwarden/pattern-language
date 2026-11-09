@@ -16,11 +16,7 @@ import {
 } from "./availability.ts";
 import { lowerBlock, lowerStatement } from "./lowering.ts";
 import type { Core } from "./lowering.ts";
-import {
-  addLayoutKeywords,
-  emptyLayoutForms,
-  parseSurface,
-} from "./parser.ts";
+import { addLayoutKeywords, emptyLayoutForms, parseSurface } from "./parser.ts";
 import type { LayoutForms } from "./parser.ts";
 import {
   quote,
@@ -364,7 +360,7 @@ export class Interpreter {
     const local = this.textDomain(this.env);
     return inspectResults(
       results,
-      this.textDomain(),
+      local,
       (type) => valueText(type, local),
       (type) => valueText(type, local, undefined, true),
     );
@@ -787,8 +783,7 @@ export class Interpreter {
       scope.bindings.set("Symbol", symbol);
     }
     // Canonical primitive atoms have fixed language meanings.
-    for (const alias of ["Num", "Int64"])
-      scope.bindings.delete(alias);
+    for (const alias of ["Num", "Int64"]) scope.bindings.delete(alias);
     for (const name of constantNames)
       scope.bindings.set(name, this.boolean(name === "True"));
     for (const [name, value] of scope.bindings) {
@@ -3414,7 +3409,11 @@ export class Interpreter {
         for (const [name, binding] of scope.bindings) {
           if (seen.has(name)) continue;
           seen.add(name);
-          if (!isTypeCapture(name)) continue;
+          if (
+            !isTypeCapture(name) &&
+            !("kind" in binding && unwrap(binding).kind === "type")
+          )
+            continue;
           if ("kind" in binding) {
             const type = this.materializeType(binding);
             if (type) aliases.set(name, type);
@@ -3425,9 +3424,9 @@ export class Interpreter {
         }
     }
     const references = new Map<unknown, string>();
-    for (const [name, type] of [...aliases].sort(
-      ([a], [b]) => b.length - a.length || (a < b ? 1 : -1),
-    ))
+    for (const [name, type] of [...aliases]
+      .filter(([name]) => isTypeCapture(name))
+      .sort(([a], [b]) => b.length - a.length || (a < b ? 1 : -1)))
       references.set(type.key, name);
     return {
       type: (d) => this.structuralType(d),
@@ -3436,9 +3435,24 @@ export class Interpreter {
       localName: env
         ? (type) => {
             if (type.declaration && available(type)) return type.name;
-            return [...aliases]
+            const exact = [...aliases]
               .sort(([a], [b]) => a.length - b.length || (a < b ? -1 : 1))
-              .find(([, t]) => typeIdentity(t) === typeIdentity(type))?.[0];
+              .filter(([, t]) => typeIdentity(t) === typeIdentity(type));
+            const typeName = exact.find(([name]) => isTypeCapture(name))?.[0];
+            if (typeName) return typeName;
+            // Ordinary bindings can stand for a nonportable whole type in this
+            // same scope. Keep structural output for representable types.
+            try {
+              typeDescription(type);
+            } catch (error) {
+              if (
+                error instanceof LanguageError &&
+                error.diagnostic.code === "E_TYPE_SERIALIZATION"
+              )
+                return exact[0]?.[0];
+              throw error;
+            }
+            return undefined;
           }
         : undefined,
       localType: env ? (name) => aliases.get(name) : undefined,
@@ -3794,8 +3808,7 @@ export class Interpreter {
       const value = field.value;
       return {
         ...field,
-        value:
-          value.kind === "view" ? { ...value, provisional: true } : value,
+        value: value.kind === "view" ? { ...value, provisional: true } : value,
       };
     });
   }

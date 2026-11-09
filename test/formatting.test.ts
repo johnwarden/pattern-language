@@ -33,6 +33,11 @@ test("binary punctuation has one infix normal form and preserves syntax trees", 
     [":(a + b)", ":(a + b)"],
     ["[a + b, {c * d}]", "[a + b, {c * d}]"],
     ["a .plus b", "plus(a)(b)"],
+    ["::(+(a)(+(b)(c)))(Type)", "(a + b + c) :: Type"],
+    ["::(+(+(a)(b))(c))(Type)", "((a + b) + c) :: Type"],
+    ["::(f(a + b)(c * d))(Type)", "f(a + b)(c * d) :: Type"],
+    ["+(a)(+(b)(c))", "a + b + c"],
+    ["+(+(a)(b))(c)", "(a + b) + c"],
   ];
   for (const [source, expected] of cases) {
     const tree = parseExpression(source);

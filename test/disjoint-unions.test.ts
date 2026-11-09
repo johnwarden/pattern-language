@@ -71,7 +71,7 @@ test("ordinary recursive expression grammar exposes concrete applications and sy
   const i = new Interpreter();
   assert.equal(
     i.inspect(i.run(expression + "ValueExpr` a + b")),
-    "a + b :: Application",
+    "(a + b) :: Application",
   );
   assert.equal(
     run(

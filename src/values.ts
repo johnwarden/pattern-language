@@ -506,13 +506,16 @@ export function inspectResults(
               domain ? payload : raw,
               domain,
               domain ? type : undefined,
+              false,
+              true,
             );
     } catch (error) {
       if (
         !(error instanceof LanguageError) ||
         !["E_VALUE_SERIALIZATION", "E_TYPE_SERIALIZATION"].includes(
           error.diagnostic.code,
-        )
+        ) ||
+        raw.kind === "type"
       )
         throw error;
       text = display(payload);

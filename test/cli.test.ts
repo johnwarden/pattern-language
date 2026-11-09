@@ -44,3 +44,41 @@ test("parse-only output remains surface syntax and errors retain source location
   assert.equal(failed.status, 1);
   assert.match(failed.stderr, /stdin:2:5/);
 });
+
+test("program and REPL group annotated infix values before the type tag", () => {
+  const source = ":(a + (b + c))";
+  const program = invoke(source);
+  const repl = invoke(source + "\n:quit\n", "--repl");
+  assert.equal(program.status, 0, program.stderr);
+  assert.equal(program.stdout, "(a + b + c) :: Expression\n");
+  assert.equal(repl.status, 0, repl.stderr);
+  assert.equal(repl.stdout, program.stdout);
+
+  const left = invoke(":((a + b) + c)");
+  assert.equal(left.status, 0, left.stderr);
+  assert.equal(left.stdout, "((a + b) + c) :: Expression\n");
+  const pack = invoke("(:(a + b), second: :(c * d))");
+  assert.equal(pack.status, 0, pack.stderr);
+  assert.equal(
+    pack.stdout,
+    "((a + b) :: Expression, second: (c * d) :: Expression)\n",
+  );
+});
+
+test("CLI local text uses exact aliases, and unaliased refinements fail explicitly", () => {
+  const named = invoke(
+    "type Rectangle concrete Rect(width :: Int, height :: Int)\n" +
+      "square = Rectangle .where (s -> width(s) == height(s))\n" +
+      "square",
+  );
+  assert.equal(named.status, 0, named.stderr);
+  assert.equal(named.stdout, "square :: Type\n");
+
+  const anonymous = invoke(
+    "type Rectangle concrete Rect(width :: Int, height :: Int)\n" +
+      "Rectangle .where (s -> width(s) == height(s))",
+  );
+  assert.equal(anonymous.status, 1);
+  assert.match(anonymous.stderr, /portable predicate description/);
+  assert.doesNotMatch(anonymous.stdout, /type where/);
+});
