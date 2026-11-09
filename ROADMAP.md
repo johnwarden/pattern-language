@@ -90,8 +90,8 @@ optional; that is separate from the parser destination, which is Expression.
 The reference is TypeScript prototype 0.2. `tests/**/*.test` is the executable
 language corpus; runnable playground programs come from `tests/examples/`.
 `just check` runs the complete gate. `just test-language` reports passing assertions,
-legacy assertions and expected todo failures separately; totals are not duplicated
-through this document.
+legacy assertions and expected todo failures separately. Do not copy those
+figures into this document.
 
 | Implemented foundation | Boundary |
 | --- | --- |
@@ -211,9 +211,11 @@ feature is implemented merely by storing or attempting its assertion.
 
 The suite includes C01–C27, the distinct postfix regression, and the
 explicit-end layout contracts. The Widget observation is already an ordinary
-passing contract. C03's supported Float32/Float64 designation and C19's empty/singleton
-rest checks have no todo. C27 remains exploratory. Current bootstrap observations
-are explicitly legacy where they depend on raw Expression behavior.
+passing contract. C03's supported Float32/Float64 designation, C19's empty/singleton
+rest checks, C24's successive-pack results and C25's equal-precedence infix have no
+todo on those supported checks. C24 still records the intended two-result capture
+error; C27 remains exploratory. Current bootstrap observations are explicitly
+legacy where they depend on raw Expression behavior.
 
 Original source cases retain their intended payloads, with inaccurate type
 and expected-spelling assertions fixed. Migrated binding/default host tests
@@ -378,7 +380,7 @@ cases, the compiler rebuilds itself, and remaining host primitives/build steps a
 ## Evidence and guardrails
 
 Keep positive, negative and cross-context cases in the shared language corpus; keep
-host invariants where they can be checked meaningfully. Pending counts expose intended
+host invariants where they can be checked meaningfully. Pending todos expose intended
 coverage gaps instead of hiding them as passes. Public playground examples are executable
 cases, not promises copied from the design record. Changes to ambiguous union policy,
 primitive interpretation or accessors must replace obsolete expectations deliberately.

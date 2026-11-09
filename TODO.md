@@ -12,7 +12,7 @@ subset, not completion of the revised design.
 - [x] Exact/open fields, independent rest axes and binding-only defaults.
 - [x] Structural type descriptions, abstract slots/facets and supported typed text.
 - [x] Explicit sidefix registration, typed quotation/interpolation and diagnostics.
-- [x] Shared source corpus, executable playground examples and named design cases C01–C27. Run `just test-language` for current case/assertion totals.
+- [x] Shared source corpus, executable playground examples and named design cases C01–C27. `just test-language` reports the current suite.
 - [x] Recursive declaration groups, rollback, portable recursive descriptions and inspection.
 - [x] Vertical aggregate captures and bounded source Body grammar.
 - [x] Integrate the revised decision record into docs, with provisional/deferred status.
@@ -31,7 +31,7 @@ subset, not completion of the revised design.
 - [x] Retain DOM, transport, resource, metadata, API, transaction and build tests in TypeScript.
 - [x] Report passing assertions, legacy checks and todo expected failures separately; discovery only reads source.
 - [x] Keep executable playground options on the shared corpus; do not expose expected-failure assertions as runnable examples.
-- [x] Record final coverage mapping and actual counts. Do not require source code.evaluate.
+- [x] Record final coverage mapping. Do not require source code.evaluate.
 - [x] Pair settled legacy changes with executable todos; inventory/check unresolved replacements and promote stable assertions.
 
 ## Next: alignment, then subsequent language work
