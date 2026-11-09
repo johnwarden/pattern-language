@@ -136,9 +136,10 @@ spelling do not choose a concrete arithmetic family. `0f0.1` denotes the exact
 Rational selected by Float64 rounding of 0.1, rather than a Float64-typed value.
 `0f0.5` is exactly 1/2 and is eligible for exact Decimal32 designation.
 
-Finite fixed-precision types are concrete carveouts of representable Rational
-values. They have their own arithmetic, not inherited Rational arithmetic.
-Exact designation cannot silently round; converters return typed values directly.
+Float32, Float64, Int64 and similar widths are carveout types over the exact
+numeric space, not a precision lattice. They have their own arithmetic, not
+inherited Rational arithmetic. Exact designation cannot silently round;
+converters return typed values directly.
 
 ```text
 (0.5 :: Float32)       # exact designation
@@ -146,11 +147,25 @@ Exact designation cannot silently round; converters return typed values directly
 float32(0.1)           # explicit rounding, returns Float32
 ```
 
+The target definitions use `.where` refinement. Specials belong in the concrete
+union because Rational is not their superset; integer widths refine Int:
+
+```text
+type Float32 concrete NaN | Inf | Rational .where fitsFloat32
+type Float64 concrete NaN | Inf | Rational .where fitsFloat64
+type Int64 Int .where fitsInt64
+```
+
+Int, Float, Float32 and similar primitive atoms are an interim implementation.
+IEEE signed zero, NaN identity/payloads and finite-only versus IEEE-complete
+policy remain deferred. "Fixed-precision types/values" wording in D02, D04,
+ROADMAP core contracts, VISION and GRAMMAR.md should be revised to this model.
+
 Constant predicates may be proved; nonconstant designation requires evidence or an
 explicit checked operation. Runtime Rational arithmetic itself is optional. Numeric
-family aliases, complete precision sets, rounding edge/overflow policies and canonical
-spelling remain provisional. IEEE signed zero, NaN identity/payloads and infinities
-remain deferred; no finite-only or IEEE-complete policy is silently selected here.
+family aliases, complete format families, rounding edge/overflow policies and canonical
+spelling remain provisional. No finite-only or IEEE-complete policy is silently
+selected here.
 
 ## General unions and unambiguous grammars
 
