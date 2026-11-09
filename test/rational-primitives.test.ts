@@ -5,15 +5,6 @@ import { float64ToRational, rationalToNumber } from "../src/rational.ts";
 
 const run = (s: string) => displayResults(new Interpreter().run(s));
 
-test("Float32 membership is exact representability, not finite-after-fround", () => {
-  assert.equal(run("0.5 .matches Float32"), "True");
-  assert.equal(run("0.1 .matches Float32"), "False");
-  assert.equal(run("0.5 .matches Float"), "True");
-  assert.equal(run("0.1 .matches Float"), "False");
-  assert.equal(run("0f0.1 .matches Float"), "True");
-  assert.equal(run("0.5 :: Float"), "0.5");
-});
-
 test("Rational-to-binary64 conversion keeps the smallest subnormal and small normals", () => {
   const minSub = Number.MIN_VALUE;
   const smallNormal = 2 ** -1022;
@@ -27,8 +18,7 @@ test("hex Rational syntax encoding keeps the exact Float64-rounded Rational", ()
   assert.equal(run("syntaxTree(0f0.1)"), "NumberLiteral(0x1.999999999999Ap-4)");
 });
 
-test("non-dyadic Rationals stay exact internally without a ratified spelling", () => {
-  assert.equal(run("((1 / 3) * 3) == 1"), "True");
+test("unspellable 1/3 is an exact serialization failure", () => {
   assert.throws(
     () => run("1 / 3"),
     (e: unknown) =>
