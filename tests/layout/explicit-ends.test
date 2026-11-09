@@ -1,32 +1,31 @@
 test "An indented function cannot terminate at EOF"
-  expect parse '
-    def f(x)
-      x
-  error "E_BLOCK_END"
+  expect parse(Code)("def f(x)\n  x") error "E_BLOCK_END"
 end
 
 test "A nested block needs its own aligned end"
-  expect parse '
+  src = '
     main = x ->
       f = y ->
         y
       x
     end
     main
-  error "E_BLOCK_END"
+  end
+  expect parse(Code)(src) error "E_BLOCK_END"
 
-  expect parse '
+  src = '
     main = x ->
       f = y ->
         y
         x
     end
     main
-  error "E_BLOCK_END"
+  end
+  expect parse(Code)(src) error "E_BLOCK_END"
 end
 
 test "An expectation cannot borrow its enclosing test's end"
-  expect parse '
+  src = '
     test "outer"
       expect
         def f(x: Int = (1 / 0)) x
@@ -34,7 +33,8 @@ test "An expectation cannot borrow its enclosing test's end"
       result
         8 :: Int
     end
-  error "E_BLOCK_END"
+  end
+  expect parse(Code)(src) error "E_BLOCK_END"
 end
 
 test "A final end can close a string and its surrounding if"
@@ -75,35 +75,23 @@ test "Indentation around a completing clause does not change membership"
 end
 
 test "An indented operand without a later grammar clause needs end"
-  expect parse '
-    hold
-      True
-  error "E_BLOCK_END"
+  expect parse(Code)("hold\n  True") error "E_BLOCK_END"
 end
 
 test "Removing required infix spaces is an error"
-  expect parse '
-    a+b
-  error "infix operators require spaces"
+  expect parse(Code)("a+b") error "infix operators require spaces"
 end
 
 test "infix"
-  expect parse '
-    x + 
-  error "Missing second argument to infix operation"
+  expect parse(Code)("x + ") error "Missing second argument to infix operation"
 end
 
 test "An extra end after a complete inline clause is an error"
-  expect parse '
-    if True
-      1
-    else 2
-    end
-  error "E_UNEXPECTED_END"
+  expect parse(Code)("if True\n  1\nelse 2\nend") error "E_UNEXPECTED_END"
 end
 
 test "An extra end does not steal an enclosing block"
-  expect parse '
+  src = '
     f = x ->
       if True
         1
@@ -111,7 +99,8 @@ test "An extra end does not steal an enclosing block"
       end
       x
     end
-  error "E_UNEXPECTED_END"
+  end
+  expect parse(Code)(src) error "E_UNEXPECTED_END"
 end
 
 test "Quoted if/else branches share one end"
