@@ -39,7 +39,7 @@ assertion. Defaults, concrete accessor results, structural equality/round trips 
 pack distinctions now use ordinary checks where their behavior is supported.
 Arithmetic/rest/default examples establish concrete types when their purpose does
 not depend on raw Expression fallback. Settled future changes retain executed todo
-assertions; `just test-language` reports current totals. Unresolved replacements
+assertions; `just test-language` reports the current suite. Unresolved replacements
 are recorded individually and checked against the corpus.
 No failing placeholder is substituted for an unspecified target result.
 
@@ -51,7 +51,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Numeric exactness/conversion, overlapping unions and remaining type/evidence behavior | host and tests/numeric/*.test regressions; supported slices replace their corresponding legacy expectations |
 | Typed quotes, byte normalization and raw syntax encode/decode | quotation/source/syntax tests; host transport and coordinate checks remain |
 | Vertical matching, row keys, ambiguity, descriptor transfer | test/vertical-spread.test.ts; mixed source/representation assertions retained |
-| Canonical source behavior of the 14 former test/cases cases | test/source-suite.test.ts; canonicalizes then runs the same DSL expectation |
+| Canonical source behavior of the former test/cases suite | test/source-suite.test.ts; canonicalizes then runs the same DSL expectation |
 | Test schema round trips, execution/isolation traps, fixtures and error phases | test/test-suite.test.ts; checks the harness rather than language examples |
 | Recursive discovery, CLI process status and expected-failure reporting | test/test-cli.test.ts; needs filesystem/process observations |
 | Actual controls, sorting and old/new storage restoration | test/playground.test.ts; every executable example exercised through DOM controls |
@@ -62,7 +62,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Suffix wrap order, prefix `+Int`/`+(Int)` identity, tight `Int+` not prefix `+` | tests/specification/postfix-suffixes.test |
 
 No whole-file migration is claimed for candidate files outside the selected batch.
-Lower TypeScript-only counts do not imply lost semantic coverage; expected failures
+A smaller TypeScript-only suite does not imply lost semantic coverage; expected failures
 are not new passing assertions.
 
 ## Existing source cases
@@ -181,17 +181,17 @@ The source suite follows the author's direct-check style: numbered observation
 captures are removed, meaningful bindings stay near their uses, and sections/tests
 have blank-line separation. Actual multiple returns retain descriptive captures.
 The assertions and canonical expected payloads are unchanged. Legacy inventory
-subjects were rewritten in place; C01–C27 remain in `tests/specification`. The 76 playground
+subjects were rewritten in place; C01–C27 remain in `tests/specification`. Playground
 programs still use the same source cases and direct final result packs.
 
 The suite uses expect subject result value :: Type. Separate value/type clauses
-and the results pack form were removed. Fifty-seven pack expectations were split:
+and the results pack form were removed. Pack expectations were split:
 each call is destructured once, then each capture has its own result check or
 predicate assertion. Empty returns use an explicit destructuring assertion. Host
 coverage retains exact complete-pack label/arity observations rather than assuming
 separate checks prove every pack property.
 
-Higher assertion counts after splitting pack checks do not add language
+Splitting pack checks into per-capture assertions does not add language
 features. Playground examples remain runnable; final ordinary packs expose
 already captured results. Strict type/data checks and assertion-level modifiers are
 unchanged. Canonical printer goldens were adjusted only for comma spacing, preserving

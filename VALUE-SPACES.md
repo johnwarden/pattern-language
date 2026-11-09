@@ -192,8 +192,9 @@ type descriptions, macro signatures and DSL grammars. Roles add explicit policy:
 
 Different names for equal descriptors do not inherently break functional equality.
 The replacement policy for duplicate local declarations, imported accessor bundles
-and preferred display names remains unresolved; the prototype's blanket ban is not
-silently retained as a final rule.
+and preferred display names is deferred. The author explicitly retains equivalent
+declarations and accessor collisions as errors for now. This temporary guard does
+not block capture-free type construction or independently scoped structural interop.
 
 Typed keyword remainders and mirrored vertical spreading are intended extensions.
 The remainder is an actual typed record preserving labels and field types; it is
@@ -250,6 +251,6 @@ how all cases execute. Assertions can be ordinary, legacy (must pass until retir
 or todo (must fail; a pass demands removal of todo). These are assertion modifiers,
 not alternate kinds of test or value. Every value expectation checks the observed
 result type as well as value identity. No assertion grants proof facts to another.
-The suite has 128 executing cases, 249 passing assertions (70 legacy), and 117 todo
-expected failures. Those outcomes do not implement the revised evidence or projection
+`just test-language` reports the current suite, including legacy checks and
+expected todo failures. Those outcomes do not implement the revised evidence or projection
 checker. Program CLI output uses the annotated REPL display.
