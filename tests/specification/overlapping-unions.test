@@ -33,16 +33,14 @@ test "Union text omits :: when untagged print reconstructs the same member and v
   (x :: Unique) = 3 :: Int
   omitted = toString(Unique)(x)
 
-  legacy expect omitted result "3" :: Expression
-  todo expect omitted result "3" :: String
+  expect omitted result "3" :: String
   assert parse(Unique)(omitted) == x
 
   def Mixed UnionType(type Int, type Float)
   (y :: Mixed) = 0.5 :: Float
   uniqueFloat = toString(Mixed)(y)
 
-  legacy expect uniqueFloat result "0.5" :: Expression
-  todo expect uniqueFloat result "0.5" :: String
+  expect uniqueFloat result "0.5" :: String
   assert parse(Mixed)(uniqueFloat) == y
 end
 
@@ -53,10 +51,8 @@ test "Union text keeps :: when untagged print is ambiguous or a different value"
   ambiguous = toString(EitherFloat)(a)
   differentValue = toString(EitherFloat)(c)
 
-  legacy expect ambiguous result "0.5 :: Float32" :: Expression
-  todo expect ambiguous result "0.5 :: Float32" :: String
-  legacy expect differentValue result "0x1.999999999999Ap-4 :: Float64" :: Expression
-  todo expect differentValue result "0x1.999999999999Ap-4 :: Float64" :: String
+  expect ambiguous result "0.5 :: Float32" :: String
+  expect differentValue result "0x1.999999999999Ap-4 :: Float64" :: String
   assert parse(EitherFloat)(ambiguous) == a
   assert parse(EitherFloat)(differentValue) == c
 
@@ -81,8 +77,7 @@ end
 test "UnionType text distinguishes Float64 from Float"
   t = UnionType(Float32, Float64)
 
-  legacy expect toString(Type)(t) result "UnionType(Float32, Float64)" :: Expression
-  todo expect toString(Type)(t) result "UnionType(Float32, Float64)" :: String
+  expect toString(Type)(t) result "UnionType(Float32, Float64)" :: String
   assert parse(Type)(toString(Type)(t)) == t
 end
 
@@ -102,7 +97,7 @@ test "Overlapping numeric and constructor unions construct"
 
   expect
     def A type :X(Int)
-    def B type :X(Number)
+    def B type :X(Float)
     UnionType(A, B)
   result UnionType(Type(X(Float)), Type(X(Int))) :: Type
 
@@ -128,8 +123,8 @@ test "Concrete duplicate alternatives still reject"
 end
 
 test "Overlapping abstract facet members retain spaces"
-  def Colored type :Rect(Number, Number, color: String)
-  def Rectangular type :Rect(w :: Number, h :: Number, **)
+  def Colored type :Rect(Float, Float, color: String)
+  def Rectangular type :Rect(w :: Float, h :: Float, **)
 
   expect UnionType(type Rectangular, type Colored) result UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
 end

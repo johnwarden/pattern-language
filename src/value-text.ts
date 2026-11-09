@@ -3,7 +3,12 @@ import {
   isSelfEvaluating,
   isCanonicalAtom,
 } from "./primitive-names.ts";
-import { parseExpression } from "./parser.ts";
+import {
+  emptyLayoutForms,
+  parseExpression,
+  parseSurface,
+  type LayoutForms,
+} from "./parser.ts";
 import { syntaxData, codeSource } from "./syntax-values.ts";
 import { LanguageError, normal } from "./syntax.ts";
 import type { Syntax } from "./syntax.ts";
@@ -26,6 +31,12 @@ import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
 
 const singleton = (value: Syntax) => [{ label: "_1", value }];
+/** Value text prints every symbol bare. Colon quotation is a code-domain form. */
+function quoteValueSymbol(name: string, expected?: TypeValue): boolean {
+  if (expected && ["Expression", "Code", "Body"].includes(expected.name))
+    return !isCanonicalAtom(name);
+  return false;
+}
 const reserved = new Set([
   "Type",
   "UnionType",
@@ -293,16 +304,7 @@ export function valueText(
       return {
         kind: "symbol",
         name: v.name,
-        quoted:
-          expected &&
-          [
-            "LowerCamelSymbol",
-            "UpperCamelSymbol",
-            "UpperSnakeSymbol",
-            "PunctuationSymbol",
-          ].includes(expected.name)
-            ? isSelfEvaluating(v.name)
-            : !isCanonicalAtom(v.name),
+        quoted: quoteValueSymbol(v.name, expected),
       };
     if (v.kind === "pack")
       return {
@@ -477,7 +479,7 @@ export function valueText(
                     ? {
                         kind: "symbol" as const,
                         name: f.value.name,
-                        quoted: true,
+                        quoted: !isSelfEvaluating(f.value.name),
                       }
                     : syntax(f.value),
             })),
@@ -503,19 +505,21 @@ export function parseValueText(
   text: string,
   domain: TextDomain,
   typeExpected = false,
-  allowLayout = false,
+  layoutForms?: LayoutForms,
 ): Value {
   const source = { name: "serialized value", text };
   const numeric = parseNumericSpelling(text);
   if (numeric && !typeExpected) return valRational(numeric.n, numeric.d);
-  let tree: Syntax;
-  try {
-    tree = parseExpression(text, allowLayout);
-  } catch (error) {
-    if (error instanceof LanguageError && error.diagnostic.primary)
-      error.diagnostic.primary.source = source;
-    throw error;
-  }
+  const forms = layoutForms?.size ? layoutForms : emptyLayoutForms();
+  const structural = !!(layoutForms?.size || layoutForms?.structural);
+  let tree = parseSurface(text, source.name, { layoutForms: forms });
+  if (tree.kind === "block" && tree.lines.length === 1) {
+    const line = tree.lines[0];
+    if (line.kind === "sequence" && line.items.length === 1)
+      tree = line.items[0];
+    else if (line.kind !== "sequence" && line.kind !== "form") tree = line;
+  } else if (tree.kind === "sequence" && tree.items.length === 1)
+    tree = tree.items[0];
   let work = 0;
   const positional = (
     n: Extract<Syntax, { kind: "apply" }>,
@@ -534,7 +538,8 @@ export function parseValueText(
       pattern &&
       n.kind !== "quote" &&
       !(n.kind === "symbol" && n.quoted) &&
-      !(n.kind === "apply" && n.head.kind === "symbol" && n.head.quoted)
+      !(n.kind === "apply" && n.head.kind === "symbol" && n.head.quoted) &&
+      !(n.kind === "symbol" && primitiveNames.has(n.name))
     ) {
       const alias = domain.localType?.(normal(n));
       if (alias) return alias;
@@ -546,16 +551,19 @@ export function parseValueText(
       return valRational(parsed.n, parsed.d);
     }
     if (n.kind === "quote") return decode(n.value, pattern);
-    if (n.kind === "symbol")
-      return !n.quoted && primitiveNames.has(n.name)
-        ? domain.type(sym(primitiveNames.get(n.name)!))
-        : sym(n.name);
-    if (n.kind === "block" && !pattern && allowLayout) return syntaxData(n);
+    if (n.kind === "symbol") return sym(n.name);
+    if (n.kind === "block" && !pattern && structural) return syntaxData(n);
     if (n.kind === "block" && n.lines.length === 1)
       return decode(n.lines[0], pattern);
     if (n.kind === "sequence" && n.items.length === 1)
       return decode(n.items[0], pattern);
-    if (n.kind === "sequence" && !pattern && allowLayout) return syntaxData(n);
+    if ((n.kind === "sequence" || n.kind === "form") && !pattern && structural)
+      return syntaxData(n);
+    if (n.kind === "pack")
+      return {
+        kind: "pack",
+        body: n.body.map((f) => ({ ...f, value: decode(f.value, pattern) })),
+      };
     if (n.kind === "postfix")
       return {
         kind: "postfix",
@@ -578,7 +586,7 @@ export function parseValueText(
         head: sym("Literal"),
         body: singleton(positional(n, 1)[0]).map((f) => ({
           ...f,
-          value: decode(f.value),
+          value: decode(f.value, pattern),
         })),
       };
     if (pattern && n.head.kind === "symbol" && n.head.name === "String")
@@ -688,8 +696,11 @@ export function parseValueText(
             return fail("Node requires a head and a braced argument body", n);
           return {
             kind: "term",
-            head: decode(head),
-            body: body.body.map((f) => ({ ...f, value: decode(f.value) })),
+            head: decode(head, pattern),
+            body: body.body.map((f) => ({
+              ...f,
+              value: decode(f.value, pattern),
+            })),
           };
         }
         if (
@@ -706,13 +717,18 @@ export function parseValueText(
       kind: "term",
       head:
         n.head.kind === "symbol" ? sym(n.head.name) : decode(n.head, pattern),
-      body: n.body.map((f) => ({ ...f, value: decode(f.value, pattern) })),
+      body: n.body.map((f) => ({
+        ...f,
+        value: decode(f.value, pattern),
+      })),
     };
   }
   function decodeType(n: Syntax): TypeValue {
     const local = domain.localType?.(normal(n));
     if (local) return local;
     const value = decode(n);
+    if (value.kind === "symbol" && primitiveNames.has(value.name))
+      return domain.type(value);
     if (value.kind !== "type")
       return fail("a serialized interpretation requires a type value", n);
     return value;

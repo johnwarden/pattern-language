@@ -72,7 +72,8 @@ A result check requires exactly one positional value, an equal observed type, an
 an equal expected value. A broad expected type is not a substitute for exact type
 identity. Expected data must have the canonical tree spelling for that type, modulo
 surface grouping/formatting normalization. In particular :Widget produces Widget
-in UpperCamelSymbol. Quoting Widget in that expected data rejects. The shared printer
+in UpperCamelSymbol: every symbol prints bare in value text, and colon quotation
+is a code form. Quoting Widget in that expected data rejects. The shared printer
 uses a space after every comma, without changing the content of string values.
 
 Use assert condition for predicates and assert condition == False for negative

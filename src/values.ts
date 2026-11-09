@@ -1,4 +1,3 @@
-import { isCanonicalAtom } from "./primitive-names.ts";
 import { displayString } from "./string-format.ts";
 import {
   LanguageError,
@@ -240,7 +239,7 @@ export function display(v: Value): string {
           ? formatRational(v.value)
           : String(v.value);
     case "symbol":
-      return isCanonicalAtom(v.name) ? v.name : ":" + v.name;
+      return v.name;
     case "term": {
       const body = (xs: Field<Value>[]) =>
         canonicalFields(xs)

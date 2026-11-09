@@ -36,12 +36,12 @@ test("discovery reads the source schema without executing subjects or expected t
 test("a companion todo does not remove a supported playground program", () => {
   const value = loadTests({
     "paired.test": `test "Literal migration"
-  legacy expect "hello" result "hello" :: Expression
-  todo expect "hello" result "hello" :: String
+  legacy expect Bool result Bool :: ReservedSymbol
+  todo expect Bool result Bool :: PrimitiveType
 end`,
   })[0];
   assert.equal(value.program, true);
-  assert.equal(value.source, '"hello"');
+  assert.equal(value.source, "Bool");
   const report = runTest(value);
   assert.equal(report.passed, true, report.message);
   assert.deepEqual(
@@ -53,10 +53,8 @@ test("playground output includes setup and its final pack, excluding future chec
   const value = loadTests({
     "paired.test": `test "Captured migration"
   (x, y) = ("a", "b")
-  legacy expect x result "a" :: Expression
-  todo expect x result "a" :: String
-  legacy expect y result "b" :: Expression
-  todo expect y result "b" :: String
+  expect x result "a" :: String
+  expect y result "b" :: String
   (x, y)
 end`,
   })[0];
@@ -73,7 +71,7 @@ end`,
 test("todo-only cases do not become executable examples", () => {
   const value = loadTests({
     "future.test": `test "Future only"
-  todo expect "hello" result "hello" :: String
+  todo expect Bool result Bool :: PrimitiveType
   ()
 end`,
   })[0];
@@ -85,7 +83,7 @@ test("expected values are data rather than expressions to evaluate", () => {
     true,
   );
   assert.equal(
-    runTest(sample('"Hello, $name"', 'result "Hello, $name" :: Expression'))
+    runTest(sample('"Hello, $name"', 'result "Hello, $name" :: String'))
       .passed,
     true,
   );
@@ -236,7 +234,7 @@ test("sidefix fields preserve deferred expected names inside typed quotes", () =
         "def Output type\n  (value :: Expression) ::: (expectedType :: Expression)\nend\ndef Expected type :expect subject :: Expression :result output :: Output\nt = Expected` expect missing() result 4 :: MissingType\n(t.output.value,t.output.expectedType)",
       ),
     ),
-    "(4, :MissingType)",
+    "(4, MissingType)",
   );
 });
 test("host calls preserve successive packs without exposing methods as values", () => {
@@ -430,7 +428,7 @@ test("assertions require a positional Bool result and preserve ordinary operator
 
 test("assert checks the Bool value space rather than a same-spelled constructor", () => {
   const r = run(
-    'test "Not Bool"\n def Flag type :True | :False\n flag = :True :: Flag\n assert flag\nend',
+    'test "Not Bool"\n def Flag type :Yes | :No\n flag = :Yes :: Flag\n assert flag\nend',
   );
   assert.equal(r.passed, false);
   assert.match(r.message, /requires Bool/);

@@ -21,3 +21,14 @@ test "ASCII word symbol classes"
   expect :PORT result PORT :: UpperSnakeSymbol
   expect :ERR_FILE_NOT_FOUND result ERR_FILE_NOT_FOUND :: UpperSnakeSymbol
 end
+
+test "ReservedSymbol is disjoint from ordinary symbol classes"
+  expect :Symbol result Symbol :: UpperCamelSymbol
+  expect :Number result Number :: UpperCamelSymbol
+  expect Int .matches UpperCamelSymbol result False :: Bool
+  expect Int .matches ReservedSymbol result True :: Bool
+  expect True .matches UpperCamelSymbol result False :: Bool
+  expect True .matches ReservedSymbol result False :: Bool
+  expect :Widget .matches Symbol result True :: Bool
+  expect Int .matches Symbol result False :: Bool
+end

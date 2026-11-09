@@ -19,7 +19,7 @@ end
 
 test "Source optional convention has unwrapped present values"
   expect "x" :: String? result "x" :: String?
-  expect :None :: String? result :None :: String?
+  expect :None :: String? result None :: String?
   expect Some("x") :: String? error "E_PATTERN_MISMATCH"
   expect "x"? error "E_NO_METHOD"
 end
@@ -36,7 +36,7 @@ end
 test "Another source postfix type convention"
   def (T :: Type)~ type T | :Absent
   expect 3 :: Int~ result 3 :: Int~
-  expect :Absent :: Int~ result :Absent :: Int~
+  expect :Absent :: Int~ result Absent :: Int~
 end
 
 test "Postfix type descriptions preserve matching after round trip"
@@ -93,5 +93,5 @@ test "Lifting remains a future source convention"
   (present :: Float?) = 4
   (absent :: Float?) = :None
   todo expect sqrt?(present) result 2 :: Float?
-  todo expect sqrt?(absent) result :None :: Float?
+  todo expect sqrt?(absent) result None :: Float?
 end

@@ -33,7 +33,7 @@ test("ordinary patterns inspect computed heads and complete argument packs", () 
   );
   assert.equal(
     run(source),
-    '("factory", 1, 2, "color", factory(1)(3, color: :Red), True)',
+    '("factory", 1, 2, "color", factory(1)(3, color: Red), True)',
   );
 });
 
@@ -103,6 +103,6 @@ test("typed tree text reconstructs in a fresh interpreter without provenance", (
         "(Tree :: Type) = syntaxSchema()\ntree = parse(Tree)(text)\nsyntaxExpression(tree)",
       ),
     ),
-    "f(1)(color: :Red)",
+    "f(1)(color: Red)",
   );
 });

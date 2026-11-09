@@ -20,7 +20,7 @@ const transfer = (text: string) => {
 test("type values construct, destructure, and rebuild using ordinary patterns", () => {
   assert.equal(
     run(
-      "def Rectangle type :Rect(w :: Number,h :: Number)\nt = Type(Rect(Float,Float))\nType(p) = t\n(Type(p) == t,t == (type Rectangle))",
+      "def Rectangle type :Rect(w :: Float,h :: Float)\nt = Type(Rect(Float,Float))\nType(p) = t\n(Type(p) == t,t == (type Rectangle))",
     ),
     "(True, True)",
   );
@@ -45,7 +45,7 @@ test("type values construct, destructure, and rebuild using ordinary patterns", 
 test("equal structural types have equal global text across names and capture names", () => {
   assert.equal(
     run(
-      "def left()\n  def A type :Rect(w :: Number,h :: Number)\n  type A\nend\ndef right()\n  def B type :Rect(x :: Number,y :: Number)\n  type B\nend\ntoString(Type)(left()) == toString(Type)(right())",
+      "def left()\n  def A type :Rect(w :: Float,h :: Float)\n  type A\nend\ndef right()\n  def B type :Rect(x :: Float,y :: Float)\n  type B\nend\ntoString(Type)(left()) == toString(Type)(right())",
     ),
     "True",
   );
@@ -142,7 +142,7 @@ test("primitive, union, list, labeled and capture-free type descriptions round t
   for (const pattern of [
     "Int",
     "Float32",
-    "Number",
+    "Float",
     "String",
     "Symbol",
     "Any",
@@ -156,9 +156,8 @@ test("primitive, union, list, labeled and capture-free type descriptions round t
     "[rest... :: Int*]",
     ":(Recursive(Int))",
     ":Literal(Int)",
-    ":Float64(Int)",
-    ":Float",
-    ":(Type(Int))",
+    "Float64(Int)",
+    "Type(Int)",
   ]) {
     assert.equal(
       run(`t = type (${pattern})
@@ -172,7 +171,7 @@ parse(Type)(toString(Type)(t)) == t`),
 test("typed value round trips retain nested concrete spaces and canonical labels", () => {
   assert.equal(
     run(
-      "def Rect type :Rect(w :: Number,h :: Number)\nx = Rect(3,4) :: Rect\nparse(Rect)(toString(Rect)(x)) == x",
+      "def Rect type :Rect(w :: Float,h :: Float)\nx = Rect(3,4) :: Rect\nparse(Rect)(toString(Rect)(x)) == x",
     ),
     "True",
   );
@@ -203,18 +202,18 @@ test("typed value round trips retain nested concrete spaces and canonical labels
 test("global text does not depend on names; local aliases resolve in the caller scope", () => {
   assert.equal(
     run(
-      "def Rectangle type :Rect(Number,Number)\nt = type Rectangle\n(toStringLocal(Type)(t),parseLocal(Type)(toStringLocal(Type)(t)) == t)",
+      "def Rectangle type :Rect(Float,Float)\nt = type Rectangle\n(toStringLocal(Type)(t),parseLocal(Type)(toStringLocal(Type)(t)) == t)",
     ),
     '("Rectangle", True)',
   );
   const source =
-    "def Rectangle type :Rect(Number,Number)\nt = type Rectangle\ndef f()\n  def Rectangle type :Other\n  (toStringLocal(Type)(t),parseLocal(Type)(toStringLocal(Type)(t)) == t)\nend\nf()";
+    "def Rectangle type :Rect(Float,Float)\nt = type Rectangle\ndef f()\n  def Rectangle type :Other\n  (toStringLocal(Type)(t),parseLocal(Type)(toStringLocal(Type)(t)) == t)\nend\nf()";
   assert.equal(run(source), '("Type(Rect(Float, Float))", True)');
   assert.equal(
     run(
-      'def Rectangle type :Rect(Number,Number)\nparseLocal(Symbol)("Rectangle")',
+      'def Rectangle type :Rect(Float,Float)\nparseLocal(Symbol)("Rectangle")',
     ),
-    ":Rectangle",
+    "Rectangle",
   );
 });
 
@@ -254,8 +253,8 @@ test("data constructor names and empty applications remain ordinary distinct dat
     term("Foo"),
     valSymbol("[]"),
     term("[]"),
-    term("Type", valSymbol("Number")),
-    term("Primitive", valSymbol("Number")),
+    term("Type", valSymbol("Widget")),
+    term("Primitive", valSymbol("Widget")),
     term("String", valLiteral(12)),
     term("Node", valLiteral(2)),
     term("-", valLiteral(1)),
@@ -287,7 +286,7 @@ test("explicit Type wrappers and primitive atoms have different value trees", ()
     "(False, True)",
   );
   assert.equal(
-    run("(Type(Float) == (type :Float),Float == Type(Float))"),
+    run("(Type(Float) == (type Float),Float == Type(Float))"),
     "(False, False)",
   );
 });
@@ -296,7 +295,7 @@ test("primitive text is independent of lexical primitive bindings", () => {
   const i = new Interpreter();
   i.env.bindings.delete("Int");
   assert.equal(
-    displayResults(i.run("parse(Type)(toString(Type)(Int)) == Int")),
+    displayResults(i.run("parse(Type)(toString(Type)(Int)) == (type Int)")),
     "True",
   );
   assert.throws(
@@ -307,7 +306,7 @@ test("primitive text is independent of lexical primitive bindings", () => {
 
 test("referenced types remain nested values in unions and constructor fields", () => {
   const source =
-    "def Circle type :Circle(Number)\ndef Square type :Square(Number)\nshape = UnionType(type Circle,type Square)\n";
+    "def Circle type :Circle(Float)\ndef Square type :Square(Float)\nshape = UnionType(type Circle,type Square)\n";
   assert.equal(
     run(source + "shape"),
     "UnionType(Type(Circle(Float)), Type(Square(Float)))",
@@ -324,11 +323,11 @@ test("referenced types remain nested values in unions and constructor fields", (
     "(True, True)",
   );
   assert.equal(
-    run("def Circle type :Circle(Number)\ntype :Box(Circle)"),
+    run("def Circle type :Circle(Float)\ntype :Box(Circle)"),
     "Type(Box(Type(Circle(Float))))",
   );
   assert.equal(
-    run(source + "shape == (type :Circle(Number) | :Square(Number))"),
+    run(source + "shape == (type :Circle(Float) | :Square(Float))"),
     "False",
   );
 });
@@ -473,13 +472,13 @@ test("restored structural types use independently declared local accessors", () 
   const i = new Interpreter();
   const text = stringResult(
     i,
-    "def Foreign type :Rect(x :: Number,y :: Number)\ntoString(Any)(Rect(3,4) :: Foreign)",
+    "def Foreign type :Rect(x :: Float,y :: Float)\ntoString(Any)(Rect(3,4) :: Foreign)",
   );
   const j = transfer(text);
   assert.equal(
     displayResults(
       j.run(
-        "def Local type :Rect(width :: Number,height :: Number)\nr = parse(Any)(text)\n(r.width,r.height)",
+        "def Local type :Rect(width :: Float,height :: Float)\nr = parse(Any)(text)\n(r.width,r.height)",
       ),
     ),
     "(3, 4)",

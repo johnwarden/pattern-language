@@ -113,7 +113,7 @@ test "Quoted if/else branches share one end"
     else '
       there
     end
-  result "Hello" :: Expression
+  result "Hello" :: String
 
   expect
     if 1 == 0 '
@@ -121,7 +121,7 @@ test "Quoted if/else branches share one end"
     else '
       there
     end
-  result "there" :: Expression
+  result "there" :: String
 
   source = "if 1 == 1 '\n    Hello\nelse '\n    there\nend"
 

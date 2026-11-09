@@ -109,8 +109,8 @@ test("matches evaluates both arguments and uses the shared pattern specification
     "True",
   );
   assert.equal(run("(:x .matches :x,42 .matches :x)"), "(True, False)");
-  assert.equal(run("(1 :: Number) .matches (type Int)"), "False");
-  assert.equal(run("(1 :: Number) .matches (1 :: Int)"), "False");
+  assert.equal(run("(1 :: Float) .matches (type Int)"), "False");
+  assert.equal(run("(1 :: Float) .matches (1 :: Int)"), "False");
   assert.equal(run("Some(3) .matches :Some(Int)"), "False");
   assert.equal(run("p = :(f(missing))\n:(f(missing)) .matches p"), "True");
 });
@@ -148,7 +148,7 @@ test("ordinary dispatch reports competing where and matches definitions", () => 
 
 test("bad refinement arguments and predicate results are diagnosed at the call", () => {
   errorCode("3 .where (x -> True)", "E_EXPECTED_TYPE");
-  errorCode("(type Number) .where 3", "E_EXPECTED_PREDICATE");
+  errorCode("(type Float) .where 3", "E_EXPECTED_PREDICATE");
   errorCode(
     "def Bad\n  (type Int) .where (x -> 7)\nend\n1 :: Bad",
     "E_PREDICATE_RESULT",

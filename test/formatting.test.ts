@@ -46,18 +46,18 @@ test("binary punctuation has one infix normal form and preserves syntax trees", 
 
 test("quoted expression values use the same punctuation notation and round trip as data", () => {
   for (const [source, expected] of [
-    ["n -> n < 5", ":n -> :n < 5"],
-    ["(a + b) * c", "(:a + :b) * :c"],
-    ["a + b * c", ":a + :b * :c"],
-    ["(a, b) + (c, d)", "(:a, :b) + (:c, :d)"],
-    ["(a, z: 3, b: 2) + (y: 4)", "(:a, b: 2, z: 3) + (y: 4)"],
-    ["x -> ()", ":x -> ()"],
+    ["n -> n < 5", "n -> n < 5"],
+    ["(a + b) * c", "(a + b) * c"],
+    ["a + b * c", "a + b * c"],
+    ["(a, b) + (c, d)", "(a, b) + (c, d)"],
+    ["(a, z: 3, b: 2) + (y: 4)", "(a, b: 2, z: 3) + (y: 4)"],
+    ["x -> ()", "x -> ()"],
     ["() + ()", "() + ()"],
-    ["+(a)", "+(:a)"],
-    ["+(a, b)", "+(:a, :b)"],
-    ["(*) + b", "(:*) + :b"],
-    ["(a + b)(c)", "(:a + :b)(:c)"],
-    ["[a + b, {c * d}]", "[:a + :b, {:c * :d}]"],
+    ["+(a)", "+(a)"],
+    ["+(a, b)", "+(a, b)"],
+    ["(*) + b", "(*) + b"],
+    ["(a + b)(c)", "(a + b)(c)"],
+    ["[a + b, {c * d}]", "[a + b, {c * d}]"],
   ]) {
     const displayed = run(":(" + source + ")");
     assert.equal(displayed, expected, source);
@@ -87,7 +87,7 @@ test("canonical commas have one following space without changing string contents
   );
   assert.equal(
     run("Rectangle(2, 3, color: :Black)"),
-    "Rectangle(2, 3, color: :Black)",
+    "Rectangle(2, 3, color: Black)",
   );
   assert.equal(
     normal(parseExpression("[1, {x: 2, y: 3}]")),

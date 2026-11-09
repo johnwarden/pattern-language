@@ -1,12 +1,130 @@
 test "C01 intrinsic primitive values"
   expect True result True :: Bool
-  legacy expect "hello" result "hello" :: Expression
-  todo expect "hello" result "hello" :: String
+  expect False result False :: Bool
+  expect Int result Int :: ReservedSymbol
+  expect "hello" result "hello" :: String
   expect 5 result 5 :: Rational
   expect :Widget result Widget :: UpperCamelSymbol
-  legacy expect Bool result Bool :: Type
-  todo expect Bool result Bool :: PrimitiveType
+  expect :foo result foo :: LowerCamelSymbol
+  expect :Symbol result Symbol :: UpperCamelSymbol
+  expect Int .matches ReservedSymbol result True :: Bool
+  expect Int .matches UpperCamelSymbol result False :: Bool
+  expect Int .matches Symbol result False :: Bool
+  expect True .matches UpperCamelSymbol result False :: Bool
+  expect True .matches ReservedSymbol result False :: Bool
+  expect False .matches Bool result True :: Bool
+  expect :Widget .matches UpperCamelSymbol result True :: Bool
+  expect :Widget .matches ReservedSymbol result False :: Bool
+  expect :Widget .matches Symbol result True :: Bool
+  expect :foo .matches Symbol result True :: Bool
+  expect
+    (type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)
+  result True :: Bool
+  legacy expect
+    type Bool
+  result Bool :: Type
+  todo expect
+    type Bool
+  result Bool :: PrimitiveType
   todo expect PrimitiveType result PrimitiveType :: PrimitiveType
+end
+
+test "Literal and computed Booleans share one Bool type"
+  expect True == (1 == 1) result True :: Bool
+  expect True != (1 == 1) result False :: Bool
+  expect (1 == 1) == True result True :: Bool
+  expect (1 == 1) != True result False :: Bool
+  expect True == (1 == 2) result False :: Bool
+  expect True != (1 == 2) result True :: Bool
+  expect (1 == 2) == True result False :: Bool
+  expect (1 == 2) != True result True :: Bool
+  expect False == (1 == 1) result False :: Bool
+  expect False != (1 == 1) result True :: Bool
+  expect (1 == 1) == False result False :: Bool
+  expect (1 == 1) != False result True :: Bool
+  expect False == (1 == 2) result True :: Bool
+  expect False != (1 == 2) result False :: Bool
+  expect (1 == 2) == False result True :: Bool
+  expect (1 == 2) != False result False :: Bool
+  expect
+    True == Int
+  error "E_INCOMPARABLE_TYPES"
+  t = type True | False
+  assert parse(Type)(toString(Type)(t)) == t
+end
+
+test "Match arms use bare True and False"
+  expect
+    match 1 == 1
+      True -> "yes"
+      False -> "no"
+    end
+  result "yes" :: String
+  expect
+    match True
+      True -> "yes"
+      False -> "no"
+    end
+  result "yes" :: String
+  expect
+    match 1 == 2
+      True -> "yes"
+      False -> "no"
+    end
+  result "no" :: String
+  expect
+    match 1 == 1
+      :True -> "yes"
+      _ -> "no"
+    end
+  error "E_QUOTED_PRIMITIVE"
+  expect
+    match False
+      :False -> "yes"
+      _ -> "no"
+    end
+  error "E_QUOTED_PRIMITIVE"
+end
+
+test "Quoted primitive names in Code"
+  expect :Int error "E_QUOTED_PRIMITIVE"
+  expect :True error "E_QUOTED_PRIMITIVE"
+  expect Int == :Int error "E_QUOTED_PRIMITIVE"
+  expect :String(:A) error "E_QUOTED_PRIMITIVE"
+  expect
+    type :Int
+  error "E_QUOTED_PRIMITIVE"
+  expect
+    type :String(:A)
+  error "E_QUOTED_PRIMITIVE"
+  assert (type String(:A)) == Type(Apply(Literal(String), Fields(:A)))
+  expect :(Int) result Int :: Expression
+  expect parse(Code)(":Int") result :Int :: Code
+  expect parse(Code)(":(Int)") result :(Int) :: Code
+  todo expect parse(Code)(":Foo") result :Foo :: QuotedSymbol
+  todo expect parse(Code)(":(Int)") result :(Int) :: QuotedSymbol
+  todo expect parse(Code)(":Int") error "a quoted primitive is not a Symbol"
+end
+
+test "String operations keep intrinsic String identity"
+  expect "a" + "b" result "ab" :: String
+  expect toString(Rational)(0.1) result "0.1" :: String
+  s = "x"
+  expect s result "x" :: String
+  def echo(t) t
+  expect echo("hi") result "hi" :: String
+  (first, second) = ("a", "b")
+  expect first result "a" :: String
+  expect second result "b" :: String
+  expect ["hello"] .matches (type [_... :: String*]) result True :: Bool
+  expect "hello" .matches String result True :: Bool
+  expect
+    "hello" :: Int
+  error "expected Int"
+  expect
+    1 < "a"
+  error "E_INCOMPARABLE_TYPES"
+  expect parse(String)(toString(String)("hi")) result "hi" :: String
 end
 
 test "C02 exact Rational literal meanings"

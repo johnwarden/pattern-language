@@ -14,21 +14,23 @@ describes the implemented model; the drafts under design/ are not specifications
 ## Ordinary names and ordinary application
 
 Primitive type atoms are self-evaluating language values: Rational, Int, Float, Float32, Float64, Bool,
-String, Symbol, Expression, Body, Any, and Type. Number is an accepted alias for
-Float; global text always uses Float. Int currently uses JavaScript-safe integers,
+String, ReservedSymbol, Expression, Body, Any, and Type. `Symbol` is a prelude
+union of the intrinsic symbol classes, not a reserved primitive. There is no Number type yet. Int currently uses JavaScript-safe integers,
 Float uses finite Float64 arithmetic, and Float32 rounds explicitly.
 
 ```text
 r = Int
 r
-# Int :: Type in the REPL
+# Int :: ReservedSymbol in the REPL
 ```
 
 Other bare names resolve their lexical bindings. A bare unbound Foo is an error,
 not a literal symbol. A quoted :Foo is a symbol. Constructor applications such as
 Foo(1) use a tag head without requiring quotation. Defined functions, including
 native Type/Facet constructors and named type factories, still dispatch normally.
-True and False are self-evaluating language constants. NaN is not implemented.
+True and False are self-evaluating Bool constants, the same type as comparison
+results: `True == (1 == 1)` is `True`. They are not ReservedSymbol values.
+NaN is not implemented.
 
 ```text
 def Rect type Rect(Float,Float)
@@ -111,13 +113,12 @@ Duplicate/ambiguous alternatives remain errors.
 def Color type :Red | :Green
 (v :: :Green | :Red) = :Red
 v
-# :Red :: Color in the REPL
+# Red :: Color in the REPL
 ```
 
 Only one named declaration for an equal structural type identity may be visible.
 Primitive names are reserved. Independent scopes may use different names for equal
 types. References and ordinary variable bindings do not create a new declaration.
-The built-in Number spelling is an alias, not another user declaration.
 
 ## Captures, accessors and defaults
 
@@ -206,12 +207,12 @@ a type value is the factory call; print a type with toString(Type)(t). The domai
 are deliberately disjoint, rather than choosing a different overload implicitly.
 
 Playground Run and REPL inspection use local names for the result's type annotation, while a type
-value itself is displayed structurally. Boolean constants and built-in predicates produce interpreted Bool values without inference. Quoted :True remains symbolic data. Raw uninterpreted values show Expression;
+value itself is displayed structurally. Boolean constants and built-in predicates produce interpreted Bool values without inference. Evaluating quoted `:True` is `E_QUOTED_PRIMITIVE`. Raw uninterpreted values show Expression;
 there is still no general inference or implicit constructor-interpretation pass.
 Use r = Rect(2,2) :: Rect or (r :: Rect) = Rect(2,2) for a concrete interpretation.
 
-Bare symbolic data prints with colon quotation. This also affects symbolic variable
-atoms inside quoted expression trees. Parsing global data is inert: it never calls
+Ordinary symbols print bare in value text; colon quotation is a code form.
+Parsing global data is inert: it never calls
 functions, installs declarations or evaluates interpolation. Primitive atoms resolve
 against the fixed language vocabulary, not user lexical bindings.
 
@@ -292,8 +293,9 @@ category types remain subject to the general refinement serialization gap.
 
 ## Intrinsic symbols and disjoint type unions
 
-LowerCamelSymbol, UpperCamelSymbol and PunctuationSymbol are intrinsic classes.
-Symbol is their prelude union. A bare symbol literal receives its natural class;
+LowerCamelSymbol, UpperCamelSymbol, UpperSnakeSymbol and PunctuationSymbol are
+intrinsic classes. Symbol is their prelude union; ReservedSymbol and Bool are
+disjoint from those classes and from each other. A bare ordinary symbol receives its natural class;
 its immediate context can interpret it, while a stored typed variable cannot be
 silently converted to a different space. unionType A | B normalizes to UnionType(A,B).
 Union members must be provably disjoint in the supported structural subset. Shared

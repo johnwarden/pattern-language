@@ -22,7 +22,7 @@ const cases: [string, string, string][] = [
     '(x,foo: f) = (1,unused: 2,foo: "bar")\nf',
     '"bar"',
   ],
-  ["lowercase captures only", ":None = :None\n:None", ":None"],
+  ["lowercase captures only", ":None = :None\n:None", "None"],
   ["empty outfix", "[]", "[]"],
   [
     "repeated type",
@@ -52,16 +52,16 @@ const cases: [string, string, string][] = [
   [
     "recursive type",
     "def List(t :: Type) type :Nil | :Cons(t,List(t))\nCons(1,Cons(2,:Nil)) :: List(Int)",
-    "Cons(1, Cons(2, :Nil))",
+    "Cons(1, Cons(2, Nil))",
   ],
   [
     "field accessor",
-    "def Rectangle type :Rect(w :: Number,h :: Number)\nr = Rect(3,4) :: Rectangle\nr.w",
+    "def Rectangle type :Rect(w :: Float,h :: Float)\nr = Rect(3,4) :: Rectangle\nr.w",
     "3",
   ],
   [
     "field function",
-    "def Rectangle type :Rect(w :: Number,h :: Number)\nr = Rect(3,4) :: Rectangle\nw(r)",
+    "def Rectangle type :Rect(w :: Float,h :: Float)\nr = Rect(3,4) :: Rectangle\nw(r)",
     "3",
   ],
   [
@@ -80,8 +80,7 @@ const cases: [string, string, string][] = [
     "True",
   ],
   ["structural ordering", "Rect(1,2) < Rect(1,3)", "True"],
-  ["cross-kind ordering", '1 < "a"', "True"],
-  ["quoted symbol", "v = :f\nv", ":f"],
+  ["quoted symbol", "v = :f\nv", "f"],
   [
     "pattern union",
     "def S type :Rect(Int,Int) | :Circle(Int)\nCircle(2) :: S",
@@ -107,12 +106,13 @@ const cases: [string, string, string][] = [
     "Type(Some(Int))",
   ],
   ["option", "1 :: Int?", "1"],
-  ["list of options", "[1,:None] :: [_... :: Int?*]", "[1, :None]"],
+  ["list of options", "[1,:None] :: [_... :: Int?*]", "[1, None]"],
   ["result", "Ok(1) :: Int^", "Ok(1)"],
 ];
 for (const [name, source, expected] of cases)
   test(name, () => assert.equal(run(source), expected));
 const failures: [string, string, RegExp][] = [
+  ["cross-kind ordering", '1 < "a"', /different concrete types/],
   ["extra positional result", "x = (1,2)\nx", /received 2/],
   [
     "extra positional block result",
@@ -125,7 +125,7 @@ const failures: [string, string, RegExp][] = [
     /expected field|received 0/,
   ],
   ["wrong first pack", "def f(x,y)(z) z\nf(1)", /no applicable/],
-  ["uppercase is literal", ":None = Some(1)\n:None", /expected :None/],
+  ["uppercase is literal", ":None = Some(1)\n:None", /expected None/],
   ["repeat binding differs", "Pair(x,x) = Pair(1,2)\nx", /duplicate capture/],
   [
     "repeat type differs",
@@ -168,9 +168,9 @@ const failures: [string, string, RegExp][] = [
     /not exactly representable as Float/,
   ],
   [
-    "inexact Number designation",
+    "no Number type",
     "0.1 :: Number",
-    /not exactly representable as Float/,
+    /unbound/,
   ],
   [
     "mixed Float32 plus unannotated Rational",
@@ -447,21 +447,21 @@ test("labeled defaults bind, override, and validate values", () => {
   const color = "def Color type :Black | :White\n";
   assert.equal(
     run(color + "(size: s :: Int,color: c :: Color = :Black) = (size: 3)\nc"),
-    ":Black",
+    "Black",
   );
   assert.equal(
     run(
       color +
         "def f(size: s :: Int,color: c :: Color = :Black) c\nf(size: 3,extra: 9)",
     ),
-    ":Black",
+    "Black",
   );
   assert.equal(
     run(
       color +
         "def f(size: s :: Int,color: c :: Color = :Black) c\nf(color: :White,size: 3)",
     ),
-    ":White",
+    "White",
   );
   assert.equal(run("(size: Int = 3) = ()\nsize"), "3");
   assert.equal(run("(size: s = 3) = ()\ns"), "3");
@@ -473,7 +473,7 @@ test("labeled defaults bind, override, and validate values", () => {
   );
   assert.throws(
     () => run('def f(size: Int = "bad") size\nf()'),
-    /default for size does not match: expected Int/,
+    /default for size does not match/,
   );
   assert.throws(
     () => run("def f(size: Int = (1,2)) size\nf()"),
@@ -513,14 +513,14 @@ test("built-in concrete types require exact labels", () => {
 
 test("question mark preserves option type semantics in defaulted fields", () => {
   const color = "def Color type :Black | :White\n";
-  assert.equal(run(color + "(color: c :: Color? = :Black) = ()\nc"), ":Black");
+  assert.equal(run(color + "(color: c :: Color? = :Black) = ()\nc"), "Black");
   assert.equal(
     run(color + "def f(color: c :: Color? = :Black) c\nf()"),
-    ":Black",
+    "Black",
   );
   assert.equal(
     run(color + "def f(color: c :: Color? = :Black) c\nf(color: :White)"),
-    ":White",
+    "White",
   );
   assert.throws(
     () => run(color + "(color: c :: Color? = Some(:Black)) = ()\nc"),
@@ -641,7 +641,7 @@ test("defined functions and accessors are not values", () => {
     "def f(x) x\nf",
     "def f(x) x\ndef use(x) x\nuse(f)",
     "def f(x) x\ndef make() f\nmake()",
-    "def Rectangle type :Rect(w :: Number,h :: Number)\nw",
+    "def Rectangle type :Rect(w :: Float,h :: Float)\nw",
     "toString",
   ])
     assert.throws(() => run(source), /cannot be used as a value/);
@@ -649,7 +649,7 @@ test("defined functions and accessors are not values", () => {
 
 test("callable variables compete with accessor methods", () => {
   const setup =
-    "def Rectangle type :Rect(w :: Number,h :: Number)\nr = Rect(3,4) :: Rectangle\nw = (r :: Rectangle) -> r.h\n";
+    "def Rectangle type :Rect(w :: Float,h :: Float)\nr = Rect(3,4) :: Rectangle\nw = (r :: Rectangle) -> r.h\n";
   for (const call of ["w(r)", "r.w"]) {
     assert.throws(
       () => run(setup + call),
@@ -666,7 +666,7 @@ test("callable variables compete with accessor methods", () => {
 test("direct calls select the only matching callable across namespaces", () => {
   assert.equal(
     run(
-      'def f(x :: Number) x + (1 :: Number)\nf = (x :: String) -> x\n(f(2),f("hi"))',
+      'def f(x :: Float) x + (1 :: Float)\nf = (x :: String) -> x\n(f(2),f("hi"))',
     ),
     '(3, "hi")',
   );

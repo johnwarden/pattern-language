@@ -141,7 +141,7 @@ test("narrowing preserves concrete identity and abstract text round trips", () =
     "(True, True, True)",
   );
   assert.throws(
-    () => run("(x :: Any) = 3 :: Int\n(v :: Int) = x\nv == (3 :: Number)"),
+    () => run("(x :: Any) = 3 :: Int\n(v :: Int) = x\nv == (3 :: Float)"),
     /different concrete types/,
   );
   assert.throws(

@@ -133,7 +133,7 @@ amp == pre
       e instanceof LanguageError && e.diagnostic.code === "E_NO_METHOD",
   );
   assert.equal(run("1 :: Int?"), "1");
-  assert.equal(run(":None :: Int?"), ":None");
+  assert.equal(run(":None :: Int?"), "None");
   assert.throws(
     () => run("1? :: Int?"),
     (e: unknown) => e instanceof LanguageError,

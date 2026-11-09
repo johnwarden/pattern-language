@@ -1,8 +1,13 @@
 import { DEFAULT_PRELUDE } from "./prelude.ts";
 import { postfixMethodName } from "./syntax.ts";
-import { bootstrapTypeNames } from "./primitive-names.ts";
-import { punctuation, symbolCategory } from "./lexical.ts";
-import { primitiveNames, constantNames } from "./primitive-names.ts";
+import { punctuation } from "./lexical.ts";
+import {
+  primitiveNames,
+  constantNames,
+  bootstrapTypeNames,
+  isSelfEvaluating,
+  ordinarySymbolCategory,
+} from "./primitive-names.ts";
 import {
   runtimeDependency,
   requireAvailable,
@@ -11,7 +16,12 @@ import {
 } from "./availability.ts";
 import { lowerBlock, lowerStatement } from "./lowering.ts";
 import type { Core } from "./lowering.ts";
-import { parseSurface } from "./parser.ts";
+import {
+  addLayoutKeywords,
+  emptyLayoutForms,
+  parseSurface,
+} from "./parser.ts";
+import type { LayoutForms } from "./parser.ts";
 import {
   quote,
   syntaxData,
@@ -331,7 +341,7 @@ export class Interpreter {
     prelude = DEFAULT_PRELUDE,
   ) {
     this.grammar = new Grammar(grammar);
-    this.env = this.builtins();
+    this.env = this.builtins(schemaBootstrap);
     if (!schemaBootstrap) {
       const type = schema(CODE_SCHEMA).type;
       this.codeType = type;
@@ -470,46 +480,86 @@ export class Interpreter {
       return this.evaluate(expression, local);
     });
   }
-  private hasLayoutPattern(
-    pattern: Pattern<Value>,
-    seen = new Set<unknown>(),
-  ): boolean {
-    if (pattern.kind === "ref") {
-      if (seen.has(pattern.key)) return false;
-      seen.add(pattern.key);
-      return this.hasLayoutPattern(pattern.resolve(), seen);
-    }
-    if (pattern.kind === "node") {
-      const id =
-        pattern.head.kind === "test" ? pattern.head.identity : undefined;
-      if (Array.isArray(id) && id[0] === "literal") {
-        const head = unwrap(id[1] as Value);
-        if (
-          head.kind === "symbol" &&
-          ["syntaxBlock", "syntaxSequence"].includes(head.name)
-        )
-          return true;
+  /** Sidefix keywords from this type's own sequence, not the default language. */
+  private layoutFormsFromPattern(pattern: Pattern<Value>): LayoutForms {
+    const forms = emptyLayoutForms();
+    const seen = new Set<unknown>();
+    const unwrapRef = (p: Pattern<Value>): Pattern<Value> => {
+      while (p.kind === "ref" || p.kind === "map" || p.kind === "capture") {
+        if (p.kind === "ref") {
+          if (seen.has(p.key)) return p;
+          seen.add(p.key);
+          p = p.resolve();
+        } else p = p.pattern;
       }
-      return (
-        this.hasLayoutPattern(pattern.head, seen) ||
-        this.hasLayoutPattern(pattern.body, seen)
-      );
-    }
-    if (pattern.kind === "union")
-      return pattern.choices.some((p) => this.hasLayoutPattern(p, seen));
-    if (pattern.kind === "sequence" || pattern.kind === "fields")
-      return pattern.parts.some((p) => this.hasLayoutPattern(p, seen));
-    if (pattern.kind === "postfix")
-      return (
-        this.hasLayoutPattern(pattern.operator, seen) ||
-        this.hasLayoutPattern(pattern.operand, seen)
-      );
-    if (["capture", "row", "repeat", "map", "label"].includes(pattern.kind))
-      return this.hasLayoutPattern(
-        (pattern as Extract<Pattern<Value>, { kind: "map" }>).pattern,
-        seen,
-      );
-    return false;
+      return p;
+    };
+    const literalName = (p: Pattern<Value>): string | undefined => {
+      p = unwrapRef(p);
+      if (p.kind === "label" || p.kind === "row" || p.kind === "repeat")
+        return literalName(p.pattern);
+      if (
+        p.kind === "test" &&
+        Array.isArray(p.identity) &&
+        p.identity[0] === "literal"
+      ) {
+        const v = unwrap(p.identity[1] as Value);
+        if (v.kind === "symbol") return v.name;
+      }
+      return undefined;
+    };
+    const addFrom = (p: Pattern<Value>): void => {
+      p = unwrapRef(p);
+      if (p.kind === "union") {
+        for (const choice of p.choices) addFrom(choice);
+        return;
+      }
+      if (p.kind === "node") {
+        const head = literalName(p.head);
+        const body = unwrapRef(p.body);
+        if (head === "syntaxSequence" || head === "syntaxBlock") {
+          forms.structural = true;
+          const parts =
+            body.kind === "sequence" || body.kind === "fields"
+              ? body.parts
+              : [body];
+          const chain: string[] = [];
+          for (const part of parts) {
+            const name = literalName(part);
+            if (name && !["syntaxSequence", "syntaxBlock"].includes(name))
+              chain.push(name);
+          }
+          addLayoutKeywords(forms, chain);
+        }
+        addFrom(p.head);
+        addFrom(body);
+        return;
+      }
+      if (p.kind === "row" || p.kind === "repeat" || p.kind === "label") {
+        addFrom(p.pattern);
+        return;
+      }
+      if (p.kind === "postfix") {
+        addFrom(p.operator);
+        addFrom(p.operand);
+        return;
+      }
+      if (p.kind === "fields") {
+        for (const part of p.parts) addFrom(part);
+        return;
+      }
+      if (p.kind === "sequence") {
+        const chain: string[] = [];
+        for (const part of p.parts) {
+          const name = literalName(part);
+          if (name) chain.push(name);
+          addFrom(part);
+        }
+        addLayoutKeywords(forms, chain);
+      }
+    };
+    addFrom(pattern);
+    return forms;
   }
   private grammarInput(type: TypeValue, tree: Syntax): Syntax {
     if (tree.kind !== "block" || type.treeGrammar || type.baseType?.treeGrammar)
@@ -556,7 +606,7 @@ export class Interpreter {
               text,
               this.textDomain(env),
               typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
-              this.hasLayoutPattern(type.pattern()),
+              this.layoutFormsFromPattern(type.pattern()),
             ),
       );
     } finally {
@@ -621,14 +671,10 @@ export class Interpreter {
       },
     };
   }
-  private builtins(): Scope {
+  private builtins(schemaBootstrap = false): Scope {
     const scope = new Scope();
     for (const [name, predicate] of Object.entries({
       Rational: (v: Value): boolean => !!asRational(v),
-      Number: (v: Value): boolean => {
-        const r = asRational(v);
-        return !!r && isExactFloat64(r);
-      },
       Num: (v: Value): boolean => {
         const r = asRational(v);
         return !!r && isExactFloat64(r);
@@ -649,15 +695,18 @@ export class Interpreter {
       },
       String: (v: Value): boolean =>
         v.kind === "literal" && typeof v.value === "string",
-      Symbol: (v: Value): boolean => v.kind === "symbol",
       LowerCamelSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "LowerCamelSymbol",
+        v.kind === "symbol" &&
+        ordinarySymbolCategory(v.name) === "LowerCamelSymbol",
       UpperCamelSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "UpperCamelSymbol",
+        v.kind === "symbol" &&
+        ordinarySymbolCategory(v.name) === "UpperCamelSymbol",
       UpperSnakeSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "UpperSnakeSymbol",
+        v.kind === "symbol" &&
+        ordinarySymbolCategory(v.name) === "UpperSnakeSymbol",
       PunctuationSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && symbolCategory(v.name) === "PunctuationSymbol",
+        v.kind === "symbol" &&
+        ordinarySymbolCategory(v.name) === "PunctuationSymbol",
       Expression: (_v: Value): boolean => true,
       Body: (_v: Value): boolean => true,
       Any: (_v: Value): boolean => true,
@@ -690,8 +739,10 @@ export class Interpreter {
           Number.isSafeInteger(v.value)
         );
       },
+      ReservedSymbol: (v: Value): boolean =>
+        v.kind === "symbol" && primitiveNames.has(v.name),
     })) {
-      const numericKind = ["Number", "Num", "Float", "Float64"].includes(name)
+      const numericKind = ["Num", "Float", "Float64"].includes(name)
         ? "float64"
         : ["Int", "Int64"].includes(name)
           ? "int64"
@@ -717,22 +768,23 @@ export class Interpreter {
       });
       this.primitives.set(name, scope.bindings.get(name) as TypeValue);
     }
-    const symbol = this.unionType(
-      [
-        "LowerCamelSymbol",
-        "UpperCamelSymbol",
-        "UpperSnakeSymbol",
-        "PunctuationSymbol",
-      ].map((name) => this.primitives.get(name)!),
-    );
-    symbol.name = "Symbol";
-    scope.bindings.set("Symbol", symbol);
-    this.primitives.set("Symbol", symbol);
-    // Canonical primitive atoms have fixed language meanings. Number remains a
-    // source alias for Float, rather than another user type declaration.
-    for (const alias of ["Num", "Number", "Int64"])
+    if (schemaBootstrap) {
+      // Schema evaluation skips the prelude, so install the same four-class
+      // Symbol union the prelude defines. Do not treat the name as reserved.
+      const symbol = this.unionType(
+        [
+          "LowerCamelSymbol",
+          "UpperCamelSymbol",
+          "UpperSnakeSymbol",
+          "PunctuationSymbol",
+        ].map((name) => this.primitives.get(name)!),
+      );
+      symbol.name = "Symbol";
+      scope.bindings.set("Symbol", symbol);
+    }
+    // Canonical primitive atoms have fixed language meanings.
+    for (const alias of ["Num", "Int64"])
       scope.bindings.delete(alias);
-    scope.bindings.set("Number", scope.bindings.get("Float")!);
     for (const name of constantNames)
       scope.bindings.set(name, this.boolean(name === "True"));
     for (const [name, value] of scope.bindings) {
@@ -876,7 +928,7 @@ export class Interpreter {
             ) {
               if (a.value.length + b.value.length > 100000)
                 throw new LanguageError("string size limit exceeded");
-              return valLiteral(a.value + b.value);
+              return this.ascribeString(valLiteral(a.value + b.value));
             }
             if (!space || space.numeric === "rational") {
               const left = asRational(a),
@@ -1012,7 +1064,7 @@ export class Interpreter {
         const type = this.materializeType(pattern);
         return type && typeDescription(type).kind !== "symbol"
           ? type
-          : this.structuralType(term("Type", type ?? unwrap(pattern)));
+          : this.structuralType(term("Type", unwrap(pattern)));
       }),
     ]);
     scope.bindings.set(
@@ -1071,8 +1123,10 @@ export class Interpreter {
           )
         )
           throw new LanguageError("String requires Unicode code points");
-        return valLiteral(
-          numbers.map((n) => String.fromCodePoint(n as number)).join(""),
+        return this.ascribeString(
+          valLiteral(
+            numbers.map((n) => String.fromCodePoint(n as number)).join(""),
+          ),
         );
       }),
     ]);
@@ -1107,7 +1161,7 @@ export class Interpreter {
           );
         }
         const checked = single(this.check(type, value));
-        return valLiteral(valueText(checked, domain, type));
+        return this.ascribeString(valLiteral(valueText(checked, domain, type)));
       });
       const accepts = factory.test;
       factory.test = (xs) => accepts(xs) && !!this.materializeType(xs[0].value);
@@ -1118,11 +1172,13 @@ export class Interpreter {
         "toString",
         [1],
         ([value]) =>
-          valLiteral(
-            valueText(
-              value,
-              this.textDomain(),
-              value.kind === "slot" ? value.type : concreteSpace(value),
+          this.ascribeString(
+            valLiteral(
+              valueText(
+                value,
+                this.textDomain(),
+                value.kind === "slot" ? value.type : concreteSpace(value),
+              ),
             ),
           ),
         (xs) => !this.materializeType(xs[0].value),
@@ -1353,7 +1409,7 @@ export class Interpreter {
           });
         local.bindings.set(
           "\0readerFragments",
-          list(fragments.map(valLiteral)),
+          list(fragments.map((fragment) => this.stringValue(fragment))),
         );
         local.bindings.set("\0readerValues", list(values));
         return this.evaluate(
@@ -1372,7 +1428,7 @@ export class Interpreter {
         .join("");
       if (result.length > 100000)
         throw new LanguageError("string size limit exceeded", n.span);
-      return singleton(valLiteral(result));
+      return this.ascribeString(valLiteral(result));
     }
     if (n.kind === "typedQuote") {
       const type = this.typeFromSyntax(n.grammar, env);
@@ -1400,6 +1456,19 @@ export class Interpreter {
                   packOf(syntaxNumber({ n: -magnitude.n, d: magnitude.d })),
                 );
               }
+              if (
+                raw.kind === "literal" &&
+                typeof raw.value === "string" &&
+                (!space ||
+                  typeIdentity(space) ===
+                    typeIdentity(this.primitives.get("String")!))
+              )
+                return {
+                  kind: "code" as const,
+                  type: syntaxType,
+                  tree: literal,
+                  portable: true,
+                };
               if (!space || space.numeric === "rational")
                 return negative ||
                   (raw.kind === "literal" && isRational(raw.value))
@@ -1420,7 +1489,7 @@ export class Interpreter {
                 // callable names), not an ascribed expression around that atom.
                 if (
                   raw.kind === "symbol" &&
-                  symbolCategory(raw.name) === space.name
+                  ordinarySymbolCategory(raw.name) === space.name
                 )
                   return {
                     kind: "code" as const,
@@ -1513,14 +1582,18 @@ export class Interpreter {
     if (n.kind === "block") return this.evaluateBlock(n, env);
     if (n.kind === "pack") return this.evaluateFields(n.body, env);
     if (n.kind === "literal") {
-      if (typeof n.value === "string") return singleton(valLiteral(n.value));
+      if (typeof n.value === "string")
+        return this.ascribeString(valLiteral(n.value));
       const r = rationalFromSyntax(n);
       if (!r)
         throw new LanguageError("malformed numeric source literal", n.span);
       return this.ascribeRational(valRational(r.n, r.d));
     }
     if (n.kind === "symbol") {
-      if (n.quoted) return singleton(this.symbolValue(n.name));
+      if (n.quoted) {
+        if (isSelfEvaluating(n.name)) throw this.quotedPrimitive(n);
+        return singleton(this.symbolValue(n.name));
+      }
       const primitive = primitiveNames.get(n.name);
       if (
         primitive &&
@@ -1529,7 +1602,7 @@ export class Interpreter {
           (lexicalScopes.get(n) ?? env).get(n.name)
         )
       )
-        return singleton(this.primitives.get(primitive)!);
+        return this.reserved(n.name);
       if (constantNames.has(n.name))
         return singleton(this.boolean(n.name === "True"));
       const lookup = lexicalScopes.get(n) ?? env;
@@ -1786,6 +1859,7 @@ export class Interpreter {
         body: this.evaluateFields(n.body, env),
       });
     if (n.head.kind === "symbol" && n.head.quoted) {
+      if (isSelfEvaluating(n.head.name)) throw this.quotedPrimitive(n.head);
       if (n.head.name === "NumericSource") {
         const args = this.evaluateFields(n.body, env);
         const spelling = unwrap(args[0]?.value);
@@ -2591,6 +2665,7 @@ export class Interpreter {
     dimensions = 0,
     allowProjection = false,
   ): PatternCompiler<Value> {
+    const phase = typeMode ? "declaration" : "match";
     const lookup = (n: Syntax) =>
       lexicalScopes.get(n) ??
       (n.kind === "apply"
@@ -2711,6 +2786,15 @@ export class Interpreter {
                 ? this.typePattern(type, !typeMode, allowProjection)
                 : undefined;
             }
+            // Reserved names are never quoted, so a reserved head in a type
+            // pattern names the constructor rather than calling the primitive.
+            if (
+              typeMode &&
+              n.head.kind === "symbol" &&
+              !n.head.quoted &&
+              isSelfEvaluating(n.head.name)
+            )
+              return undefined;
             if (
               typeMode &&
               this.isTypeCall(n, lookup(n)) &&
@@ -2728,7 +2812,11 @@ export class Interpreter {
         defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {
-          if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
+          if (n.kind === "symbol") {
+            if (n.quoted && isSelfEvaluating(n.name))
+              throw this.quotedPrimitive(n, phase);
+            return literalPattern(valSymbol(n.name));
+          }
           // Application heads are structural patterns, not unary type-factory
           // calls: the head of (a :* b) is the partial tree *(a).
           if (
@@ -2804,6 +2892,8 @@ export class Interpreter {
         },
         atom: (n) => {
           if (n.kind === "symbol") {
+            if (n.quoted && isSelfEvaluating(n.name))
+              throw this.quotedPrimitive(n, phase);
             const binding = lookup(n).get(n.name);
             if (!n.quoted && primitiveNames.has(n.name)) return reference(n);
             if (!n.quoted && constantNames.has(n.name))
@@ -2819,7 +2909,7 @@ export class Interpreter {
                 code: "E_UNBOUND_TYPE",
                 phase: "declaration",
                 notes: [
-                  "Quote literal tags with a colon. The numeric prelude names are Int, Number, and Float32.",
+                  "Quote literal tags with a colon. The numeric prelude names are Int, Float, and Float32.",
                 ],
               });
             return literalPattern(valSymbol(n.name));
@@ -3681,8 +3771,32 @@ export class Interpreter {
       },
     };
   }
+  private quotedPrimitive(
+    n: Extract<Syntax, { kind: "symbol" }>,
+    phase: "evaluate" | "declaration" | "match" = "evaluate",
+  ): LanguageError {
+    return new LanguageError(
+      "quoted " + n.name + " is not a symbol; " + n.name + " is a primitive",
+      n.span,
+      { code: "E_QUOTED_PRIMITIVE", phase },
+    );
+  }
+  private reserved(name: string): Field<Value>[] {
+    const fields = this.check(
+      this.primitives.get("ReservedSymbol")!,
+      valSymbol(name),
+    );
+    return fields.map((field) => {
+      const value = field.value;
+      return {
+        ...field,
+        value:
+          value.kind === "view" ? { ...value, provisional: true } : value,
+      };
+    });
+  }
   private symbolValue(name: string): Value {
-    const category = symbolCategory(name);
+    const category = ordinarySymbolCategory(name);
     if (!category) return valSymbol(name);
     const value = single(
       this.check(this.primitives.get(category)!, valSymbol(name)),
@@ -3700,6 +3814,12 @@ export class Interpreter {
   }
   private ascribeRational(value: Value): Field<Value>[] {
     return this.check(this.primitives.get("Rational")!, value);
+  }
+  private ascribeString(value: Value): Field<Value>[] {
+    return this.check(this.primitives.get("String")!, value);
+  }
+  private stringValue(text: string): Value {
+    return single(this.ascribeString(valLiteral(text)));
   }
   /** Prefix `-(a)` is negation; infix `-(a)(b)` remains subtraction. */
   private negateValue(v: Value): Field<Value>[] {
@@ -3945,7 +4065,7 @@ export class Interpreter {
       ":" +
       JSON.stringify(
         canonicalFields(args).map((f) => {
-          const v = unwrap(f.value);
+          const v = unwrap(this.materializeType(f.value) ?? f.value);
           return [f.label, v.kind === "type" ? v.key : descriptionKey(v)];
         }),
       );
@@ -3963,7 +4083,7 @@ export class Interpreter {
         ? "(" +
           canonicalFields(args)
             .map((f) => {
-              const v = unwrap(f.value);
+              const v = unwrap(this.materializeType(f.value) ?? f.value);
               return (
                 (positional(f.label) ? "" : f.label + ": ") +
                 (v.kind === "type" ? v.name : display(v))

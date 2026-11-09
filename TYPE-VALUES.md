@@ -20,16 +20,23 @@ ordered first-match interpretation. Match-arm order is a different policy.
 
 ## Evaluation, primitive values and descriptions
 
-Distinct source syntax may evaluate to the same primitive. Numeric literals denote
+Values stay distinct from the expressions that evaluate to them. Distinct source
+syntax may evaluate to the same primitive; quotation/printing of source and
+inspection of values keep those roles separate. Numeric literals denote
 exact Rationals; ordinary strings, Bool values and symbolic values have intrinsic
 interpretations. Reserved primitive atoms cannot simultaneously become ordinary
-UpperCamelSymbol values through a different quoting route.
+UpperCamelSymbol values because of their spelling. `Symbol` is a prelude union,
+not a reserved primitive.
 
 The proposed primitive vocabulary includes self-evaluating PrimitiveType, with Bool
 and PrimitiveType as its values. The complete metatype and redundant primitive-quote
 policy remain provisional. Nonprimitive numeric types should be definable carveouts.
-The bootstrap's Int == :Int/cache convention is not silently adopted as the final
-relationship between a type value and arbitrary quoted syntax.
+Primitive names are `ReservedSymbol` values, and the type description of
+`type Int` is the reserved symbol `Int` itself, not `:Int`. A quoted primitive
+name such as `:Int` is an error in program source, including type declarations,
+which write `type String(:A)` rather than `type :String(:A)` (D20). `True` and
+`False` are `Bool` values like computed comparison results, not `ReservedSymbol`
+values.
 
 An explicitly interpreted Expression descriptor, if exposed, need not equal the result
 of evaluating it. Whether runtime Expression computation exists, and the exact public

@@ -41,6 +41,9 @@ must test composition and state role differences explicitly.
 - All numeric literals denote exact Rationals. 0f selects a Float64-rounded Rational;
   it is not a Float64-typed value. Exact designation never silently rounds. Explicit
   converters return fixed-precision values with their own operations.
+  `Number` will later be an abstract union of fixed-width number types.
+- Primitive names such as `Int` are `ReservedSymbol` values. `True` and `False` are
+  `Bool` values, the type of computed comparisons: `(1 == 2) == False` is `True`.
 - General abstract unions may have overlapping spellings. A separate unambiguous
   grammar requirement supports annotation-free DSL text. Typed general text retains
   sufficient member reconstruction information; no branch priority is introduced.
@@ -322,6 +325,7 @@ repetition/alternation and unrelated syntax additions are not prerequisites.
 
 Implement an evaluator in the language over a documented pure Code subset: literals,
 symbols, complete packs, application, bindings, functions, conditionals and matching.
+Code gains `QuotedSymbol` (Symbols only): `:Foo` parses as `:Foo :: QuotedSymbol` and `:Int` is rejected.
 Environments, primitive callable vocabulary and closed dependencies are explicit.
 Start a portable closed-callable subset without claiming general closure transport.
 An embedding adapter may handle external files/console; no source-language native

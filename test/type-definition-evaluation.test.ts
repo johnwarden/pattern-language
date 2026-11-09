@@ -5,8 +5,8 @@ import { Interpreter, displayResults, LanguageError } from "../src/index.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 
 test("definition bodies evaluate normally and TitleCase results must be types", () => {
-  assert.equal(run("def r :Rect(Number)\nr"), "Rect(Float)");
-  for (const body of [":Rect(Number)", "Rect(Float)", "3"])
+  assert.equal(run("def r :Rect(Float)\nr"), "Rect(Float)");
+  for (const body of [":Rect(Float)", "Rect(Float)", "3"])
     assert.throws(
       () => run("def R " + body + "\n0"),
       (error: unknown) => {
@@ -19,18 +19,18 @@ test("definition bodies evaluate normally and TitleCase results must be types", 
         return true;
       },
     );
-  assert.equal(run("def R type :Rect(Number)\ntype R"), "Type(Rect(Float))");
+  assert.equal(run("def R type :Rect(Float)\ntype R"), "Type(Rect(Float))");
   assert.equal(
-    run("def make() type :Rect(Number)\ndef R make()\nRect(3) :: R"),
+    run("def make() type :Rect(Float)\ndef R make()\nRect(3) :: R"),
     "Rect(3)",
   );
-  assert.equal(run("def make() :Rect(Number)\ndef r make()\nr"), "Rect(Float)");
+  assert.equal(run("def make() :Rect(Float)\ndef r make()\nr"), "Rect(Float)");
 });
 
 test("named type declarations retain generated local accessors", () => {
   assert.equal(
     run(
-      "def R type :Rect(width :: Number)\nr = Rect(3) :: R\n(r.width,width(r))",
+      "def R type :Rect(width :: Float)\nr = Rect(3) :: R\n(r.width,width(r))",
     ),
     "(3, 3)",
   );
@@ -41,7 +41,7 @@ test("named type declarations retain generated local accessors", () => {
     "3",
   );
   assert.equal(
-    run("def R type :Rect(w :: Number)\nr = Rect(3) :: R\nr.w"),
+    run("def R type :Rect(w :: Float)\nr = Rect(3) :: R\nr.w"),
     "3",
   );
 });
@@ -109,7 +109,7 @@ test("generic type specialization exports deep accessors without duplicate metho
 test("repeated parameter interpretation reuses its local accessor definitions", () => {
   assert.equal(
     run(
-      "def Rect type :Rect(w :: Number,h :: Number)\ndef get(r :: Rect) r.w\n(get(Rect(1,2)),get(Rect(3,4)))",
+      "def Rect type :Rect(w :: Float,h :: Float)\ndef get(r :: Rect) r.w\n(get(Rect(1,2)),get(Rect(3,4)))",
     ),
     "(1, 3)",
   );

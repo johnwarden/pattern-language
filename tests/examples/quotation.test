@@ -3,10 +3,8 @@ test "Interpolation and literal dollars"
   raw = "Hello, $name"
   expanded = $"Hello, $(name); $(2 + 3)"
 
-  legacy expect raw result "Hello, $name" :: Expression
-  todo expect raw result "Hello, $name" :: String
-  legacy expect expanded result "Hello, Jo; 5" :: Expression
-  todo expect expanded result "Hello, Jo; 5" :: String
+  expect raw result "Hello, $name" :: String
+  expect expanded result "Hello, Jo; 5" :: String
   (raw, expanded)
 end
 
@@ -29,6 +27,7 @@ test "Raw and interpolated typed Code"
 
   expect quoted result hello($(name)) :: Code
   expect interpolated result hello("Jo") :: Code
+  assert parse(Code)(toString(Code)(interpolated)) == interpolated
   (quoted, interpolated)
 end
 
@@ -43,16 +42,11 @@ end
 test "Raw, escaped and explicitly interpolated strings"
   name = 'Jo'
 
-  legacy expect 'Hello, $name' result "Hello, $name" :: Expression
-  todo expect 'Hello, $name' result "Hello, $name" :: String
-  legacy expect "Hello, $name" result "Hello, $name" :: Expression
-  todo expect "Hello, $name" result "Hello, $name" :: String
-  legacy expect $'Hello, $name' result "Hello, Jo" :: Expression
-  todo expect $'Hello, $name' result "Hello, Jo" :: String
-  legacy expect "one\ntwo" result "one\ntwo" :: Expression
-  todo expect "one\ntwo" result "one\ntwo" :: String
-  legacy expect $'Hello, $$name' result "Hello, $name" :: Expression
-  todo expect $'Hello, $$name' result "Hello, $name" :: String
+  expect 'Hello, $name' result "Hello, $name" :: String
+  expect "Hello, $name" result "Hello, $name" :: String
+  expect $'Hello, $name' result "Hello, Jo" :: String
+  expect "one\ntwo" result "one\ntwo" :: String
+  expect $'Hello, $$name' result "Hello, $name" :: String
   ('Hello, $name', "Hello, $name", $'Hello, $name', "one\ntwo", $'Hello, $$name')
 end
 
@@ -71,12 +65,11 @@ test "Typed expression quotes"
 end
 
 test "Typed parse / toString round-trip"
-  def Rectangle type :Rect(width :: Number, height :: Number)
+  def Rectangle type :Rect(width :: Float, height :: Float)
   value = Rect(3, 4) :: Rectangle
   text = toString(Rectangle)(value)
 
-  legacy expect text result "Rect(3, 4)" :: Expression
-  todo expect text result "Rect(3, 4)" :: String
+  expect text result "Rect(3, 4)" :: String
 
   assert parse(Rectangle)(text) == value
 

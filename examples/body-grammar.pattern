@@ -9,7 +9,7 @@ end
 def Product type
   (left :: ValueExpression) :* (right :: ValueExpression)
 end
-def ValueExpression unionType Number | String | Symbol | Sum | Product
+def ValueExpression unionType Float | String | Symbol | Sum | Product
 def FunctionSignature type
   (name :: LowerCamelSymbol)(parameters... :: Pattern*)
 end

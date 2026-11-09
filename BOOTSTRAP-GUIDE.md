@@ -52,8 +52,9 @@ consumer. See the roadmap for what would establish those claims.
 
 Types are ordinary values, and all applications use argument packs. There is no
 angle-bracket application or generic AST node. Primitive Int, Float, Float32, Bool,
-String, Symbol, Any, Expression, Body and Type are self-evaluating language atoms.
-Number is an accepted alias for Float. Other bare names resolve their bindings;
+String, ReservedSymbol, Any, Expression, Body and Type are self-evaluating language
+atoms. `Symbol` is a prelude union, not a reserved primitive.
+There is no `Number` type yet. Other bare names resolve their bindings;
 Foo is an error when unbound, :Foo is a symbol, and Foo(1) uses a constructor tag.
 Named type factories and defined functions still dispatch on matching argument packs.
 
@@ -166,7 +167,7 @@ precede named fields; ** is the final item. For example:
 ```text
 Rect(first,rest...,color: c,**) = Rect(1,2,color: :Black,note: 'extra')
 (rest,c)
-# ([2],:Black)
+# ([2], Black)
 ```
 
 Argument packs retain extra-label tolerance without **. Constructed rest captures
@@ -179,9 +180,9 @@ Definitions evaluate their bodies as ordinary expressions. A TitleCase definitio
 must return a type; capitalization never converts its body into a pattern.
 
 ```text
-def r :Rect(Number)        # ordinary literal value Rect(:Number)
-def R type :Rect(Number)   # Type(Rect(Float))
-# def R :Rect(Number)      # error: R must hold a type
+def r :Rect(Float)        # ordinary literal value Rect(Float)
+def R type :Rect(Float)   # Type(Rect(Float))
+# def R :Rect(Float)      # error: R must hold a type
 ```
 
 The `type` form resolves type names in its pattern and produces the type value
@@ -196,16 +197,16 @@ Duplicate binding captures are errors. `_` ignores a binding capture and cannot
 define a type field. Named type declarations register accessors separately from the type value.
 Explicit inline nested `type …` forms must contain neither. Constructor subpatterns
 create no type boundary and keep their captures in the enclosing pattern. Thus
-`type :Picture(shape: Rect(w :: Number,h :: Number))` gives Picture the w and h
+`type :Picture(shape: Rect(w :: Float,h :: Float))` gives Picture the w and h
 accessors, not shape. Declare Rectangle separately and use `shape: Rectangle` for
 a typed shape accessor. A label implicitly captures only when followed by a type
 specification; structural subpatterns introduce only their own captures.
 
 ```text
-def Picture type :Picture(color: (type :Red | :Black),shape: Rectangle(w :: Number,h :: Number))
+def Picture type :Picture(color: (type :Red | :Black),shape: Rectangle(w :: Float,h :: Float))
 p = Picture(color: :Red,shape: Rectangle(3,4)) :: Picture
 (p.color,p.w,p.h)
-# (:Red,3,4)
+# (Red, 3, 4)
 ```
 
 Here color has an explicit nested type; shape contains a constructor subpattern.
@@ -213,7 +214,7 @@ The latter has no independent concrete type or automatic shape accessor. To make
 shape a typed field with its own accessor, declare its type separately:
 
 ```text
-def Rectangle type :Rectangle(w :: Number,h :: Number)
+def Rectangle type :Rectangle(w :: Float,h :: Float)
 def Picture type :Picture(shape: Rectangle)
 p = Picture(shape: Rectangle(3,4)) :: Picture
 (p.shape.w,p.shape.h)
@@ -239,7 +240,7 @@ not display strings. `def List(T) type :Nil | :Cons(T,List(T))` is supported.
 Annotations establish a concrete interpretation; identical structural type definitions share a space:
 
 ```text
-def Rectangle type :Rect(w :: Number,h :: Number)
+def Rectangle type :Rect(w :: Float,h :: Float)
 r = Rect(3,4) :: Rectangle
 (r.w,w(r))
 ```
@@ -387,7 +388,7 @@ production security sandbox. No source-language expression is passed to host eva
 def Color type :Black | :White
 (size: s :: Int, color: c :: Color = :Black) = (size: 3)
 c
-# :Black
+# Black
 ```
 
 A default applies only when its label is absent. A present value is validated,
@@ -487,8 +488,8 @@ identities have one declaration name across visible lexical scopes; independent 
 may use different names. Named generic specializations are checked when materialized,
 and repeated references to one declaration do not register it again.
 
-The numeric prelude exposes Int, Float and Float32 as ordinary type atoms. Number
-is an alias for Float; canonical global text uses Float. Type-expression evaluation
+The numeric prelude exposes Int, Float and Float32 as ordinary type atoms. There
+is no Number alias; canonical global text uses Float. Type-expression evaluation
 installs local accessors, while transporting a structural Type value does not
 transport its defining scope. Named declarations retain their accessor products;
 lazy generic products remain visible through that declaration across snapshots.
@@ -516,8 +517,8 @@ synthetic runtime :: trees. The old quoted annotation-inspection pattern is remo
 Open type patterns define structural facets rather than concrete spaces:
 
 ```text
-def Colored type :Rect(Number,Number,color: String)
-def Rectangular type :Rect(w :: Number,h :: Number,**)
+def Colored type :Rect(Float,Float,color: String)
+def Rectangular type :Rect(w :: Float,h :: Float,**)
 r = Rect(2,3,color: 'black') :: Colored
 (p :: Rectangular) = r
 (p,p.w,p.h,p == r)
@@ -533,7 +534,7 @@ Global parse/toString text expands concrete descriptions; local variants use onl
 valid visible aliases. Concrete positions omit redundant annotations; abstract
 positions always include the actual concrete type. REPL inspection shows concrete
 types, or Expression for uninterpreted syntax. This does not guess Int
-versus Number or infer generic types. Opaque function inspection/serialization remains
+versus Float or infer generic types. Opaque function inspection/serialization remains
 limited. See [TYPE-VALUES.md](TYPE-VALUES.md) for exact coverage and constraints.
 
 ## Diagnostics
@@ -779,7 +780,7 @@ Scoped definition lowering and moving `if`/`match` to macros remain follow-up wo
 See [VALUE-SPACES.md](VALUE-SPACES.md) for the current contract and limits.
 
 ```text
-(x :: Number .where (n -> isInt64(n))) = 10
+(x :: Float .where (n -> isInt64(n))) = 10
 (y :: Int) = 10
 x.toInt == y
 # True; x == y instead reports E_INCOMPARABLE_TYPES.
@@ -832,11 +833,25 @@ See [TYPE-VALUES.md](TYPE-VALUES.md) for examples and explicit limits.
 
 ## One value equality
 
-Legacy bootstrap behavior: Int equals its raw canonical atom :Int; Type(Int) has
+Primitive names are `ReservedSymbol` values: `Int` inspects as
+`Int :: ReservedSymbol`, and the Int type `type Int` compares equal to it. `ReservedSymbol` is disjoint from `UpperCamelSymbol`.
+A quoted primitive name is `E_QUOTED_PRIMITIVE` in program source, including
+application heads and type declarations, so `Int == :Int` and `type :String(:A)`
+are errors; write `type String(:A)`.
+`:(Int)` evaluates to the uninterpreted `Int :: Expression`, and
+`parse(Code)(":Int")` parses as ordinary Code. Type(Int) has
 a distinct wrapped tree. Their compiled
 matchers are caches and do not participate in comparison. Canonical uncached type
 trees work in annotations, generic calls, and matching, and have the same global
 text as their cached form. Invalid/noncanonical type-shaped trees remain data.
+
+`True` and `False` are `Bool` values, not `ReservedSymbol` values, so literal and
+computed Booleans compare directly:
+
+```text
+(1 == 2) == False
+# True :: Bool
+```
 
 Closures and unsupported predicate/default environments cannot currently be compared
 because they lack structural representations; E_VALUE_REPRESENTATION reports this
@@ -1023,7 +1038,7 @@ or REPL submission. Nonproductive type aliases reject, and failed groups roll ba
 ```text
 def Sum type (a :: MathExp) :+ (b :: MathExp)
 def Product type (a :: MathExp) :* (b :: MathExp)
-def MathExp UnionType(Sum,Product,Symbol,Number)
+def MathExp UnionType(Sum,Product,Symbol,Float)
 MathExp
 ```
 
@@ -1047,14 +1062,15 @@ x = :a
 x
 # a :: LowerCamelSymbol
 
-def MathExp unionType Symbol | Number
+def MathExp unionType Symbol | Float
 (a :: MathExp) = :a
 toString(MathExp)(a)
 # "a"
 ```
 
-Symbol is the prelude union of LowerCamelSymbol, UpperCamelSymbol and
-PunctuationSymbol. UnionType members must have disjoint syntax; overlap and
+Symbol is the prelude union of LowerCamelSymbol, UpperCamelSymbol,
+UpperSnakeSymbol and PunctuationSymbol; it is not reserved, and ReservedSymbol
+is not a member. UnionType members must have disjoint syntax; overlap and
 unsupported proofs reject. Union parsing selects the unique concrete member,
 including in fields/lists, and printing omits redundant union annotations.
 Facet/Any reconstruction tags remain explicit. The current overlapping Int/Float,

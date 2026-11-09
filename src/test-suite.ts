@@ -19,6 +19,7 @@ import {
   formatRational,
 } from "./values.ts";
 import type { Value, TypeValue } from "./values.ts";
+import { primitiveNames } from "./primitive-names.ts";
 import type { Pattern } from "./pattern.ts";
 import { renderDiagnostic } from "./diagnostics.ts";
 import { lineIndent } from "./indent.ts";
@@ -80,11 +81,14 @@ const testLayoutForms = mergeLayoutForms(
   codeLayoutForms,
   layoutFormsFromBlock(parseSurface(TEST_SCHEMA, "test schema")),
 );
-const asType = (value: Value): TypeValue => {
+const asType = (value: Value, interpreter?: Interpreter): TypeValue => {
   const raw = unwrap(value);
-  if (raw.kind !== "type")
-    throw problem("an expected type expression must produce a Type value");
-  return raw;
+  if (raw.kind === "type") return raw;
+  if (raw.kind === "symbol" && primitiveNames.has(raw.name) && interpreter) {
+    const typed = unwrap(single(interpreter.run("type " + raw.name)));
+    if (typed.kind === "type") return typed;
+  }
+  throw problem("an expected type expression must produce a Type value");
 };
 function one(n: Syntax): Syntax {
   while (
@@ -465,7 +469,7 @@ function execute(interpreter: Interpreter, tree: Syntax): Field<Value>[] {
     tree.span?.source?.name ?? "test subject",
     { layoutForms: codeLayoutForms },
   );
-  const codeType = asType(single(interpreter.run("Code")));
+  const codeType = asType(single(interpreter.run("Code")), interpreter);
   const block =
     tree.kind === "block"
       ? tree
@@ -473,7 +477,7 @@ function execute(interpreter: Interpreter, tree: Syntax): Field<Value>[] {
   return interpreter.evaluateCode(interpreter.interpretSyntax(codeType, block));
 }
 function typeOf(tree: Syntax, interpreter: Interpreter): TypeValue {
-  return asType(single(execute(interpreter, tree)));
+  return asType(single(execute(interpreter, tree)), interpreter);
 }
 export function isAssertion(step: TestStep): boolean {
   return (
@@ -497,7 +501,7 @@ function expectedData(
         single(
           interpreter.call(
             "toString",
-            singleton(asType(single(interpreter.run("Type")))),
+            singleton(asType(single(interpreter.run("Type")), interpreter)),
             singleton(typeOf(tagged[1], interpreter)),
           ),
         ),
@@ -571,7 +575,7 @@ function expectedResult(
 function resultType(value: Value, interpreter: Interpreter): TypeValue {
   const observed = observedType(value);
   return typeof observed === "string"
-    ? asType(single(interpreter.run(observed)))
+    ? asType(single(interpreter.run(observed)), interpreter)
     : observed;
 }
 function matchesExpectedError(error: LanguageError, reason: string): boolean {
@@ -743,7 +747,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
             mismatch = "expected " + step.reason + "; the subject succeeded";
         } else if (step.kind === "assert") {
           const value = unwrap(single(results!, "assertion"));
-          const bool = asType(single(interpreter.run("Bool")));
+          const bool = asType(single(interpreter.run("Bool")), interpreter);
           if (
             results![0].label !== "_1" ||
             !equal(resultType(results![0].value, interpreter), bool) ||

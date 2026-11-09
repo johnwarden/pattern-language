@@ -24,6 +24,8 @@ import { indentRelation, lineIndent } from "./indent.ts";
 /** Start keyword -> extra clause keywords. `chains` are quoted keyword sequences from the same grammar. */
 export type LayoutForms = Map<string, Set<string>> & {
   chains?: Map<string, string[][]>;
+  /** True when the expected type is a syntax-shaped block/sequence grammar. */
+  structural?: boolean;
 };
 export interface ParseSurfaceOptions {
   /** Inert specification reading only; execution always uses the ordinary reader. */
@@ -85,17 +87,22 @@ function quotedLayoutNames(n: Syntax): string[] {
       return [];
   }
 }
-export function addLayoutForm(forms: LayoutForms, items: Syntax[]): void {
-  const quoted = items.flatMap(quotedLayoutNames);
-  if (!quoted.length) return;
-  const [start, ...clauses] = quoted;
+export function addLayoutKeywords(
+  forms: LayoutForms,
+  keywords: string[],
+): void {
+  if (!keywords.length) return;
+  const [start, ...clauses] = keywords;
   let set = forms.get(start);
   if (!set) {
     set = new Set();
     forms.set(start, set);
   }
   for (const clause of clauses) set.add(clause);
-  addLayoutChain(forms, start, quoted);
+  addLayoutChain(forms, start, keywords);
+}
+export function addLayoutForm(forms: LayoutForms, items: Syntax[]): void {
+  addLayoutKeywords(forms, items.flatMap(quotedLayoutNames));
 }
 export function layoutFormsFromBlock(root: Syntax): LayoutForms {
   const forms = emptyLayoutForms();
@@ -128,6 +135,7 @@ export function mergeLayoutForms(
     }
     for (const [start, chains] of source.chains ?? [])
       for (const chain of chains) addLayoutChain(forms, start, chain);
+    if (source.structural) forms.structural = true;
   }
   return forms;
 }

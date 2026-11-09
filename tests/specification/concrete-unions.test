@@ -3,8 +3,10 @@ test "A direct union arm takes precedence over inward designation"
   (sameOuter :: Float??) = :None :: Float??
   (inner :: Float??) = :None :: Float?
 
-  expect outer result :None :: Float??
-  expect inner result (:None :: Float?) :: Float??
+  expect outer result None :: Float??
+  expect inner result (None :: Float?) :: Float??
+  expect toString(Float??)(outer) result "None" :: String
+  expect toString(Float??)(inner) result "None :: Type(Float | :None)" :: String
   assert outer == sameOuter
   expect outer == inner result False :: Bool
   assert parse(Float??)(toString(Float??)(outer)) == outer
@@ -16,8 +18,10 @@ test "An explicit concrete member identifies an otherwise ambiguous branch"
   (x :: MyType) = :None :: String?
   (y :: MyType) = :None :: Float?
 
-  expect x result (:None :: String?) :: MyType
-  expect y result (:None :: Float?) :: MyType
+  expect x result (None :: String?) :: MyType
+  expect y result (None :: Float?) :: MyType
+  expect toString(MyType)(x) result "None :: Type(:None | String)" :: String
+  expect toString(MyType)(y) result "None :: Type(Float | :None)" :: String
   expect x == y result False :: Bool
   assert parse(MyType)(toString(MyType)(x)) == x
   assert parse(MyType)(toString(MyType)(y)) == y

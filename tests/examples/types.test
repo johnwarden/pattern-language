@@ -4,7 +4,7 @@ test "Canonical type alternatives"
 
   assert a == b
   # Legacy blocked: public descriptor text is still provisional; retain normalization and round-trip checks.
-  legacy expect toString(Type)(a) result "Type(:Black | :Red)" :: Expression
+  legacy expect toString(Type)(a) result "Type(:Black | :Red)" :: String
 
   assert parse(Type)(toString(Type)(a)) == b
 
@@ -29,10 +29,10 @@ test "Factory defaults and complete types"
   def rectangle(w :: Int, h :: Int, color: Color = :Black) Rect(w, h, color: color) :: Rectangle
   r = rectangle(3, 4)
 
-  expect r result Rect(3, 4, color: :Black) :: Rectangle
-  expect r.color result :Black :: Color
+  expect r result Rect(3, 4, color: Black) :: Rectangle
+  expect r.color result Black :: Color
   # Legacy blocked: public descriptor text is still provisional.
-  legacy expect toString(Type)(type Rectangle) result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: Expression
+  legacy expect toString(Type)(type Rectangle) result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: String
 
   assert False == (:Rect(3, 4) .matches (type Rectangle))
   (r, r.color, toString(Type)(type Rectangle), :Rect(3, 4) .matches (type Rectangle))
@@ -42,11 +42,11 @@ test "Optional labeled defaults"
   def Color type :Black | :White
   (size: s :: Int, color: c :: Color = :Black) = (size: 3)
 
-  expect c result :Black :: Color
+  expect c result Black :: Color
 end
 
 test "Type fields and ignored captures"
-  def Rectangle type :Rect(width :: Number, height :: Number)
+  def Rectangle type :Rect(width :: Float, height :: Float)
   r = Rect(3, 4) :: Rectangle
   Rect(_, h) = r
 
@@ -66,15 +66,14 @@ test "Inspect a pattern union"
 end
 
 test "Local and global type text"
-  def Rectangle type :Rect(width :: Number, height :: Number)
+  def Rectangle type :Rect(width :: Float, height :: Float)
   t = type Rectangle
   local = toStringLocal(Type)(t)
   global = toString(Type)(t)
 
-  legacy expect local result "Rectangle" :: Expression
-  todo expect local result "Rectangle" :: String
+  expect local result "Rectangle" :: String
   # Legacy blocked: local alias policy and global descriptor spelling are still provisional.
-  legacy expect global result "Type(Rect(Float, Float))" :: Expression
+  legacy expect global result "Type(Rect(Float, Float))" :: String
 
   assert parseLocal(Type)(local) == t
 
@@ -90,10 +89,10 @@ test "Mutually recursive mathematical expression types"
   def Product type
     (a :: MathExp) :* (b :: MathExp)
   end
-  def MathExp UnionType(Sum, Product, Symbol, Number)
-  (one :: MathExp) = 1 :: Number
-  (two :: MathExp) = 2 :: Number
-  (three :: MathExp) = 3 :: Number
+  def MathExp UnionType(Sum, Product, Symbol, Float)
+  (one :: MathExp) = 1 :: Float
+  (two :: MathExp) = 2 :: Float
+  (three :: MathExp) = 3 :: Float
   (sum :: MathExp) = (one :+ two) :: Sum
   expression = (sum :* three) :: Product
   text = toString(Product)(expression)
@@ -118,8 +117,8 @@ test "Named types and local accessors"
 end
 
 test "A union of type values"
-  def Circle type :Circle(Number)
-  def Square type :Square(Number)
+  def Circle type :Circle(Float)
+  def Square type :Square(Float)
   shape = UnionType(type Circle, type Square)
 
   expect shape result UnionType(Type(Circle(Float)), Type(Square(Float))) :: Type
@@ -130,11 +129,27 @@ test "Option factory with ()"
   a = :None :: Option(Int)
   b = Some(5) :: Option(Int)
 
-  legacy expect toString(Option(Int))(a) result ":None" :: Expression
-  todo expect toString(Option(Int))(a) result "None" :: String
+  expect toString(Option(Int))(a) result "None" :: String
+  expect a result None :: Option(Int)
   expect b result Some(5) :: Option(Int)
   expect Option(Int) result Type(:None | Some(Int)) :: Type
   (toString(Option(Int))(a), b, Option(Int))
+end
+
+test "All symbols print bare in value text"
+  def Choice type :yes | :None | :Widget
+  x = :yes :: Choice
+  y = :None :: Choice
+  z = :Widget :: Choice
+
+  expect toString(Choice)(x) result "yes" :: String
+  expect toString(Choice)(y) result "None" :: String
+  expect toString(Choice)(z) result "Widget" :: String
+  expect x result yes :: Choice
+  expect y result None :: Choice
+  expect z result Widget :: Choice
+  assert parse(Choice)(toString(Choice)(x)) == x
+  assert parse(Choice)(toStringLocal(Choice)(x)) == x
 end
 
 test "Type arguments use ordinary packs"
@@ -148,8 +163,8 @@ test "Type arguments use ordinary packs"
 end
 
 test "Types use ordinary value equality"
-  cached = Int
-  tree = :Int
+  cached = type Int
+  tree = Int
   value = 3 :: tree
 
   assert cached == tree
@@ -162,7 +177,7 @@ test "Types use ordinary value equality"
 end
 
 test "Picture: named shape type"
-  def Rectangle type :Rectangle(w :: Number, h :: Number)
+  def Rectangle type :Rectangle(w :: Float, h :: Float)
   def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle)
   p = Picture(color: :Black, shape: Rectangle(3, 4)) :: Picture
 
@@ -175,7 +190,7 @@ end
 test "Recursive type"
   def List(t :: Type) type :Nil | :Cons(t, List(t))
 
-  expect Cons(1, Cons(2, :Nil)) :: List(Int) result Cons(1, Cons(2, :Nil)) :: List(Int)
+  expect Cons(1, Cons(2, :Nil)) :: List(Int) result Cons(1, Cons(2, Nil)) :: List(Int)
 end
 
 test "Local recursive type block"
@@ -184,7 +199,7 @@ test "Local recursive type block"
     List(Int)
   )) = Cons(5, :Nil)
 
-  expect x result Cons(5, :Nil) :: (parse(Type)("Type(Recursive(:Nil | Cons(Int,Recur(0))))"))
+  expect x result Cons(5, Nil) :: (parse(Type)("Type(Recursive(:Nil | Cons(Int,Recur(0))))"))
 end
 
 test "Portable recursive type"
@@ -194,7 +209,7 @@ test "Portable recursive type"
   restored = parse(Type)(text)
   value = Cons(5, :Nil) :: restored
   # Legacy blocked: public recursive descriptor text is still provisional.
-  legacy expect text result "Type(Recursive(:Nil | Cons(Int, Recur(0))))" :: Expression
+  legacy expect text result "Type(Recursive(:Nil | Cons(Int, Recur(0))))" :: String
 
   assert restored == t
 
@@ -234,8 +249,8 @@ test "Types are ordinary values"
   r = Rect
 
   expect r result Type(Rect(Float, Float)) :: Type
-  expect Int result Int :: Type
-  expect Float result Float :: Type
+  expect Int result Int :: ReservedSymbol
+  expect Float result Float :: ReservedSymbol
   expect Type(Int) result Type(Int) :: Type
   (r, Int, Float, Type(Int))
 end
@@ -261,7 +276,7 @@ test "Type normalization and wrappers"
 end
 
 test "Types as ordinary values"
-  def Rectangle type :Rect(width :: Number, height :: Number)
+  def Rectangle type :Rect(width :: Float, height :: Float)
   t = Type(Rect(Float, Float))
   Type(pattern) = t
 
@@ -269,7 +284,7 @@ test "Types as ordinary values"
 
   assert t == (type Rectangle)
   # Legacy blocked: public descriptor text is still provisional.
-  legacy expect toString(Type)(t) result "Type(Rect(Float, Float))" :: Expression
+  legacy expect toString(Type)(t) result "Type(Rect(Float, Float))" :: String
 
   ((Type(pattern) == t), (t == (type Rectangle)), toString(Type)(t))
 end
@@ -296,10 +311,8 @@ test "Inspect a typed code binding without evaluating it"
     end
   end
 
-  legacy expect patternText result "f" :: Expression
-  todo expect patternText result "f" :: String
-  legacy expect bodyText result "x -> x * 2" :: Expression
-  todo expect bodyText result "x -> x * 2" :: String
+  expect patternText result "f" :: String
+  expect bodyText result "x -> x * 2" :: String
   (patternText, bodyText)
 end
 
@@ -321,7 +334,7 @@ test "Overlapping unions and narrowing"
 end
 
 test "Numeric spaces and conversion"
-  (x :: Number .where (n -> isInt64(n))) = 10
+  (x :: Float .where (n -> isInt64(n))) = 10
   (y :: Int) = 10
 
   assert x.toInt == y

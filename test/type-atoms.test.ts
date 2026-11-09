@@ -7,6 +7,7 @@ import {
   normal,
   LanguageError,
 } from "../src/index.ts";
+import { unwrap } from "../src/values.ts";
 import { syntaxKey } from "../src/syntax.ts";
 
 const run = (source: string) => displayResults(new Interpreter().run(source));
@@ -27,14 +28,13 @@ test("Boolean constants and native predicates have a known Bool result type", ()
     ),
     "(True :: Bool, False :: Bool, False :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool)",
   );
-  assert.equal(i.inspect(i.run(":True")), ":True :: UpperCamelSymbol");
 });
 
-test("primitive names evaluate as type values in ordinary expressions", () => {
+test("primitive names evaluate as ReservedSymbol values in ordinary expressions", () => {
   const i = new Interpreter();
-  assert.equal(i.inspect(i.run("r = Int\nr")), "Int :: Type");
+  assert.equal(i.inspect(i.run("r = Int\nr")), "Int :: ReservedSymbol");
   assert.equal(
-    run("(Int == (type Int),Float == Number,Bool == (type Bool))"),
+    run("(Int == (type Int),Float == (type Float),Bool == (type Bool))"),
     "(True, True, True)",
   );
   rejects("x = Foo\nx", "E_UNBOUND_NAME");
@@ -53,7 +53,7 @@ test("bound TitleCase names evaluate to their type values", () => {
 });
 
 test("constructor heads stay tags while bare symbols need quotation", () => {
-  assert.equal(run("(Foo(1), :Foo)"), "(Foo(1), :Foo)");
+  assert.equal(run("(Foo(1), :Foo)"), "(Foo(1), Foo)");
   assert.equal(
     run("def Rect type Rect(Float,Float)\nType(Rect(Float,Float)) == Rect"),
     "True",
@@ -88,7 +88,7 @@ test("type factories use the same parameter-pattern matcher", () => {
     run(
       "def Option(t :: Type) type :None | Some(t)\nt = Option(Int)\n(:None :: t,Some(3) :: t,t)",
     ),
-    "(:None, Some(3), Type(:None | Some(Int)))",
+    "(None, Some(3), Type(:None | Some(Int)))",
   );
   assert.equal(
     run(
@@ -131,9 +131,10 @@ test("type construction sees the same value through abstract storage", () => {
 
 test("canonical enum type text can also be evaluated as an ordinary type value", () => {
   const i = new Interpreter();
-  const encoded = i.run("toString(Type)(type :Red | :Black)")[0].value;
+  const encoded = unwrap(i.run("toString(Type)(type :Red | :Black)")[0].value);
   assert.equal(encoded.kind, "literal");
-  if (encoded.kind !== "literal") throw new Error("expected text");
+  if (encoded.kind !== "literal" || typeof encoded.value !== "string")
+    throw new Error("expected text");
   assert.equal(run("(" + encoded.value + ") == (type :Red | :Black)"), "True");
 });
 
@@ -179,7 +180,7 @@ test("local names abbreviate REPL type annotations, not structural type values",
     i.inspect(
       i.run("def Color type :Red | :Green\n(v :: :Green | :Red) = :Red\nv"),
     ),
-    ":Red :: Color",
+    "Red :: Color",
   );
   assert.equal(i.inspect(i.run("r = Color\nr")), "Type(:Green | :Red) :: Type");
 });
@@ -198,7 +199,7 @@ test("type defaults remain rejected while binding defaults remain capture-only",
     "type Rect(w :: Float,h :: Float,color: Symbol = :Red)",
     "E_TYPE_DEFAULT",
   );
-  assert.equal(run("(x,color: c :: Symbol = :Red) = (1)\n(x,c)"), "(1, :Red)");
+  assert.equal(run("(x,color: c :: Symbol = :Red) = (1)\n(x,c)"), "(1, Red)");
 });
 
 test("angle brackets no longer introduce a second application form", () => {
@@ -255,7 +256,6 @@ test("language constants self-evaluate independently of lexical storage", () => 
 
 test("equal compiled and raw type trees have equal canonical strings", () => {
   for (const expression of [
-    "Int",
     "Type(Rect(Float,Float))",
     "Type(Int)",
     "UnionType(Int,String)",
@@ -264,9 +264,9 @@ test("equal compiled and raw type trees have equal canonical strings", () => {
       run(
         "a = " +
           expression +
-          "\nb = :" +
+          "\nb = :(" +
           expression +
-          "\n(a == b,toString(Expression)(a) == toString(Expression)(b))",
+          ")\n(a == b,toString(Expression)(a) == toString(Expression)(b))",
       ),
       "(True, True)",
     );

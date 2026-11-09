@@ -29,6 +29,8 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | L7 | Author instruction on 7 November: integrate this record into the project docs and plan a small DSL-suite milestone covering these cases and cogent TypeScript migrations |
 | L8 | Author instruction on 8 November: parse directly into Expression; Expression number literals are exact Rationals; get rid of the lasting syntax-tree layer. This supersedes any pending public `NumberLiteral(Float)` redesign. Distinct postfix punctuation application is a separate smaller item, not blocked on full parser migration. |
 | W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
+| L9 | Author rulings on 9 November 2026 for PR #31 (settled 14:17 Madrid, refined 14:34 and 14:59): Strings are intrinsic primitives. Every symbol prints bare in value text, including `None`; `:` is needed only in code where a bare name would bind. Value text is read with the expected type's own grammar, with no layout-keyword quoting. Primitive names are `ReservedSymbol` values, not symbols, and type descriptions use them directly. A quoted primitive name such as `:Int` in program source is an error, including application heads and type declarations; parsing Code and decoding value text have no special check for it. `Number` is removed for now. |
+| L10 | Author ruling on 9 November 2026 (15:02 Madrid): master's Boolean behavior is correct. Literal `True`/`False` are `Bool` values, the same type as computed comparison results, not `ReservedSymbol` values. Refined 15:11: match arms use bare `True`/`False`; a quoted primitive in any pattern stays `E_QUOTED_PRIMITIVE`. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -51,11 +53,22 @@ boundaries. **Source:** W9.
 
 ### D02. Primitive values and syntax are distinct levels — confirmed direction; lexical details proposed
 
-Different source expressions may evaluate to the same value without being the same syntax tree. Primitive values have intrinsic concrete interpretations: ordinary strings are String, booleans are Bool, numeric literals are Rational, and ordinary quoted symbols have their intrinsic symbol classes. A reserved primitive atom must not simultaneously become an ordinary UpperCamelSymbol merely because colon quotation was used.
+Values stay distinct from the expressions that evaluate to them. Distinct source
+expressions may compute the same value; source quotation/printing and value
+inspection keep those roles separate. Primitive values have intrinsic concrete
+interpretations: ordinary strings are String, booleans are Bool, numeric literals
+are Rational, ordinary quoted symbols have their intrinsic symbol classes, and
+primitive names are `ReservedSymbol` values (D20).
 
 P proposes self-evaluating `PrimitiveType`, including `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`, with `Type` no longer a reserved primitive atom. This vocabulary is recorded as the proposed primitive representation, not a completed metatype specification. Int/Float families are intended to be definable fixed-precision types rather than primitive numeric atoms.
 
-A proposes rejecting redundant `:5` and quoted primitive atoms in Code while permitting their raw syntax in the Expression parsing domain. R2 notes that preserving primitive values under quotation would also be coherent. **The prohibition itself has not been finally chosen.** Ordinary symbolic quotation, raw colon quotation, explicit typed interpolation and separation of quotation from execution otherwise remain unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved Symbols,” AR; R2.
+A proposes rejecting redundant `:5` and quoted primitive atoms in Code while
+permitting their raw syntax in the Expression parsing domain. For primitive
+names the direction is now D20's future `QuotedSymbol`; `:5` remains the C27
+candidate. Ordinary symbolic quotation, raw colon quotation, explicit typed
+interpolation and separation of quotation from execution otherwise remain
+unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved
+Symbols,” AR; R2; L9.
 
 ### D03. Structured runtime values require concrete interpretation — confirmed; parse into Expression
 
@@ -199,9 +212,9 @@ types are not installed in shared setup merely to allow an assertion to be recor
 ### C01 — intrinsic primitive values
 
 Confirmed direction; the PrimitiveType spelling/self-description is P's proposed vocabulary.
-Live: `True :: Bool`, `5 :: Rational`, `:Widget :: UpperCamelSymbol`. Legacy still
-treats `"hello"` as Expression and `Bool` as Type. Todo: `"hello" :: String`,
-`Bool :: PrimitiveType`, and `PrimitiveType :: PrimitiveType`.
+Live: `"hello" :: String`, `True :: Bool`, `Int :: ReservedSymbol`, `5 :: Rational`,
+`:Widget :: UpperCamelSymbol`. Legacy still treats `type Bool` as Type. Todo:
+`Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`.
 
 ### C02 — exact literals, including Float64-rounded Rational literals
 
@@ -392,7 +405,71 @@ or harness errors. C08 independently records the future evidence requirement.
 **Exploratory expectation only, awaiting the author's lexical choice.** It must
 not be integrated as a confirmed decision. Todo candidates: `:5` and `:Bool` are
 not Code forms. No corresponding expected result is assigned for raw Expression
-computation, which may be omitted entirely.
+computation, which may be omitted entirely. D20 records the settled direction
+for quoted primitive names.
+
+### D19. Symbol value text is unquoted; colon quotation is a code form — confirmed 9 November 2026
+
+Every symbol prints bare in value text, with no special cases:
+`toString(Color)(:Black)` is `"Black"` and `None` in `String?` prints `None`.
+Code keeps `:` where a bare name would bind: `a = :None :: Int?`,
+`Type(:None | String)`, `toString(Expression)(:foo)`. Value text is read with the
+expected type's grammar, so `test` or `expect` are keywords only where that
+grammar makes them so. Union `::` tags still follow D07: `None` in `Float??`
+prints `None`, while the inner member prints `None :: Type(Float | :None)`.
+**Sources:** L9.
+
+### D20. Primitive names are ReservedSymbol values — confirmed 9 November 2026
+
+Primitive names are values of the primitive type `ReservedSymbol`, which is
+disjoint from the ordinary symbol classes:
+
+```text
+expect Int result Int :: ReservedSymbol
+assert (type Int) == Int
+assert (Int .matches UpperCamelSymbol) == False
+```
+
+The type description of `type Int` is the reserved symbol itself, not `:Int`.
+`Symbol` is not reserved; the prelude defines it as the union of the four ordinary classes.
+
+`True` and `False` are reserved names but not `ReservedSymbol` values. They are
+`Bool` values, the same type as computed comparison results (L10):
+
+```text
+expect True result True :: Bool
+expect (1 == 2) == False result True :: Bool
+expect True .matches ReservedSymbol result False :: Bool
+```
+
+Match arms use the bare names; `:True ->` is `E_QUOTED_PRIMITIVE`:
+
+```text
+match 1 == 1
+  True -> "yes"
+  False -> "no"
+end
+# "yes" :: String
+```
+
+A quoted primitive name in program source is an error, including application
+heads and type declarations, which write the bare reserved name instead. Parsing
+Code and decoding value text have no special check for it:
+
+```text
+expect :Int error "E_QUOTED_PRIMITIVE"
+expect :True error "E_QUOTED_PRIMITIVE"
+expect Int == :Int error "E_QUOTED_PRIMITIVE"
+expect type :String(:A) error "E_QUOTED_PRIMITIVE"
+assert (type String(:A)) == Type(Apply(Literal(String), Fields(:A)))
+expect :(Int) result Int :: Expression
+expect parse(Code)(":Int") result :Int :: Code
+```
+
+Once the Code grammar defines `QuotedSymbol` (Symbols only),
+`parse(Code)(":Foo")` is `:Foo :: QuotedSymbol` and `parse(Code)(":Int")` is
+rejected. These are todo checks today. `Number` is removed for now.
+**Sources:** L9, L10.
 
 ## Remaining and deferred items
 
@@ -422,6 +499,8 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | --- | --- |
 | D01 application, packs, precedence | C24, C25; runtime packs remain distinct from generic parameters in C05 |
 | D02 primitives and quotation | C01; C27 is an **unaccepted lexical candidate**, not confirmed behavior |
+| D19 symbol value text vs code quotation | C01 `Widget`; `None` in the postfix, nested-option and concrete-union specs |
+| D20 ReservedSymbol and quoted primitive names | C01; quoted primitive names in Code, including QuotedSymbol todos; symbol-class disjointness |
 | D03 mandatory interpretation / parse into Expression | C04, C05; first-class Expression *value* computation remains optional; SyntaxNode numeric A/B superseded |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |

@@ -22,13 +22,13 @@ test("quotation yields structural data without evaluating the application", () =
     run("def f(x) 2 * x\nb = :f(1)\nc = :(f(1))\n(b == c,b)"),
     "(True, f(1))",
   );
-  assert.equal(run(":(f(unknown))"), "f(:unknown)");
-  assert.equal(run("x = 7\n:(Box(x))"), "Box(:x)");
+  assert.equal(run(":(f(unknown))"), "f(unknown)");
+  assert.equal(run("x = 7\n:(Box(x))"), "Box(x)");
   assert.equal(run(":f()"), "f()");
   assert.equal(run("(:f == :f())"), "False");
 });
 test("ordinary functions may return quoted data without becoming macros", () => {
-  assert.equal(run("def data(x) :(f(x))\ndata(7)"), "f(:x)");
+  assert.equal(run("def data(x) :(f(x))\ndata(7)"), "f(x)");
   assert.equal(run("x = 7\nExpression$` Box($(x))"), "Box(7)");
   fails("$x", "E_UNQUOTE_CONTEXT");
 });

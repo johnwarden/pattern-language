@@ -30,7 +30,6 @@ const primitiveNames: Record<string, string> = {
   Int: "Int",
   String: "String",
   Bool: "Bool",
-  Symbol: "Symbol",
   LowerCamelSymbol: "LowerCamelSymbol",
   UpperCamelSymbol: "UpperCamelSymbol",
   UpperSnakeSymbol: "UpperSnakeSymbol",
@@ -39,6 +38,7 @@ const primitiveNames: Record<string, string> = {
   Expression: "Expression",
   Body: "Body",
   Type: "Type",
+  ReservedSymbol: "ReservedSymbol",
 };
 const reserved = new Set([
   "Type",

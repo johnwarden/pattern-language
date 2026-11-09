@@ -14,8 +14,8 @@ test "Bare nested absence selects the direct outer arm"
   (outer :: Nested) = :None
   (inner :: Nested) = :None :: Inner
 
-  expect outer result :None :: Nested
-  expect inner result (:None :: Inner) :: Nested
+  expect outer result None :: Nested
+  expect inner result (None :: Inner) :: Nested
   expect outer == inner result False :: Bool
 end
 
@@ -105,7 +105,7 @@ test "The source optional convention is unwrapped T | :None"
   expect
     (absent :: String?) = :None
     absent
-  result :None :: String?
+  result None :: String?
 
   expect
     (tagged :: String?) = Some("Hello")
@@ -127,8 +127,8 @@ test "Nested postfix absence preserves explicit member evidence"
   (outer :: String??) = :None
   (inner :: String??) = :None :: String?
 
-  expect outer result :None :: String??
-  expect inner result (:None :: String?) :: String??
+  expect outer result None :: String??
+  expect inner result (None :: String?) :: String??
   expect outer == inner result False :: Bool
 end
 
