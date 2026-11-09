@@ -1,0 +1,114 @@
+test "Body admits an empty result pack as its final row"
+  def Capture type
+    (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+  end
+  def Pattern unionType LowerCamelSymbol | Capture
+  def Sum type
+    (left :: ValueExpression) :+ (right :: ValueExpression)
+  end
+  def Product type
+    (left :: ValueExpression) :* (right :: ValueExpression)
+  end
+  def ValueExpression unionType Float | String | Symbol | Sum | Product
+  def FunctionSignature type
+    (name :: LowerCamelSymbol)(parameters... :: Pattern*)
+  end
+  def Definition type :def signature :: FunctionSignature value :: (unionType ValueExpression | Body)
+  def DestructuringBinding type
+    (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+  end
+  def Binding unionType DestructuringBinding | Definition
+  def Body type
+    bindings :: Binding*
+    ...
+    resultExpression... :: ValueExpression*
+  end
+  b = Body`
+    ()
+  end
+
+  expect b.bindings result [] :: (type [_... :: Binding*])
+  expect b.resultExpression result [] :: (type [_... :: ValueExpression*])
+end
+
+test "Body requires a final result row"
+  def Capture type
+    (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+  end
+  def Pattern unionType LowerCamelSymbol | Capture
+  def Sum type
+    (left :: ValueExpression) :+ (right :: ValueExpression)
+  end
+  def Product type
+    (left :: ValueExpression) :* (right :: ValueExpression)
+  end
+  def ValueExpression unionType Float | String | Symbol | Sum | Product
+  def FunctionSignature type
+    (name :: LowerCamelSymbol)(parameters... :: Pattern*)
+  end
+  def Definition type :def signature :: FunctionSignature value :: (unionType ValueExpression | Body)
+  def DestructuringBinding type
+    (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+  end
+  def Binding unionType DestructuringBinding | Definition
+  def Body type
+    bindings :: Binding*
+    ...
+    resultExpression... :: ValueExpression*
+  end
+
+  expect
+    Body`
+      x = 2
+    end
+  error "E_PATTERN_MISMATCH"
+  expect
+    Body`
+      2
+      x = 3
+    end
+  error "E_PATTERN_MISMATCH"
+  expect
+    Body`
+      def f(x) x * 2
+    end
+  error "E_PATTERN_MISMATCH"
+end
+
+test "Body round-trips definitions and nested RHS bodies without evaluating them"
+  def Capture type
+    (name :: LowerCamelSymbol) ::: (annotation :: Expression)
+  end
+  def Pattern unionType LowerCamelSymbol | Capture
+  def Sum type
+    (left :: ValueExpression) :+ (right :: ValueExpression)
+  end
+  def Product type
+    (left :: ValueExpression) :* (right :: ValueExpression)
+  end
+  def ValueExpression unionType Float | String | Symbol | Sum | Product
+  def FunctionSignature type
+    (name :: LowerCamelSymbol)(parameters... :: Pattern*)
+  end
+  def Definition type :def signature :: FunctionSignature value :: (unionType ValueExpression | Body)
+  def DestructuringBinding type
+    (patterns... :: Pattern*) := (value :: (unionType ValueExpression | Body))
+  end
+  def Binding unionType DestructuringBinding | Definition
+  def Body type
+    bindings :: Binding*
+    ...
+    resultExpression... :: ValueExpression*
+  end
+  b = Body`
+    def missing(x) x * 2
+    y =
+      z = 3
+      z
+    end
+    y
+  end
+
+  assert parse(Body)(toString(Body)(b)) == b
+  assert parse(Type)(toString(Type)(Body)) == Body
+end

@@ -50,7 +50,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Type identity, abstract slots, caches, unsupported host environments and transport | existing type/value/abstract tests; retain direct representation/fresh-process checks |
 | Numeric exactness/conversion, overlapping unions and remaining type/evidence behavior | host and tests/numeric/*.test regressions; supported slices replace their corresponding legacy expectations |
 | Typed quotes, byte normalization and raw syntax encode/decode | tests/quotes/evaluation.test plus host quotes/postfix files; kind/key/encode-decode, empty preludes and hole locations stay |
-| Vertical matching, row keys, ambiguity, descriptor transfer | test/vertical-spread.test.ts; mixed source/representation assertions retained |
+| Vertical matching, row keys, ambiguity, descriptor transfer | tests/spreading/*.test plus test/vertical-spread.test.ts; host keeps dimensions, Float32 text, locations, ambiguous partitions and fresh-interpreter transport |
 | Canonical source behavior of the former test/cases suite | test/source-suite.test.ts; canonicalizes then runs the same DSL expectation |
 | Test schema round trips, execution/isolation traps, fixtures and error phases | test/test-suite.test.ts; checks the harness rather than language examples |
 | Recursive discovery, CLI process status and expected-failure reporting | test/test-cli.test.ts; needs filesystem/process observations |
@@ -229,6 +229,41 @@ are reused rather than duplicated.
 | postfix-conventions: hash always starts a comment | specification/postfix#postfix-percent-remains-punctuation-hash-is-a-comment; quotes/evaluation#interpolating-a-postfix-percent-preserves-its-spelling | `normal(parseExpression("x#"))` stays |
 
 Host remainder is syntax kind/key/encode-decode, independently configured empty preludes, exact diagnostic codes and interpolation hole locations. No expected-failure or legacy marker was added or changed.
+
+## Spreading and schema-evaluation migration
+
+The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) grouped
+`test/pattern-schema.test.ts`, `test/milestone-two.test.ts` and
+`test/vertical-spread.test.ts` as the next mixed batch. Portable matching,
+type-description evaluation and vertical spreading now run under
+`tests/matching/quoted-heads.test`, `tests/matching/open-fields.test`,
+`tests/types/descriptions.test` and `tests/spreading/`. Expected results are
+authored data. Pending keyword-rest `{**rest}` was not selected. `#48` was not
+edited; bootstrap `def … type` remains setup. Existing TodoList, 2-D Matrix and
+nested-Body examples were reused rather than duplicated.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| pattern-schema: documented schema is the exact runtime bootstrap source | — | File vs `TYPE_SCHEMA` stays |
+| pattern-schema: language schema gates descriptor shapes | types/descriptions#explicit-apply-describes-a-literal-reserved-head | Invalid-shape throws and user-scope `TypeDescription` gating stay |
+| pattern-schema: work budgets; TypeDescription matcher; decoder agreement | — | Matcher/compiler schema checks stay |
+| pattern-schema: quoted operator heads across matching contexts | matching/quoted-heads#* | Binding, function, match, type and quoted name |
+| pattern-schema: alternative branch captures; String constructor round trips | types/descriptions#alternative-branch-captures-erase-without-shared-slots; types/descriptions#string-constructor-patterns-round-trip-without-becoming-string-literals | Original programs |
+| pattern-schema: refinements preserve the concrete member; Any | types/descriptions#refinements-preserve-the-concrete-member-selected-by-a-union; types/descriptions#a-refinement-of-any-keeps-the-concrete-int-member | Current `.where` syntax; specification refinement todos were not edited |
+| pattern-schema: failed dispatch candidates do not evaluate defaults | types/descriptions#failed-dispatch-candidates-do-not-evaluate-defaults | All three overload programs |
+| pattern-schema: public type equality requires value trees | types/descriptions#unordered-union-types-compare-equal; types/descriptions#a-refinement-has-no-structural-representation-for-equality | Invalid `Type(Apply(:A,Int))` stays |
+| milestone-two: Language schema file and AST/Grammar transport | types/descriptions#the-language-schema-round-trips-as-a-type-and-as-expression | File identity, encode/decode, `Grammar.fromDescription`, parse-only `parseSyntax` and fresh-grammar macros stay |
+| milestone-two: binding/parameter/arm conformance | matching/open-fields#label-order-*; matching/open-fields#defaults-only-bind-omitted-captures-*; matching/open-fields#positional-rest-never-consumes-labels-* | `Grammar.parseAs` stays |
+| milestone-two: required fields, exactness and ambiguity | matching/open-fields#a-missing-required-label-*; matching/open-fields#an-unexpected-label-*; matching/open-fields#overlapping-constructor-alternatives-* | `Grammar.parseAs` rejection stays |
+| milestone-two: type defaults forbidden; facet accessors | matching/open-fields#type-definitions-cannot-carry-binding-defaults; matching/open-fields#facet-accessors-preserve-original-fields | Original programs |
+| milestone-two: duplicate captures; malformed Type arities | — | Exact `E_DUPLICATE_CAPTURE` and `E_TYPE_DESCRIPTION` stay |
+| vertical-spread: canonical row trees | — | `parseExpression` `syntaxKey` stays |
+| vertical-spread: TodoList/Matrix/Body examples | examples/grammars#vertical-spreading-* | Existing source counterparts |
+| vertical-spread: empty/evaluated rows; application-row capture | spreading/vertical#* | Spaced `todo (` syntax stays on the host |
+| vertical-spread: Float32 reconstruction; dimension codes; locations; ambiguous partitions; fresh-interpreter transfer | — | Representation, exact codes and transport stay |
+| vertical-spread: Body final row and unevaluated definitions | spreading/body#*; host session `E_UNBOUND_NAME` after capturing Body | Round trip moved; session non-installation stays |
+
+Host remainder is schema/decoder identity, Grammar objects, encode/decode, exact dimension/duplicate/type-description codes, Float32 serialization, ambiguous row partitions and fresh-interpreter transport. No expected-failure or legacy marker was added or changed. Keyword-rest grammar was not selected.
 
 ## Existing source cases
 
