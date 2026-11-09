@@ -90,6 +90,7 @@ end
 
 test "Removing required infix spaces is an error"
   expect parse(Code)("a+b") error "infix operators require spaces"
+  expect parse(Code)("x + ") error "infix operators require spaces"
 end
 
 test "An extra end after a complete inline clause is still accepted"

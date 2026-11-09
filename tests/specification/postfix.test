@@ -54,6 +54,16 @@ end
 
 test "Spaced infix star is not postfix"
   expect 2 * 3 result 6 :: Rational
+  expect parse(Code)("T *") error "infix operators require spaces"
+  expect parse(Code)("2*3") error "infix operators require spaces"
+end
+
+test "Prefix plus forms are the same tree; tight Int+ is not"
+  assert (parse(Code)("+Int") == parse(Code)("+(Int)"))
+  expect parse(Code)("Int+") error "infix operators require spaces"
+  expect parse(Code)("Int*+") error "infix operators require spaces"
+  expect parse(Code)("a+") error "infix operators require spaces"
+  expect parse(Code)("a+b") error "infix operators require spaces"
 end
 
 test "Postfix dollar amp tilde are distinct from prefix/infix"

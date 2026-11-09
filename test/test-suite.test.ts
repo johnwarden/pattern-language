@@ -316,6 +316,7 @@ test("a fulfilled todo fails and asks for removal, including expected-error asse
     'test "Bool"\n todo assert True\nend',
     'test "Value"\n todo expect :Widget result Widget :: UpperCamelSymbol\nend',
     'test "Error"\n todo expect missing() error "E_UNBOUND_NAME"\nend',
+    'test "Parse"\n todo expect parse(Code)("a+b") error "infix operators require spaces"\nend',
   ]) {
     const r = run(source);
     assert.equal(r.passed, false);
@@ -332,6 +333,19 @@ test("legacy assertions must pass and never suppress failures", () => {
   const r = run('test "Legacy"\n legacy assert False\nend');
   assert.equal(r.passed, false);
   assert.equal(r.checks[0].mode, "legacy");
+});
+test("parse failures of quoted source use ordinary expect parse(Code) error", () => {
+  const r = run(`test "infix"
+  expect parse(Code)("x + ") error "infix operators require spaces"
+end`);
+  assert.equal(r.passed, true, r.message);
+  assert.equal(r.checks[0].kind, "error");
+  const ok = run(`test "valid"
+  expect parse(Code)("1 + 1") error "infix operators require spaces"
+end`);
+  assert.equal(ok.passed, false);
+  assert.match(ok.message, /the subject succeeded/);
+  assert.equal(ok.checks[0].kind, "error");
 });
 test("todo operands resolve and execute without leaking bindings or definitions", () => {
   const r = run(
