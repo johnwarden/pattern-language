@@ -27,6 +27,25 @@ test "C01 intrinsic primitive values"
   todo expect PrimitiveType result PrimitiveType :: PrimitiveType
 end
 
+test "Literal and computed Booleans are comparable whether or not they are equal"
+  expect True == (1 == 1) result True :: Bool
+  expect True != (1 == 1) result False :: Bool
+  expect (1 == 1) == True result True :: Bool
+  expect (1 == 1) != True result False :: Bool
+  expect True == (1 == 2) result False :: Bool
+  expect True != (1 == 2) result True :: Bool
+  expect (1 == 2) == True result False :: Bool
+  expect (1 == 2) != True result True :: Bool
+  expect False == (1 == 1) result False :: Bool
+  expect False != (1 == 1) result True :: Bool
+  expect (1 == 1) == False result False :: Bool
+  expect (1 == 1) != False result True :: Bool
+  expect False == (1 == 2) result True :: Bool
+  expect False != (1 == 2) result False :: Bool
+  expect (1 == 2) == False result True :: Bool
+  expect (1 == 2) != False result False :: Bool
+end
+
 test "Quoted primitive names in Code"
   expect :Int error "E_QUOTED_PRIMITIVE"
   expect :True error "E_QUOTED_PRIMITIVE"

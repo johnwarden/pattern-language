@@ -387,8 +387,8 @@ export function compare(a: Value, b: Value): number {
     const boolVsReserved =
       ua.kind === "symbol" &&
       ub.kind === "symbol" &&
-      ua.name === ub.name &&
       (ua.name === "True" || ua.name === "False") &&
+      (ub.name === "True" || ub.name === "False") &&
       ((sa.name === "ReservedSymbol" && sb.name === "Bool") ||
         (sa.name === "Bool" && sb.name === "ReservedSymbol"));
     if (!boolVsReserved)
