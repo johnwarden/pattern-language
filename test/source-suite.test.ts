@@ -2,8 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { TEST_SCHEMA } from "../src/test-schema.ts";
-import { loadTests, runTest } from "../src/test-suite.ts";
 import { sourceFiles } from "./source-files.ts";
+import { registerSourceTests } from "./source-suite-runner.ts";
+
+const sourceCases = registerSourceTests(
+  sourceFiles(new URL("../tests/", import.meta.url)),
+);
 
 test("the published Test schema is the source used by the harness", () => {
   assert.equal(
@@ -14,14 +18,6 @@ test("the published Test schema is the source used by the harness", () => {
     TEST_SCHEMA,
   );
 });
-for (const value of loadTests(
-  sourceFiles(new URL("../tests/", import.meta.url)),
-)) {
-  test("source conformance: " + value.id, () => {
-    const result = runTest(value);
-    assert.equal(result.passed, true, result.phase + ": " + result.message);
-  });
-}
 
 // These source cases retain the former host canonical-source checks.
 import { Interpreter } from "../src/runtime.ts";
@@ -35,9 +31,7 @@ test("every legacy assertion has a same-subject todo or an explicit unresolved d
     .map((m) => m[1] + " :: " + m[2])
     .sort();
   const unresolved: string[] = [];
-  for (const value of loadTests(
-    sourceFiles(new URL("../tests/", import.meta.url)),
-  )) {
+  for (const value of sourceCases) {
     for (const legacy of value.steps.filter(
       (s) => s.mode === "legacy" && s.kind !== "setup",
     )) {
@@ -56,8 +50,8 @@ test("every legacy assertion has a same-subject todo or an explicit unresolved d
     "pair legacy with a real replacement, or document the specific unresolved decision",
   );
 });
-for (const value of loadTests(
-  sourceFiles(new URL("../tests/conformance/", import.meta.url)),
+for (const value of sourceCases.filter((value) =>
+  value.file.startsWith("conformance/"),
 )) {
   test("canonical source: " + value.id, () => {
     const tree = new Interpreter().parse(value.source);
@@ -75,8 +69,8 @@ for (const value of loadTests(
 }
 
 test("specification corpus names design cases C01 through C27", () => {
-  const cases = loadTests(
-    sourceFiles(new URL("../tests/specification/", import.meta.url)),
+  const cases = sourceCases.filter((value) =>
+    value.file.startsWith("specification/"),
   );
   const present = new Set(
     cases.flatMap((value) => {

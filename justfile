@@ -43,13 +43,17 @@ watch FILE:
 repl:
     {{ node }} src/cli.ts --repl
 
-# Host tests; optional single path. Full run includes shell smokes.
+# Host tests, or a source .test file/directory. Full run includes shell smokes.
 [positional-arguments]
 test path="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ -n "${1:-}" ]]; then
-      {{ node }} --test "$1"
+      if [[ -d "$1" || "$1" == *.test ]]; then
+        {{ node }} src/test-cli.ts "$1"
+      else
+        {{ node }} --test "$1"
+      fi
     else
       npm test
       bash test/cursor_dockerfile_devbox_align_test.sh
