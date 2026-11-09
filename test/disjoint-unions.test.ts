@@ -67,7 +67,7 @@ test("unannotated raw union values select and retain exactly one concrete member
 test("union text and union container text omit redundant concrete tags", () => {
   assert.equal(
     run(
-      'def U unionType Int | String\n(x :: U) = 3\n(xs :: U*) = [1,"two"]\n(toString(U)(x),toString(U*)(xs),parse(U*)(toString(U*)(xs)) == xs)',
+      'def U unionType Int | String\n(x :: U) = 3\n(xs :: [_... :: U*]) = [1,"two"]\n(toString(U)(x),toString(type [_... :: U*])(xs),parse(type [_... :: U*])(toString(type [_... :: U*])(xs)) == xs)',
     ),
     '("3", "[1, \\"two\\"]", True)',
   );
@@ -92,7 +92,7 @@ test("ordinary recursive expression grammar exposes concrete applications and sy
   assert.equal(
     run(
       expression +
-        "(head :: ValueExpr)(args... :: ValueExpr*) = ValueExpr` a + b\n(operator :: ValueExpr)(left... :: ValueExpr*) = head\n(toString(ValueExpr)(head),toString(ValueExpr*)(args),toString(ValueExpr)(operator),toString(ValueExpr*)(left))",
+        "(head :: ValueExpr)(args... :: ValueExpr*) = ValueExpr` a + b\n(operator :: ValueExpr)(left... :: ValueExpr*) = head\n(toString(ValueExpr)(head),toString(type [_... :: ValueExpr*])(args),toString(ValueExpr)(operator),toString(type [_... :: ValueExpr*])(left))",
     ),
     '("+(a)", "[b]", "+", "[a]")',
   );

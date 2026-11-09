@@ -150,12 +150,12 @@ test("abstract value-expression ascriptions are rejected", () => {
 
 test("every abstract field and container element needs a concrete interpretation", () => {
   assert.equal(run("(x :: Any) = 3\nx"), "3");
-  assert.equal(run("(xs :: Any*) = [1]\nxs"), "[1]");
+  assert.equal(run("(xs :: [_... :: Any*]) = [1]\nxs"), "[1]");
   assert.equal(run("def Box type :Box(Any)\nBox(1) :: Box"), "Box(1)");
-  rejects("(xs :: Any*) = [[]]\nxs", "E_CONCRETE_TYPE_REQUIRED");
+  rejects("(xs :: [_... :: Any*]) = [[]]\nxs", "E_CONCRETE_TYPE_REQUIRED");
   assert.equal(
     run(
-      "(xs :: Any*) = [( [] :: Int*),3 :: Int]\nparse(Any*)(toString(Any*)(xs)) == xs",
+      "(xs :: [_... :: Any*]) = [( [] :: [_... :: Int*]),3 :: Int]\nparse(type [_... :: Any*])(toString(type [_... :: Any*])(xs)) == xs",
     ),
     "True",
   );
@@ -284,7 +284,6 @@ test("concrete Type cannot disguise an open constraint", () => {
     /invalid type-description shape/,
   );
 });
-
 
 test("abstract order is total inside a common domain but concrete cross-space comparison still fails", () => {
   assert.equal(

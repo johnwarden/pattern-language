@@ -35,8 +35,13 @@ test("type unions preserve member spaces across overlapping unions", () => {
 });
 
 test("option spaces stay distinct and their overlapping union is rejected", () => {
+  const option = "def Option(T :: Type) type :None | Some(T)\n";
   assert.throws(
-    () => run("a = :None :: Int?\nb = :None :: String?\na == b"),
+    () =>
+      run(
+        option +
+          "a = :None :: Option(Int)\nb = :None :: Option(String)\na == b",
+      ),
     /different concrete types/,
   );
 });
@@ -77,12 +82,14 @@ test("type union values reconstruct in a fresh interpreter", () => {
   );
 });
 
-
-test("pattern union and type union syntax cannot silently switch meanings", () => {
-  assert.throws(() => run("type Int | String"), /UnionType/);
+test("concrete pattern unions remain distinct from abstract type unions", () => {
+  assert.equal(run("type Int | String"), "Type(Int | String)");
   const interpreter = new Interpreter();
   interpreter.env.bindings.set("text", valLiteral("Type(Int | String)"));
-  assert.throws(() => interpreter.run("parse(Type)(text)"), /UnionType/);
+  assert.equal(
+    displayResults(interpreter.run("parse(Type)(text)")),
+    "Type(Int | String)",
+  );
   assert.throws(() => run("UnionType(1)"), /type values/);
   assert.equal(run("type :Some(Int) | :None"), "Type(:None | Some(Int))");
 });

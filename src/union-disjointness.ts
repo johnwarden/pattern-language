@@ -182,6 +182,9 @@ export function patternOverlap(left: P, right: P): Answer {
       if (a.kind === "test" && b.kind === "test") return tests(a, b);
       if (a.kind === "node" && b.kind === "node")
         return every([go(a.head, b.head), go(a.body, b.body)]);
+      if (a.kind === "postfix" && b.kind === "postfix")
+        return every([go(a.operator, b.operator), go(a.operand, b.operand)]);
+      if (a.kind === "postfix" || b.kind === "postfix") return "no";
       if (a.kind === "fields" && b.kind === "fields") return fields(a, b);
       if (a.kind === "node" && b.kind === "test") return nodeTest(b);
       if (b.kind === "node" && a.kind === "test") return nodeTest(a);

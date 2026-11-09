@@ -1,5 +1,6 @@
 import { LanguageError } from "./diagnostics.ts";
 import { lineSeparator } from "./string-format.ts";
+import { isCommentStart } from "./lexical.ts";
 import type { Syntax, TextPart, Span, Field } from "./syntax.ts";
 import {
   hasLinePrefix,
@@ -164,7 +165,7 @@ export function holeEnd(source: string, opening: number, nesting = 0): number {
     );
   let depth = 1;
   for (let i = opening + 1; i < source.length; i++) {
-    if (source[i] === "#") {
+    if (isCommentStart(source, i)) {
       const newline = source.indexOf("\n", i);
       if (newline < 0) break;
       i = newline;
@@ -334,6 +335,12 @@ function locate(
           head: visit(n.head),
           body: fields(n.body),
         };
+      case "postfix":
+        return {
+          ...n,
+          span: span(n.span),
+          operand: visit(n.operand),
+        };
       case "pack":
         return { ...n, span: span(n.span), body: fields(n.body) };
       case "quote":
@@ -376,13 +383,13 @@ export function readText(
   layout: TextLayout = { clauses: new Set(), shareEnd: false },
 ): { end: number; parts: TextPart[]; held?: boolean } {
   const content = readContent(
-    source,
-    opening,
-    interpolate,
-    readerRaw,
-    0,
-    layout,
-  ),
+      source,
+      opening,
+      interpolate,
+      readerRaw,
+      0,
+      layout,
+    ),
     { text, positions } = content;
   const location = sourceLocator(source);
   const parts: TextPart[] = [];

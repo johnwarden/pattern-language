@@ -60,13 +60,13 @@ test "DSL: Recursive expression grammar"
   end
   legacy expect toString(ValueExpr)(head) result "+(a)" :: Expression
   todo expect toString(ValueExpr)(head) result "+(a)" :: String
-  legacy expect toString(ValueExpr*)(args) result "[b]" :: Expression
-  todo expect toString(ValueExpr*)(args) result "[b]" :: String
+  legacy expect toString(type [_... :: ValueExpr*])(args) result "[b]" :: Expression
+  todo expect toString(type [_... :: ValueExpr*])(args) result "[b]" :: String
   legacy expect toString(ValueExpr)(operator) result "+" :: Expression
   todo expect toString(ValueExpr)(operator) result "+" :: String
-  legacy expect toString(ValueExpr*)(left) result "[a]" :: Expression
-  todo expect toString(ValueExpr*)(left) result "[a]" :: String
-  (expression, toString(ValueExpr)(head), toString(ValueExpr*)(args), toString(ValueExpr)(operator), toString(ValueExpr*)(left))
+  legacy expect toString(type [_... :: ValueExpr*])(left) result "[a]" :: Expression
+  todo expect toString(type [_... :: ValueExpr*])(left) result "[a]" :: String
+  (expression, toString(ValueExpr)(head), toString(type [_... :: ValueExpr*])(args), toString(ValueExpr)(operator), toString(type [_... :: ValueExpr*])(left))
 end
 
 test "DSL: Tests with explicit value and type"
@@ -172,15 +172,15 @@ test "Vertical spreading: Inspect a nested Body"
   expect first result a :: LowerCamelSymbol
   expect second result b :: LowerCamelSymbol
 
-  legacy expect toString(Binding*)(body.bindings) result "[y = 2, z = 3]" :: Expression
+  legacy expect toString(type [_... :: Binding*])(body.bindings) result "[y = 2, z = 3]" :: Expression
 
-  todo expect toString(Binding*)(body.bindings) result "[y = 2, z = 3]" :: String
-  legacy expect toString(ValueExpression*)(body.resultExpression) result "[y * z, y]" :: Expression
-  todo expect toString(ValueExpression*)(body.resultExpression) result "[y * z, y]" :: String
+  todo expect toString(type [_... :: Binding*])(body.bindings) result "[y = 2, z = 3]" :: String
+  legacy expect toString(type [_... :: ValueExpression*])(body.resultExpression) result "[y * z, y]" :: Expression
+  todo expect toString(type [_... :: ValueExpression*])(body.resultExpression) result "[y * z, y]" :: String
 
   assert parse(Body)(toString(Body)(body)) == body
 
-  (first, second, toString(Binding*)(body.bindings), toString(ValueExpression*)(body.resultExpression), (parse(Body)(toString(Body)(body)) == body))
+  (first, second, toString(type [_... :: Binding*])(body.bindings), toString(type [_... :: ValueExpression*])(body.resultExpression), (parse(Body)(toString(Body)(body)) == body))
 end
 
 test "Vertical spreading: Two-dimensional lists"
@@ -193,7 +193,7 @@ test "Vertical spreading: Two-dimensional lists"
     3, 4
   ]
 
-  expect m.values result [[1, 2], [3, 4]] :: *(*(Float))
+  expect m.values result [[1, 2], [3, 4]] :: (type [_... :: Float**])
 
   assert parse(Matrix)(toString(Matrix)(m)) == m
 
@@ -212,7 +212,7 @@ test "Vertical spreading: TodoList"
     end
   end
 
-  expect list.todos result ["item 1", "item 2"] :: *(String)
+  expect list.todos result ["item 1", "item 2"] :: (type [_... :: String*])
 
   assert parse(TodoList)(toString(TodoList)(list)) == list
 

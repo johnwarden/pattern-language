@@ -1,6 +1,6 @@
 # Roadmap and current specification
 
-Updated 7 November 2026. This is the current design, implementation boundary and
+Updated 9 November 2026. This is the current design, implementation boundary and
 milestone sequence, not a development history. The integrated
 [decision/conformance record](design/LANGUAGE-DECISIONS.md) supplies reasons, status
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
@@ -29,7 +29,8 @@ must test composition and state role differences explicitly.
   Each repeated dimension adds one list layer; horizontal-plus-vertical has T**.
 - Type identity is normalized structural descriptor equality. Capture/declaration
   names and caches do not participate. This is not extensional predicate equivalence.
-- Concrete designation may recurse only along a unique justified inward path.
+- Concrete designation preserves explicit members, then prefers a direct arm over
+  inward designation. Equally valid peer paths remain ambiguous.
   Explicit match projection crosses one concrete boundary; ordinary bindings and
   dispatch do not unwrap. Predicate evidence and single-arm coverage are required.
   These decisions are settled.
@@ -44,9 +45,16 @@ must test composition and state role differences explicitly.
   captures only; type defaults and implicit normalization remain excluded.
 - Refinement-qualified functions are legal. Missing evidence is a checking failure;
   overlapping base/refinement overloads do not gain priority by evaluating predicates.
-- Structured runtime values require an established concrete interpretation. Optional
-  runtime Expression and descriptor-to-value decoding remain undecided. Distinct
+- Structured runtime values require an established concrete interpretation. Distinct
   source syntax evaluating to the same primitive is not a type-equality exception.
+  The parser destination is Expression, not a lasting parallel syntax tree:
+  number literals in Expressions are exact Rationals. Host `Syntax`, public
+  `SyntaxNode` (`NumberLiteral(Rational)`, `Apply`, `Postfix`, …), and `syntaxTree` /
+  `syntaxExpression` / `parseSyntax` are bootstrap adapters. Migrate consumers
+  while preserving behavior, then delete the legacy Syntax/public-adapter layer.
+  That migration is not implemented yet. There is no pending public
+  `NumberLiteral(Float)` redesign choice. Distinct postfix application is a
+  separate, smaller surface item and is not blocked on the full migration.
 - Global typed text is independent of lexical aliases. For a fixed T, equal values
   have equal canonical text and parse(T)(toString(T)(v)) == v for the supported subset.
   Local variants may reuse names in the same scope. Abstract slots retain type metadata
@@ -65,20 +73,24 @@ family aliases, edge rounding/overflow and canonical spelling remain provisional
 
 Type declaration keywords, angle parameter sugar, MemberOf, bare-family facets,
 parameter recovery, singleton abstract policy, duplicate local names/accessor
-imports and runtime Expression remain explicitly provisional/unresolved. First-class
-overload sets are not accepted. Specialization is only a deferred optimization of
-already defined abstract-call semantics, never a source-visible overload generator.
+imports remain explicitly provisional/unresolved. First-class overload sets are
+not accepted. Specialization is only a deferred optimization of already defined
+abstract-call semantics, never a source-visible overload generator. Whether
+ordinary programs expose a first-class runtime Expression *value* remains
+optional; that is separate from the parser destination, which is Expression.
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. The corpus
-includes 76 playground examples, 14 other conformance cases, nine migrated binding/
-default cases and the 27 C01–C27 design cases. Host/canonical/control checks execute
-separately; expected failures are not counted as passing assertions. The complete
-verification gate includes build and type checks.
+The reference is TypeScript prototype 0.2. `tests/**/*.test` is the executable
+language corpus; runnable playground programs come from `tests/examples/`.
+`just check` runs the complete gate. `just test-language` reports passing assertions,
+legacy assertions and expected todo failures separately; totals are not duplicated
+through this document.
 
 | Implemented foundation | Boundary |
 | --- | --- |
+| Exact Rational values and public numeric syntax payloads | Finite Float32/Float64 conversion; IEEE special-value policy remains deferred |
+| Generic postfix values, patterns and portable descriptions | Optional `?` is defined in the source prelude; lifting remains future work |
 | Shared pattern compiler/matcher; exact/open fields; captures/rest/defaults | Revised declaration-only accessor and proof rules need alignment |
 | Structural Type data/schema, recursion, abstract slots, facets, typed text | Public type/predicate/function coverage remains bounded |
 | Scoped sidefix registration, typed grammar quotes, interpolation and diagnostics | No full prepare-once elaborator or source evaluator |
@@ -88,9 +100,10 @@ verification gate includes build and type checks.
 
 ### Bootstrap behaviors superseded by the intended design
 
-- Exact Rational literals, `0f`, and Float32/Float64 converters exist; IEEE payload
-  `toString` still uses JS decimals, so `0.1` is Rational 1/10 rather than live Float64 bits.
-- Overlapping `UnionType` members are allowed; `unambiguous` certification is unimplemented.
+- Legacy safe-range Int and Float-as-binary64 names; exact Rational literals and
+  finite Float32/Float64 conversion are implemented.
+- Explicit syntax-disjointness certification remains future work; general
+  overlapping UnionType members are supported.
 - Old def/type construction and accessor products; duplicate structural declarations
   rejected across visible scopes, with a replacement policy still unresolved.
 - Raw Expression compatibility values, legacy primitive-atom/cache equality and runtime
@@ -114,26 +127,28 @@ explicit layout termination, including shared string/if terminator ownership.
   preserve the disambiguation table, defer Unicode casing and UpperSnake binding roles.
 - Implemented grammar diagnostics with found input, active expected form and locations.
   Contextual type-inference diagnostics still depend on milestones 6/7.
-- Extend the shared tree/value/pattern/serialization adapters with distinct postfix
-  expressions. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
+- Implemented distinct postfix expressions across the shared
+  tree/value/pattern/serialization adapters. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
   from the nearest suffix outward. Type-name/head rules apply to every suffix.
-  List T*, Option T?, and error T^ are postfix trees. Prefix `+Int` and `+(Int)`
+  Optional T? (`T | :None`) is defined in source; the bootstrap retains list T*
+  and result T^ type constructors. Prefix `+Int` and `+(Int)`
   are the same application tree; tight `Int+` is not rewritten to prefix `+`.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.
 - Implement explicit layout end ownership and migrate source/host fixtures together.
   Reject missing inner ends; clause continuations and form completeness come from
   the active surface grammar, not hardcoded keyword lists. Support strings ending
-  at a dedented clause and a final end shared with their containing form. Reject a
-  redundant `end` after a complete inline final clause; that `end` cannot close the
-  completed form or steal an enclosing block. Keep EOF rejection and existing string
-  data. The REPL submits a finished grammar form on its last line.
+  at a dedented clause and a final end shared with their containing form. Keep EOF
+  rejection and existing string data. The REPL submits a finished grammar form on
+  its last line.
 - Implemented legacy/todo setup alternatives from the same incoming scope; do not allow
   duplicate-name failures or leaked bindings to mask a fulfilled todo.
 
-These are focused slices, not new completed milestones. Postfix value identity and
-transport must be coherent across all common adapters before its syntax is shipped.
-Environment-aware macros belong to 6/7; expected DSL elaboration belongs to 5b.
+The postfix clarification and current source-prelude boundary are specified in
+[POSTFIX.md](design/POSTFIX.md). Optional types are not built-in matcher cases.
+These are focused slices, not new completed milestones. Postfix values are
+distinct from prefix application. Environment-aware macros belong to 6/7; expected
+DSL elaboration belongs to 5b.
 
 ### 1–4. Bootstrap foundations — implemented within the boundary above
 
@@ -182,45 +197,40 @@ run even after a failed check. Minimal source-only adapters retain future spelli
 which still have to pass the ordinary reader when executed. No future numeric/type
 feature is implemented merely by storing or attempting its assertion.
 
-The suite includes C01–C27 and the explicit-end layout contracts. The
-Widget observation is already an ordinary passing contract. C03's supported Float32
-designation and C19's empty/singleton rest checks have no todo. C27 remains
-exploratory. Current bootstrap observations are explicitly legacy where they depend
-on raw Expression behavior.
+The suite includes C01–C27, the distinct postfix regression, and the
+explicit-end layout contracts. The Widget observation is already an ordinary
+passing contract. C03's supported Float32 designation and C19's empty/singleton
+rest checks have no todo. C27 remains exploratory. Current bootstrap observations
+are explicitly legacy where they depend on raw Expression behavior.
 
-The 90 original source cases retain their intended payloads, with inaccurate type
-and expected-spelling assertions fixed. Nine binding/default host tests remain
-migrated. Necessary host/API/AST/UTF-8/DOM/resource/transaction/build and 14 canonical-
-source checks remain. All 76 playground options use the same source
+Original source cases retain their intended payloads, with inaccurate type
+and expected-spelling assertions fixed. Migrated binding/default host tests
+remain. Necessary host/API/AST/UTF-8/DOM/resource/transaction/build and
+canonical-source checks remain. Playground options use the same source
 corpus, including their shared setup and optional displayed return pack. CLI program output is annotated like REPL output.
 
 [TEST-SUITE.md](design/TEST-SUITE.md) specifies the working grammar and execution.
-[TEST-MIGRATION.md](design/TEST-MIGRATION.md) maps coverage. **5a.2 is next**: implement
+[TEST-MIGRATION.md](design/TEST-MIGRATION.md) maps coverage. **5a.2 is in progress**: implement
 approved value-model slices, remove fulfilled todo markers and explicitly retire
 legacy assertions as their compatibility requirements end.
 
 Every remaining legacy assertion is accounted for in
-[LEGACY-ASSERTIONS.md](design/LEGACY-ASSERTIONS.md): 48 have executable same-subject
-todo replacements, and 22 await a stated design decision. Stable checks are ordinary
-assertions. The inventory is checked against the suite, and companion todos do not
-remove supported playground programs.
+[LEGACY-ASSERTIONS.md](design/LEGACY-ASSERTIONS.md) by a same-subject todo or a
+specific unresolved decision. The host suite checks the inventory against source.
 
-### 5a.2. Align the bootstrap with the revised value model — staged after suite support
+### 5a.2. Align the bootstrap with the revised value model — in progress
 
-Implement independently reviewable slices against future assertions:
+Implemented slices: exact numeric values/syntax, overlapping abstract unions,
+source-defined postfix conventions, direct-member concrete designation and bounded
+match-only projection. The unified source/host suite checks their composition.
+
+Remaining alignment slices:
 
 - Plain type values versus declaration/accessor products; explicit interpreted-value
   boundaries and structural interop. Resolve alias/import policy before encoding it.
-- General abstract unions with member tags, separating unambiguous DSL certification.
-- Exact Rational literal representation and typed numeric converters, without choosing
-  deferred IEEE details or implicit rounding. Retain explicit unsupported boundaries.
-- Fixed-width numeric types are carveouts of the exact numeric space, not a precision
-  lattice: `type Float32 concrete NaN | Inf | Rational .where fitsFloat32`, Float64
-  with `fitsFloat64`, integer widths `Int .where` the range fits. Current primitive
-  atoms are interim. Existing "fixed-precision" wording is to be revised to this
-  model. IEEE identity/payload details remain deferred.
-- One-boundary projection and unique contextual designation for the supported
-  non-predicate subset. Checker-dependent cases remain pending for milestone 7.
+- Unambiguous DSL certification, separate from the implemented overlapping abstract unions.
+- Extend numeric family/width support without choosing deferred IEEE details or implicit rounding.
+- Extend the implemented designation/projection subset with checking evidence in milestone 7.
 - Approved mirrored spreading/keyword remainder rules after their grammar is settled.
 
 **Complete when each slice:** its approved assertions pass and can lose todo; supported
@@ -232,6 +242,11 @@ merely to satisfy a future assertion.
 
 ### 5b. Grow Body into interpreted Code grammar
 
+The bootstrap implements the single-line String-field slice: annotated bindings and
+a uniquely known callable's current pack share one expected-grammar elaborator,
+associated by field label or position. Returns, layout, Code categories and
+canonical `toString :: String` remain later work.
+
 Propagate expected grammars through bindings, calls and returns, allowing unquoted
 DSL forms with normally evaluated field expressions. Keep literal keywords quoted
 in grammar patterns and unquoted in grammar-directed data text. Reject ambiguity.
@@ -239,8 +254,8 @@ in grammar patterns and unquoted in grammar-directed data text. Reject ambiguity
 Define useful Code categories as ordinary pattern/grammar types over one stated
 surface representation. Extend the bounded source grammar with functions, control
 forms, matching and complete bodies. Freeze the public raw-tree/typed-code/descriptor
-mapping first; optional runtime Expression/ExpressionTree is a remaining choice,
-not a mandatory new primitive taxonomy. Avoid generic applications swallowing
+mapping first; parse directly into Expression remains a later migration, not a
+mandatory new primitive taxonomy. Avoid generic applications swallowing
 statement forms by accidental priority.
 
 **Complete when:** direct ordinary patterns classify/destructure representative Code,

@@ -24,6 +24,8 @@ export function dispatchSignature<T>(packs: Pattern<T>[]): {
         return ["any"];
       case "node":
         return ["node", shape(p.head), shape(p.body)];
+      case "postfix":
+        return ["postfix", shape(p.operator), shape(p.operand)];
       case "label":
         return ["label", p.label, !!p.fallback, shape(p.pattern)];
       case "row":

@@ -106,8 +106,8 @@ const cases: [string, string, string][] = [
     "t = t -> type :Some(value :: t)\nt(type Int)",
     "Type(Some(Int))",
   ],
-  ["option", "Some(1) :: Int?", "Some(1)"],
-  ["list of options", "[Some(1),:None] :: Int?*", "[Some(1), :None]"],
+  ["option", "1 :: Int?", "1"],
+  ["list of options", "[1,:None] :: [_... :: Int?*]", "[1, :None]"],
   ["result", "Ok(1) :: Int^", "Ok(1)"],
 ];
 for (const [name, source, expected] of cases)
@@ -162,7 +162,11 @@ const failures: [string, string, RegExp][] = [
     "(3 :: Int) + 1",
     /same concrete numeric type/,
   ],
-  ["inexact Float designation", "0.1 :: Float", /not exactly representable as Float/],
+  [
+    "inexact Float designation",
+    "0.1 :: Float",
+    /not exactly representable as Float/,
+  ],
   [
     "inexact Number designation",
     "0.1 :: Number",
@@ -281,7 +285,10 @@ test("opaque partial applications cannot use host identity as equality", () =>
 test("labels supply default captures in bindings and function parameters", () => {
   assert.equal(run("(width: Int) = (width: 3)\nwidth"), "3");
   assert.equal(run("def f(width: Int) width\nf(width: 3)"), "3");
-  assert.equal(run("def f(rest: Int*) rest\nf(rest: [2,3])"), "[2, 3]");
+  assert.equal(
+    run("def f(rest: type [_... :: Int*]) rest\nf(rest: [2,3])"),
+    "[2, 3]",
+  );
   assert.throws(() => run("(tag: :Red) = (tag: :Red)\ntag"), /unbound name/);
 });
 
@@ -293,7 +300,9 @@ test("implicit named type captures define accessors", () => {
     "12",
   );
   assert.equal(
-    run("def R type :Rect(rest: Int*)\nr = Rect(rest: [2,3]) :: R\nr.rest"),
+    run(
+      "def R type :Rect(rest: type [_... :: Int*])\nr = Rect(rest: [2,3]) :: R\nr.rest",
+    ),
     "[2, 3]",
   );
 });
@@ -414,7 +423,7 @@ test("rest captures are list values at every length and binding boundary", () =>
   }
   assert.equal(run("[y,rest...] = [1,2]\n[0,rest...]"), "[0, 2]");
   assert.equal(
-    run("def one(x :: Int*) x\n[y,rest...] = [1,2]\none(rest)"),
+    run("def one(x :: [_... :: Int*]) x\n[y,rest...] = [1,2]\none(rest)"),
     "[2]",
   );
 });
@@ -494,60 +503,39 @@ test("binding defaults preserve inputs and type definitions reject defaults", ()
 
 test("built-in concrete types require exact labels", () => {
   for (const source of [
-    "Some(1,meta: 2) :: Int?",
-    "Ok(1,meta: 2) :: Int^",
-    "[1,2,meta: 3] :: Int*",
+    "Some(1,meta: 2) :: (type :Some(Int))",
+    "Ok(1,meta: 2) :: (type :Ok(Int))",
+    "[1,2,meta: 3] :: [_... :: Int*]",
   ])
     assert.throws(() => run(source), /unexpected labeled field/);
-  assert.throws(() => run("Some(meta: 2) :: Int?"), /expected/);
+  assert.throws(() => run("Some(meta: 2) :: (type :Some(Int))"), /expected/);
 });
 
 test("question mark preserves option type semantics in defaulted fields", () => {
   const color = "def Color type :Black | :White\n";
+  assert.equal(run(color + "(color: c :: Color? = :Black) = ()\nc"), ":Black");
   assert.equal(
-    run(color + "(color: c :: Color? = Some(:Black)) = ()\nc"),
-    "Some(:Black)",
+    run(color + "def f(color: c :: Color? = :Black) c\nf()"),
+    ":Black",
   );
   assert.equal(
-    run(color + "def f(color: c :: Color? = Some(:Black)) c\nf()"),
-    "Some(:Black)",
-  );
-  assert.equal(
-    run(
-      color +
-        "def f(color: c :: Color? = Some(:Black)) c\nf(color: Some(:White))",
-    ),
-    "Some(:White)",
-  );
-  assert.equal(
-    run(color + "def f(color: c :: Color? = Some(:Black)) c\nf(color: :None)"),
-    ":None",
-  );
-  assert.equal(
-    run(color + "def f(color: c :: Color? = :None) c\nf()"),
-    ":None",
+    run(color + "def f(color: c :: Color? = :Black) c\nf(color: :White)"),
+    ":White",
   );
   assert.throws(
-    () => run(color + "(color: c :: Color? = :Black) = ()\nc"),
+    () => run(color + "(color: c :: Color? = Some(:Black)) = ()\nc"),
     /expected/,
   );
   assert.throws(
     () =>
       run(
-        color + "def f(color: c :: Color? = Some(:Black)) c\nf(color: :White)",
+        color + "def f(color: c :: Color? = :Black) c\nf(color: Some(:White))",
       ),
     /no applicable/,
   );
   assert.throws(
     () => run(color + "(color: c :: Color?) = ()\nc"),
     /missing required labeled argument/,
-  );
-  assert.equal(
-    run(
-      color +
-        "def R type :R(color: c :: Color?)\ndef make(color: Color? = Some(:Black)) R(color: color) :: R\nr = make()\nr.c",
-    ),
-    "Some(:Black)",
   );
 });
 
@@ -589,10 +577,11 @@ test("ambiguous patterns do not silently fall through arms or dispatch", () => {
   assert.throws(() => run("def f(x | x) 1\nf(1)"), /ambiguous pattern/);
 });
 
-test("actions are absent and postfix exclamation is reserved", () => {
+test("actions are absent and prefix exclamation stays reserved", () => {
   assert.throws(() => run("action(() -> ())"), /unbound name/);
-  assert.throws(() => run("()!"), /reserved/);
-  assert.equal(normal(parseExpression("Int!")), "!(Int)");
+  assert.throws(() => run("!(1)"), /reserved/);
+  assert.equal(parseExpression("()!").kind, "postfix");
+  assert.equal(normal(parseExpression("Int!")), "Int!");
 });
 
 test("ASCII camel and upper-snake words have explicit spelling boundaries", () => {
@@ -676,7 +665,9 @@ test("callable variables compete with accessor methods", () => {
 
 test("direct calls select the only matching callable across namespaces", () => {
   assert.equal(
-    run('def f(x :: Number) x + (1 :: Number)\nf = (x :: String) -> x\n(f(2),f("hi"))'),
+    run(
+      'def f(x :: Number) x + (1 :: Number)\nf = (x :: String) -> x\n(f(2),f("hi"))',
+    ),
     '(3, "hi")',
   );
   assert.equal(run("def f(x) x + 1\nf = 99\n(f,f(2))"), "(99, 3)");

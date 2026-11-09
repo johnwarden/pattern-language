@@ -64,6 +64,9 @@ export function patternBindings<T>(pattern: Pattern<T>) {
     } else if (p.kind === "node") {
       visit(p.head).forEach(add);
       visit(p.body).forEach(add);
+    } else if (p.kind === "postfix") {
+      visit(p.operator).forEach(add);
+      visit(p.operand).forEach(add);
     } else if (p.kind === "fields" || p.kind === "sequence") {
       p.parts.forEach((part) => visit(part).forEach(add));
     } else if (
@@ -93,6 +96,8 @@ export function isOpenPattern<T>(p: Pattern<T>): boolean {
       );
     case "node":
       return isOpenPattern(p.head) || isOpenPattern(p.body);
+    case "postfix":
+      return isOpenPattern(p.operator) || isOpenPattern(p.operand);
     case "capture":
     case "label":
     case "row":

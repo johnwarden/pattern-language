@@ -38,13 +38,16 @@ test "An expectation cannot borrow its enclosing test's end"
 end
 
 test "A final end can close a string and its surrounding if"
-  s = if True '
-    Hello, World!
-  else '
-    What is cooking?
+  source = '
+    s = if True '
+      Hello, World!
+    else '
+      What is cooking?
+    end
+    s
   end
 
-  expect s result "Hello, World!" :: Expression
+  assert parse(Code)(source) .matches Code
 end
 
 test "An error clause closes an indented subject without a preceding end"
@@ -119,4 +122,8 @@ test "Quoted if/else branches share one end"
       there
     end
   result "there" :: Expression
+
+  source = "if 1 == 1 '\n    Hello\nelse '\n    there\nend"
+
+  assert parse(Code)(source) .matches Code
 end

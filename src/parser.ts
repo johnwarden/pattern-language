@@ -8,13 +8,17 @@ import {
   fields,
   packOf,
   isName,
+  postfix,
+  POSTFIX_SUFFIX,
 } from "./syntax.ts";
+import { parseNumericSpelling, syntaxNumber } from "./rational.ts";
 import type { Syntax, Field, Span } from "./syntax.ts";
 import {
   punctuation,
   punctuationEnd,
   identifierName,
   labelName,
+  isCommentStart,
 } from "./lexical.ts";
 import { indentRelation, lineIndent } from "./indent.ts";
 /** Start keyword -> extra clause keywords. `chains` are quoted keyword sequences from the same grammar. */
@@ -50,10 +54,7 @@ function formKeywords(
 ): string[] {
   return names.filter((name) => name === start || clauses.has(name));
 }
-function formComplete(
-  seen: string[],
-  chains: string[][] | undefined,
-): boolean {
+function formComplete(seen: string[], chains: string[][] | undefined): boolean {
   return !!chains?.some(
     (chain) =>
       chain.length === seen.length &&
@@ -74,6 +75,8 @@ function quotedLayoutNames(n: Syntax): string[] {
         ...quotedLayoutNames(n.head),
         ...n.body.flatMap((field) => quotedLayoutNames(field.value)),
       ];
+    case "postfix":
+      return quotedLayoutNames(n.operand);
     case "quote":
       return quotedLayoutNames(n.value);
     case "block":
@@ -148,7 +151,10 @@ function owningClauses(
   return form ? new Set(form.clauses) : undefined;
 }
 /** Start or clause keyword from the active surface grammar, not a hardcoded list. */
-function isLayoutKeyword(name: string, forms: LayoutForms | undefined): boolean {
+function isLayoutKeyword(
+  name: string,
+  forms: LayoutForms | undefined,
+): boolean {
   if (!forms?.size) return false;
   if (forms.has(name)) return true;
   for (const clauses of forms.values()) if (clauses.has(name)) return true;
@@ -241,7 +247,7 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
       column = 1;
       continue;
     }
-    if (c === "#") {
+    if (isCommentStart(source, i)) {
       while (i < source.length && source[i] !== "\n") {
         i++;
         column++;
@@ -339,8 +345,8 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
     } else if (
       (options.specification
         ? /^(?:0[fFxXbB]|[0-9][0-9_]*_)/
-        : /^(?:0[fFxXbB])/)
-        .test(source.slice(i))
+        : /^(?:0[fFxXbB])/
+      ).test(source.slice(i))
     ) {
       const digits = "[0-9](?:_?[0-9])*";
       const hex = "[0-9a-fA-F](?:_?[0-9a-fA-F])*";
@@ -653,17 +659,11 @@ class Reader {
       } else if (
         t.kind === "op" &&
         !t.quoted &&
-        /^[?*!^]+$/.test(t.text) &&
+        POSTFIX_SUFFIX.test(t.text) &&
         this.suffixBoundary()
       ) {
         this.take();
-        for (const c of t.text)
-          n = {
-            kind: "apply",
-            head: symbol(c),
-            body: packOf(n),
-            span: n.span,
-          };
+        for (const c of t.text) n = postfix(c, n, n.span);
       } else break;
     }
     const end = this.tokens[this.pos - 1];
@@ -730,21 +730,25 @@ class Reader {
       return { kind: "quote", value: this.atom(stops), span };
     }
     if (t.kind === "name") return { ...symbol(t.text, !!t.quoted), span };
-    if (t.kind === "numberSource")
+    if (t.kind === "numberSource") {
+      if (!this.options.specification) {
+        const value = parseNumericSpelling(t.text);
+        if (!value)
+          throw new LanguageError("malformed numeric source literal", t);
+        return { ...syntaxNumber(value, t.text), span };
+      }
       return {
         ...apply(symbol("NumericSource", true), [
           { label: "_1", value: { kind: "literal", value: t.text } },
         ]),
         span,
       };
+    }
     if (t.kind === "number") {
-      const value = Number(t.text);
-      if (
-        !Number.isFinite(value) ||
-        (Number.isInteger(value) && !Number.isSafeInteger(value))
-      )
-        throw new LanguageError("number exceeds safe numeric range", t);
-      return { kind: "literal", value, span };
+      const value = parseNumericSpelling(t.text);
+      if (!value)
+        throw new LanguageError("malformed numeric source literal", t);
+      return { ...syntaxNumber(value, t.text), span };
     }
     if (t.kind === "string") return { ...t.textNode!, span };
     if (t.kind === "(") {
@@ -778,15 +782,19 @@ class Reader {
       let label = "_" + (result.length + 1);
       let keywordRest = false;
       if (
-        this.options.specification &&
-        this.peek()?.kind === "name" &&
-        this.peek(1)?.text === "**" &&
-        this.peek(2)?.kind === ":" &&
-        this.peek()!.end === this.peek(1)!.start &&
-        this.peek(1)!.end === this.peek(2)!.start
+        this.peek()?.text === "**" &&
+        !this.peek()?.quoted &&
+        this.peek(1)?.kind === "name" &&
+        this.peek(2)?.kind === ":"
       ) {
-        label = this.take().text;
         this.take();
+        const name = this.take();
+        if (!labelName(name.text))
+          throw new LanguageError(
+            "labels must be lowercase camelCase names",
+            name,
+          );
+        label = name.text;
         this.take();
         keywordRest = true;
       }
@@ -810,7 +818,7 @@ class Reader {
         throw new LanguageError("expected an argument", this.peek());
       const rawValue = seq.items.length === 1 ? seq.items[0] : seq;
       const value = keywordRest
-        ? apply(symbol("KeywordRest", true), [{ label: "_1", value: rawValue }])
+        ? apply(symbol("**"), [{ label: "_1", value: rawValue }])
         : rawValue;
       if (value.kind === "symbol" && !value.quoted && value.name === "**") {
         if (!/^_\d+$/.test(label))
@@ -929,10 +937,7 @@ function layout(
         if (
           topLevel &&
           ts.at(-1)?.kind === "typedQuote" &&
-          !(
-            lines[next]?.indent === indent &&
-            isEndLine(lines[next].tokens)
-          )
+          !(lines[next]?.indent === indent && isEndLine(lines[next].tokens))
         )
           throw new LanguageError(
             "an indented typed quote requires an explicit aligned end",
@@ -1046,10 +1051,7 @@ function layout(
     if (open && !open.closed) blockEndError(open.span);
     return [result, i];
   }
-  const [body, consumed] = region(
-    0,
-    topLevel ? "" : (lines[0]?.indent ?? ""),
-  );
+  const [body, consumed] = region(0, topLevel ? "" : (lines[0]?.indent ?? ""));
   if (consumed !== lines.length)
     throw new LanguageError(
       "inconsistent indentation: unconsumed lines in grouped block",
@@ -1155,6 +1157,7 @@ function readSurface(
     const visit = (n: Syntax) => {
       if (n.span) attachSource(n.span, document);
       if (n.kind === "apply") visit(n.head);
+      if (n.kind === "postfix") visit(n.operand);
       if (n.kind === "apply" || n.kind === "pack")
         for (const e of n.body) {
           if (e.span) attachSource(e.span, document);
@@ -1208,11 +1211,7 @@ function expressionFromNormalized(source: string, sidefix = false): Syntax {
   const seq = new Reader(
     groups(scan(source)).filter((t) => t.kind !== "newline"),
   ).sequence();
-  if (
-    seq.kind !== "sequence" ||
-    !seq.items.length ||
-    seq.items.length !== 1
-  )
+  if (seq.kind !== "sequence" || !seq.items.length || seq.items.length !== 1)
     throw new LanguageError("expected one expression");
   return seq.items[0];
 }

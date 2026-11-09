@@ -28,7 +28,10 @@ value .matches pattern  → matches(value)(pattern)
 
 # Subsets keep their base type's concrete space
 Number .where (n -> isInt64(n))
-Int? .where (v -> v .matches :None)
+# Type T? is T | :None; T* and T^ remain postfix trees
+1 :: Int?
+Int*
+Int^
 
 # Pattern test returns True or False
 Some(3) .matches (type :Some(Int))`;
@@ -188,7 +191,12 @@ Some(3) .matches (type :Some(Int))`;
         : normal(tree);
     get("tree").textContent = JSON.stringify(
       tree,
-      (_k, v) => (v instanceof Map ? Object.fromEntries(v) : v),
+      (_k, v) =>
+        typeof v === "bigint"
+          ? v.toString()
+          : v instanceof Map
+            ? Object.fromEntries(v)
+            : v,
       2,
     );
   }

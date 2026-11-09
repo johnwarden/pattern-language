@@ -9,19 +9,20 @@ interpreter/compiler. The TypeScript implementation is the bootstrap reference.
 
 ## Design and implementation status
 
-The revised value model extends beyond the bootstrap.
-A fulfilled todo fails the suite and requests removal of its marker. All 76
-playground examples share this corpus. TypeScript retains host/API/DOM checks.
-Build and type checking also pass.
+The revised value model extends beyond the bootstrap. The source suite under
+`tests/` is the shared language corpus; playground examples use the same files.
+A fulfilled todo fails the suite and requests removal of its marker. TypeScript
+retains host/API/DOM checks. `just check` is the full CI gate: lint, typecheck,
+build, host tests and the source suite.
 
 | Intended contract | Current bootstrap |
 | --- | --- |
 | Concrete construction, identity-preserving refinements and abstract views | Structural types, subset checks, abstract slots and facets; revised boundary rules still need integration |
-| Numeric literals denote exact Rational values; `0f` is a Float64-rounded Rational | Exact Rational literals, `0f`, and Float32/Float64 converters; IEEE payload `toString` still uses JS decimals |
+| Numeric literals denote exact Rational values; `0f` is a Float64-rounded Rational | Exact Rational values and syntax payloads; explicit Float32/Float64 conversion and canonical numeric text |
 | General abstract unions; unambiguous grammars are a separate requirement | Overlapping `UnionType` members are allowed; `unambiguous` is unimplemented |
 | Named type declarations register accessors; plain type construction is capture-free | `def ... type ...` and existing type-expression accessor products |
 | Structured values need an established concrete interpretation | Raw Expression compatibility values are still allowed |
-| Refinement requirements use evidence; projection crosses one explicit boundary | Runtime subset machinery; no complete proof checker |
+| Refinement requirements use evidence; projection crosses one explicit boundary | One-boundary match projection and direct-member designation; proof checking remains future work |
 | Test DSL supports assertion-level todo and legacy contracts | Implemented source-defined steps, grouped .test files, executed expected-failure assertions, shared CLI/CI/browser corpus |
 
 ConstructedBy is tabled until refinement decoding is solved. IEEE special-value
@@ -35,6 +36,7 @@ or compiler yet.
 - [Value spaces](VALUE-SPACES.md): identity, construction, projection and abstract storage.
 - [Type values](TYPE-VALUES.md): declarations, descriptors, factories and typed text.
 - [Grammar](GRAMMAR.md): shared surface rules and intended interpretation boundaries.
+- [Postfix conventions](design/POSTFIX.md): generic operators, source-defined optionals, nested union designation and future lifting.
 - [Decision record and 27 design cases](design/LANGUAGE-DECISIONS.md): reasons,
   statuses and decision-to-case coverage.
 - [Test-suite milestone](design/TEST-SUITE.md): revised DSL, todo and selective migration.
@@ -94,10 +96,11 @@ recursively discovers every `.test` file; the playground embeds runnable cases
 from `tests/examples/`.
 
 ```text
-test "Current and future literal types"
+test "Current and future text result types"
   expect :Widget result Widget :: UpperCamelSymbol
-  legacy expect 5 result 5 :: Expression
-  todo expect 5 result 5 :: Rational
+  expect 0.1 result 0.1 :: Rational
+  legacy expect toString(Rational)(0.1) result "0.1" :: Expression
+  todo expect toString(Rational)(0.1) result "0.1" :: String
 end
 ```
 
@@ -118,9 +121,7 @@ language milestone is **5a.2: align the bootstrap with the revised value model**
 It progressively replaces legacy checks with fulfilled future contracts. No
 self-hosted evaluator is required to run the suite.
 
-[Every legacy assertion is accounted for](design/LEGACY-ASSERTIONS.md): 48 have
-todo replacements and 22 await explicit design decisions. Supported behavior uses
-ordinary checks; an older test is not automatically legacy.
+[Every legacy assertion is accounted for](design/LEGACY-ASSERTIONS.md) with a same-subject todo or a specific unresolved decision. Supported behavior uses ordinary checks. Run `just test-language` for current counts.
 
 ## Getting started
 

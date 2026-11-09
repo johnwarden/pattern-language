@@ -48,6 +48,8 @@ test("AST transport distinguishes source quotation from similarly named applicat
     "(1,color: :Red)",
     "f()(3)",
     "if True\n  1\nelse\n  2\nend",
+    "1*",
+    "Int?",
   ]) {
     const tree = parseSurface(source, "program", {
       layoutForms: new Grammar().layoutForms(),
@@ -90,9 +92,7 @@ test("source parseSyntax uses the transported grammar without evaluating source"
 });
 test("scoped sidefix and structural rules are reflected without transporting macro implementations", () => {
   const i = new Interpreter();
-  i.run(
-    "def Box type Box(value :: Int)\nmacro :answer Args(x) Code$` $(x)\n0",
-  );
+  i.run("def Box type Box(value :: Int)\nmacro :answer Args(x) Code$` $(x)\n0");
   const restored = Grammar.fromDescription(i.grammar.description(), validate);
   assert.equal(normal(restored.parseAs("Box(3)", "Box")), "Box(3)");
   assert.equal(restored.parse("answer Args(3)").kind, "block");

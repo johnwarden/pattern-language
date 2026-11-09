@@ -4,8 +4,8 @@
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
 > [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md).
-> General unions, Rational literals, declaration-only accessors, proof-based
-> refinements remain planned changes. The revised test DSL is implemented below.
+> Exact Rational literals, overlapping abstract unions and the current Test DSL
+> are implemented. Declaration-only accessors and proof-based checking remain work.
 
 > Implemented: exact constructed-field patterns, independent `...`/`**` ignore
 > markers, positional-only rest captures, abstract storage slots, and open structural
@@ -119,8 +119,11 @@ not establish actual iOS lifecycle/storage behavior.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
 - All infix operators have equal precedence and associate right. They require
   spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
-- Prefix punctuation is a maximal symbol. Postfix `* ? ! ^` are separate type
-  modifiers. `Int?*` means a list of optional integers.
+- Prefix punctuation is a maximal symbol. Tight postfix `~ ! @ # $ % ^ & * ?` are
+  distinct from prefix/infix application. `Int?*` is postfix `*` of postfix `?`
+  of `Int`, not the list type `Int?*` as a `[]` rest annotation. Prefix `*(Int?)`
+  is ordinary prefix application, not a list type. Prefix `$` remains unquote;
+  interpolating `T$` quotes stay lexer prefixes, not postfix `$`.
 - Outfix `[1,2]` and `{1,2}` have the unquoted heads `[]` and `{}`. They remain
   outfix in normalized output; `[](1,2)` has a different, nested expression head.
 - `()` is an empty argument/result pack, not a unit value. `(x)` is grouping.
@@ -130,9 +133,7 @@ not establish actual iOS lifecycle/storage behavior.
   layout block. Normalized output uses this to preserve block operands.
 
 ```text
-def pair(x)
-  (x,x)
-end
+def pair(x) (x,x)
 (a,b) = pair(3)
 a + b
 ```
@@ -220,7 +221,7 @@ def Vector(t :: Type) type [values... :: t*]
 [1,2] :: Vector(Int)
 ```
 
-`T*` accepts zero or more elements. Type-argument spreading remains different:
+`[_... :: T*]` accepts zero or more elements. Type-argument spreading remains different:
 
 ```text
 def Tuple(ts... :: Type*) type {ts…}
@@ -264,7 +265,7 @@ r.width * height(r)
 
 `width: Int` captures as `width`; `width: w :: Int` captures only as `w`.
 An explicit wildcard (`width: _`) suppresses capture. This rule also applies to
-function parameters and binding patterns. `rest: Int*` captures one labeled list;
+function parameters and binding patterns. `rest: type [_... :: Int*]` captures one labeled list;
 `rest...` captures the remaining argument fields (including zero fields).
 
 Named labels and explicit capture names are separate:
@@ -290,11 +291,11 @@ contains the executable grammar. Full Code coverage and code.evaluate follow lat
 The grammar file uses the same declaration spelling as type definitions:
 
 ```text
-def Definition type :def signature :: Signature body :: Body
-def MacroRegistration type :macro signature :: Signature body :: Body
-def TypeExpression type :type pattern :: PatternBody
-def IfExpression type :if condition :: Expression consequent :: Body :else alternative :: Body
-def MatchExpression type :match subject :: Expression arms :: Arms
+def Definition type :def (signature :: Signature) (body :: Body)
+def MacroRegistration type :macro (signature :: Signature) (body :: Body)
+def TypeExpression type :type (pattern :: PatternBody)
+def IfExpression type :if (condition :: Expression) (consequent :: Body) :else (alternative :: Body)
+def MatchExpression type :match (subject :: Expression) (arms :: Arms)
 ```
 
 This small declaration bootstrap is explicit. Macro starting keywords must be
@@ -326,6 +327,7 @@ These are host TypeScript modules, not a source-language import system.
 | `bootstrap.ts` | Minimal host reader for grammar declarations |
 | `language-description.ts` | Recursive Language schema, ordinary grammar data and lossless AST transport |
 | `elaboration.ts` | Ordered block recognition and final-result validation |
+| `expected-grammar.ts` | Unquoted String-field sidefix elaboration for expected types |
 | `lowering.ts` | Internal let/then operations for block bindings and sequencing |
 | `macros.ts` | Syntax/data conversion, quotation, hygiene, and source origins |
 | `availability.ts` | Conservative checks for unavailable runtime dependencies |
@@ -343,10 +345,12 @@ environment lookup or from the identity of a UI control.
 
 This is an experimental interpreter, not a compiler or a statically typed language.
 
-- Numbers use finite JavaScript numbers and reject unsafe integer literals/results.
-  There is no exact-decimal arithmetic. Arithmetic operators consume two successive
-  one-element packs; use `negate(x)` or `0 - x` for numeric negation. `-(x)` remains
-  the first pack of subtraction, consistent with application by packs.
+- Numeric literal syntax carries exact Rationals. Explicit Float32/Float64
+  conversions use finite binary values, with round-to-nearest ties-to-even;
+  designation is exact. Unsafe Int values are rejected. IEEE special values and
+  the remaining width/overflow policies are deferred. Arithmetic operators
+  consume two successive one-element packs; `-(x)` is the first pack of
+  subtraction, and `negate(x)` performs numeric negation.
 - Data order is numbers, strings, symbols, then constructed terms. Terms compare
   head, ordered field labels/values, then length. Opaque functions currently lack
   public structural equality/ordering; interpreter object identity is not language
@@ -358,10 +362,13 @@ This is an experimental interpreter, not a compiler or a statically typed langua
 - Overlapping pattern alternatives that produce multiple complete matches are
   rejected as ambiguous. This is a conservative matcher policy, not set-theoretic
   union simplification or a subtype solver.
-- `T?` uses `None | Some(T)` and `T^` uses `Ok(T) | Error(_)` as provisional
-  conventions. Postfix `!` is reserved for future action types; action values and
-  execution are not implemented. No console, file, network, or library-import
-  capabilities are supplied.
+- Optional `?` is a source-prelude convention, defined with
+  `def (T :: Type)? type T | :None`. Present values are unwrapped. A bare `:None`
+  selects a matching outer arm, while `:None :: T?` designates an inner member.
+  Equally applicable peer arms remain ambiguous. Other postfix operations can be
+  source-defined; lifting, actions and error lifting remain future work. No
+  console, file, network or library-import capabilities are supplied. See
+  [POSTFIX.md](design/POSTFIX.md).
 - Recursive declaration groups are supported. Per-type parse/toString function
   synthesis remains planned.
 
@@ -383,10 +390,10 @@ scope only when needed, must produce one value, and is checked by the same
 pattern. It cannot refer to sibling captures from the same argument pack.
 Explicit captures and implicit label captures both work: `color: c :: Color = Black`
 and `color: Color = Black`. A default itself makes a label optional, so
-`size: Int = 3` also works. `T?` always means `?(T)` (currently `None | Some(T)`),
-including in defaulted fields. A default must inhabit the annotated type:
-`color: c :: Color? = Some(Black)` is valid; `color: c :: Color? = Black` is not.
-Omitting a default keeps a label required, even if its value type is `T?`.
+`size: Int = 3` also works. The source optional convention defines `T?` as `concrete T | :None`, including in
+defaulted fields. A default must inhabit the annotated type: `color: c :: Color? =
+Black` is valid; `color: c :: Color? = Black?` is not, because the optional convention accepts a Type operand, not a value. Omitting a default keeps a label required, even if its
+value type is `T?`. Prefix `?(T)` is not Option.
 
 
 Defaults are permitted in binding patterns: destructuring bindings, function
@@ -558,12 +565,12 @@ macro, regardless of the function's body or result. Registration is explicit:
 
 ```text
 def twiceCode(e) Code$` $e + $e
-macro :twice e :: Expression twiceCode(e)
+macro (:twice (e :: Expression)) twiceCode(e)
 (twiceCode(2 + 3),(twice (2 + 3)))
 # (5 + 5,10)
 ```
 
-`twiceCode` evaluates its arguments and returns data. `macro :twice e :: Expression ...` installs
+`twiceCode` evaluates its arguments and returns data. `macro (:twice (e :: Expression)) ...` installs
 a transformer under the name `twice`; its parameters match unevaluated syntax,
 its body computes `Code`, and its result is expanded at the call site. The body
 may call ordinary helper functions, use local bindings, or select a result with
@@ -575,7 +582,7 @@ Sidefix registrations also install a parsing rule:
 
 ```text
 def unlessCode(c,v) Code$` if $c 0 else $v
-macro :unless c :: Expression v :: Body unlessCode(c,v)
+macro (:unless (c :: Expression) (v :: Body)) unlessCode(c,v)
 unless False
   x = 3
   x + 1
@@ -731,7 +738,7 @@ phase remain planned; consecutive ordinary defs now form recursive groups, as sp
 ### Generated local grammar
 
 ```text
-macro :install :answer Code` macro :answer x :: Expression Code$` $x
+macro (:install :answer) Code` macro (:answer (x :: Expression)) Code$` $x
 def demo()
   install answer
   answer 42
@@ -773,11 +780,11 @@ x.toInt == y
 ```
 
 ```text
-def NoInt Int? .where v -> v .matches :None
+def NoInt Int? .where (v -> v .matches :None)
 a = :None :: NoInt
-b = :None :: Int?
+b = :None :: Option(Int)
 a == b
-# True; :None :: String? is a different concrete space.
+# True; :None :: Option(String) is a different concrete space.
 ```
 
 The numeric backend remains limited to safe JavaScript integers, including the
@@ -853,9 +860,7 @@ Milestone 2 review: [CODE-REVIEW-MILESTONE-2.md](CODE-REVIEW-MILESTONE-2.md).
 ## Grammar-directed DSL quotes and Code
 
 ```text
-def ExpectedOutput type
-  (e :: Expression) ::: (type :: Expression)
-end
+def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
 expected = ExpectedOutput` (1 / 0) :: MissingType
 (expected.e,expected.type)
 # (1 / 0,:MissingType)
@@ -935,7 +940,7 @@ The runner recursively scans tests/**/*.test. Files contain one or more named te
 blocks, organized by broad subdirectory. The ordinary schema in examples/test-schema.pattern
 requires a first Test row and permits a repeated Test* tail. Shared setup belongs
 inside a test; assertion modifiers cannot be applied to an entire test.
-`expect parse(Code)(text) error` checks program parse failure without making the
+`expect parse` plus a quoted string checks program parse failure without making the
 outer file illegal; see [design/TEST-SUITE.md](design/TEST-SUITE.md). Ratified layout
 rules (`end` ownership, mixed tab/space prefixes, quoted branches) are in
 [design/WHITESPACE.md](design/WHITESPACE.md).
@@ -974,14 +979,14 @@ printing rules and are explicitly legacy where their behavior is expected to cha
 
 Result expectations require exactly one positional value, its exact observed type,
 and canonical expected data: expect r.w result 2 :: Float. An expected symbolic
-binary tree after `result` may begin with a grouping when the operand continues
-(`result (1 + 1) :: Expression`) and may still be indented. It is data,
+binary tree must be grouped: expect e result (1 + 1) :: Expression. It is data,
 not a calculation producing 2. Predicate checks use assert rather than boolean
 expectations. Destructure multiple returns once, then check each capture separately.
 An empty-return assertion can bind () to the call, then return True. Ordinary pack
 shape and label rules remain covered by host tests. There is no results expectation
 or separate value/type keyword pair. Errors still use expect subject error "reason".
 
+All 128 cases execute: 249 assertions pass (70 legacy) and 117 todos fail as expected.
 All 76 playground examples remain standalone programs, with setup and optional final return packs included in their
 editable source. The build embeds source without running it to regenerate expected
 answers. Actual controls exercise every option from fresh/restored sessions, and
@@ -1010,22 +1015,15 @@ bindings are not visible in earlier definitions. Groups are local to their block
 or REPL submission. Nonproductive type aliases reject, and failed groups roll back.
 
 ```text
-def Sum type
-  (a :: MathExp) :+ (b :: MathExp)
-end
-def Product type
-  (a :: MathExp) :* (b :: MathExp)
-end
+def Sum type (a :: MathExp) :+ (b :: MathExp)
+def Product type (a :: MathExp) :* (b :: MathExp)
 def MathExp UnionType(Sum,Product,Symbol,Number)
 MathExp
 ```
 
-UnionType retains member spaces and may overlap. Union-typed values omit `::`
-when untagged printed text designates a unique member, and keep it only when
-that text is ambiguous or would parse as a different value.
-MathExp positions interpret their unique member without explicit annotations.
-The mutualTypes playground example constructs and round-trips a nested
-mathematical value with those annotations.
+UnionType retains member spaces and requires disjoint syntax. MathExp positions
+interpret their unique member without explicit annotations. The mutualTypes playground example constructs
+and round-trips a nested mathematical value with those annotations.
 
 Code's public recursive schema is also bound as SyntaxNode. Inspecting Code shows
 TreeGrammar(SyntaxNode); inspecting a type value expands its root definition and
@@ -1050,12 +1048,11 @@ toString(MathExp)(a)
 ```
 
 Symbol is the prelude union of LowerCamelSymbol, UpperCamelSymbol and
-PunctuationSymbol. UnionType members may overlap; unannotated text that fits more
-than one member is ambiguous. Union-typed values keep `::` only when the untagged
-printed text would not reconstruct exactly the same member and value. Omit the tag
-when printed text designates a unique member; keep it when that text is ambiguous
-or would parse as a different value, e.g. Float64 `0.1` vs Rational `1/10`.
-Facet/Any reconstruction tags remain explicit.
+PunctuationSymbol. UnionType members must have disjoint syntax; overlap and
+unsupported proofs reject. Union parsing selects the unique concrete member,
+including in fields/lists, and printing omits redundant union annotations.
+Facet/Any reconstruction tags remain explicit. The current overlapping Int/Float,
+Int?/String? and list unions are invalid rather than resolved by branch priority.
 See simpleExpressionUnion and unannotatedUnion in the playground. The smaller
 Full Code grammar and executable nested test suites remain next work;
 [the design notes](design/UNION-GRAMMARS.md) distinguish them from this fix.

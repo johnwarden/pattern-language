@@ -3,39 +3,23 @@
 These are accepted design requirements. The implementation status of each slice is
 tracked in ROADMAP.md; examples here do not imply that the bootstrap implements it.
 
-## Postfix expressions and type names
+## Postfix expressions and conventions
 
-Postfix application is a distinct surface-tree form, alongside ordinary application
-and sidefix sequences. Every postfix punctuation symbol uses the same type-name /
-constructor-head rule. A bare name resolves its type binding; a constructor head
-retains its symbol identity. No colon is needed just because a head is punctuation.
-Type definitions, quotation, binding patterns and match patterns share this tree.
+[POSTFIX.md](POSTFIX.md) is the authoritative postfix contract, including the
+9 November clarification. Shifted top-row punctuation `~ ! @ # $ % ^ & *`, plus
+`?`, has distinct postfix syntax. Each suffix wraps once. Prefix and postfix
+application remain different trees throughout matching and transport.
 
-```text
-type Question String?
-q = "Does this actually work"? :: Question
-expect q result "Does this actually work"? :: Question
-match q s :: String?
-expect s result "Does this actually work" :: String
-```
+Optional `T?` is the source-defined convention `concrete T | :None`; it is not a
+reader or matcher primitive. Nested unions preserve explicitly designated member
+boundaries and prefer a direct arm before recursive designation. Future lifting,
+such as `sqrt?`, is separate work. The source prelude and runnable tests use the
+bootstrap declaration syntax; target `type ... concrete ...` spelling remains
+part of the declaration milestone.
 
-Tight postfix punctuation is one symbol per character. Each suffix wraps the
-expression immediately to its left: String?*^! is (((String?)*)^)!, or an action
-returning a fallible result of a list of optional strings. T** is (T*)* and not a
-new two-character postfix operator. Prefix punctuation still forms maximal symbols.
-The surface reader recognizes ... and bare ** markers; their repetition/openness
-meaning belongs to interpretation. Keyword remainder capture/spread remains later
-work and cannot silently change this suffix rule. Effects are still deferred.
-
-T+ denotes a nonempty list, refining T* without creating a new concrete list space.
-Vertical repetition remains explicit; a list annotation alone is not row repetition:
-
-```text
-def TestFileContent type
-  tests :: Test+
-  ...
-end
-```
+`T+` nonempty-list semantics and keyword remainder capture/spread remain future
+work. Each repeated collection dimension still requires its explicit list layer;
+vertical repetition still requires `...`.
 
 ## ASCII word-symbol classes
 
@@ -77,7 +61,7 @@ promise of portable runtime environment/refinement serialization.
 type BooleanExpression(env :: LexicalEnvironment) refinement
   (expression :: Expression) env.typeOf(expression) is Bool
 end
-def expandMacro(env :: LexicalEnvironment)(:unless condition :: BooleanExpression(env) body :: Body)
+def expandMacro(env :: LexicalEnvironment)(:unless (condition :: BooleanExpression(env)) (body :: Body))
   Code$` if($condition, $zeroValue, $body)
 end
 ```
@@ -96,7 +80,7 @@ Field expressions evaluate normally; dollar holes are for quotations, not ordina
 variable references. No expected grammar means no arbitrary selection among DSLs.
 
 ```text
-def MyDsl type :do String :with String
+def MyDsl type (:do String :with String)
 x = MyDsl` do "Foo" with "bar"
 name = "bar"
 (y :: MyDsl) = do "Foo" with name
@@ -108,6 +92,11 @@ Keep :do and :with quoted in pattern declarations to distinguish fixed keywords
 from captures. The values and their grammar-directed canonical text omit those
 colons. Supporting this requires expected-grammar propagation and field-expression
 evaluation; a special parser case for annotated bindings would be insufficient.
+
+The bootstrap implements the single-line String-field slice for annotated bindings
+and uniquely known callables (named functions, later curried packs, and
+closure-valued variables). Canonical `toString :: String`, return positions,
+indented expected-type layout and further Code categories remain later work.
 
 ## Test setup alternatives
 

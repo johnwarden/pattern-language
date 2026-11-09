@@ -97,9 +97,9 @@ test("CLI rejects empty, malformed, and unsupported explicit files", () =>
 test("selecting a project group retains the same IDs as default discovery", () => {
   const full = collectTestFiles();
   const subset = collectTestFiles([join(TEST_ROOT, "bindings")]);
-  assert.deepEqual(Object.keys(subset), ["bindings/defaults.test"]);
-  assert.equal(
-    subset["bindings/defaults.test"],
-    full["bindings/defaults.test"],
+  const bindings = Object.keys(full).filter((name) =>
+    name.startsWith("bindings/"),
   );
+  assert.deepEqual(Object.keys(subset), bindings);
+  for (const name of bindings) assert.equal(subset[name], full[name]);
 });

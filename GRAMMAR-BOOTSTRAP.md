@@ -1,11 +1,11 @@
 # Bootstrap surface syntax and grammar interpretation
 
-> Compatibility reference for the unchanged TypeScript prototype (source release 75).
+> Compatibility reference for the current TypeScript bootstrap.
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
 > [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md).
-> General unions, Rational literals, declaration-only accessors, proof-based
-> refinements and the new test DSL are planned changes, not promises of this guide.
+> Exact Rational literals, overlapping abstract unions and the current Test DSL
+> are implemented. Declaration-only accessors and proof-based checking remain work.
 
 > Implemented: exact constructed-field patterns, independent `...`/`**` ignore
 > markers, positional-only rest captures, abstract storage slots, and open structural
@@ -70,7 +70,7 @@ expression    = postfix, [spacedOperator, expression] ;
 postfix       = atom, {arguments | tightDot | typeSuffix | spread} ;
 arguments     = "(", [fields], ")" ;
 tightDot      = ".", identifier ;
-typeSuffix    = "*" | "?" | "!" | "^" ;
+typeSuffix    = "~" | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" | "?" ;
 spread        = "…" | "..." ;
 atom          = symbol | literal | grouped | outfix | prefixApplication ;
 grouped       = "(", macroOrExpression, ")" | "(", newline, block, ")" ;
@@ -103,11 +103,12 @@ inference is implemented, type definitions require explicit capture types,
 including rest captures. Binding, parameter, and match captures may remain
 unannotated without boxing their inputs. `_` cannot define a type field.
 
-Type suffixes apply left to right: `Int?*` is `(Int?)*`, and `T**` is `(T*)*`.
-The current bootstrap still rewrites those suffixes into prefix application
-nodes (`Int?*` as `*(?(Int))`); distinct postfix trees replace that
-normalization. List `T*`, Option `T?`, and error `T^` are postfix by
-convention.
+Tight postfix punctuation `~ ! @ # $ % ^ & * ?` wraps left to right:
+`Int?*` is `(Int?)*`, and `T**` is `(T*)*`. Postfix nodes are distinct from prefix
+application throughout syntax, matching and portable descriptions. Definitions
+supply meaning; the source prelude defines optional `?` as `T | :None`.
+Separated `#` starts a comment; tight `#` is punctuation. See
+[POSTFIX.md](design/POSTFIX.md).
 
 Prefix `+Int` and `+(Int)` are the same application tree. Tight `Int+` is not a
 typeSuffix here. Angle brackets have no application role; spaced `<` and `>`
@@ -123,14 +124,7 @@ remain prefix; outfix forms keep their brackets. Expression-value display shares
 this rule, including quoted code and refinement predicates.
 
 A line is initially a neutral sequence of micro expressions. Macro interpretation
-uses the selected grammar. A sidefix form is a keyword followed by
-micro-expressions: `:keyword MICRO_EXPRESSION` is allowed, `:keyword (MICRO_EXPRESSION)`
-is not. An operand may begin with a grouping when the expression continues
-(`assert (1 + 2) == 3`); a wholly parenthesized operand (`assert (x)`, `if (x)`)
-is a syntax error. A non-keyword term then spaced `(` is rejected (`f (x)`).
-Tight `todo()` is an empty call; spaced `todo ()` is an error.
-
-A block is an indented sequence of lines, terminated by
+uses the selected grammar. A block is an indented sequence of lines, terminated by
 dedent or `end`. A block following a trailing binary operator becomes its final
 operand. Parentheses can group a macro or enclose a multiline block.
 
@@ -153,9 +147,7 @@ x = (1)
 x = (1,foo: "bar")
 (x,foo: f) = (1,foo: "bar")
 
-def pair(x)
-  (x,x)
-end
+def pair(x) (x,x)
 (a,b) = pair(1)
 
 f = x ->
@@ -187,7 +179,7 @@ A label with a type specification implicitly captures its field: `width: Int` bi
 width. Explicit captures (`width: w :: Int`) and ignored captures (`width: _`) override
 this default. A label with a structural pattern introduces only the pattern's own
 captures: `shape: Rect(w,h)` binds w and h, not shape. `rest...` consumes remaining
-fields and always captures only positional values. `rest: Int*` matches a single labeled list value.
+fields and always captures only positional values. `rest: type [_... :: Int*]` matches a single labeled list value.
 
 Named field order is irrelevant to matching. Canonical output orders named fields alphabetically after positional fields. Duplicate explicit labels are surface syntax errors, including in patterns.
 
@@ -201,13 +193,14 @@ Defaults are valid only in binding patterns, including parameters and match arms
 They populate captures without modifying input values. Type expressions reject them
 with E_TYPE_DEFAULT. An ordinary factory function can accept defaulted parameters
 and explicitly return a complete value; type annotations never complete fields.
-`T?` always means `?(T)`, with no field-specific interpretation. Defaults must
-match the annotated type. A label in a binding pattern may be absent because it has a default, not
-because its type is `T?`. Type fields remain required.
+The source optional convention defines `T?` as `concrete T | :None`, with no field-specific interpretation. Prefix
+`?(T)` is not Option. A present optional value needs no postfix. Defaults must match
+the annotated type. A label in a binding pattern may be absent because it has a
+default, not because its type is `T?`. Type fields remain required.
 
 Names use ASCII lower camel, upper camel or upper snake; capital runs are allowed.
-Lower-snake words and malformed underscore separators reject. `!` still
-parses as an ordinary postfix application, but evaluating its type is reserved. Assignment binds
+Lower-snake words and malformed underscore separators reject. Prefix `!` is
+reserved. Tight postfix `!` is a distinct postfix construction. Assignment binds
 only as a direct block statement; it has no general expression-level binding
 behavior. User-authored macros are implemented. Static type checking is not;
 concrete-type inference, pattern membership rules, and restrictions on overlapping named interpretations
@@ -222,7 +215,7 @@ structural interpolation uses a typed `T$` backtick quote, not colon quotation.
 A field colon must be tight to its label: `label: value` differs from `label :(value)`.
 
 `def f(patterns) expression` defines an ordinary function with a micro signature,
-including when its result is Code. `macro :keyword capture :: Expression ... transformerExpression`
+including when its result is Code. `macro (:keyword (capture :: Expression) ...) transformerExpression`
 registers a sidefix macro and its grammar. Macro signatures must be sidefix;
 function definitions must use micro signatures. Macro invocation uses sidefix
 syntax, never function-call syntax. The transformer body may call an ordinary
@@ -307,7 +300,7 @@ splicing and portable captured environments remain later work.
 No new sidefix alternation or repetition is supported. A sidefix signature has a
 fixed sequence of keywords/readers. Spread is an argument-pack operation:
 `:all Pair(xs... :: Int*)` may match Pair(), Pair(1), or Pair(1,2), but
-`:all xs... :: Int*` is rejected at declaration time. `x :: Int*` matches one
+`:all (xs... :: Int*)` is rejected at declaration time. `x :: Int*` matches one
 list-shaped expression, never a variable-length sequence of integers.
 
 Non-generic declarative type patterns introduced with `def Name type Pattern`
@@ -326,7 +319,8 @@ there is no implicit `_` subject or special permission to pass a defined functio
 as a value. Use a closure, for example `n -> isInt64(n)`.
 
 ```text
-def NoInt Int? .where (v -> v .matches :None)
+def Option(T :: Type) type :None | Some(T)
+def NoInt Option(Int) .where (v -> v .matches :None)
 (x :: Number .where (n -> isInt64(n))) = 10
 ```
 
@@ -383,15 +377,9 @@ calls the code evaluator or installs user grammar.
 
 A colon-quoted application pattern makes its constructor head literal while
 arguments remain patterns. The common compiler applies this rule to bindings,
-signatures, types, and match arms. For example, `def split(:|(a)(b))` with indented body `(a,b)` captures
+signatures, types, and match arms. For example, def split(:|(a)(b)) (a,b) captures
 the operands of a union expression. Unquoted a | b remains alternation.
-In sidefix type forms, indent a punctuation application so it is not read as infix:
-
-```text
-def Op type
-  :|(Symbol)(Symbol)
-end
-```
+In sidefix type forms, group punctuation applications: type (:|(Symbol)(Symbol)).
 In evaluated data, quoting an application head still evaluates its arguments.
 
 ## Abstract storage and open type patterns
@@ -407,7 +395,7 @@ It retains the complete concrete input and creates only scoped accessor definiti
 Type(Pattern) describes complete concrete values and cannot disguise open constraints.
 The portable OpenFields(Fields(...),labels: Bool,positional: Bool) description records
 both kinds of openness. Literal punctuation symbols and constructor heads use the
-ordinary quoted-head/Apply escapes; keyword rest capture/spread remains unsupported.
+ordinary quoted-head/Apply escapes; prefix keyword rest capture/spread remains unsupported.
 
 ## Name lookup and type normalization
 
@@ -436,9 +424,7 @@ associativity are unchanged.
 ExpectedOutput can therefore be declared as:
 
 ```text
-def ExpectedOutput type
-  (e :: Expression) ::: (type :: Expression)
-end
+def ExpectedOutput type (e :: Expression) ::: (type :: Expression)
 expected = ExpectedOutput` (1 + 2) :: UnknownType
 ```
 
@@ -530,9 +516,9 @@ REPL submission has its own groups. Generic type families use the same rule.
 Nonproductive alias cycles and duplicate structural declarations still reject.
 This adds no surface token, changes no precedence and does not hoist bindings.
 
-## Disjoint union type form
+## Abstract union type form
 
-The source grammar declares UnionTypeExpression as :unionType pattern :: PatternBody.
+The source grammar declares UnionTypeExpression as :unionType (pattern :: PatternBody).
 Its operands separated by | are evaluated as type values, then normalized by the
 same constructor as UnionType(A,B). This does not alter infix precedence or turn
 pattern alternatives into type unions. The user-facing test expectation/display

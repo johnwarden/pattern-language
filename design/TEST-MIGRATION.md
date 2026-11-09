@@ -1,7 +1,7 @@
 # Test migration inventory
 
 Current conformance homes for milestone 5a.1. `.test` case IDs are path-relative to
-`tests/`. All 90 existing source expectations are retained; the mappings below let
+`tests/`. Existing source expectations are retained; the mappings below let
 a reader locate them after grouping. This is coverage accounting, not a language
 semantics changelog.
 
@@ -21,7 +21,7 @@ blocks were removed only after the source cases passed. Mixed host checks remain
 | supplied values are validated and never replaced by defaults | supplied-values-are-validated-and-never-replaced-by-defaults | supplied value, rejected supplied/default values |
 | supplied fields select an overload before binding its omitted defaults | supplied-fields-select-an-overload-before-binding-defaults | both supplied domains and omitted ambiguity |
 | defaults retain lexical bindings and whole-pack partial application | defaults-retain-lexical-bindings-and-successive-packs | lexical scope and successive packs |
-| binding defaults preserve option-type semantics | binding-defaults-preserve-option-semantics | valid Some default and invalid bare default |
+| binding defaults preserve option-type semantics | binding-defaults-preserve-option-semantics | valid unwrapped default and invalid tagged default |
 
 Expected values/types are written explicitly; old display-string tests are not
 silently converted into self-generated expected outputs. Failure substrings preserve
@@ -35,12 +35,12 @@ Host tests retain trial isolation, duplicate-name unmasking, recursive grouping,
 fixture replay, source spelling and host-failure boundaries.
 
 [The legacy inventory](LEGACY-ASSERTIONS.md) accounts for every remaining legacy
-assertion. Of the original 139, 69 are now ordinary checks: defaults, concrete
-accessor results, structural equality/round trips and pack distinctions were not
-obsolete behavior. Arithmetic/rest/default examples now establish concrete types
-when their purpose does not depend on raw Expression fallback. Forty-five new
-todo assertions accompany settled changes, giving 48 paired legacy assertions.
-The remaining 22 have explicit unresolved decisions, checked against the corpus.
+assertion. Defaults, concrete accessor results, structural equality/round trips and
+pack distinctions now use ordinary checks where their behavior is supported.
+Arithmetic/rest/default examples establish concrete types when their purpose does
+not depend on raw Expression fallback. Settled future changes retain executed todo
+assertions; `just test-language` reports current totals. Unresolved replacements
+are recorded individually and checked against the corpus.
 No failing placeholder is substituted for an unspecified target result.
 
 | Area | Current home and reason |
@@ -48,7 +48,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Pattern metadata, compiler captures, hygiene and cross-context grammar maps | test/pattern-bindings.test.ts; mixed language/host invariants are retained intact |
 | Default host invocation counters, declaration rollback and exact source diagnostics | test/binding-defaults.test.ts; API/state/span observations need host access |
 | Type identity, abstract slots, caches, unsupported host environments and transport | existing type/value/abstract tests; retain direct representation/fresh-process checks |
-| Old union disjointness, bootstrap numeric/type/evidence behavior | existing host regressions; replace only when C01–C18 implementations land |
+| Numeric exactness/conversion, overlapping unions and remaining type/evidence behavior | host and tests/numeric/*.test regressions; supported slices replace their corresponding legacy expectations |
 | Typed quotes, byte normalization and raw syntax encode/decode | quotation/source/syntax tests; host transport and coordinate checks remain |
 | Vertical matching, row keys, ambiguity, descriptor transfer | test/vertical-spread.test.ts; mixed source/representation assertions retained |
 | Canonical source behavior of the 14 former test/cases cases | test/source-suite.test.ts; canonicalizes then runs the same DSL expectation |
@@ -191,9 +191,8 @@ predicate assertion. Empty returns use an explicit destructuring assertion. Host
 coverage retains exact complete-pack label/arity observations rather than assuming
 separate checks prove every pack property.
 
-The same 128 cases execute, with 249 passing assertions (70 legacy) and 117 todo
-expected failures. Higher assertion counts reflect split checks, not additional
-language features. All 76 examples remain runnable; final ordinary packs expose
+Higher assertion counts after splitting pack checks do not add language
+features. Playground examples remain runnable; final ordinary packs expose
 already captured results. Strict type/data checks and assertion-level modifiers are
 unchanged. Canonical printer goldens were adjusted only for comma spacing, preserving
 literal string contents and canonical round-trip checks.

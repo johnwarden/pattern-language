@@ -1,5 +1,13 @@
 /** Shared punctuation-token boundaries for the reader and canonical formatter. */
-export const punctuation = new Set("$+-*/=<>!&|^%~?@\\…");
+export const punctuation = new Set("#$+-*/=<>!&|^%~?@\\…");
+
+/** A tight # belongs to punctuation; a separated # starts a line comment. */
+export function isCommentStart(source: string, position: number): boolean {
+  return (
+    source[position] === "#" &&
+    (position === 0 || /\s/.test(source[position - 1]))
+  );
+}
 
 export function punctuationEnd(
   source: string,
@@ -29,7 +37,9 @@ export const identifierName = (name: string): boolean =>
   /^[a-zA-Z][a-zA-Z0-9]*$/.test(name) ||
   upperSnakeName(name);
 export const upperSnakeName = (name: string): boolean =>
-  /^(?:[A-Z]{1,2}_|[A-Z]{3,}[A-Z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z][A-Z0-9]*)+)$/.test(name);
+  /^(?:[A-Z]{1,2}_|[A-Z]{3,}[A-Z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z][A-Z0-9]*)+)$/.test(
+    name,
+  );
 export const labelName = (name: string): boolean =>
   /^[a-z]/.test(name) && identifierName(name);
 

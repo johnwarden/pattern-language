@@ -112,8 +112,8 @@ example. It is output, not a check. The example program consists of its setup an
 that final pack; checking each capture does not repeat the original call. Single
 supported expectations/assertions also provide standalone example programs, even
 with accompanying todo assertions. The extracted program excludes todo operands;
-the suite still executes every assertion. Todo-only cases are not examples. All 76
-existing menu options remain covered through actual controls, fresh/restored sessions.
+the suite still executes every assertion. Todo-only cases are not examples.
+Playground menu options remain covered through actual controls, fresh/restored sessions.
 Each CheckReport records its own actual/expected output rather than only the last
 observation. Selecting/building examples never runs them to generate expectations.
 

@@ -12,9 +12,11 @@ import {
   operator,
   binary,
   spread,
-  isName,
   normal,
   syntaxKey,
+  listLayer,
+  symbol,
+  isTypeSpecification,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { Matcher, sequencePattern } from "./pattern.ts";
@@ -32,7 +34,14 @@ import {
   readerDescriptions,
   typeGrammarDescription,
 } from "./language-description.ts";
-import { valLiteral, valSymbol, equal, unwrap } from "./values.ts";
+import {
+  valLiteral,
+  valSymbol,
+  equal,
+  unwrap,
+  compareRationals,
+  rationalFromSyntax,
+} from "./values.ts";
 import type { Value } from "./values.ts";
 export const DEFAULT_GRAMMAR = `def Definition type :def signature :: Signature body :: Body
 def MacroRegistration type :macro signature :: Signature body :: Body
@@ -51,10 +60,21 @@ const syntaxAdapter: Adapter<Syntax> = {
             body: n.lines.map((value, i) => ({ label: "_" + (i + 1), value })),
           }
         : undefined,
+  postfix: (n) =>
+    n.kind === "postfix"
+      ? { operator: symbol(n.operator), operand: n.operand }
+      : undefined,
+  rebuildPostfix: (n, operator, operand) => {
+    if (operator.kind !== "symbol")
+      throw new LanguageError("a postfix operator must be punctuation", n.span);
+    return { kind: "postfix", operator: operator.name, operand, span: n.span };
+  },
   rebuild: (n, head, body) =>
     n.kind === "block"
       ? { ...n, lines: body.map((f) => f.value) }
-      : ({ ...n, head, body } as Syntax),
+      : n.kind === "postfix"
+        ? n
+        : ({ ...n, head, body } as Syntax),
   row: (n) => {
     if (n.kind === "sequence" && n.items.length === 1) n = n.items[0];
     return n.kind === "pack" ? n.body : [{ label: "_1", value: n }];
@@ -111,94 +131,24 @@ export class Grammar {
     return new PatternCompiler<Syntax>(
       {
         bareCaptures: true,
-        expression: (n) =>
-          n.kind === "apply" &&
-          n.head.kind === "symbol" &&
-          ["*", "?", "^"].includes(n.head.name) &&
-          n.body.length === 1
-            ? this.compiler(typeDefinition).domain.atom(n)
-            : undefined,
-        defaultValue: (n) => n,
-        head: (n, depth = 0) =>
-          n.kind === "symbol"
-            ? {
-                kind: "test",
-                name: n.name,
-                test: (v) => v.kind === "symbol" && v.name === n.name,
-              }
-            : this.compiler(typeDefinition, depth).compile(n),
-        annotation: (n, dimensions = 0) => {
-          for (let i = 0; i < dimensions; i++) {
-            if (
-              n.kind !== "apply" ||
-              !isName(n.head, "*") ||
-              n.body.length !== 1
-            )
-              throw new LanguageError(
-                "vertical capture annotation requires a list layer",
-                n.span,
-              );
-            n = n.body[0].value;
-          }
-          return this.compilePattern(n);
-        },
-        repeatedElement: (n, dimensions = 0) => {
-          for (let i = 0; i < dimensions; i++) {
-            if (
-              n.kind !== "apply" ||
-              !isName(n.head, "*") ||
-              n.body.length !== 1
-            )
-              throw new LanguageError(
-                "vertical capture annotation requires a list layer",
-                n.span,
-              );
-            n = n.body[0].value;
-          }
-          if (n.kind !== "apply" || !isName(n.head, "*") || n.body.length !== 1)
-            throw new LanguageError("rest annotation requires T*");
-          return this.compilePattern(n.body[0].value);
-        },
-        expand: () => undefined,
-        atom: (n) => {
-          if (
-            n.kind === "apply" &&
-            n.head.kind === "symbol" &&
-            ["?", "^"].includes(n.head.name) &&
-            n.body.length === 1
-          ) {
-            const tagged = (
-              name: string,
-              pattern: Pattern<Syntax>,
-            ): Pattern<Syntax> => ({
-              kind: "node",
-              head: {
-                kind: "test",
-                name,
-                test: (v) => v.kind === "symbol" && v.name === name,
-              },
-              body: {
-                kind: "fields",
-                parts: [{ kind: "label", label: "_1", pattern }],
-              },
-            });
-            const element = this.compilePattern(n.body[0].value);
-            return {
-              kind: "union",
-              choices:
-                n.head.name === "?"
-                  ? [
-                      {
-                        kind: "test",
-                        name: "None",
-                        test: (v) => v.kind === "symbol" && v.name === "None",
-                      },
-                      tagged("Some", element),
-                    ]
-                  : [tagged("Ok", element), tagged("Error", { kind: "any" })],
-            };
-          }
-          if (n.kind === "apply" && isName(n.head, "*") && n.body.length === 1)
+        expression: (n) => {
+          if (n.kind !== "postfix" || !isTypeSpecification(n.operand)) return;
+          const tag = (
+            name: string,
+            pattern: Pattern<Syntax>,
+          ): Pattern<Syntax> => ({
+            kind: "node",
+            head: {
+              kind: "test",
+              name,
+              test: (v) => v.kind === "symbol" && v.name === name,
+            },
+            body: {
+              kind: "fields",
+              parts: [{ kind: "label", label: "_1", pattern }],
+            },
+          });
+          if (n.operator === "*")
             return {
               kind: "node",
               head: {
@@ -214,12 +164,58 @@ export class Grammar {
                     pattern: {
                       kind: "label",
                       label: "_1",
-                      pattern: this.compilePattern(n.body[0].value),
+                      pattern: this.compilePattern(n.operand),
                     },
                   },
                 ],
               },
             };
+          if (n.operator === "^")
+            return {
+              kind: "union",
+              choices: [
+                tag("Ok", this.compilePattern(n.operand)),
+                tag("Error", { kind: "any" }),
+              ],
+            };
+        },
+        defaultValue: (n) => n,
+        head: (n, depth = 0) =>
+          n.kind === "symbol"
+            ? {
+                kind: "test",
+                name: n.name,
+                test: (v) => v.kind === "symbol" && v.name === n.name,
+              }
+            : this.compiler(typeDefinition, depth).compile(n),
+        annotation: (n, dimensions = 0) => {
+          for (let i = 0; i < dimensions; i++) {
+            const layer = listLayer(n);
+            if (!layer)
+              throw new LanguageError(
+                "vertical capture annotation requires a list layer",
+                n.span,
+              );
+            n = layer.operand;
+          }
+          return this.compilePattern(n);
+        },
+        repeatedElement: (n, dimensions = 0) => {
+          for (let i = 0; i < dimensions; i++) {
+            const layer = listLayer(n);
+            if (!layer)
+              throw new LanguageError(
+                "vertical capture annotation requires a list layer",
+                n.span,
+              );
+            n = layer.operand;
+          }
+          const rest = listLayer(n);
+          if (!rest) throw new LanguageError("rest annotation requires T*");
+          return this.compilePattern(rest.operand);
+        },
+        expand: () => undefined,
+        atom: (n) => {
           if (n.kind === "symbol")
             return n.quoted
               ? {
@@ -237,7 +233,13 @@ export class Grammar {
             return {
               kind: "test",
               name: normal(n),
-              test: (v) => v.kind === "literal" && v.value === n.value,
+              test: (v) => {
+                if (v.kind !== "literal") return false;
+                const left = rationalFromSyntax(v),
+                  right = rationalFromSyntax(n);
+                if (left && right) return compareRationals(left, right) === 0;
+                return v.value === n.value;
+              },
             };
           throw new LanguageError("unsupported grammar pattern", n.span);
         },
@@ -271,12 +273,13 @@ export class Grammar {
       return {
         kind: "test",
         name,
-        test: (n) =>
-          n.kind === "literal" &&
-          (name === "String"
-            ? typeof n.value === "string"
-            : typeof n.value === "number" &&
-              (name !== "Int" || Number.isInteger(n.value))),
+        test: (n) => {
+          if (n.kind !== "literal") return false;
+          if (name === "String") return typeof n.value === "string";
+          const r = rationalFromSyntax(n);
+          if (!r) return typeof n.value === "number";
+          return name !== "Int" || r.d === 1n;
+        },
       };
     if (name === "Pattern") return { kind: "test", name, test: () => true };
     if (name === "PatternBody")
@@ -302,10 +305,7 @@ export class Grammar {
             {
               end: taken.end,
               fields: [
-                entry(
-                  this.unwrapPatternOperand(taken.value),
-                  items[pos].label,
-                ),
+                entry(this.unwrapPatternOperand(taken.value), items[pos].label),
               ],
               captures: new Map(),
             },
@@ -425,6 +425,10 @@ export class Grammar {
     if (n.kind === "sequence")
       return { node: this.resolveSequence(n, matcher), end };
     if (n.kind === "block") return { node: this.block(n, matcher, false), end };
+    if (n.kind === "postfix") {
+      const operand = this.resolveOperand(n.operand, tail, end, matcher);
+      return { node: { ...n, operand: operand.node }, end: operand.end };
+    }
     if (n.kind === "apply" || n.kind === "pack") {
       const head =
         n.kind === "pack"
@@ -452,6 +456,14 @@ export class Grammar {
           end += matches[0].end - 1;
           return { ...field, value: matches[0].fields[0].value };
         }
+        if (v.kind === "sequence") {
+          if (!(v.items[0]?.kind === "symbol" && v.items[0].quoted))
+            return {
+              ...field,
+              value: this.resolveSequence(v, matcher, true),
+            };
+          return { ...field, value: v };
+        }
         const r = this.resolveOperand(
           v,
           mayConsume ? tail : [],
@@ -468,18 +480,22 @@ export class Grammar {
     }
     return { node: n, end };
   }
-  private resolveSequence(n: Syntax, matcher: Matcher<Syntax>): Syntax {
+  private resolveSequence(
+    n: Syntax,
+    matcher: Matcher<Syntax>,
+    nested = false,
+  ): Syntax {
     if (n.kind !== "sequence")
       return this.resolveOperand(n, [], 0, matcher).node;
     const xs = n.items.map((v) => entry(v)),
       matches = this.readForm(xs, 0, matcher).filter(
         (m) => m.end === xs.length,
       );
-    if (matches.length !== 1)
-      throw new LanguageError(
-        matches.length ? "ambiguous macro" : "unknown or incomplete macro form",
-        n.span,
-      );
+    if (matches.length > 1) throw new LanguageError("ambiguous macro", n.span);
+    if (matches.length !== 1) {
+      if (nested) return n;
+      throw new LanguageError("unknown or incomplete macro form", n.span);
+    }
     return matches[0].fields[0].value;
   }
   private arms(
@@ -540,6 +556,7 @@ export class Grammar {
     n: Extract<Syntax, { kind: "block" }>,
     accept: (form: Syntax) => Syntax | void,
     repl = false,
+    complete?: (input: Syntax) => Syntax | undefined,
   ): Syntax {
     const matcher = new Matcher(syntaxAdapter);
     return elaborateBlock(n, {
@@ -547,6 +564,7 @@ export class Grammar {
       accept,
       finish: (lines) => validateLanguageBlock(lines, repl),
       describe: (input) => this.describeForm(input),
+      complete,
     });
   }
   private blockBody(
@@ -754,14 +772,17 @@ export class Grammar {
     return stops;
   }
   private microSignature(n: Syntax): boolean {
+    if (n.kind === "postfix") return true;
     let head: Syntax = n;
     while (head.kind === "apply") head = head.head;
     return head.kind === "symbol" && !head.quoted;
   }
   private sidefixSignature(n: Syntax): boolean {
-    return n.kind === "sequence" &&
+    return (
+      n.kind === "sequence" &&
       n.items[0]?.kind === "symbol" &&
-      !!n.items[0].quoted;
+      !!n.items[0].quoted
+    );
   }
   /** A one-line pattern block is the same operand as the inline line. */
   private unwrapPatternOperand(n: Syntax): Syntax {
@@ -816,15 +837,10 @@ export class Grammar {
       const n = items[end].value;
       if (
         options.stopBeforeBlock &&
-        (n.kind === "block" ||
-          n.kind === "typedQuote" ||
-          n.kind === "template")
+        (n.kind === "block" || n.kind === "typedQuote" || n.kind === "template")
       )
         break;
-      if (
-        options.stopBeforeBody &&
-        (n.kind === "literal" || n.kind === "form")
-      )
+      if (options.stopBeforeBody && (n.kind === "literal" || n.kind === "form"))
         break;
       // Flattened program items from later rows are the next statement, not a
       // continuation of an ungrouped `type :keyword …` / `macro :keyword …` tail.

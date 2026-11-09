@@ -76,7 +76,11 @@ test("source metadata does not change canonical syntax", () => {
     normal(i.parse("R(a: 1)", "program", "a")),
     normal(i.parse("R(a: 1)", "program", "b")),
   );
-  assert.ok(!JSON.stringify(i.parse("R(a: 1)")).includes('"source"'));
+  assert.ok(
+    !JSON.stringify(i.parse("R(a: 1)"), (_k, v) =>
+      typeof v === "bigint" ? v.toString() : v,
+    ).includes('"source"'),
+  );
 });
 test("invalid factory parameter patterns fail at declaration even without use", () => {
   for (const source of [

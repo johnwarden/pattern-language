@@ -10,6 +10,8 @@ export interface BlockElaboration {
   finish?(forms: Syntax[]): void;
   /** Context supplied by the active grammar, including user-defined forms. */
   describe?(input: Syntax): string | undefined;
+  /** Finish a line the keyword reader could not consume, without inventing a form. */
+  complete?(input: Syntax): Syntax | undefined;
 }
 
 /** Interpret surface lines in order, allowing clauses to cross line boundaries. */
@@ -36,6 +38,13 @@ export function elaborateBlock(
         kind: "sequence",
         items: items.slice(pos, end).map((f) => f.value),
       };
+      const completed = !matches.length ? context.complete?.(input) : undefined;
+      if (completed) {
+        const interpreted = context.accept(completed);
+        lines.push(interpreted ?? completed);
+        pos = end;
+        continue;
+      }
       const found = normal(input);
       throw new LanguageError(
         matches.length

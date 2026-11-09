@@ -1,0 +1,45 @@
+test "Unquoted expected-grammar DSL"
+  def MyDsl type :do String :with String
+  def show(x :: MyDsl) x
+  (y :: MyDsl) = do "Foo" with "bar"
+  x = MyDsl` do "Foo" with "bar"
+
+  assert x == y
+  assert show(do "Foo" with "bar") == x
+end
+
+test "Unquoted expected-grammar binding after a type definition"
+  def MyDsl type :do String :with String
+  (y :: MyDsl) = do "Foo" with "bar"
+  assert y == MyDsl` do "Foo" with "bar"
+end
+
+test "Labeled arguments use the unique callable's pack"
+  def MyDsl type :do String :with String
+  def show(value: x :: MyDsl) x
+  name = "bar"
+  x = MyDsl` do "Foo" with "bar"
+  assert show(value: do "Foo" with name) == x
+end
+
+test "Later curried packs use the remaining parameter"
+  def MyDsl type :do String :with String
+  def show(x)(y :: MyDsl) y
+  name = "bar"
+  x = MyDsl` do "Foo" with "bar"
+  assert show(0)(do "Foo" with name) == x
+end
+
+test "Closure-valued variables propagate the current pack"
+  def MyDsl type :do String :with String
+  f = (x :: MyDsl) -> x
+  x = MyDsl` do "Foo" with "bar"
+  assert f(do "Foo" with "bar") == x
+end
+
+test "Unquoted DSL without an expected grammar is incomplete"
+  def MyDsl type :do String :with String
+  name = "bar"
+  go = () -> (do "Foo" with name)
+  expect go() error "unknown or incomplete macro form"
+end
