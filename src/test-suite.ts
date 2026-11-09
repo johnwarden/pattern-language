@@ -21,6 +21,7 @@ import {
 import type { Value, TypeValue } from "./values.ts";
 import type { Pattern } from "./pattern.ts";
 import { renderDiagnostic } from "./diagnostics.ts";
+import { lineIndent } from "./indent.ts";
 import {
   TEST_SCHEMA,
   TEST_STEP_TYPES,
@@ -129,13 +130,13 @@ export function testSourceText(tree: Syntax): string {
 function dedent(text: string, indentation?: number): string {
   const lines = text.split("\n"),
     nonempty = lines.filter((line) => line.trim());
-  const indent =
-    indentation ??
-    (nonempty.length
-      ? Math.min(...nonempty.map((line) => line.match(/^ */)![0].length))
-      : 0);
+  let prefix = lineIndent(nonempty[0] ?? "");
+  if (indentation !== undefined) prefix = prefix.slice(0, indentation);
+  else
+    for (const line of nonempty.slice(1))
+      while (!line.startsWith(prefix)) prefix = prefix.slice(0, -1);
   return lines
-    .map((line) => line.slice(Math.min(indent, line.match(/^ */)![0].length)))
+    .map((line) => (line.startsWith(prefix) ? line.slice(prefix.length) : line))
     .join("\n");
 }
 function scalarString(value: Value): string {
