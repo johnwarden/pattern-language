@@ -86,11 +86,15 @@ test-language *args:
     set -euo pipefail
     npm run test:language -- "$@"
 
+# Start the built stdio language server (run just build first)
+lsp:
+    node dist/pattern-language-lsp.mjs --stdio
+
 # Static types
 typecheck:
     npm run check
 
-# Generate browser bundles
+# Generate browser bundles and the Node-only language server
 build:
     npm run build
 

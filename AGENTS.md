@@ -111,7 +111,8 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 | `just test [path]` | A `.test` file or directory runs source-language tests; a TypeScript file runs host tests. No path runs host tests plus Dockerfile/devbox alignment and finite recipe smokes. |
 | `just test-language` | Source suite (`tests/**/*.test`, excluding inbox). `just test-language --list` lists cases. |
 | `just typecheck` | `tsc --noEmit`. |
-| `just build` | Generate the browser bundles. |
+| `just build` | Generate browser bundles and the Node-only language server. |
+| `just lsp` | Start the built stdio language server for editor clients. |
 | `just lint` | ShellCheck on repo shell scripts. |
 | `just check` | All of the above. Build precedes host tests; host tests and the source suite then run together. |
 
