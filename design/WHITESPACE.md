@@ -102,8 +102,8 @@ width.
 | Newlines outside balanced delimiters | Separate rows / statements; joining or splitting rows can intentionally change a program. |
 | Newlines inside collection delimiters | Can distinguish vertical rows from comma continuation; row boundaries can change collection rank. |
 | Spaces around infix operators | Both sides are required; a+b is invalid, not a different addition expression. |
-| Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Suffixes wrap in source order. |
-| Tight function calls versus sidefix operands | `f(x)` is application. A term then whitespace then `(` is a syntax error, including after keywords such as `assert`, `type`, `if`, `def`, `expect`, and `match`. Write `f x` for a sidefix operand. Infix/prefix operators may still be followed by a grouped operand (`a - (b)`, `- (x)`). |
+| Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Suffixes wrap in source order. Prefix `+Int` and `+(Int)` are the same application tree; tight `Int+` is not that wrap. |
+| Tight function calls versus sidefix operands | `f(x)` is application. A non-keyword term then spaced `(` is an error (`f (x)`, `f(x) (y)`). A keyword operand may begin with a grouping only if the operand continues (`assert (1 + 2) == 3`); a wholly parenthesized operand (`assert (x)`, `if (x)`) is an error. Infix/prefix operators may still be followed by a grouped operand (`a - (b)`, `- (x)`). |
 | Dot notation | a.b and a .b c follow the stated call/pack rules; arbitrary spacing around dot is not permitted. |
 | Label colon | Must touch its label. Separating it is not an alternative label spelling and may only have meaning in another explicitly selected grammar. |
 | Quotation / reader prefixes | Tight T` and reader quote prefixes select syntax; adding spaces does not preserve that interpretation automatically. |
@@ -184,3 +184,8 @@ remains an ordinary check. Host test/layout-ends.test.ts keeps Grammar-object
 `parseSurface` (including `:otherwise` vs `:else`) and sequential session macros
 for probe/then success. test/repl.test.ts covers grammar-driven REPL completeness.
 test/indent-prefix.test.ts keeps the prefix-relation unit checks.
+tests/specification/postfix-suffixes.test covers suffix wrap order (`T**` is
+`(T*)*`), spaced infix trees, that a pack field `**` is not a suffix on the
+previous field, and that prefix `+Int` / `+(Int)` are the same tree while tight
+`Int+` is not rewritten to prefix `+`. Distinct postfix application, including
+tight `Int+` as a postfix tree, remains later work.

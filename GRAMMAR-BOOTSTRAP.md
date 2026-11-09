@@ -103,9 +103,15 @@ inference is implemented, type definitions require explicit capture types,
 including rest captures. Binding, parameter, and match captures may remain
 unannotated without boxing their inputs. `_` cannot define a type field.
 
-Type modifiers apply left to right: `Int?*` is `*(?(Int))`. They normalize to
-ordinary application nodes. Angle brackets have no application role; spaced `<`
-and `>` remain ordinary infix operators.
+Type suffixes apply left to right: `Int?*` is `(Int?)*`, and `T**` is `(T*)*`.
+The current bootstrap still rewrites those suffixes into prefix application
+nodes (`Int?*` as `*(?(Int))`); distinct postfix trees replace that
+normalization. List `T*`, Option `T?`, and error `T^` are postfix by
+convention.
+
+Prefix `+Int` and `+(Int)` are the same application tree. Tight `Int+` is not a
+typeSuffix here. Angle brackets have no application role; spaced `<` and `>`
+remain ordinary infix operators.
 Prefix punctuation is maximal; each postfix modifier is interpreted separately.
 
 Normalized syntax prints punctuation applied to two successive argument packs
