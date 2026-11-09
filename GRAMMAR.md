@@ -26,6 +26,8 @@ Outfix brackets/braces put their closing delimiter after the pack; they have hea
 | a + b | +(a)(b) |
 | -x | -(x) |
 
+Prefix `-(x)` negates; infix `1 - x` is `-(1)(x)` and subtracts.
+
 Infix operators require surrounding spaces, have equal precedence and associate
 right. Prefix punctuation groups a maximal symbol except the quote prefix; postfix
 modifiers are read individually. Prefix and postfix operators must touch their

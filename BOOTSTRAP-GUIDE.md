@@ -123,7 +123,8 @@ not establish actual iOS lifecycle/storage behavior.
   distinct from prefix/infix application. Prefix and postfix operators must
   touch their operand: `T**` is `(T*)*`, while `T * *`, standalone `* *x`, and
   standalone `- (x)` are errors; `-(x)`, `-x`, `1 - (x)`, `1 * *x`, `1 * x*`,
-  and `x* * 1` parse. In type position, `T?` is
+  and `x* * 1` parse. Prefix `-(a)` negates; infix `-(a)(b)` subtracts.
+  In type position, `T?` is
   `concrete T | :None` and `T*` / `T^` are the list and error type constructors.
   Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those types.
   Prefix `$` remains unquote; interpolating `T$` quotes stay lexer prefixes, not
@@ -352,8 +353,9 @@ This is an experimental interpreter, not a compiler or a statically typed langua
 
 - Numbers use finite JavaScript numbers and reject unsafe integer literals/results.
   There is no exact-decimal arithmetic. Arithmetic operators consume two successive
-  one-element packs; use `negate(x)` or `0 - x` for numeric negation. `-(x)` remains
-  the first pack of subtraction, consistent with application by packs.
+  one-element packs, except `-`: prefix `-(a)` / `-x` / `-(x)` negates, while infix
+  `-(a)(b)` / `1 - x` subtracts. The Code interpreter distinguishes those trees
+  rather than treating `-` as an ordinary curried function.
 - Data order is numbers, strings, symbols, then constructed terms. Terms compare
   head, ordered field labels/values, then length. Opaque functions currently lack
   public structural equality/ordering; interpreter object identity is not language

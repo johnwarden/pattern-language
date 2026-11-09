@@ -1,0 +1,29 @@
+test "Prefix minus negates; infix minus subtracts"
+  x = 3
+  n = -1
+  grouped = -(1)
+  nx = -x
+  groupedX = -(x)
+  assert n == negate(1)
+  assert grouped == n
+  assert nx == negate(x)
+  assert groupedX == nx
+  assert (1 - x) == negate(2)
+  expect 1 - -x result 4 :: Rational
+  expect 1 - -2 result 3 :: Rational
+  expect 5 - (2) result 3 :: Rational
+  assert parse(Code)("-1") == parse(Code)("-(1)")
+  assert parse(Code)("-x") == parse(Code)("-(x)")
+  quotedPrefix = Code` -1
+  quotedGrouped = Code` -(x)
+  quotedInfix = Code` 1 - x
+  quotedNested = Code` 1 - -x
+  assert quotedPrefix == parse(Code)("-1")
+  assert quotedGrouped == parse(Code)("-(x)")
+  assert quotedInfix == parse(Code)("1 - x")
+  assert quotedNested == parse(Code)("1 - -x")
+  assert parse(Code)(toString(Code)(quotedPrefix)) == quotedPrefix
+  assert parse(Code)(toString(Code)(quotedGrouped)) == quotedGrouped
+  assert parse(Code)(toString(Code)(quotedInfix)) == quotedInfix
+  assert parse(Code)(toString(Code)(quotedNested)) == quotedNested
+end

@@ -137,7 +137,8 @@ explicit layout termination, including shared string/if terminator ownership.
   Prefix and postfix operators must touch their operand: `T * *`, standalone
   `* *x`, and standalone `- (x)` are errors; `-(x)`, `-x`, `1 - (x)`, `1 * *x`,
   `1 * x*`, and `x* * 1` parse. The touching rule is generic for prefix/postfix
-  punctuation, not special-cased to `*` or `-`.
+  punctuation, not special-cased to `*` or `-`. Prefix `-(a)` negates; infix
+  `-(a)(b)` subtracts.
   Full parser migration is not a prerequisite and is not done.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.
