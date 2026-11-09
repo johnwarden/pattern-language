@@ -10,6 +10,33 @@ const uri = "file:///workspace/unsaved.pattern";
 const read = (text: string, file = uri) =>
   analyze({ uri: file, text, version: 7 });
 
+test("LSP diagnoses ordinary code outside a .test envelope without checking its operands", () => {
+  for (const invalid of ["foo 1 2", "foo()", "1", "x = 1"]) {
+    const result = read(
+      `test "First"\n  expect unknown() result Future<3> :: Missing\nend\n\n${invalid}\n`,
+      "file:///changed.test",
+    );
+    assert.equal(result.diagnostics.length, 1, invalid);
+    assert.equal(result.diagnostics[0].code, "E_TEST_FILE", invalid);
+    assert.deepEqual(
+      result.diagnostics[0].range.start,
+      { line: 4, character: 0 },
+      invalid,
+    );
+    assert.match(
+      result.diagnostics[0].message,
+      /named test or todo test block/u,
+    );
+    assert.equal(result.symbols[0].name, "First");
+  }
+  const inside = read(
+    'todo test "Still future"\n  expect unknown() result Future<3> :: Missing\nend',
+    "file:///changed.test",
+  );
+  assert.deepEqual(inside.diagnostics, []);
+  assert.equal(inside.symbols[0].name, "Still future");
+});
+
 test("LSP source ranges map BOM, CRLF, astral scalars, tabs and missing endpoints", () => {
   const positions = new SourcePositions(uri, '\uFEFF"😀"\r\n\tbad');
   assert.equal(positions.normalized, '"😀"\n\tbad');

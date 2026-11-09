@@ -153,7 +153,7 @@ connection.onInitialize((params) => {
       "markdown",
     ) === true;
   return {
-    serverInfo: { name: "pattern-language-lsp", version: "0.1.0" },
+    serverInfo: { name: "pattern-language-lsp", version: "0.1.1" },
     capabilities: {
       positionEncoding: "utf-16",
       textDocumentSync: {
