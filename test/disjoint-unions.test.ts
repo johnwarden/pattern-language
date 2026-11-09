@@ -30,23 +30,7 @@ test("surface symbols have intrinsic concrete classes", () => {
     "True",
   );
 });
-test("quoted symbol atoms and self-evaluating type values retain their identities in Any", () => {
-  assert.equal(
-    run(
-      "(symbol :: Any) = :Widget\n(typeValue :: Any) = Int\nsymbol == typeValue",
-    ),
-    "False",
-  );
-});
-test("unionType evaluates type alternatives and normalizes just like UnionType", () => {
-  assert.equal(
-    run("(unionType String | Int) == UnionType(Int,String)"),
-    "True",
-  );
-  assert.equal(
-    run("(unionType Int | String | Int) == UnionType(String,Int)"),
-    "True",
-  );
+test("unionType still rejects an unbound alternative", () => {
   assert.throws(() => run("unionType Int | foo"), /unbound/);
 });
 test("unannotated raw union values select and retain exactly one concrete member", () => {

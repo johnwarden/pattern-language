@@ -11,35 +11,6 @@ const incomparable = (source: string) =>
       e.diagnostic.code === "E_INCOMPARABLE_TYPES",
   );
 
-test("type identity excludes declaration and capture names", () => {
-  assert.equal(
-    run(
-      "a =\n  def A type :Rect(w :: Float,h :: Float)\n  type A\nend\nb =\n  def B type :Rect(width :: Float,height :: Float)\n  type B\nend\na == b",
-    ),
-    "True",
-  );
-});
-test("recursive identity is alpha invariant and finite", () => {
-  assert.equal(
-    run(
-      "a =\n  def A type :Nil | :Cons(Int,A)\n  type A\nend\nb =\n  def B type :Nil | :Cons(Int,B)\n  type B\nend\na == b",
-    ),
-    "True",
-  );
-  assert.equal(
-    run(
-      "def A type :Nil | :Cons(Int,A)\ndef B type :Nil | :Cons(String,B)\n(type A) == (type B)",
-    ),
-    "False",
-  );
-});
-test("physical labels matter but their order does not", () => {
-  assert.equal(
-    run("(type :R(x: Int,y: String)) == (type :R(y: String,x: Int))"),
-    "True",
-  );
-  assert.equal(run("(type :R(x: Int)) == (type :R(y: Int))"), "False");
-});
 test("same syntax in different optional spaces is incomparable", () => {
   const option = "def Option(T :: Type) type :None | Some(T)\n";
   incomparable(
@@ -60,14 +31,6 @@ test("annotation cannot silently convert an already interpreted value", () => {
         "def Option(T :: Type) type :None | Some(T)\nx = :None :: Option(Int)\nx :: Option(String)",
       ),
     /different concrete type/,
-  );
-});
-test("equal types in independent scopes interoperate through local accessors", () => {
-  assert.equal(
-    run(
-      "def produce()\n  def A type :Rect(w :: Int,h :: Int)\n  Rect(3,4) :: A\nend\na = produce()\ndef B type :Rect(width :: Int,height :: Int)\n(b :: B) = Rect(3,4)\n(a == b,width(a),height(b))",
-    ),
-    "(True, 3, 4)",
   );
 });
 test("generic arguments participate in identity even for empty containers", () => {
@@ -133,19 +96,7 @@ test("aliases and recursive aliases preserve their concrete identity", () => {
     "True",
   );
 });
-test("capture names erase completely and duplicate declarations fail", () => {
-  assert.equal(
-    run(
-      "a =\n  def A type :Pair(x :: Int,y :: Int)\n  type A\nend\nb =\n  def B type :Pair(a :: Int,b :: Int)\n  type B\nend\na == b",
-    ),
-    "True",
-  );
-  assert.equal(
-    run(
-      "a =\n  def A type :Pair(x :: Int,y :: Int)\n  type A\nend\na == (type :Pair(Int,Int))",
-    ),
-    "True",
-  );
+test("duplicate captures in a type description still fail", () => {
   assert.throws(
     () => run("type :Pair(x :: Int,x :: Int)"),
     /duplicate capture/,

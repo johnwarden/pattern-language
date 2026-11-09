@@ -311,6 +311,42 @@ chosen by this migration.
 
 Host remainder is TS Rational/binary64 helpers, public syntax-tree display, exact serialization and D07 mismatch codes. No expected-failure or legacy marker was added or changed.
 
+## Type identity and value-tree migration
+
+Jonathan approved an assertion-level pass on the value/inspection group.
+This first slice moves unique portable evaluations that master already
+implements consistently with D05, D19 and D20. Named declarations use
+`type Name concrete`. Parameterized factories keep bootstrap
+`def Name(t :: Type) type`. Concrete-identity incomparability,
+inspection/decoding, function-value printing and application-head
+evaluation of `True(1)`/`1(1)` were not selected. Expected results are
+authored data.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| value-spaces: type identity excludes declaration and capture names | types/identity#type-identity-excludes-declaration-and-capture-names | — |
+| value-spaces: recursive identity is alpha invariant | types/identity#recursive-identity-is-alpha-invariant | — |
+| value-spaces: physical labels matter but order does not | types/identity#physical-labels-matter-but-their-order-does-not | — |
+| value-spaces: capture names erase against capture-free types | types/identity#capture-names-erase-against-a-capture-free-type | Duplicate-capture throw stays |
+| value-spaces: independent scopes share accessors | types/identity#equal-types-in-independent-scopes-share-accessors | Optional/numeric `E_INCOMPARABLE_TYPES` stays |
+| disjoint-unions: unionType normalizes like UnionType | types/identity#uniontype-normalizes-like-uniontype | Unbound alternative throw stays |
+| disjoint-unions: Widget vs Int in Any | types/identity#quoted-symbols-stay-distinct-from-reserved-type-names-in-any | `inspect` symbol classes stay |
+| type-atoms: type-argument pack vs merged pack | types/value-trees#a-type-argument-pack-is-not-a-merged-pack | Exact `E_NO_METHOD` stays |
+| type-atoms: specialized function checks the member | types/value-trees#a-specialized-type-argument-function-still-checks-the-member | Exact `E_NO_METHOD` stays |
+| type-atoms: factory accessors remain visible | types/value-trees#factory-accessors-remain-visible-to-earlier-functions | — |
+| type-atoms: bound values substitute in type patterns | types/value-trees#bound-values-substitute-in-type-patterns | — |
+| type-atoms: Type construction through Any | types/value-trees#type-construction-sees-int-through-abstract-storage | — |
+| type-atoms: canonical alternatives include literals | types/value-trees#canonical-alternatives-put-symbols-before-literals-and-applications | `parseExpression` postfix matrix stays |
+| type-atoms: postfix type ≠ prefix quotation | types/value-trees#postfix-type-descriptions-are-not-prefix-quotation | syntax kind/key/`normal` stay |
+| type-atoms: reserved Int/True redeclarations | types/value-trees#reserved-primitive-names-cannot-be-redeclared; types/value-trees#reserved-constants-cannot-be-redeclared | `env.bindings.delete` stays |
+| type-atoms: type defaults | types/value-trees#ordinary-type-construction-rejects-binding-defaults | Exact `E_TYPE_DEFAULT` and binding-default positive stay |
+| value-representation: compiled vs quoted trees | types/value-trees#compiled-type-trees-equal-quoted-trees | Nested list equality and Expression parse round-trips stay |
+| value-representation: quoted type tree as a named type | types/value-trees#a-quoted-type-tree-can-be-installed-as-a-named-type | `.where` on a bound `Int` stays |
+| value-representation: invalid type-shaped data | types/value-trees#invalid-type-shaped-data-is-not-a-type | — |
+| value-representation: bound type value is a matcher | types/value-trees#a-bound-type-value-is-a-matcher | — |
+
+Host remainder is `inspect`, REPL abbreviation, `parseExpression` trees, lexical-storage surgery, Expression text transport, exact diagnostic codes, and concrete-identity incomparability. No expected-failure or legacy marker was added or changed. abstract-values and structural-slots were not selected.
+
 ## Existing source cases
 
 | Former source | Current `.test` case ID |
