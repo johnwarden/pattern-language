@@ -39,9 +39,48 @@ server-side worker output is drained, not forwarded into the protocol.
 3. Replace both absolute paths: the Node executable must be version 24 or newer,
    and the second path must point at this checkout's built server. Explicit paths
    avoid a GUI app depending on the shell's PATH.
-4. Open a file with the Pattern Language syntax selected. Diagnostics use the
-   normal LSP panels; **Goto Symbol** shows recognized definitions/macros and test
-   blocks. Hover explains the current analysis coverage, including unknowns.
+4. Open a file with the Pattern Language syntax selected. Open the Command
+   Palette (**Command+Shift+P** on macOS) and choose **LSP: Goto Symbol** for the
+   server's definition/macro/test outline. Sublime's built-in **Command+R** picker
+   is separate; LSP does not replace its binding by default. Hover explains the
+   current analysis coverage, including unknowns.
+
+For Command+R to use the LSP outline for Pattern Language views, open
+**Preferences → Key Bindings** and append the entry from
+[Default (OSX).sublime-keymap](<Default (OSX).sublime-keymap>) to your user array.
+Its contexts require both Pattern Language syntax and an attached server that
+provides document symbols. Other views retain their current bindings. The client
+documents this distinction under [Goto Symbol](https://lsp.sublimetext.io/features/#goto-symbol).
+
+## Verify the connection and first features
+
+Open `tests/examples/types.test`, then run **LSP: Goto Symbol**. It should list
+the named test blocks. The LSP log should show a `textDocument/documentSymbol`
+request and a nonempty response. No such request means the server has not been
+asked for its outline. The hover popup describes analysis coverage, rather than
+inferred types.
+
+For a diagnostic smoke test, create a `.pattern` file containing:
+
+```text
+def square(x) x * x
+square(3
+```
+
+The unclosed parenthesis should be diagnosed. Add the closing `)` and the
+diagnostic should clear. In a `.test` file, ordinary code outside a named
+`test`/`todo test` block is also a known file-grammar error. Code inside those
+blocks remains inert: an unbound name, unfinished assertion or incorrect expected
+value may remain unknown in this slice. This server does not yet check names,
+types or test outcomes.
+
+An `initialize` reply, edit notifications, diagnostics and hover responses show
+that the client/server connection is working even when diagnostics is an empty
+array. A server-command dropdown is not the document outline: this MVP advertises
+document symbols and hover, with no custom executable server commands.
+
+After updating, rebuild and use **LSP: Restart Server**. Version **0.1.1** in the
+initialize reply identifies the top-level test-file diagnostic fix.
 
 The same stdio entry point can be configured in Neovim, Vim LSP clients or VS Code;
 this PR does not ship editor-specific clients or a VS Code extension. Markdown
@@ -59,6 +98,9 @@ rendering continues to use the separate highlighting grammar.
   structurally. Assertions, setup, expected values/types and todo operands remain
   inert source data. A file containing a single `todo test` works. Open inbox
   files are analyzed directly, independent of default test discovery.
+- Ordinary code outside the fixed test envelopes reports `E_TEST_FILE` at the
+  offending source location. This validates file structure without evaluating
+  assertions, setup or future operands.
 - Programs, tests, macro implementations and refinement predicates are never
   executed. The analysis graph has no runtime/test-runner import and does not
   bootstrap an Interpreter. There is no type inference or type-safety claim.
