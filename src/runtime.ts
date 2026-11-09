@@ -740,7 +740,7 @@ export class Interpreter {
         );
       },
       ReservedSymbol: (v: Value): boolean =>
-        v.kind === "symbol" && isSelfEvaluating(v.name),
+        v.kind === "symbol" && primitiveNames.has(v.name),
     })) {
       const numericKind = ["Num", "Float", "Float64"].includes(name)
         ? "float64"
@@ -786,7 +786,7 @@ export class Interpreter {
     for (const alias of ["Num", "Int64"])
       scope.bindings.delete(alias);
     for (const name of constantNames)
-      scope.bindings.set(name, single(this.reserved(name)));
+      scope.bindings.set(name, this.boolean(name === "True"));
     for (const [name, value] of scope.bindings) {
       if (!("kind" in value) || value.kind !== "type") continue;
       scope.typeDefinitions.set(typeIdentity(value), {
@@ -1603,7 +1603,8 @@ export class Interpreter {
         )
       )
         return this.reserved(n.name);
-      if (constantNames.has(n.name)) return this.reserved(n.name);
+      if (constantNames.has(n.name))
+        return singleton(this.boolean(n.name === "True"));
       const lookup = lexicalScopes.get(n) ?? env;
       const candidates = lookup.visible(n.name),
         bound = lookup.get(n.name);

@@ -34,7 +34,9 @@ policy remain provisional. Nonprimitive numeric types should be definable carveo
 Primitive names are `ReservedSymbol` values, and the type description of
 `type Int` is the reserved symbol `Int` itself, not `:Int`. A quoted primitive
 name such as `:Int` is an error in program source, including type declarations,
-which write `type String(:A)` rather than `type :String(:A)` (D20).
+which write `type String(:A)` rather than `type :String(:A)` (D20). `True` and
+`False` are `Bool` values like computed comparison results, not `ReservedSymbol`
+values.
 
 An explicitly interpreted Expression descriptor, if exposed, need not equal the result
 of evaluating it. Whether runtime Expression computation exists, and the exact public

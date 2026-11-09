@@ -3,7 +3,7 @@ import type { Value, TypeValue } from "./values.ts";
 import { unwrap, equal, asRational } from "./values.ts";
 import { LanguageError } from "./syntax.ts";
 import {
-  isSelfEvaluating,
+  primitiveNames,
   ordinarySymbolCategory,
 } from "./primitive-names.ts";
 
@@ -72,7 +72,7 @@ export function patternOverlap(left: P, right: P): Answer {
     if (name === "Bool")
       return value.kind === "symbol" && ["True", "False"].includes(value.name);
     if (name === "ReservedSymbol")
-      return value.kind === "symbol" && isSelfEvaluating(value.name);
+      return value.kind === "symbol" && primitiveNames.has(value.name);
     if (name === "Symbol")
       return (
         value.kind === "symbol" && ordinarySymbolCategory(value.name) !== undefined
