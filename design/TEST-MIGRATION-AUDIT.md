@@ -7,18 +7,19 @@ that the source suite replaces the TypeScript suite. The reference census covers
 57 `test/*.test.ts` files after the LSP, indentation and minus/type-capture
 migrations. All 57 have a file-level classification below; assertion-level
 migrations are claimed only for the mapped macro/registration, language,
-cross-context matching/availability, and generated-grammar staging observations.
+cross-context matching/availability, generated-grammar staging, and
+quotes/postfix observations.
 The method is file-level inspection and targeted assertion review, supported by a
 search for parser, representation, diagnostic, state, process and UI observations.
 A file classified as mixed still needs an assertion-level pass before
-further migration, except language, matching/availability and staging,
-which now have that mapping.
+further migration, except language, matching/availability, staging and
+quotes/postfix, which now have that mapping.
 
 The completed coverage map remains [TEST-MIGRATION.md](TEST-MIGRATION.md). Only
 implemented, passing source checks belong in that map. This document also records
 work that remains available or deliberately deferred. Macro/registration and
-language, matching, availability and staging now have assertion-level mappings
-there; other mixed files still need that pass.
+language, matching, availability, staging and quotes/postfix now have
+assertion-level mappings there; other mixed files still need that pass.
 
 ## First bounded batch
 
@@ -57,7 +58,7 @@ that every individual assertion in those files has already been mapped.
 | language                                                                                                                         | Implemented assertion-level pass; mixed remainder            | Ordinary calls, blocks, labels, rest, types and namespace examples live in `tests/language/`. Canonical round trips read executable programs from those `.test` files plus the retained display programs in `test/language.test.ts`. Pack/printer display, `parseExpression` trees, Grammar objects, REPL and exact `E_AMBIGUOUS_CALL` stay. |
 | consistency, pattern-bindings, milestone-two-review                                                                              | Implemented assertion-level pass; mixed remainder            | Portable cross-context matching, sidefix pack rest, pattern hygiene and available constant defaults live in `tests/matching/` and `tests/macros/availability.test`. Compiler capture metadata, Grammar objects, REPL rollback, exact `E_SIDEFIX_SPREAD` / `E_MACRO_RUNTIME_CAPTURE` and binder/AST checks stay. |
 | staging                                                                                                                          | Implemented assertion-level pass; mixed remainder            | Scalar generated sidefix, nested generated macros, generated function hygiene, definition-time grammar, generated types and final-definition errors live in `tests/macros/staging.test`. Parse-only no-execution, repeated REPL submissions, successful reuse after failure and transactional rollback stay. |
-| quotes, postfix, postfix-conventions                                                                                             | Mixed; later assertion-level pass                            | Some literal evaluation examples can move. Keep exact syntax kind/key/encode-decode, independently configured preludes/readers and diagnostics. Raw quotation/value-text cases wait for #31's alignment.                                                                              |
+| quotes, postfix, postfix-conventions                                                                                             | Implemented assertion-level pass; mixed remainder            | Portable quotation interpolation, typed-quote expansion, reader-block text, postfix payload matching, prefix `*`/`^`, infix `&`/`~`, optional type printing and custom `?` coexistence live in `tests/quotes/` and `tests/postfix/`. Syntax kind/key/encode-decode, empty-prelude readers, exact `E_UNQUOTE_CONTEXT` / `E_RESERVED_OPERATOR` / `E_KEYWORD_REST_UNSUPPORTED` and hole/name locations stay. |
 | pattern-schema, milestone-two, vertical-spread                                                                                   | Mixed; later assertion-level pass                            | Ordinary spreading/grammar examples are candidates. Direct matcher/compiler schema checks, dimensions, representation, fresh-interpreter transport and ambiguous row partition checks remain host boundaries. Do not select pending keyword-rest grammar.                             |
 | nested-option-designation, concrete-unions                                                                                       | Existing source counterparts plus host boundaries            | Compare positive source counterparts before adding duplicate examples. Exact failure codes, fresh-interpreter typed-text transport and test-harness expected-data checks remain. String text/model changes belong to #31.                                                             |
 | abstract-values, disjoint-unions, structural-slots, type-atoms, value-representation, value-spaces                               | Defer active value/inspection work                           | Many assertions are language-shaped, but intrinsic values, reserved symbols, raw Expression compatibility, concrete identity and descriptor printing are changing. Do not freeze old behavior through a migration or invent replacements.                                             |

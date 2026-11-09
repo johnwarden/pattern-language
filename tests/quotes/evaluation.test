@@ -1,0 +1,38 @@
+test "Head-only quotation interpolates; whole-expression quotation does not"
+  x = 3
+  (head, whole) = (:Box(x), :(Box(x)))
+
+  expect head result Box(3) :: Expression
+  expect whole result Box(:x) :: Expression
+end
+
+test "Typed quote blocks expand macro templates with explicit interpolation"
+  macro :addOne Args(x)
+    Code$`
+      y = $x
+      y + 1
+    end
+  end
+
+  expect
+    (addOne Args(4))
+  result 5 :: Rational
+end
+
+test "Reader blocks preserve raw punctuation and indented end content"
+  def inspect(fragments, values) fragments
+
+  expect
+    inspect'
+      " ' \ $x
+        end
+      tail
+    end # close
+  result ["\" ' \\ $x\n  end\ntail"] :: Expression
+end
+
+test "Interpolating a postfix percent preserves its spelling"
+  expect
+    $"$("x"%)"
+  result '"x"%' :: String
+end

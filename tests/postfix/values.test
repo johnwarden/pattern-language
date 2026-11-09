@@ -1,0 +1,82 @@
+test "A postfix bang value matches its payload"
+  def PostfixBang type (Int)!
+  (bang :: PostfixBang) = 1!
+
+  expect
+    match bang
+      (n :: Int)! -> n
+    end
+  result 1 :: Int
+end
+
+test "A postfix ampersand value matches its payload"
+  def PostfixAmp type (Int)&
+  (amp :: PostfixAmp) = 2&
+
+  expect
+    match amp
+      (n :: Int)& -> n
+    end
+  result 2 :: Int
+end
+
+test "A postfix tilde value matches its payload"
+  def PostfixTilde type (Int)~
+  (tilde :: PostfixTilde) = 4~
+
+  expect
+    match tilde
+      (n :: Int)~ -> n
+    end
+  result 4 :: Int
+end
+
+test "A postfix dollar value matches its payload"
+  def PostfixDollar type (Int)$
+  (dollar :: PostfixDollar) = 1$
+
+  expect
+    match dollar
+      (n :: Int)$ -> n
+    end
+  result 1 :: Int
+end
+
+test "Prefix star and caret remain ordinary application"
+  expect
+    *(2)(3)
+  result 6 :: Rational
+  expect
+    ^(2)(3)
+  result 8 :: Rational
+end
+
+test "Spaced ampersand and tilde remain infix data"
+  expect
+    1 & 2
+  result (1 & 2) :: Expression
+  expect
+    3 ~ 4
+  result (3 ~ 4) :: Expression
+end
+
+test "Prefix question mark is ordinary application, not an optional"
+  expect
+    ?(1)
+  result
+    ?(1) :: Expression
+  end
+end
+
+test "Optional type descriptions print as None unions"
+  expect toString(Type)(type String?) result "Type(:None | String)" :: String
+  expect toString(Type)(type String??) result "Type(:None | Type(:None | String))" :: String
+end
+
+test "An ordinary postfix question-mark definition coexists with the optional convention"
+  def (n :: Rational)? n + 1
+  (value, none) = (2?, :None :: String?)
+
+  expect value result 3 :: Rational
+  expect none result None :: String?
+end

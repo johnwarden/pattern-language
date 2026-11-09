@@ -49,7 +49,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Default host invocation counters, declaration rollback and exact source diagnostics | test/binding-defaults.test.ts; API/state/span observations need host access |
 | Type identity, abstract slots, caches, unsupported host environments and transport | existing type/value/abstract tests; retain direct representation/fresh-process checks |
 | Numeric exactness/conversion, overlapping unions and remaining type/evidence behavior | host and tests/numeric/*.test regressions; supported slices replace their corresponding legacy expectations |
-| Typed quotes, byte normalization and raw syntax encode/decode | quotation/source/syntax tests; host transport and coordinate checks remain |
+| Typed quotes, byte normalization and raw syntax encode/decode | tests/quotes/evaluation.test plus host quotes/postfix files; kind/key/encode-decode, empty preludes and hole locations stay |
 | Vertical matching, row keys, ambiguity, descriptor transfer | test/vertical-spread.test.ts; mixed source/representation assertions retained |
 | Canonical source behavior of the former test/cases suite | test/source-suite.test.ts; canonicalizes then runs the same DSL expectation |
 | Test schema round trips, execution/isolation traps, fixtures and error phases | test/test-suite.test.ts; checks the harness rather than language examples |
@@ -201,6 +201,34 @@ data. `#48` was not edited; bootstrap `def … type` remains setup.
 | staging: a generated structural type participates in subsequent sidefix patterns | macros/staging#a-generated-structural-type-participates-in-subsequent-sidefix-patterns | Generated `Point` used as a later sidefix parameter |
 
 Host remainder is parse-only no-execution, repeated REPL submissions, successful reuse after failure and transactional rollback. No expected-failure or legacy marker was added or changed.
+
+## Quotes and postfix migration
+
+The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) grouped `test/quotes.test.ts`,
+`test/postfix.test.ts` and `test/postfix-conventions.test.ts` as the next mixed
+batch. Portable literal evaluation now runs under `tests/quotes/evaluation.test`
+and `tests/postfix/values.test`. Expected results are authored data. `#31` has
+landed; `#48` was not edited. Existing quotation and postfix specification cases
+are reused rather than duplicated.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| quotes: head-only and whole-expression quotation remain distinct | examples/quotation#quoted-expression-values; quotes/evaluation#head-only-quotation-interpolates-whole-expression-quotation-does-not | `:f(1)` already existed; `:Box(x)` vs `:(Box(x))` is new |
+| quotes: typed quote blocks expand macro templates with explicit interpolation | quotes/evaluation#typed-quote-blocks-expand-macro-templates-with-explicit-interpolation | Positive `addOne`; `Interpreter.parse` of an unclosed `Code` block stays |
+| quotes: unknown reader functions produce a source-located name error | — | Exact `E_UNBOUND_NAME` and line stay |
+| quotes: reader blocks preserve raw punctuation and indented end content | quotes/evaluation#reader-blocks-preserve-raw-punctuation-and-indented-end-content | Authored fragment text |
+| quotes: canonical source retains explicit templates and residual dollar holes | — | Parse-tree kind plus `normal` re-run stays |
+| quotes: hole errors identify the actual interpolation expression | — | Exact line/column stay |
+| postfix: tight suffix punctuation is postfix, prefix remains apply | — | `parseExpression` kind, `syntaxKey`, `normal` and encode/decode stay |
+| postfix: postfix values match payloads and differ from prefix application | postfix/values#a-postfix-*-value-matches-its-payload; postfix/values#prefix-star-and-caret-remain-ordinary-application; postfix/values#spaced-ampersand-and-tilde-remain-infix-data; postfix/values#prefix-question-mark-is-ordinary-application-not-an-optional; postfix/values#optional-type-descriptions-print-as-none-unions | Exact `E_RESERVED_OPERATOR` and `E_UNQUOTE_CONTEXT` stay; optional/`E_NO_METHOD`/`E_INCOMPARABLE_TYPES` already had source counterparts |
+| postfix: keyword rest is prefix `**` and postfix `rest**` | — | Tree shape plus exact `E_KEYWORD_REST_UNSUPPORTED` stay |
+| postfix: postfix `T*` / `T**` and prefix `**x` do not share a spaced tree | tests/specification/postfix.test already covers the portable `parse(Code)` equalities | Host `parseExpression` kind/`normal`/`syntaxKey` stay |
+| postfix-conventions: postfix question mark has no optional meaning without a source definition | postfix/values#an-ordinary-postfix-question-mark-definition-coexists-with-the-optional-convention | Empty-prelude `Interpreter` checks stay |
+| postfix-conventions: every accepted suffix survives syntax and typed value transport | — | Encode/decode and empty-prelude parse/toString stay |
+| postfix-conventions: bootstrap list and result conventions remain usable | language/types#option; language/types result; specification/postfix-suffixes#the-bootstrap-list-convention-retains-list-matching | Already present |
+| postfix-conventions: hash always starts a comment | specification/postfix#postfix-percent-remains-punctuation-hash-is-a-comment; quotes/evaluation#interpolating-a-postfix-percent-preserves-its-spelling | `normal(parseExpression("x#"))` stays |
+
+Host remainder is syntax kind/key/encode-decode, independently configured empty preludes, exact diagnostic codes and interpolation hole locations. No expected-failure or legacy marker was added or changed.
 
 ## Existing source cases
 

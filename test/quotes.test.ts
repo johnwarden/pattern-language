@@ -6,23 +6,9 @@ import {
   LanguageError,
   normal,
 } from "../src/index.ts";
-import { displayString } from "../src/string-format.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 
-test("head-only and whole-expression quotation remain distinct", () => {
-  assert.equal(
-    run("def f(x) 2 * x\nb = :f(1)\nc = :(f(1))\n(b == c,b)"),
-    "(True, f(1))",
-  );
-  assert.equal(run("x = 3\n(:Box(x),:(Box(x)))"), "(Box(3), Box(x))");
-});
-test("typed quote blocks expand macro templates with explicit interpolation", () => {
-  assert.equal(
-    run(
-      "macro :addOne Args(x)\n  Code$`\n    y = $x\n    y + 1\n  end\nend\n(addOne Args(4))",
-    ),
-    "5",
-  );
+test("an indented typed quote requires an explicit aligned end", () => {
   assert.throws(
     () => new Interpreter().parse("Code`\n  1"),
     /explicit aligned end/,
@@ -35,14 +21,6 @@ test("unknown reader functions produce a source-located name error", () => {
       error instanceof LanguageError &&
       error.diagnostic.code === "E_UNBOUND_NAME" &&
       error.diagnostic.primary?.line === 1,
-  );
-});
-test("reader blocks preserve raw punctuation and indented end content", () => {
-  const source =
-    "def inspect(fragments,values) fragments\ninspect'\n  \" ' \\ $x\n    end\n  tail\nend # close";
-  assert.equal(
-    run(source),
-    "[" + displayString("\" ' \\ $x\n  end\ntail") + "]",
   );
 });
 test("canonical source retains explicit templates and residual dollar holes", () => {

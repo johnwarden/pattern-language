@@ -51,67 +51,11 @@ test("tight suffix punctuation is postfix, prefix remains apply", () => {
   assert.equal(parseExpression("Code$` 1").kind, "typedQuote");
 });
 
-test("postfix values match payloads and differ from prefix application", () => {
-  assert.equal(
-    run(`
-def PostfixBang type (Int)!
-(bang :: PostfixBang) = 1!
-match bang
-  (n :: Int)! -> n
-end
-`),
-    "1",
-  );
-  assert.equal(run("*(2)(3)"), "6");
-  assert.equal(run("^(2)(3)"), "8");
+test("prefix bang, dollar unquote and spaced dollar stay host diagnostics", () => {
   assert.throws(
     () => run("!(1)"),
     (e: unknown) =>
       e instanceof LanguageError && e.diagnostic.code === "E_RESERVED_OPERATOR",
-  );
-  assert.equal(
-    run(`
-def PostfixAmp type (Int)&
-(amp :: PostfixAmp) = 2&
-match amp
-  (n :: Int)& -> n
-end
-`),
-    "2",
-  );
-  assert.equal(
-    run(`
-def PostfixTilde type (Int)~
-(tilde :: PostfixTilde) = 4~
-match tilde
-  (n :: Int)~ -> n
-end
-`),
-    "4",
-  );
-  assert.equal(
-    run(`
-def PostfixDollar type (Int)$
-(dollar :: PostfixDollar) = 1$
-match dollar
-  (n :: Int)$ -> n
-end
-`),
-    "1",
-  );
-  assert.throws(
-    () =>
-      run(`
-def PostfixAmp type (Int)&
-def PrefixAmp type\n  &(Int)\nend
-(amp :: PostfixAmp) = 2&
-(pre :: PrefixAmp) = &(3)
-amp == pre
-`),
-    (e: unknown) =>
-      e instanceof LanguageError &&
-      e.diagnostic.code === "E_INCOMPARABLE_TYPES" &&
-      e.message.includes("Can't compare types"),
   );
   assert.throws(
     () => run("$(1)"),
@@ -122,30 +66,6 @@ amp == pre
     () => run("1 $ 2"),
     (e: unknown) =>
       e instanceof LanguageError && e.diagnostic.code === "E_UNQUOTE_CONTEXT",
-  );
-  assert.equal(run('name = "Jo"\n$"Hi $name"'), '"Hi Jo"');
-  assert.equal(run("1 & 2"), "1 & 2");
-  assert.equal(run("3 ~ 4"), "3 ~ 4");
-  assert.equal(run("?(1)"), "?(1)");
-  assert.throws(
-    () => run("1?"),
-    (e: unknown) =>
-      e instanceof LanguageError && e.diagnostic.code === "E_NO_METHOD",
-  );
-  assert.equal(run("1 :: Int?"), "1");
-  assert.equal(run(":None :: Int?"), "None");
-  assert.throws(
-    () => run("1? :: Int?"),
-    (e: unknown) => e instanceof LanguageError,
-  );
-  assert.throws(
-    () => run("Some(1) :: Int?"),
-    (e: unknown) => e instanceof LanguageError,
-  );
-  assert.equal(run("toString(Type)(type String?)"), '"Type(:None | String)"');
-  assert.equal(
-    run("toString(Type)(type String??)"),
-    '"Type(:None | Type(:None | String))"',
   );
 });
 
