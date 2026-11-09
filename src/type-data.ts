@@ -42,6 +42,7 @@ const reserved = new Set([
   "UnionType",
   "Literal",
   "Apply",
+  "Postfix",
   "Fields",
   "OpenFields",
   "Repeat",
@@ -103,6 +104,8 @@ export function typeDescription(
     if (v.kind === "literal") return v;
     if (v.kind === "symbol" && v.name !== "_" && !primitiveAtoms.has(v.name))
       return v;
+    if (v.kind === "postfix")
+      return term("Postfix", literal(v.operator), literal(v.operand));
     return term("Literal", v);
   }
   function encode(p: Pattern<Value>, root = false): Build {
@@ -328,6 +331,8 @@ export function descriptionKey(v: Value): string {
         ? ["literal", "rational", v.value.n.toString(), v.value.d.toString()]
         : ["literal", v.value];
     if (v.kind === "type") return key(typeData(v));
+    if (v.kind === "postfix")
+      return ["postfix", key(v.operator), key(v.operand)];
     if (v.kind === "term" || v.kind === "pack")
       return [
         v.kind,
@@ -494,6 +499,14 @@ export function descriptionPattern(
             kind: "node",
             head: child(head, "head"),
             body: fields,
+          };
+        }
+        case "Postfix": {
+          const [operator, operand] = args(v);
+          return {
+            kind: "postfix",
+            operator: child(operator, "operator"),
+            operand: child(operand, "operand"),
           };
         }
         case "Fields":

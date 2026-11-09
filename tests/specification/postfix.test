@@ -58,6 +58,23 @@ test "Spaced infix star is not postfix"
   expect parse(Code)("2*3") error "infix operators require spaces"
 end
 
+test "Postfix type descriptions round trip inhabitants"
+  def T type (Int)@
+  t = parse(Type)(toString(Type)(T))
+  expect (T == t) result True :: Bool
+  expect (1@ .matches T) result True :: Bool
+  expect (1@ .matches t) result True :: Bool
+  expect (Postfix(:@, 1) .matches t) result False :: Bool
+end
+
+test "Postfix values can be type factory arguments"
+  def Box(x) type :Box(x)
+  t = Box(1@)
+  expect (t == parse(Type)(toString(Type)(t))) result True :: Bool
+  expect (:Box(1@) .matches t) result True :: Bool
+  expect (:Box(Postfix(:@, 1)) .matches t) result False :: Bool
+end
+
 test "Prefix plus forms are the same tree; tight Int+ is not"
   assert (parse(Code)("+Int") == parse(Code)("+(Int)"))
   expect parse(Code)("Int+") error "infix operators require spaces"

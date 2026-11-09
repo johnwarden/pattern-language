@@ -82,6 +82,62 @@ test("recursive and parameterized types travel to a fresh interpreter as finite 
   );
 });
 
+test("postfix type descriptions round-trip inhabitants across interpreters", () => {
+  const i = new Interpreter();
+  const text = stringResult(i, "def T type (Int)@\ntoString(Type)(T)");
+  assert.equal(text, "Type(Postfix(:@, Int))");
+  assert.equal(
+    displayResults(
+      i.run(
+        "t = parse(Type)(toString(Type)(T))\n(T == t, 1@ .matches T, 1@ .matches t, Postfix(:@, 1) .matches t)",
+      ),
+    ),
+    "(True, True, True, False)",
+  );
+  const j = transfer(text);
+  assert.equal(
+    displayResults(
+      j.run(
+        "t = parse(Type)(text)\n(x :: t) = 1@\n(1@ .matches t, Postfix(:@, 1) .matches t, parse(t)(toString(t)(x)) == x)",
+      ),
+    ),
+    "(True, False, True)",
+  );
+  assert.throws(
+    () => j.run("t = parse(Type)(text)\nPostfix(:@, 1) :: t"),
+    (error: unknown) =>
+      error instanceof LanguageError &&
+      error.diagnostic.code === "E_PATTERN_MISMATCH",
+  );
+  assert.equal(stringResult(j, "toString(Type)(t)"), text);
+});
+
+test("postfix values can be type-factory arguments", () => {
+  const i = new Interpreter();
+  const text = stringResult(
+    i,
+    "def Box(x) type :Box(x)\ntoString(Type)(Box(1@))",
+  );
+  assert.equal(text, "Type(Box(Postfix(:@, 1)))");
+  assert.equal(
+    displayResults(
+      i.run(
+        "t = Box(1@)\n(t == parse(Type)(toString(Type)(t)), :Box(1@) .matches t, :Box(Postfix(:@, 1)) .matches t)",
+      ),
+    ),
+    "(True, True, False)",
+  );
+  const j = transfer(text);
+  assert.equal(
+    displayResults(
+      j.run(
+        "t = parse(Type)(text)\n(x :: t) = :Box(1@)\n(:Box(1@) .matches t, :Box(Postfix(:@, 1)) .matches t, parse(t)(toString(t)(x)) == x)",
+      ),
+    ),
+    "(True, False, True)",
+  );
+});
+
 test("primitive, union, list, labeled and capture-free type descriptions round trip", () => {
   for (const pattern of [
     "Int",
