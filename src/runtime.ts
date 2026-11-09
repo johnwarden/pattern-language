@@ -34,7 +34,11 @@ import {
   validatePatternCaptures,
 } from "./pattern-compiler.ts";
 import { typeIdentity, constructingTypes } from "./type-descriptor.ts";
-import { isOpenPattern, patternCaptures } from "./pattern-captures.ts";
+import {
+  isOpenPattern,
+  patternCaptures,
+  explicitPatternCaptures,
+} from "./pattern-captures.ts";
 import { dispatchSignature } from "./dispatch-domain.ts";
 import { TYPE_SCHEMA } from "./type-schema.ts";
 import { CODE_SCHEMA } from "./code-schema.ts";
@@ -2981,15 +2985,13 @@ export class Interpreter {
         pattern.span,
         { code: "E_NESTED_TYPE_DECLARATION", phase: "declaration" },
       );
-    const type = this.patternType(
-      compiled,
-      env,
-      "type " + normal(pattern),
-      key,
-    );
-    if (!this.buildingTypes)
-      this.installAccessors(this.definitionEvaluation(env).get(type)!, env);
-    return type;
+    if (!this.buildingTypes && explicitPatternCaptures(compiled).size)
+      throw new LanguageError(
+        "ordinary type construction cannot declare captures/accessors",
+        pattern.span,
+        { code: "E_PLAIN_TYPE_CAPTURE", phase: "declaration" },
+      );
+    return this.patternType(compiled, env, "type " + normal(pattern), key);
   }
   private patternType(
     compiled: Pattern<Value>,
@@ -3007,17 +3009,19 @@ export class Interpreter {
       packaged: forceFacet || isOpenPattern(compiled),
       transparent: forceFacet || isOpenPattern(compiled),
     };
-    const accessors: Accessor[] = [...patternCaptures(compiled)].map(
-      (name) => ({
-        kind: "accessor",
-        id: nextId++,
-        name,
-        type,
-        pattern: compiled,
-      }),
-    );
+    const accessors: Accessor[] = this.buildingTypes
+      ? [...patternCaptures(compiled)].map((name) => ({
+          kind: "accessor",
+          id: nextId++,
+          name,
+          type,
+          pattern: compiled,
+        }))
+      : [];
     // Validate completed ordinary type construction immediately. Recursive named
     // groups are validated after all references in the group have been completed.
+    // Named declaration bodies record accessor products here; registerTypeDefinition
+    // installs them. Plain construction never installs accessors.
     if (!this.buildingTypes) typeIdentity(type);
     this.definitionEvaluation(env).set(type, {
       type,

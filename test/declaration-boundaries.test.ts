@@ -98,10 +98,15 @@ test("equal declarations are rejected across visible scopes even when captures a
   );
 });
 
-test("type expressions install local accessors without transporting them", () => {
-  assert.equal(run("t = type :R(x :: Int)\n(r :: t) = R(3)\nr.x"), "3");
+test("plain type construction cannot declare captures or install accessors", () => {
+  rejects("t = type :R(x :: Int)\n0", "E_PLAIN_TYPE_CAPTURE");
   rejects(
-    "def make() type :R(x :: Int)\ndef R make()\nr = R(3) :: R\nr.x",
+    "t = type :R(x: Int)\n(r :: t) = R(x: 3)\nr.x",
+    "E_UNBOUND_NAME",
+  );
+  rejects("def make() type :R(x :: Int)\nmake()", "E_PLAIN_TYPE_CAPTURE");
+  rejects(
+    "def make() type :R(x: Int)\ndef R make()\nr = R(x: 3) :: R\nr.x",
     "E_UNBOUND_NAME",
   );
   assert.throws(

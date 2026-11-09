@@ -123,17 +123,20 @@ types. References and ordinary variable bindings do not create a new declaration
 ## Captures, accessors and defaults
 
 ```text
-t = type Rect(w :: Float,h :: Float)
-r = Rect(2,3) :: t
-(r.w,h(r),t == (type Rect(Float,Float)))
+def Rectangle type Rect(w :: Float,h :: Float)
+r = Rect(2,3) :: Rectangle
+(r.w,h(r),Rectangle == (type Rect(Float,Float)))
 # (2,3,True)
+t = type Rect(w :: Float,h :: Float)
+# error: ordinary type construction cannot declare captures/accessors
 ```
 
-A type expression with captures installs local accessor products while its type
-value contains only the capture-free pattern. Named declarations retain those
-products in their declaration environment. Lazy specializations retain accessors
-across lexical snapshots; transporting the structural type value alone does not
-transport its defining scope or accessor names.
+Ordinary type construction is capture-free and installs no accessors. Physical
+field labels remain part of structural identity; explicit capture names are
+declaration products. Named declarations retain those products in their
+declaration environment. Lazy specializations retain accessors across lexical
+snapshots; transporting the structural type value alone does not transport its
+defining scope or accessor names.
 
 Binding/parameter/match patterns capture lowercase variables, or explicitly annotated TitleCase type values (`T :: Type`). Type declarations can use the same explicit capture to define a type-valued accessor. Explicit inline
 nested type forms cannot declare captures; constructor subpatterns retain enclosing

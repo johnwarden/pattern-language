@@ -185,10 +185,11 @@ test("local names abbreviate REPL type annotations, not structural type values",
   assert.equal(i.inspect(i.run("r = Color\nr")), "Type(:Green | :Red) :: Type");
 });
 
-test("type evaluation installs local accessor products separately from identity", () => {
+test("named declarations install accessors; capture-free construction equals the type", () => {
+  rejects("t = type Rect(w :: Float,h :: Float)\n0", "E_PLAIN_TYPE_CAPTURE");
   assert.equal(
     run(
-      "t = type Rect(w :: Float,h :: Float)\nr = Rect(2,3) :: t\n(r.w,h(r),t == (type Rect(Float,Float)))",
+      "def Rectangle type Rect(w :: Float,h :: Float)\nr = Rect(2,3) :: Rectangle\n(r.w,h(r),Rectangle == (type Rect(Float,Float)))",
     ),
     "(2, 3, True)",
   );

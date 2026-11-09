@@ -36,6 +36,14 @@ export function patternCaptures<T>(pattern: Pattern<T>): Set<string> {
   return new Set(patternBindings(pattern).keys());
 }
 
+/** Captures written as `name :: Type`, not implicit label captures from `label: Type`. */
+export function explicitPatternCaptures<T>(pattern: Pattern<T>): Set<string> {
+  const names = new Set<string>();
+  for (const [name, sites] of patternBindings(pattern))
+    if (sites.some((site) => !site.origin?.implicit)) names.add(name);
+  return names;
+}
+
 /** One binding per matching path, with all source sites across alternatives.
  * References and local-capture maps establish separate binding scopes.
  */

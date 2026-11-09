@@ -55,8 +55,8 @@ test("recursive pattern schema covers portable descriptors without Expression pl
   for (const expression of [
     "type :Rect(x: Int,y: String)",
     "type :Some(Int) | :None",
-    "type :Pair(x :: Int,y :: Int)",
-    "type [rest... :: Int*]",
+    "type :Pair(Int,Int)",
+    "type [_... :: Int*]",
     "type String([65])",
     "UnionType(Int,String)",
   ]) {
@@ -109,13 +109,13 @@ test("quoted operator heads are literal patterns across matching contexts", () =
 test("alternative branch captures erase without shared slots", () => {
   assert.equal(
     run(
-      "t = type :A(x :: Int) | :B(x :: Int)\nu = parse(Type)(toString(Type)(t))\n(t == u,A(1) .matches u,B(2) .matches u)",
+      "t = type :A(Int) | :B(Int)\nu = parse(Type)(toString(Type)(t))\n(t == u,A(1) .matches u,B(2) .matches u)",
     ),
     "(True, True, True)",
   );
   assert.equal(
     run(
-      "t = type :Pair((:A(x :: Int) | :B(y :: Int)),z :: Int)\nPair(A(1),2) .matches t",
+      "t = type :Pair((:A(Int) | :B(Int)),Int)\nPair(A(1),2) .matches t",
     ),
     "True",
   );

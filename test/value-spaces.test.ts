@@ -14,7 +14,7 @@ const incomparable = (source: string) =>
 test("type identity excludes declaration and capture names", () => {
   assert.equal(
     run(
-      "a = type :Rect(w :: Float,h :: Float)\nb = type :Rect(width :: Float,height :: Float)\na == b",
+      "a =\n  def A type :Rect(w :: Float,h :: Float)\n  type A\nend\nb =\n  def B type :Rect(width :: Float,height :: Float)\n  type B\nend\na == b",
     ),
     "True",
   );
@@ -135,11 +135,15 @@ test("aliases and recursive aliases preserve their concrete identity", () => {
 });
 test("capture names erase completely and duplicate declarations fail", () => {
   assert.equal(
-    run("(type :Pair(x :: Int,y :: Int)) == (type :Pair(a :: Int,b :: Int))"),
+    run(
+      "a =\n  def A type :Pair(x :: Int,y :: Int)\n  type A\nend\nb =\n  def B type :Pair(a :: Int,b :: Int)\n  type B\nend\na == b",
+    ),
     "True",
   );
   assert.equal(
-    run("(type :Pair(x :: Int,y :: Int)) == (type :Pair(Int,Int))"),
+    run(
+      "a =\n  def A type :Pair(x :: Int,y :: Int)\n  type A\nend\na == (type :Pair(Int,Int))",
+    ),
     "True",
   );
   assert.throws(
@@ -153,7 +157,9 @@ test("ordinary type values reject binding defaults", () => {
     /defaults are only allowed in binding patterns/,
   );
   assert.equal(
-    run("a = type :R(x: Int)\nb = type :R(x: value :: Int)\na == b"),
+    run(
+      "a = type :R(x: Int)\nb =\n  def B type :R(x: value :: Int)\n  type B\nend\na == b",
+    ),
     "True",
   );
 });

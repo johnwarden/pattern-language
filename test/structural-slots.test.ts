@@ -307,11 +307,11 @@ test("closed serialization rejects extra labels in a fresh environment", () => {
 test("facet pattern metadata has no dependence on local capture names", () => {
   assert.equal(
     run(
-      "a = type :R(x :: Int,**)\nb = type :R(y :: Int,**)\n(a == b,toString(Type)(a) == toString(Type)(b))",
+      "a =\n  def A type :R(x :: Int,**)\n  type A\nend\nb =\n  def B type :R(y :: Int,**)\n  type B\nend\n(a == b,toString(Type)(a) == toString(Type)(b))",
     ),
     "(True, True)",
   );
-  const value = single(new Interpreter().run("type :R(x :: Int,**)"));
+  const value = single(new Interpreter().run("type :R(Int,**)"));
   assert.equal(unwrap(value).kind, "type");
 });
 
@@ -422,7 +422,7 @@ test("Facet construction normalizes root type aliases without creating a concret
 test("Facet root normalization is independent of caches and source accessor metadata", () => {
   assert.equal(
     run(
-      "a = type :R(x :: Int,**)\nb = parse(Type)(toString(Type)(a))\n(Facet(a) == Facet(b),Facet(b) == b)",
+      "a = type :R(Int,**)\nb = parse(Type)(toString(Type)(a))\n(Facet(a) == Facet(b),Facet(b) == b)",
     ),
     "(True, True)",
   );
@@ -434,7 +434,7 @@ test("Facet root normalization is independent of caches and source accessor meta
 
 test("unsupported predicate descriptions cannot be silently erased by Facet construction", () => {
   assert.throws(
-    () => run("Facet((type :R(x :: Int)) .where (R(n) -> n > 0))"),
+    () => run("Facet((type :R(Int)) .where (R(n) -> n > 0))"),
     /portable predicate description/,
   );
 });

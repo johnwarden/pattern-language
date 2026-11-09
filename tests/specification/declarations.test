@@ -1,3 +1,57 @@
+test "C16 named declarations install accessors; plain construction cannot declare them"
+  def Rectangle type :Rect(w :: Rational, h :: Rational)
+  r = Rect(2, 3) :: Rectangle
+  expect r.w result 2 :: Rational
+
+  expect
+    t = type :Rect(width :: Rational, height :: Rational)
+    t
+  error "ordinary type construction cannot declare captures/accessors"
+
+  expect
+    t = type :Rect(width: Rational, height: Rational)
+    (labeled :: t) = Rect(width: 2, height: 3)
+    labeled.width
+  error "unbound name"
+end
+
+test "C05 named types equal capture-free type values"
+  def Rectangle type :Rect(w :: Rational, h :: Rational)
+  t = Rectangle
+  u = type :Rect(Rational, Rational)
+  assert t == u
+  def Box(T :: Type) type :Box(T)
+  assert Box(String) == (type :Box(String))
+  b = :Box("hello") :: Box(String)
+  text = match b
+    :Box(value) -> value
+  end
+  assert text == "hello"
+end
+
+test "C18 independent lexical scopes interoperate structurally"
+  produced = (
+    def Option(T :: Type) type :None | Some(T)
+    Some("hello") :: Option(String)
+  )
+  independent = (
+    def Optional(T :: Type) type :None | Some(T)
+    Some("hello") :: Optional(String)
+  )
+  assert produced == independent
+  consumed = (
+    def LocalOption(T :: Type) type :None | Some(T)
+    def read(x :: LocalOption(String))
+      match x
+        Some(s) -> s
+        :None -> "absent"
+      end
+    end
+    read(produced)
+  )
+  assert consumed == "hello"
+end
+
 test "C16 declarations own accessor products"
   todo expect
     type Rectangle concrete Rect(w :: Rational, h :: Rational)

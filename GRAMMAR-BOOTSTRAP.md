@@ -404,8 +404,9 @@ ordinary quoted-head/Apply escapes; prefix keyword rest capture/spread remains u
 Bare primitive names are self-evaluating language atoms; other names resolve their
 lexical bindings. Bare symbols require quotation. Constructor heads in applications
 need no quotation; defined functions and named type factories dispatch normally.
-The type form recognizes a pattern and returns a normalized, capture-free type value
-plus local accessor products. Its name lookup uses the same evaluator as ordinary
+The type form recognizes a pattern and returns a normalized, capture-free type
+value. Named declarations register local accessor products. Its name lookup uses
+the same evaluator as ordinary
 expressions. `type type Int` is Int; Type(Int) retains its explicit wrapper.
 There is no generic AST node or angle-bracket application. Updated quote/refinement
 proposals under design/ do not alter this implemented grammar.

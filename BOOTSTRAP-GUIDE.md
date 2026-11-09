@@ -69,8 +69,8 @@ Option(Int)
 ```
 
 The type form interprets patterns, substitutes bound references, strips captures,
-normalizes alternatives, and installs local accessor products. Repeating type on
-an existing type is idempotent. Int is a primitive atom; explicit Type(Int) keeps
+and normalizes alternatives. It does not install accessors; named declarations
+register those products. Repeating type on an existing type is idempotent. Int is a primitive atom; explicit Type(Int) keeps
 its distinct wrapper. Type(Rect) removes redundant constructed-type wrapping.
 There is one ordinary expression evaluator, not separate type/data name lookup.
 Pattern interpretation still recognizes captures and annotations before evaluation.
@@ -185,8 +185,9 @@ def R type :Rect(Float)   # Type(Rect(Float))
 # def R :Rect(Float)      # error: R must hold a type
 ```
 
-The `type` form resolves type names in its pattern and produces the type value
-and local accessor methods. Ordinary functions can also return type values.
+The `type` form resolves type names in its pattern and produces a capture-free
+type value. Named declarations register local accessor methods. Ordinary
+functions can also return type values.
 Their arguments follow ordinary evaluation: write `make(Float)` to pass a type value. Named recursion and parameterized types retain their
 finite references.
 
@@ -490,7 +491,7 @@ and repeated references to one declaration do not register it again.
 
 The numeric prelude exposes Int, Float and Float32 as ordinary type atoms. There
 is no Number alias; canonical global text uses Float. Type-expression evaluation
-installs local accessors, while transporting a structural Type value does not
+does not install accessors, and transporting a structural Type value does not
 transport its defining scope. Named declarations retain their accessor products;
 lazy generic products remain visible through that declaration across snapshots.
 Source-language module imports remain pending.
