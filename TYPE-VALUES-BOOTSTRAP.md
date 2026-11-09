@@ -1,12 +1,11 @@
 # Bootstrap type values and typed text
 
-> Compatibility reference for the unchanged TypeScript prototype (source release 75).
+> Compatibility reference for the current TypeScript bootstrap.
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
 > [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md).
-> Declaration-only accessors, proof-based refinements and remaining declaration
-> sugar are planned changes, not promises of this guide. Overlapping UnionType and
-> exact Rational literals are current bootstrap behavior.
+> Exact Rational literals, overlapping abstract unions and the current Test DSL
+> are implemented. Declaration-only accessors and proof-based checking remain work.
 
 The interpreter represents types as ordinary immutable expression values. Compiled
 matchers and accessor products are derived caches, not public identity. This document
@@ -14,11 +13,10 @@ describes the implemented model; the drafts under design/ are not specifications
 
 ## Ordinary names and ordinary application
 
-Primitive type atoms are self-evaluating language values: Rational, Int, Float,
-Float64, Float32, Bool, String, Symbol, Expression, Body, Any, and Type. Number is
-an accepted alias for Float; global text always uses Float. Float64 is the distinct
-float64 carveout, not an alias of Float. Int currently uses JavaScript-safe integers,
-Float and Float64 use finite Float64 arithmetic, and Float32 rounds explicitly.
+Primitive type atoms are self-evaluating language values: Rational, Int, Float, Float32, Float64, Bool,
+String, Symbol, Expression, Body, Any, and Type. Number is an accepted alias for
+Float; global text always uses Float. Int currently uses JavaScript-safe integers,
+Float uses finite Float64 arithmetic, and Float32 rounds explicitly.
 
 ```text
 r = Int
@@ -76,9 +74,18 @@ so V(3) and the type factory call V(Int) can coexist. Matching/interpretation ch
 whether that data belongs to the intended type. Empty applications remain distinct
 from bare names, and f(a)(b) remains distinct from f(a,b).
 
-The unary modifiers are ordinary applications too: Int* is *(Int), Int? is ?(Int),
-and Int^ is ^(Int). Their domains are disjoint from numeric operator packs.
-Postfix ! remains reserved for future action types. There is no generic AST node.
+The source prelude defines the optional convention with ordinary postfix
+parameter matching: `def (T :: Type)? type T | :None`. The reader and matcher have
+no special optional rule. Present values are unwrapped; explicit member
+annotations distinguish inner absence in nested concrete unions. Bare `:None`
+selects a matching outer arm before inward designation.
+
+Tight `~ ! @ # $ % ^ & * ?` produce postfix trees distinct from prefix/infix
+application. The bootstrap retains list `T*` and result `T^` type constructors;
+list-rest annotations also use `T*`. Other postfix trees acquire meaning through
+definitions or explicit structural matching. Prefix `$` remains unquote and quote prefixes retain their
+lexical meaning. See [POSTFIX.md](design/POSTFIX.md) for definitions and unknown
+future lifting behavior.
 
 ## Normalization and identity
 
@@ -208,9 +215,8 @@ atoms inside quoted expression trees. Parsing global data is inert: it never cal
 functions, installs declarations or evaluates interpolation. Primitive atoms resolve
 against the fixed language vocabulary, not user lexical bindings.
 
-Union-typed values omit `::` when untagged printed text designates a unique
-member, and keep it only when that text is ambiguous or would parse as a
-different value. Facet/Any positions serialize the concrete type explicitly. Abstract slots
+Disjoint union positions omit :: tags: their grammar uniquely reconstructs the
+member. Facet/Any positions serialize the concrete type explicitly. Abstract slots
 do not add a structural annotation node to value identity.
 
 ```text
@@ -220,9 +226,8 @@ do not add a structural annotation node to value identity.
 ```
 
 Source expression :: T requires concrete/refinement T. Abstract domains belong in
-binding/parameter/match constraints. Untagged union text reconstructs when it
-designates a unique member and value; otherwise `::` stays. Facet/Any parsing
-still requires a concrete :: tag.
+binding/parameter/match constraints. Disjoint union parsing selects its concrete
+member; facet/Any parsing still requires a concrete :: tag.
 
 Open facets retain every original field and the original concrete member descriptor.
 Their required fields must exist. Facets, concrete types, nested abstract fields,
@@ -232,9 +237,7 @@ round-trip coverage. Ordinary concrete pattern alternatives still reject ambigui
 ## Implementation limits
 
 No general static checker, source modules, compile-time specialization, or compiler
-exists yet. Int, Float, Float32 and Float64 remain primitive atoms as an interim
-implementation; the target is carveouts of the exact numeric space. Int is not
-full-width signed Int64; Float rejects nonfinite values.
+exists yet. Int is not full-width signed Int64; Float rejects nonfinite values.
 General function/closure and refinement-predicate descriptions are not portable;
 unsupported equality/serialization fails explicitly instead of using host IDs.
 Refinement evaluation is still the earlier interpreter prototype, not the future
@@ -287,11 +290,11 @@ representation remain serialization gaps, reported explicitly. Source refinement
 can express Code categories in the same concrete space; portable predicate-bearing
 category types remain subject to the general refinement serialization gap.
 
-## Intrinsic symbols and overlapping type unions
+## Intrinsic symbols and disjoint type unions
 
 LowerCamelSymbol, UpperCamelSymbol and PunctuationSymbol are intrinsic classes.
 Symbol is their prelude union. A bare symbol literal receives its natural class;
 its immediate context can interpret it, while a stored typed variable cannot be
 silently converted to a different space. unionType A | B normalizes to UnionType(A,B).
-General UnionType members may overlap; same-space refinements and concrete `:A | :A`
-still reject. See design/UNION-GRAMMARS.md.
+Union members must be provably disjoint in the supported structural subset. Shared
+None, empty-list and numeric syntax reject. See design/UNION-GRAMMARS.md.

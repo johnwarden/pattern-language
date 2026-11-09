@@ -1,0 +1,48 @@
+test "NumberLiteral payload is the denoted Rational"
+  (Tree :: Type) = syntaxSchema()
+  NumberLiteral(n) = syntaxTree(:(0.1))
+  assert n == 0.1
+  assert (n * 10) == 1
+  assert n != 0f0.1
+  expect syntaxTree(:(0.1)) result NumberLiteral(0.1) :: Tree
+  expect syntaxTree(:(0)) result NumberLiteral(0) :: Tree
+  NumberLiteral(zero) = syntaxTree(:(0))
+  assert zero == 0
+end
+
+test "syntaxTree distinguishes 0.1 from 0f0.1 and round-trips"
+  (Tree :: Type) = syntaxSchema()
+  assert syntaxTree(0.1) != syntaxTree(0f0.1)
+  assert syntaxExpression(syntaxTree(0.1)) == 0.1
+  assert syntaxExpression(syntaxTree(0f0.1)) == 0f0.1
+  assert syntaxExpression(syntaxTree(:(0.1))) == :(0.1)
+  t = syntaxTree(:(0.1))
+  text = toString(Tree)(t)
+  assert parse(Tree)(text) == t
+  assert syntaxTree(syntaxExpression(t)) == t
+  NumberLiteral(rounded) = syntaxTree(0f0.1)
+  assert rounded == 0f0.1
+  assert rounded != 0.1
+  assert toString(Tree)(syntaxTree(0f0.1)) == "NumberLiteral(0x1.999999999999Ap-4)"
+end
+
+test "NumberLiteral keeps integers beyond 2^53 and signed values"
+  (Tree :: Type) = syntaxSchema()
+  assert 9007199254740993 != 9007199254740992
+  assert syntaxTree(9007199254740993) != syntaxTree(9007199254740992)
+  NumberLiteral(n) = syntaxTree(9007199254740993)
+  assert n == 9007199254740993
+  expect syntaxTree(9007199254740993) result NumberLiteral(9007199254740993) :: Tree
+  NumberLiteral(negative) = NumberLiteral(0 - 0.1)
+  assert negative == 0 - 0.1
+  Apply(Name("-", False), [Field("_1", NumberLiteral(magnitude))]) = syntaxTree(:(-0.1))
+  assert magnitude == 0.1
+end
+
+test "Unspellable 1/3 stays exact as a NumberLiteral payload"
+  NumberLiteral(n) = NumberLiteral((1 / 3) * 1)
+  assert (n * 3) == 1
+  expect
+    1 / 3
+  error "E_VALUE_SERIALIZATION"
+end

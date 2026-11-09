@@ -14,13 +14,13 @@ import {
   syntaxOrigins,
   equal,
   isRational,
-  rationalLiteralParts,
   parseNumericSpelling,
   valRational,
-  float64ToRational,
   integerValue,
   isExactFloat32,
   isExactFloat64,
+  syntaxFromNumeric,
+  rationalFromSyntax,
 } from "./values.ts";
 import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
@@ -78,6 +78,12 @@ export function valueText(
         if (v.kind === "slot") return v.type.unionMembers ? erase(v.value) : v;
         v = unwrap(v);
         if (v.kind === "code") return syntaxData(v.tree);
+        if (v.kind === "postfix")
+          return {
+            ...v,
+            operator: erase(v.operator),
+            operand: erase(v.operand),
+          };
         return v.kind === "term"
           ? {
               ...v,
@@ -110,17 +116,24 @@ export function valueText(
           // Keep `::` when untagged printed text would not reconstruct the
           // same member and value (ambiguous, or a different value such as
           // Float64 0.1 vs Rational 1/10).
-          if (
-            !(
-              original.kind === "slot" &&
-              original.type.unionMembers &&
-              !printedNumericDesignates(original, a)
-            )
-          )
+          if (!(
+            original.kind === "slot" &&
+            original.type.unionMembers &&
+            !printedNumericDesignates(original, a)
+          ))
             implicit.add(original);
+        }
+        if (original.kind === "view" && reconstructed.kind === "view") {
+          collect(original.base, reconstructed.base);
+          return;
         }
         original = unwrap(original);
         reconstructed = unwrap(reconstructed);
+        if (original.kind === "postfix" && reconstructed.kind === "postfix") {
+          collect(original.operator, reconstructed.operator);
+          collect(original.operand, reconstructed.operand);
+          return;
+        }
         if (
           (original.kind === "term" && reconstructed.kind === "term") ||
           (original.kind === "pack" && reconstructed.kind === "pack")
@@ -270,14 +283,10 @@ export function valueText(
     }
     if (v.kind === "type") return typeSyntax(v, root && expandRootType);
     if (v.kind === "literal") {
-      if (isRational(v.value)) {
-        const parts = rationalLiteralParts(v.value);
-        return {
-          kind: "literal",
-          value: parts.value,
-          spelling: parts.spelling,
-        };
-      }
+      if (typeof v.value === "string")
+        return { kind: "literal", value: v.value };
+      if (typeof v.value === "number" || isRational(v.value))
+        return syntaxFromNumeric(v.value);
       return { kind: "literal", value: v.value };
     }
     if (v.kind === "symbol")
@@ -303,6 +312,20 @@ export function valueText(
           value: syntax(f.value, false, inert),
         })),
       };
+    if (v.kind === "postfix") {
+      const operator = unwrap(v.operator);
+      if (operator.kind !== "symbol")
+        throw new LanguageError(
+          "functions and result packs need a portable description before serialization",
+          undefined,
+          { code: "E_VALUE_SERIALIZATION" },
+        );
+      return {
+        kind: "postfix",
+        operator: operator.name,
+        operand: syntax(v.operand, false, inert),
+      };
+    }
     if (v.kind === "term") {
       const h = unwrap(v.head);
       if (
@@ -517,20 +540,10 @@ export function parseValueText(
       if (alias) return alias;
     }
     if (n.kind === "literal") {
-      if (typeof n.value === "number") {
-        const spelling =
-          n.spelling ??
-          (n.span?.source &&
-          n.span.start !== undefined &&
-          n.span.end !== undefined
-            ? n.span.source.text.slice(n.span.start, n.span.end)
-            : undefined);
-        const parsed = spelling ? parseNumericSpelling(spelling) : undefined;
-        if (parsed) return valRational(parsed.n, parsed.d);
-        const rounded = float64ToRational(n.value);
-        return valRational(rounded.n, rounded.d);
-      }
-      return lit(n.value);
+      if (typeof n.value === "string") return lit(n.value);
+      const parsed = rationalFromSyntax(n);
+      if (!parsed) return fail("malformed numeric source literal", n);
+      return valRational(parsed.n, parsed.d);
     }
     if (n.kind === "quote") return decode(n.value, pattern);
     if (n.kind === "symbol")
@@ -543,6 +556,12 @@ export function parseValueText(
     if (n.kind === "sequence" && n.items.length === 1)
       return decode(n.items[0], pattern);
     if (n.kind === "sequence" && !pattern && allowLayout) return syntaxData(n);
+    if (n.kind === "postfix")
+      return {
+        kind: "postfix",
+        operator: { kind: "symbol", name: n.operator },
+        operand: decode(n.operand, pattern),
+      };
     if (n.kind !== "apply")
       return fail(
         "expected data; blocks, definitions, quotations, and generic calls are not evaluated by parse",
@@ -569,10 +588,11 @@ export function parseValueText(
       n.head.kind === "symbol" &&
       n.head.name === "-" &&
       n.body.length === 1 &&
-      n.body[0].value.kind === "literal" &&
-      typeof n.body[0].value.value === "number"
-    )
-      return lit(-n.body[0].value.value);
+      n.body[0].value.kind === "literal"
+    ) {
+      const r = rationalFromSyntax(n.body[0].value);
+      if (r) return valRational(-r.n, r.d);
+    }
     if (!pattern) {
       if (
         n.head.kind === "apply" &&
@@ -675,10 +695,11 @@ export function parseValueText(
         if (
           n.head.name === "-" &&
           n.body.length === 1 &&
-          n.body[0].value.kind === "literal" &&
-          typeof n.body[0].value.value === "number"
-        )
-          return lit(-n.body[0].value.value);
+          n.body[0].value.kind === "literal"
+        ) {
+          const r = rationalFromSyntax(n.body[0].value);
+          if (r) return valRational(-r.n, r.d);
+        }
       }
     }
     return {

@@ -5,6 +5,8 @@ import type { ApplicationNotation } from "./application-format.ts";
 import { LanguageError } from "./diagnostics.ts";
 import type { Captures } from "./pattern.ts";
 import type { SourceDocument } from "./diagnostics.ts";
+import type { Rational } from "./rational.ts";
+import { isRational, formatRational, float64ToRational } from "./rational.ts";
 export { LanguageError } from "./diagnostics.ts";
 /** Lossless structural distinctions; packs occur at call/result boundaries. */
 export interface Span {
@@ -43,11 +45,17 @@ export type Syntax =
   | { kind: "symbol"; name: string; quoted: boolean; span?: Span }
   | {
       kind: "literal";
-      value: string | number;
+      value: string | number | Rational;
       spelling?: string;
       span?: Span;
     }
   | { kind: "apply"; head: Syntax; body: Field<Syntax>[]; span?: Span }
+  | {
+      kind: "postfix";
+      operator: string;
+      operand: Syntax;
+      span?: Span;
+    }
   | { kind: "pack"; body: Field<Syntax>[]; span?: Span }
   | { kind: "sequence"; items: Syntax[]; span?: Span }
   | { kind: "block"; lines: Syntax[]; span?: Span }
@@ -69,9 +77,11 @@ export const isName = (n: Syntax, name: string): boolean =>
 export function quotePatternHead(node: Syntax): Syntax {
   return node.kind === "apply"
     ? { ...node, head: quotePatternHead(node.head) }
-    : node.kind === "symbol"
-      ? { ...node, quoted: true }
-      : node;
+    : node.kind === "postfix"
+      ? { ...node, operand: quotePatternHead(node.operand) }
+      : node.kind === "symbol"
+        ? { ...node, quoted: true }
+        : node;
 }
 export const isCapture = (name: string): boolean =>
   name.startsWith("\0macro") ||
@@ -88,6 +98,26 @@ export const apply = (head: Syntax, body: Field<Syntax>[]): Syntax => ({
   head,
   body,
 });
+/** Tight one-character suffixes. Transported as SyntaxNode Postfix(String, SyntaxNode). */
+export const POSTFIX_SUFFIX = /^[~!@#$%^&*?]+$/;
+/** Prefix and postfix callables occupy distinct structural namespaces. */
+export const postfixMethodName = (operator: string): string =>
+  "\0postfix:" + operator;
+export const postfix = (
+  operator: string,
+  operand: Syntax,
+  span?: Span,
+): Extract<Syntax, { kind: "postfix" }> => ({
+  kind: "postfix",
+  operator,
+  operand,
+  span: span ?? operand.span,
+});
+/** Rest/vertical list annotations have one postfix star per collection layer. */
+export function listLayer(n: Syntax): { operand: Syntax } | undefined {
+  if (n.kind === "postfix" && n.operator === "*") return { operand: n.operand };
+  return undefined;
+}
 export function operator(
   n: Syntax,
   name: string,
@@ -170,10 +200,7 @@ export function implicitFieldCapture(field: Field<Syntax>): string | undefined {
 export function isTypeSpecification(n: Syntax): boolean {
   return (
     (n.kind === "symbol" && !n.quoted && /^\p{Lu}/u.test(n.name)) ||
-    (n.kind === "apply" &&
-      n.head.kind === "symbol" &&
-      ["*", "?", "^", "!"].includes(n.head.name) &&
-      n.body.length === 1) ||
+    (n.kind === "postfix" && isTypeSpecification(n.operand)) ||
     (n.kind === "form" && n.name === "TypeExpression") ||
     (n.kind === "sequence" &&
       n.items[0]?.kind === "symbol" &&
@@ -311,8 +338,7 @@ export function normal(n: Syntax, indent = 0): string {
         : undefined,
     render: (node) => normal(node, indent),
     fields: body,
-    needsGrouping: (node) =>
-      node.kind === "sequence" || node.kind === "form",
+    needsGrouping: (node) => node.kind === "sequence" || node.kind === "form",
   };
   switch (n.kind) {
     case "quote":
@@ -348,8 +374,12 @@ export function normal(n: Syntax, indent = 0): string {
     case "symbol":
       return (n.quoted ? ":" : "") + n.name;
     case "literal": {
-      if (typeof n.value === "number") return n.spelling ?? String(n.value);
-      return stringSource(n.value, indent);
+      if (typeof n.value === "string") return stringSource(n.value, indent);
+      if (typeof n.value === "number" || isRational(n.value))
+        return formatRational(
+          isRational(n.value) ? n.value : float64ToRational(n.value),
+        );
+      return stringSource(String(n.value), indent);
     }
     case "pack":
       return "(" + body(n.body) + ")";
@@ -367,6 +397,15 @@ export function normal(n: Syntax, indent = 0): string {
         " ".repeat(indent) +
         ")"
       );
+    case "postfix": {
+      const inner = normal(n.operand, indent);
+      return n.operand.kind === "apply" ||
+        n.operand.kind === "sequence" ||
+        n.operand.kind === "form" ||
+        n.operand.kind === "pack"
+        ? "(" + inner + ")" + n.operator
+        : inner + n.operator;
+    }
     case "apply": {
       if (
         n.head.kind === "symbol" &&
@@ -403,7 +442,9 @@ export function syntaxKey(n: Syntax): string {
   const key = (n: Syntax): unknown => {
     switch (n.kind) {
       case "literal":
-        return ["literal", n.value];
+        return isRational(n.value)
+          ? ["literal", n.value.n.toString(), n.value.d.toString()]
+          : ["literal", n.value];
       case "symbol":
         return ["symbol", n.name, n.quoted];
       case "quote":
@@ -426,6 +467,8 @@ export function syntaxKey(n: Syntax): string {
           key(n.head),
           canonicalFields(n.body).map((e) => [e.label, key(e.value)]),
         ];
+      case "postfix":
+        return ["postfix", n.operator, key(n.operand)];
       case "pack":
         return [
           "pack",

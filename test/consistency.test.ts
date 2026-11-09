@@ -40,14 +40,16 @@ test("sidefix spread is rejected at declaration but argument-pack spread remains
 });
 test("a list annotation means a list in direct and constructor-shaped sidefix parameters", () => {
   assert.equal(
-    run("macro :show Args(x :: Int*) Code$` $(x)\n(show Args([1,2]))"),
+    run(
+      "macro :show Args(x :: [_... :: Int*]) Code$` $(x)\n(show Args([1,2]))",
+    ),
     "[1, 2]",
   );
   assert.equal(
-    run("macro :show x :: Int* Code$` $(x)\nshow [1,2]"),
+    run("macro :show x :: [_... :: Int*] Code$` $(x)\nshow [1,2]"),
     "[1, 2]",
   );
-  assert.throws(() => run("macro :show x :: Int* Code` 0\nshow 1 2"));
+  assert.throws(() => run("macro :show x :: [_... :: Int*] Code` 0\nshow 1 2"));
 });
 test("a named structural pattern works in all five contexts with private internal captures", () => {
   const prelude = "def Point type :Point(x :: Int)\n";
@@ -55,9 +57,7 @@ test("a named structural pattern works in all five contexts with private interna
   assert.equal(run(prelude + "(p :: Point) = Point(1)\np"), "Point(1)");
   assert.equal(run(prelude + "def f(p :: Point) p\nf(Point(1))"), "Point(1)");
   assert.equal(
-    run(
-      prelude + "macro :f Args(p :: Point) Code$` $(p)\n(f Args(Point(1)))",
-    ),
+    run(prelude + "macro :f Args(p :: Point) Code$` $(p)\n(f Args(Point(1)))"),
     "Point(1)",
   );
   assert.equal(

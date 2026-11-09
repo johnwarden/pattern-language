@@ -168,7 +168,9 @@ export function runtimeDependency(
         ? n.body.map((e) => e.value)
         : n.kind === "sequence" || n.kind === "form"
           ? n.items
-          : [n.head, ...n.body.map((e) => e.value)];
+          : n.kind === "postfix"
+            ? [n.operand]
+            : [n.head, ...n.body.map((e) => e.value)];
     for (const child of children) {
       const dep = inspect(child, names);
       if (dep) return dep;
@@ -198,7 +200,9 @@ export function runtimeDependency(
           ? n.items
           : n.kind === "pack"
             ? n.body.map((e) => e.value)
-            : [n.head, ...n.body.map((e) => e.value)];
+            : n.kind === "postfix"
+              ? [n.operand]
+              : [n.head, ...n.body.map((e) => e.value)];
     for (const child of children) {
       const dep = quoteHoles(child, names);
       if (dep) return dep;
@@ -256,6 +260,10 @@ export function patternExpressions(signature: Syntax): Syntax[] {
     }
     if (n.kind === "sequence") {
       n.items.forEach(visit);
+      return;
+    }
+    if (n.kind === "postfix") {
+      visit(n.operand);
       return;
     }
     if (n.kind === "apply" || n.kind === "pack") {

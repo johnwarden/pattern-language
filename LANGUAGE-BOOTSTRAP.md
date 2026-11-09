@@ -71,7 +71,7 @@ items and capture maps. Transport makes these distinctions explicit:
 | AST variant | Data form |
 | --- | --- |
 | Symbol | `Name(text,quoted)` |
-| Literal | `NumberLiteral(number)` or `StringLiteral(text)` |
+| Literal | `NumberLiteral(Rational)` or `StringLiteral(text)` |
 | Application | `Apply(head,[Field(label,value),...])` |
 | Pack | `Pack([Field(label,value),...])` |
 | Quote | `Quote(tree)` |

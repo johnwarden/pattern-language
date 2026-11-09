@@ -36,8 +36,9 @@ subset, not completion of the revised design.
 
 ## Next: alignment, then subsequent language work
 
-- [ ] 5a.2: implement declaration/plain-value separation, general unions and exact numeric representation in slices.
-- [ ] 5a.2: implement one-boundary projection/unique non-predicate designation; keep checker-dependent cases pending.
+- [x] 5a.2 slices: overlapping abstract unions, exact numeric values/syntax, source-defined optional convention and explicit concrete union members.
+- [ ] 5a.2: finish declaration/plain-value separation and remaining value-model alignment.
+- [x] 5a.2 slice: one-boundary match projection and direct-arm/inward designation; checker-dependent guarantees remain pending.
 - [ ] 5a.2: settle and implement approved mirrored spreading and typed keyword remainders.
 - [ ] 5b: freeze public syntax/descriptor mapping and grow Body into full interpreted Code.
 - [ ] 5c: source-language evaluator and explicit portable closed-callable subset, then Test execution.

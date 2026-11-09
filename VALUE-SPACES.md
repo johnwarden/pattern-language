@@ -67,22 +67,30 @@ history. No specialization-dependent comparison rule is introduced.
 
 ## Construction/designation and projection — settled
 
-Designation interprets a value description in an expected concrete space. It may
-recursively establish inward interpretations **only when there is exactly one justified
-path**. Every required predicate needs evidence. This rule does not insert missing
-fields, round numbers, select a preferred alternative or erase existing boundaries.
+Designation interprets a value description in an expected concrete space. An
+explicit immediate member retains its identity. Otherwise a matching arm at the
+current boundary takes precedence over recursive inward designation. If there is
+no direct match, designation may recurse along one justified path. Equally valid
+peer paths are ambiguous; source order supplies no priority. Every required
+predicate needs evidence. Designation does not insert fields, round numbers or
+erase established concrete boundaries.
 
 ```text
-# Intended notation; these examples are pending conformance cases.
-type Option<T> concrete T | :None
-(outer :: Option<Option<String>>) = "Hello"
-# Unique path: inner String option, then outer option.
-# :None is ambiguous between absence at different levels and is rejected.
+# A library convention, not a built-in optional type:
+type T? concrete T | :None
+(outer :: String??) = :None
+(sameOuter :: String??) = :None :: String??
+(inner :: String??) = :None :: String?
+# outer == sameOuter; outer != inner.
 ```
 
-This example uses an unwrapped optional representation. An independently defined
-`concrete :None | Some(T)` retains its explicit Some node; designation/projection
-must not silently strip arbitrary constructor nodes.
+Present values of this convention are unwrapped (`"Hello" :: String?`). The
+annotation on the inner absence identifies the String? member, and survives
+comparison and typed-text round trips. A peer union `String? | Float?` still
+requires an explicit member for `:None`. An independently defined
+`concrete :None | Some(T)` keeps its explicit Some node. No generic optional
+constructor or lifting behavior is built into postfix punctuation; see
+[POSTFIX.md](design/POSTFIX.md).
 
 Projection crosses **one explicitly requested concrete boundary** by match-based
 extraction. Ordinary typed binding and function dispatch do not unwrap. Repeating
@@ -94,15 +102,15 @@ admitted input domain; otherwise use multiple arms or establish the needed fact.
 type Small concrete Rational .where small
 type Wrapped concrete Small .where smaller
 # Given w :: Wrapped:
-match w s :: Small
-match s r :: Rational
+match w (s :: Small)
+match s (r :: Rational)
 # Direct Wrapped -> Rational projection is not allowed.
 ```
 
 The checking algorithm remains implementation work. The uniqueness, evidence and
 one-boundary rules are settled, not open policy choices. C03, C11 and C12 in the
 decision record cover positive designation, ordinary-binding rejection, nested
-absence ambiguity and required extraction coverage.
+absence designation and required extraction coverage.
 
 ## Refinement evidence and functions
 
@@ -136,10 +144,9 @@ spelling do not choose a concrete arithmetic family. `0f0.1` denotes the exact
 Rational selected by Float64 rounding of 0.1, rather than a Float64-typed value.
 `0f0.5` is exactly 1/2 and is eligible for exact Decimal32 designation.
 
-Float32, Float64, Int64 and similar widths are carveout types over the exact
-numeric space, not a precision lattice. They have their own arithmetic, not
-inherited Rational arithmetic. Exact designation cannot silently round;
-converters return typed values directly.
+Finite fixed-precision types are concrete carveouts of representable Rational
+values. They have their own arithmetic, not inherited Rational arithmetic.
+Exact designation cannot silently round; converters return typed values directly.
 
 ```text
 (0.5 :: Float32)       # exact designation
@@ -147,25 +154,11 @@ converters return typed values directly.
 float32(0.1)           # explicit rounding, returns Float32
 ```
 
-The target definitions use `.where` refinement. Specials belong in the concrete
-union because Rational is not their superset; integer widths refine Int:
-
-```text
-type Float32 concrete NaN | Inf | Rational .where fitsFloat32
-type Float64 concrete NaN | Inf | Rational .where fitsFloat64
-type Int64 Int .where fitsInt64
-```
-
-Int, Float, Float32 and similar primitive atoms are an interim implementation.
-IEEE signed zero, NaN identity/payloads and finite-only versus IEEE-complete
-policy remain deferred. "Fixed-precision types/values" wording in D02, D04,
-ROADMAP core contracts, VISION and GRAMMAR.md should be revised to this model.
-
 Constant predicates may be proved; nonconstant designation requires evidence or an
 explicit checked operation. Runtime Rational arithmetic itself is optional. Numeric
-family aliases, complete format families, rounding edge/overflow policies and canonical
-spelling remain provisional. No finite-only or IEEE-complete policy is silently
-selected here.
+family aliases, complete precision sets, rounding edge/overflow policies and canonical
+spelling remain provisional. IEEE signed zero, NaN identity/payloads and infinities
+remain deferred; no finite-only or IEEE-complete policy is silently selected here.
 
 ## General unions and unambiguous grammars
 
@@ -243,16 +236,11 @@ name. Runtime Expression and automatic descriptor decoding remain optional/unset
 
 The current bootstrap has structural descriptors, abstract slots/facets, runtime
 subsets, canonical typed-text support, recursive groups and typed Body inspection.
-Ordinary numeric literals are exact Rationals; Int/Float/Float32/Float64 remain
-concrete carveouts of representable Rationals (with JS payloads in this bootstrap).
-General `UnionType` members may overlap. Union-typed values keep their `::` tag
-only when ambiguous: when the untagged printed text would not reconstruct exactly
-the same member and value. Omit the tag when printed text designates a unique
-member. Keep it when that text is ambiguous or would parse as a different value,
-e.g. Float64 `0.1` vs Rational `1/10`. Untagged `toString(Float64)` of that payload
-remains JS decimal and is not a claimed round-trip spelling. The bootstrap still
-admits raw Expression compatibility values, installs accessor products under the
-old type forms, and lacks the revised evidence/projection checker. These are
+Ordinary numeric literals are exact Rationals; Int/Float/Float32 remain concrete
+carveouts of representable Rationals (with JS payloads in this bootstrap). Postfix
+`T?` is unwrapped `T | :None`. It still rejects syntax-overlapping UnionType
+members, admits raw Expression compatibility values, installs accessor products
+under the old type forms, and lacks the revised evidence checker. These are
 implementation facts, not new accepted constraints. Details are in
 [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md).
 
@@ -262,5 +250,6 @@ how all cases execute. Assertions can be ordinary, legacy (must pass until retir
 or todo (must fail; a pass demands removal of todo). These are assertion modifiers,
 not alternate kinds of test or value. Every value expectation checks the observed
 result type as well as value identity. No assertion grants proof facts to another.
-The suite does not implement the revised evidence or projection checker. Program
-CLI output uses the annotated REPL display.
+The suite has 128 executing cases, 249 passing assertions (70 legacy), and 117 todo
+expected failures. Those outcomes do not implement the revised evidence or projection
+checker. Program CLI output uses the annotated REPL display.

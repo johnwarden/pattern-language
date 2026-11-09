@@ -55,7 +55,7 @@ test "Typed Code: recursive for each macro"
   def Binding type
     (n :: Expression) .:in e :: Expression
   end
-  def expandFor(bindings :: Binding*, body :: Expression)
+  def expandFor(bindings :: [_... :: Binding*], body :: Expression)
     match bindings
       [] -> Code$` $body
       [first, rest...] ->

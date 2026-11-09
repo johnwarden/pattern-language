@@ -6,7 +6,7 @@ import {
   parseTestSource,
 } from "./parser.ts";
 import { DEFAULT_GRAMMAR, Grammar } from "./grammar.ts";
-import { normal, LanguageError } from "./syntax.ts";
+import { normal, binary, LanguageError } from "./syntax.ts";
 import type { Field, Syntax, Span } from "./syntax.ts";
 import { dataSyntax, codeSource } from "./syntax-values.ts";
 import {
@@ -264,8 +264,7 @@ class TestReader {
           expected: role === "result" ? dataSyntax(parts[1].value) : undefined,
           expectedType:
             role === "result" ? dataSyntax(parts[2].value) : undefined,
-          reason:
-            role === "error" ? scalarString(parts[1].value) : undefined,
+          reason: role === "error" ? scalarString(parts[1].value) : undefined,
         });
         pos = match.end;
       } else {
@@ -421,8 +420,7 @@ class TestReader {
       const output = supported.at(-1)?.kind === "output";
       const singleProgram =
         assertions.length === 1 && assertions[0] === supported.at(-1);
-      const program =
-        singleProgram || (output && assertions.length > 0);
+      const program = singleProgram || (output && assertions.length > 0);
       const source = program
         ? supported
             .filter((step) =>
@@ -486,10 +484,46 @@ function expectedData(
   type: TypeValue,
   interpreter: Interpreter,
 ): Value {
+  // An explicit :: operand computes a type; the value payload stays inert data.
+  const annotations = (n: Syntax): Syntax => {
+    const tagged = binary(n, "::");
+    if (tagged && n.kind === "apply" && n.head.kind === "apply") {
+      const typeText = scalarString(
+        single(
+          interpreter.call(
+            "toString",
+            singleton(asType(single(interpreter.run("Type")))),
+            singleton(typeOf(tagged[1], interpreter)),
+          ),
+        ),
+      );
+      return {
+        ...n,
+        head: {
+          ...n.head,
+          body: [{ label: "_1", value: annotations(tagged[0]) }],
+        },
+        body: [{ label: "_1", value: one(parseSurface(typeText)) }],
+      };
+    }
+    if (n.kind === "apply")
+      return {
+        ...n,
+        head: annotations(n.head),
+        body: n.body.map((f) => ({ ...f, value: annotations(f.value) })),
+      };
+    if (n.kind === "pack")
+      return {
+        ...n,
+        body: n.body.map((f) => ({ ...f, value: annotations(f.value) })),
+      };
+    if (n.kind === "postfix") return { ...n, operand: annotations(n.operand) };
+    return n;
+  };
   const sourceText = testSourceText(tree).trim();
   const text = parseNumericSpelling(sourceText)
     ? sourceText
-    : normal(one(tree));
+    : normal(annotations(one(tree)));
   const value = interpreter.readValue(type, text, true);
   const canonical = scalarString(
     single(interpreter.call("toString", singleton(type), singleton(value))),

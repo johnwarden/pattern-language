@@ -1,0 +1,15 @@
+test "smallest subnormal round-trips through Float and text"
+  minSub = 0f5e-324
+  assert minSub .matches Float
+  assert toFloat(minSub) == (minSub :: Float)
+  assert parse(Float)(toString(Float)(minSub :: Float)) == (minSub :: Float)
+  expect 0f5e-324 result 0x1p-1074 :: Rational
+end
+
+test "very-small normal round-trips through Float and text"
+  smallNormal = 0x1p-1022
+  assert smallNormal .matches Float
+  assert toFloat(smallNormal) == (smallNormal :: Float)
+  assert parse(Float)(toString(Float)(smallNormal :: Float)) == (smallNormal :: Float)
+  expect 0x1p-1022 result 0x1p-1022 :: Rational
+end

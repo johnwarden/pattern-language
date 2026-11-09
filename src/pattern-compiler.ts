@@ -10,6 +10,7 @@ import {
   positional,
   normal,
   quotePatternHead,
+  symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { any } from "./pattern.ts";
@@ -198,11 +199,18 @@ export class PatternCompiler<T> {
       return {
         kind: "node",
         head: this.domain.head(n.head, this.dimensions),
-        body: this.fields(n.body, false),
+        body: this.fields(n.body, false, n.head),
       };
+    if (n.kind === "postfix") {
+      return {
+        kind: "postfix",
+        operator: this.domain.head(symbol(n.operator), this.dimensions),
+        operand: this.compile(n.operand),
+      };
+    }
     return this.domain.atom(n);
   }
-  fields(xs: Field<Syntax>[], openLabels = true): Pattern<T> {
+  fields(xs: Field<Syntax>[], openLabels = true, head?: Syntax): Pattern<T> {
     const parts: Pattern<T>[] = [];
     let hasRest = false,
       ignorePositions = false;
@@ -276,12 +284,16 @@ export class PatternCompiler<T> {
           this.domain.allowIgnoredCaptures === false &&
           rest.kind === "symbol" &&
           rest.name === "_"
-        )
-          throw new LanguageError(
-            "_ ignores a capture and is not allowed in a type definition",
-            e.value.span,
-            { code: "E_TYPE_FIELD", phase: "declaration" },
-          );
+        ) {
+          const listType =
+            head?.kind === "symbol" && !head.quoted && head.name === "[]";
+          if (!listType)
+            throw new LanguageError(
+              "_ ignores a capture and is not allowed in a type definition",
+              e.value.span,
+              { code: "E_TYPE_FIELD", phase: "declaration" },
+            );
+        }
         if (hasRest || ignorePositions)
           throw new LanguageError(
             "only one positional rest or ignore marker is allowed",

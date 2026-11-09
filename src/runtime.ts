@@ -1,5 +1,7 @@
+import { DEFAULT_PRELUDE } from "./prelude.ts";
+import { postfixMethodName } from "./syntax.ts";
 import { bootstrapTypeNames } from "./primitive-names.ts";
-import { symbolCategory } from "./lexical.ts";
+import { punctuation, symbolCategory } from "./lexical.ts";
 import { primitiveNames, constantNames } from "./primitive-names.ts";
 import {
   runtimeDependency,
@@ -44,6 +46,12 @@ import { valueText, parseValueText } from "./value-text.ts";
 import type { TextDomain } from "./value-text.ts";
 import { Grammar, DEFAULT_GRAMMAR, syntaxGrammars } from "./grammar.ts";
 import {
+  annotatedPatternTypes,
+  elaborateSequenceGrammar,
+  regroupAssignmentLine,
+  sequenceGrammarParts,
+} from "./expected-grammar.ts";
+import {
   LanguageError,
   isCapture,
   isTypeCapture,
@@ -56,6 +64,8 @@ import {
   apply,
   symbol,
   packOf,
+  listLayer,
+  isTypeSpecification,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { Matcher, Mismatch, any } from "./pattern.ts";
@@ -81,11 +91,11 @@ import {
   integerValue,
   isExactFloat32,
   isExactFloat64,
-  rationalLiteralParts,
   parseNumericSpelling,
   rationalFromSyntax,
   rationalToNumber,
   isRational,
+  syntaxNumber,
   addRationals,
   subRationals,
   mulRationals,
@@ -186,6 +196,22 @@ const valueMatcher = () =>
       if (v.kind === "code") v = syntaxData(v.tree);
       if (v.kind === "type") v = typeData(v);
       return v.kind === "term" ? { head: v.head, body: v.body } : undefined;
+    },
+    postfix: (v) => {
+      v = unwrap(v);
+      return v.kind === "postfix"
+        ? { operator: v.operator, operand: v.operand }
+        : undefined;
+    },
+    rebuildPostfix: (v, operator, operand) => {
+      const input = unwrap(v);
+      if (input.kind === "code") return v;
+      const base = { kind: "postfix" as const, operator, operand };
+      const origin = syntaxOrigins.get(input);
+      if (origin) syntaxOrigins.set(base, origin);
+      const value = slotValue(v);
+      const rebuilt = value.kind === "view" ? { ...value, base } : base;
+      return v.kind === "slot" ? { ...v, value: rebuilt } : rebuilt;
     },
     rebuildRow: (value, fields) => {
       const raw = unwrap(value);
@@ -298,7 +324,11 @@ export class Interpreter {
   private deferringDeclarations = false;
   private deferredUnions: TypeValue[] = [];
   private aliasTargets = new WeakMap<TypeValue, TypeValue>();
-  constructor(grammar = DEFAULT_GRAMMAR, schemaBootstrap = false) {
+  constructor(
+    grammar = DEFAULT_GRAMMAR,
+    schemaBootstrap = false,
+    prelude = DEFAULT_PRELUDE,
+  ) {
     this.grammar = new Grammar(grammar);
     this.env = this.builtins();
     if (!schemaBootstrap) {
@@ -312,6 +342,7 @@ export class Interpreter {
         capturePattern: type.pattern(),
         accessors: [],
       });
+      if (prelude) this.run(prelude, "repl", "prelude");
     }
   }
   inspect(results: Field<Value>[]): string {
@@ -467,6 +498,11 @@ export class Interpreter {
       return pattern.choices.some((p) => this.hasLayoutPattern(p, seen));
     if (pattern.kind === "sequence" || pattern.kind === "fields")
       return pattern.parts.some((p) => this.hasLayoutPattern(p, seen));
+    if (pattern.kind === "postfix")
+      return (
+        this.hasLayoutPattern(pattern.operator, seen) ||
+        this.hasLayoutPattern(pattern.operand, seen)
+      );
     if (["capture", "row", "repeat", "map", "label"].includes(pattern.kind))
       return this.hasLayoutPattern(
         (pattern as Extract<Pattern<Value>, { kind: "map" }>).pattern,
@@ -672,8 +708,6 @@ export class Interpreter {
         numeric: numericKind,
         pattern: () => ({
           ...test(name, predicate),
-          // Float64 is a distinct carveout of the same JS float64 payload as Float.
-          // Int64 stays the int64 space so unbound-alias converters still match Int.
           identity: [
             "primitive",
             name === "Float64" ? "Float64" : (numericKind ?? name),
@@ -695,7 +729,6 @@ export class Interpreter {
     this.primitives.set("Symbol", symbol);
     // Canonical primitive atoms have fixed language meanings. Number remains a
     // source alias for Float, rather than another user type declaration.
-    // Float64 is the distinct float64 carveout C13 uses; Num and Int64 stay unbound.
     for (const alias of ["Num", "Number", "Int64"])
       scope.bindings.delete(alias);
     scope.bindings.set("Number", scope.bindings.get("Float")!);
@@ -710,15 +743,6 @@ export class Interpreter {
         accessors: [],
       });
     }
-    for (const name of ["*", "?", "^"])
-      scope.functions.set(name, [
-        this.native(
-          name,
-          [1],
-          ([value]) => this.modifiedType(name, this.materializeType(value)!),
-          (xs) => !!this.materializeType(xs[0].value),
-        ),
-      ]);
     scope.functions.set("language", [
       this.native("language", [0], () => this.grammar.description()),
     ]);
@@ -1179,7 +1203,11 @@ export class Interpreter {
       try {
         if (node.kind === "then") result = this.evaluate(node.expression, env);
         else {
-          const values = this.evaluateFields(node.value, env);
+          const values = this.evaluateFields(
+            node.value,
+            env,
+            this.expectedFieldsFromPattern(node.pattern, env),
+          );
           const matched = this.matchParameters(node.pattern, values, env);
           // Same block scope deliberately preserves duplicate-name errors and REPL bindings.
           const runtime = [
@@ -1220,6 +1248,8 @@ export class Interpreter {
     }
     if (n.kind === "pack")
       return n.body.every((e) => this.canLowerWithoutStaging(e.value, env));
+    if (n.kind === "postfix")
+      return this.canLowerWithoutStaging(n.operand, env);
     return (
       this.canLowerWithoutStaging(n.head, env) &&
       n.body.every((e) => this.canLowerWithoutStaging(e.value, env))
@@ -1278,6 +1308,10 @@ export class Interpreter {
           }
         },
         repl,
+        (input) => {
+          flush();
+          return this.completeExpectedGrammarLine(input, env);
+        },
       );
       flush();
       if (!local) this.lastTree = tree;
@@ -1372,17 +1406,9 @@ export class Interpreter {
               const magnitude = asRational(raw);
               const negative = !!magnitude && magnitude.n < 0n;
               if (negative) {
-                const parts = rationalLiteralParts({
-                  n: -magnitude.n,
-                  d: magnitude.d,
-                });
                 literal = apply(
                   symbol("negate"),
-                  packOf({
-                    kind: "literal",
-                    value: parts.value,
-                    spelling: parts.spelling,
-                  }),
+                  packOf(syntaxNumber({ n: -magnitude.n, d: magnitude.d })),
                 );
               }
               if (!space || space.numeric === "rational")
@@ -1498,12 +1524,11 @@ export class Interpreter {
     if (n.kind === "block") return this.evaluateBlock(n, env);
     if (n.kind === "pack") return this.evaluateFields(n.body, env);
     if (n.kind === "literal") {
-      if (typeof n.value === "number") {
-        const r = rationalFromSyntax(n);
-        if (!r) throw new LanguageError("malformed numeric source literal", n.span);
-        return this.ascribeRational(valRational(r.n, r.d));
-      }
-      return singleton(valLiteral(n.value));
+      if (typeof n.value === "string") return singleton(valLiteral(n.value));
+      const r = rationalFromSyntax(n);
+      if (!r)
+        throw new LanguageError("malformed numeric source literal", n.span);
+      return this.ascribeRational(valRational(r.n, r.d));
     }
     if (n.kind === "symbol") {
       if (n.quoted) return singleton(this.symbolValue(n.name));
@@ -1650,7 +1675,7 @@ export class Interpreter {
             validatePatternCaptures([{ kind: "pack", body: pair[0] }]);
             let matched: Match<Value>;
             try {
-              matched = this.matchParameters(pair[0], values, env);
+              matched = this.matchParameters(pair[0], values, env, true);
             } catch (e) {
               if (e instanceof Mismatch) continue;
               throw e;
@@ -1678,6 +1703,28 @@ export class Interpreter {
           );
       }
     }
+    if (n.kind === "postfix") {
+      const methods = (lexicalScopes.get(n) ?? env).visible(
+        postfixMethodName(n.operator),
+      );
+      const operand = single(this.evaluate(n.operand, env), "postfix operand");
+      if (methods.length)
+        return this.invoke(
+          { kind: "overload", name: normal(n), candidates: methods },
+          singleton(operand),
+          env,
+        );
+      const type = this.materializeType(operand);
+      if (type && (n.operator === "*" || n.operator === "^"))
+        return singleton(this.modifiedType(n.operator, type));
+      return singleton({
+        kind: "postfix",
+        operator: valSymbol(n.operator),
+        operand,
+      });
+    }
+    if (n.kind === "sequence")
+      throw new LanguageError("unknown or incomplete macro form", n.span);
     if (n.kind !== "apply")
       throw new LanguageError("unresolved syntax reached evaluator");
     if (n.head.kind === "symbol" && !n.head.quoted && n.head.name === "$")
@@ -1786,7 +1833,10 @@ export class Interpreter {
           body: args,
         });
       }
-      if (/^\p{Lu}/u.test(n.head.name)) {
+      if (
+        /^\p{Lu}/u.test(n.head.name) ||
+        [...n.head.name].every((c) => punctuation.has(c))
+      ) {
         const value: Value = {
           kind: "term",
           head: valSymbol(n.head.name),
@@ -1802,7 +1852,21 @@ export class Interpreter {
           candidates: methods,
         }
       : single(this.evaluate(n.head, env), "function head");
-    return this.invoke(fn, this.evaluateFields(n.body, env), env);
+    const unique = this.uniqueClosure(fn);
+    return this.invoke(
+      fn,
+      this.evaluateFields(
+        n.body,
+        env,
+        unique
+          ? this.expectedFieldsFromPattern(
+              unique.parameters[0] ?? [],
+              unique.env,
+            )
+          : [],
+      ),
+      env,
+    );
   }
   private snapshot(env: Scope): Scope {
     const copy = new Scope(env.parent);
@@ -1812,11 +1876,86 @@ export class Interpreter {
     copy.runtimeBindings = new Set(env.runtimeBindings);
     return copy;
   }
-  private evaluateFields(xs: Field<Syntax>[], env: Scope): Field<Value>[] {
+  private uniqueClosure(fn: Value): Closure | undefined {
+    const value = unwrap(fn);
+    if (value.kind === "closure" && !value.macro) return value;
+    if (value.kind === "overload") {
+      const closures = value.candidates.filter(
+        (c): c is Closure => c.kind === "closure" && !c.macro,
+      );
+      if (value.candidates.length === 1 && closures.length === 1)
+        return closures[0];
+    }
+  }
+  private expectedFieldsFromPattern(
+    pattern: Field<Syntax>[],
+    env: Scope,
+  ): { label: string; type?: TypeValue }[] {
+    return annotatedPatternTypes(pattern).length
+      ? pattern.map((field) => {
+          const annotation = binary(field.value, "::");
+          return {
+            label: field.label,
+            type: annotation
+              ? this.typeFromSyntax(annotation[1], env)
+              : undefined,
+          };
+        })
+      : [];
+  }
+  private expectedTypeForArgument(
+    arg: Field<Syntax>,
+    expected: { label: string; type?: TypeValue }[],
+    used: Set<number>,
+  ): TypeValue | undefined {
+    const index = !positional(arg.label)
+      ? expected.findIndex((field) => field.label === arg.label)
+      : expected.findIndex(
+          (field, i) => !used.has(i) && positional(field.label),
+        );
+    if (index < 0) return;
+    used.add(index);
+    return expected[index].type;
+  }
+  private completeExpectedGrammarLine(
+    input: Syntax,
+    env: Scope,
+  ): Syntax | undefined {
+    if (input.kind !== "sequence") return;
+    const regrouped = regroupAssignmentLine(input.items);
+    const assignment = regrouped && operator(regrouped, "=");
+    if (!assignment) return;
+    const fields = this.expectedFieldsFromPattern(assignment[0], env);
+    if (
+      fields.length !== 1 ||
+      !fields[0].type ||
+      !sequenceGrammarParts(fields[0].type)
+    )
+      return;
+    return regrouped;
+  }
+  private evaluateExpectedGrammar(
+    n: Syntax,
+    type: TypeValue,
+    env: Scope,
+  ): Field<Value>[] | undefined {
+    const parts = sequenceGrammarParts(type);
+    if (!parts) return;
+    const data = elaborateSequenceGrammar(n, parts, (tree) =>
+      single(this.evaluate(tree, env)),
+    );
+    return data && this.check(type, data, env);
+  }
+  private evaluateFields(
+    xs: Field<Syntax>[],
+    env: Scope,
+    expected: { label: string; type?: TypeValue }[] = [],
+  ): Field<Value>[] {
     const out: Field<Value>[] = [];
     let index = 0,
       named = false;
     const labels = new Set<string>();
+    const used = new Set<number>();
     for (const e of xs) {
       if (
         e.label === "**" ||
@@ -1835,7 +1974,10 @@ export class Interpreter {
           throw new LanguageError("spread requires an argument body");
         values = v.body;
       } else {
-        values = this.evaluate(e.value, env);
+        const type = this.expectedTypeForArgument(e, expected, used);
+        values =
+          (type && this.evaluateExpectedGrammar(e.value, type, env)) ??
+          this.evaluate(e.value, env);
         if (!positional(e.label)) {
           if (values.length !== 1)
             throw new LanguageError(
@@ -1866,6 +2008,14 @@ export class Interpreter {
   }
   /** A maximal consecutive group of ordinary defs shares only its declared names.
    * Other lexical bindings retain source-order snapshot semantics. */
+  private callableSignature(signature: Syntax): Syntax {
+    return signature.kind === "postfix"
+      ? apply(
+          symbol(postfixMethodName(signature.operator)),
+          packOf(signature.operand),
+        )
+      : signature;
+  }
   private defineGroup(
     forms: Extract<Syntax, { kind: "form" }>[],
     env: Scope,
@@ -1880,7 +2030,7 @@ export class Interpreter {
     try {
       for (const form of forms) {
         const signature = this.capture(form, "signature");
-        let head = signature;
+        let head = this.callableSignature(signature);
         while (head.kind === "apply") head = head.head;
         if (head.kind !== "symbol" || head.quoted) {
           result = this.define(signature, this.capture(form, "body"), env);
@@ -1907,7 +2057,9 @@ export class Interpreter {
         for (const name of methodNames)
           declaration.env.functions.set(name, env.functions.get(name)!);
       }
-      let tail = this.capture(forms.at(-1)!, "signature");
+      let tail = this.callableSignature(
+        this.capture(forms.at(-1)!, "signature"),
+      );
       while (tail.kind === "apply") tail = tail.head;
       for (const declaration of declarations)
         if (!declaration.parameterized) {
@@ -1916,7 +2068,7 @@ export class Interpreter {
             result = singleton(type);
         }
       for (const fn of functions) {
-        let name = fn.signature!;
+        let name = this.callableSignature(fn.signature!);
         while (name.kind === "apply") name = name.head;
         if (name.kind === "symbol")
           this.validateOverloads(
@@ -1976,7 +2128,7 @@ export class Interpreter {
       return [];
     }
     const packs: Field<Syntax>[][] = [];
-    let head: Syntax = signature;
+    let head: Syntax = this.callableSignature(signature);
     while (head.kind === "apply") {
       packs.unshift(head.body);
       head = head.head;
@@ -2397,8 +2549,13 @@ export class Interpreter {
     patterns: Field<Syntax>[],
     values: Field<Value>[],
     env: Scope,
+    allowProjection = false,
   ): Match<Value> {
-    const pattern = this.compiler(env, false).fields(patterns);
+    // Projection is a property of this compiled pattern, not interpreter-wide
+    // match state. Dispatch, defaults and bindings keep the default false.
+    const pattern = this.compiler(env, false, 0, allowProjection).fields(
+      patterns,
+    );
     return this.interpretMatch(pattern, values);
   }
   private interpretMatch(
@@ -2416,25 +2573,51 @@ export class Interpreter {
     env: Scope,
     typeMode: boolean,
     dimensions = 0,
+    allowProjection = false,
   ): PatternCompiler<Value> {
     const lookup = (n: Syntax) =>
       lexicalScopes.get(n) ??
-      (n.kind === "apply" ? lexicalScopes.get(n.head) : undefined) ??
+      (n.kind === "apply"
+        ? lexicalScopes.get(n.head)
+        : n.kind === "postfix"
+          ? lexicalScopes.get(n.operand)
+          : undefined) ??
       env;
+    const peelListLayers = (n: Syntax, dimensions: number): Syntax => {
+      for (let i = 0; i < dimensions; i++) {
+        const layer = listLayer(n);
+        if (!layer)
+          throw new LanguageError(
+            "capture annotation needs one list layer per spread dimension",
+            n.span,
+            { code: "E_SPREAD_DIMENSION", phase: "declaration" },
+          );
+        n = layer.operand;
+      }
+      return n;
+    };
+    const listType = (n: Syntax): TypeValue => {
+      let layers = 0,
+        element = n;
+      while (listLayer(element)) {
+        layers++;
+        element = listLayer(element)!.operand;
+      }
+      let type = this.typeFromSyntax(element, env);
+      for (let i = 0; i < layers; i++) type = this.modifiedType("*", type);
+      return type;
+    };
     const reference = (n: Syntax, dimensions = 0): Pattern<Value> => {
       if (typeMode) this.inlineTypeDepth++;
       try {
-        let type = this.typeFromSyntax(n, env);
-        for (let i = 0; i < dimensions; i++) {
-          if (type.modifier !== "*" || !type.element)
-            throw new LanguageError(
-              "capture annotation needs one list layer per spread dimension",
-              n.span,
-              { code: "E_SPREAD_DIMENSION", phase: "declaration" },
-            );
-          type = type.element;
-        }
-        return this.typePattern(type, !typeMode);
+        const peeled = peelListLayers(n, dimensions);
+        return this.typePattern(
+          listLayer(peeled)
+            ? listType(peeled)
+            : this.typeFromSyntax(peeled, env),
+          !typeMode,
+          allowProjection,
+        );
       } finally {
         if (typeMode) this.inlineTypeDepth--;
       }
@@ -2443,7 +2626,7 @@ export class Interpreter {
       {
         bareCaptures: true,
         captureWrapper: (annotation) => {
-          const type = this.typeFromSyntax(annotation, env);
+          const type = listType(annotation);
           return (value) => single(this.check(type, value));
         },
         validateTypedCapture: (name, annotation) => {
@@ -2469,7 +2652,9 @@ export class Interpreter {
               head: literalPattern(valSymbol("syntaxSequence")),
               body: positionalPattern(
                 n.items.map((x) =>
-                  this.compiler(env, typeMode, depth).compile(x),
+                  this.compiler(env, typeMode, depth, allowProjection).compile(
+                    x,
+                  ),
                 ),
               ),
             };
@@ -2483,14 +2668,15 @@ export class Interpreter {
             const type = this.materializeType(value);
             return type ? this.typePattern(type) : literalPattern(value);
           }
+          if (
+            n.kind === "postfix" &&
+            isTypeSpecification(n.operand) &&
+            (this.isTypeCall(n, lookup(n)) ||
+              n.operator === "*" ||
+              n.operator === "^")
+          )
+            return reference(n);
           if (n.kind === "apply") {
-            if (
-              n.head.kind === "symbol" &&
-              !n.head.quoted &&
-              ["*", "?", "^", "!"].includes(n.head.name) &&
-              n.body.length === 1
-            )
-              return reference(n);
             const binding =
               n.head.kind === "symbol" && !n.head.quoted
                 ? lookup(n.head).get(n.head.name)
@@ -2505,7 +2691,9 @@ export class Interpreter {
               let value: Value;
               value = single(this.evaluate(n, env), "type factory");
               const type = this.materializeType(value);
-              return type ? this.typePattern(type, !typeMode) : undefined;
+              return type
+                ? this.typePattern(type, !typeMode, allowProjection)
+                : undefined;
             }
             if (
               typeMode &&
@@ -2527,15 +2715,47 @@ export class Interpreter {
           if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
           // Application heads are structural patterns, not unary type-factory
           // calls: the head of (a :* b) is the partial tree *(a).
-          if (n.kind === "apply" && !binary(n, "::") && !binary(n, "|")) {
-            const compiler = this.compiler(env, typeMode, depth);
+          if (
+            (n.kind === "apply" && !binary(n, "::") && !binary(n, "|")) ||
+            (n.kind === "postfix" &&
+              !(
+                typeMode &&
+                (this.isTypeCall(n, lookup(n)) ||
+                  n.operator === "*" ||
+                  n.operator === "^")
+              ))
+          ) {
+            if (n.kind === "postfix")
+              return {
+                kind: "postfix",
+                operator: this.compiler(
+                  env,
+                  typeMode,
+                  depth,
+                  allowProjection,
+                ).domain.head(symbol(n.operator), depth),
+                operand: this.compiler(
+                  env,
+                  typeMode,
+                  depth,
+                  allowProjection,
+                ).compile(n.operand),
+              };
+            const compiler = this.compiler(
+              env,
+              typeMode,
+              depth,
+              allowProjection,
+            );
             return {
               kind: "node",
               head: compiler.domain.head(n.head, depth),
               body: compiler.fields(n.body, false),
             };
           }
-          return this.compiler(env, typeMode, depth).compile(n);
+          return this.compiler(env, typeMode, depth, allowProjection).compile(
+            n,
+          );
         },
         annotation: reference,
         repeatedElement: (n, dimensions = 0) => reference(n, dimensions + 1),
@@ -2561,7 +2781,7 @@ export class Interpreter {
             return pack.body.map((e) => {
               const type = this.materializeType(e.value);
               if (!type) throw new LanguageError("expected type argument");
-              return this.typePattern(type, !typeMode);
+              return this.typePattern(type, !typeMode, allowProjection);
             });
           }
           return undefined;
@@ -2605,37 +2825,7 @@ export class Interpreter {
     env: Scope,
     typeMode: boolean,
   ): Pattern<Value> {
-    const pattern = this.compiler(env, typeMode).compile(n);
-    if (typeMode) {
-      const referencesOnly = (p: Pattern<Value>): boolean =>
-        p.kind === "ref" ||
-        (p.kind === "union" && p.choices.every(referencesOnly));
-      const validate = (p: Pattern<Value>): void => {
-        if (p.kind === "union") {
-          if (referencesOnly(p))
-            throw new LanguageError(
-              "a union of type values requires UnionType(...); | combines constructor patterns",
-              n.span,
-              { code: "E_TYPE_UNION_SYNTAX", phase: "declaration" },
-            );
-          p.choices.forEach(validate);
-        } else if (p.kind === "node") {
-          validate(p.head);
-          validate(p.body);
-        } else if (p.kind === "fields" || p.kind === "sequence")
-          p.parts.forEach(validate);
-        else if (
-          p.kind === "capture" ||
-          p.kind === "label" ||
-          p.kind === "repeat" ||
-          p.kind === "row" ||
-          p.kind === "map"
-        )
-          validate(p.pattern);
-      };
-      validate(pattern);
-    }
-    return pattern;
+    return this.compiler(env, typeMode).compile(n);
   }
   /** An unevaluated constraint includes the identity of its lexical dependencies. */
   private expressionIdentity(n: Syntax, env: Scope): string {
@@ -2662,7 +2852,8 @@ export class Interpreter {
       } else if (x.kind === "apply") {
         walk(x.head);
         x.body.forEach((f) => walk(f.value));
-      } else if (x.kind === "pack") x.body.forEach((f) => walk(f.value));
+      } else if (x.kind === "postfix") walk(x.operand);
+      else if (x.kind === "pack") x.body.forEach((f) => walk(f.value));
       else if (x.kind === "sequence") x.items.forEach(walk);
       else if (x.kind === "block") x.lines.forEach(walk);
     };
@@ -3147,6 +3338,8 @@ export class Interpreter {
    * The `type` form explicitly introduces a pattern, including lowercase heads.
    */
   private isTypeCall(n: Syntax, env?: Scope): boolean {
+    if (n.kind === "postfix")
+      return !!env?.visible(postfixMethodName(n.operator)).length;
     if (n.kind !== "apply") return false;
     let head: Syntax = n.head;
     while (head.kind === "apply") head = head.head;
@@ -3288,6 +3481,7 @@ export class Interpreter {
   private typePattern(
     type: TypeValue,
     requireConcrete = false,
+    allowProjection = false,
   ): Pattern<Value> {
     return {
       kind: "ref",
@@ -3305,20 +3499,36 @@ export class Interpreter {
       dispatchIdentity: () => typeIdentity(type.baseType ?? type),
       resolve: () => {
         let original: Value | undefined;
+        let selected: Pattern<Value> | undefined;
+        let projected = false;
         return {
           kind: "map",
           localCaptures: true,
-          input: type.transparent
-            ? undefined
-            : (v) => {
-                const raw = unwrap(v),
-                  tree = syntaxOrigins.get(raw);
-                return tree?.kind === "block"
-                  ? syntaxData(this.grammarInput(type, tree))
-                  : raw;
-              },
+          input: (v) => {
+            if (selected) return original!;
+            if (projected) return unwrap(original!);
+            if (type.transparent) return v;
+            const raw = unwrap(v),
+              tree = syntaxOrigins.get(raw);
+            return tree?.kind === "block"
+              ? syntaxData(this.grammarInput(type, tree))
+              : raw;
+          },
           accept: (v) => {
-            original = v;
+            const space = concreteSpace(v);
+            projected = !!(
+              allowProjection &&
+              space &&
+              this.uniqueMatchUnionMember(space, v, type)
+            );
+            const candidate = projected && v.kind === "view" ? v.base : v;
+            const candidateSpace = concreteSpace(candidate);
+            const same =
+              candidateSpace &&
+              typeIdentity(candidateSpace) === typeIdentity(type);
+            const stored = slotValue(candidate);
+            original = same && stored.kind === "view" ? stored.base : candidate;
+            selected = this.concreteUnionSelection(type, original);
             if (
               this.parsingDataDepth &&
               type.packaged &&
@@ -3360,12 +3570,16 @@ export class Interpreter {
               );
             return (
               type.transparent ||
+              !!selected ||
               !prior ||
               typeIdentity(prior) === typeIdentity(type.baseType ?? type) ||
-              (prior.numeric === "rational" && type.numeric !== "rational")
+              (prior.numeric === "rational" && type.numeric !== "rational") ||
+              projected
             );
           },
-          pattern: type.pattern(),
+          get pattern() {
+            return selected ?? type.pattern();
+          },
           transform: (fields, captures) => {
             // Type is the public descriptor protocol: compiling an exact value
             // tree is a cache operation, not a new interpretation of its data.
@@ -3438,7 +3652,9 @@ export class Interpreter {
                 label: e.label,
                 value: {
                   kind: "view",
-                  base: this.numericPayload(type, e.value),
+                  base: this.concreteUnionMember(type, e.value)
+                    ? slotValue(e.value)
+                    : this.numericPayload(type, e.value),
                   views,
                   space: type.baseType ?? type,
                 },
@@ -3477,8 +3693,7 @@ export class Interpreter {
     if (prior && typeIdentity(prior) === typeIdentity(target)) return;
     const r = asRational(value);
     if (!r) return;
-    const exact =
-      numeric === "float32" ? isExactFloat32(r) : isExactFloat64(r);
+    const exact = numeric === "float32" ? isExactFloat32(r) : isExactFloat64(r);
     if (!exact)
       throw new LanguageError(
         "not exactly representable as " +
@@ -3508,6 +3723,132 @@ export class Interpreter {
       return valRational(r.n, r.d);
     }
     return unwrap(value);
+  }
+  /**
+   * D09: match-based projection may cross one union boundary when the payload
+   * uniquely designates a member. Ordinary binding and dispatch do not unwrap.
+   * Postfix T? is unwrapped T | :None, so a unique present payload projects.
+   * Constructor-only unions such as T^ stay constructor matches.
+   */
+  private findImmediateUnion(
+    pattern: Pattern<Value>,
+    active = new Set<unknown>(),
+  ): Extract<Pattern<Value>, { kind: "union" }> | undefined {
+    if (pattern.kind === "union") return pattern;
+    if (pattern.kind === "map" || pattern.kind === "capture")
+      return this.findImmediateUnion(pattern.pattern, active);
+    if (pattern.kind !== "ref" || active.has(pattern.key)) return;
+    return this.findImmediateUnion(
+      pattern.resolve(),
+      new Set(active).add(pattern.key),
+    );
+  }
+  private choiceIdentity(choice: Pattern<Value>): string | undefined {
+    const seen = new Set<unknown>();
+    let pattern = choice;
+    while (pattern.kind === "ref" && !seen.has(pattern.key)) {
+      seen.add(pattern.key);
+      const identity = pattern.dispatchIdentity?.();
+      if (typeof identity === "string") return identity;
+      pattern = pattern.resolve();
+    }
+    if (pattern.kind === "map") return this.choiceIdentity(pattern.pattern);
+  }
+  private immediateUnionChoices(type: TypeValue): Pattern<Value>[] | undefined {
+    if (type.unionMembers && type.unionMembers.length >= 2)
+      return type.unionMembers.map((member) => this.typePattern(member));
+    const union = this.findImmediateUnion(type.pattern());
+    if (!union || union.choices.length < 2) return;
+    return union.choices;
+  }
+  /** Explicit member evidence wins; otherwise prefer a direct arm over inward designation. */
+  private concreteUnionSelection(
+    type: TypeValue,
+    value: Value,
+  ): Pattern<Value> | undefined {
+    if (type.packaged || type.baseType) return;
+    const choices = this.immediateUnionChoices(type);
+    if (!choices) return;
+    const space = concreteSpace(value);
+    const exact = space
+      ? choices.filter((choice) => {
+          const member = this.choiceIdentity(choice);
+          return member && member === typeIdentity(space);
+        })
+      : [];
+    if (exact.length)
+      return exact.length === 1 ? exact[0] : { kind: "union", choices: exact };
+    // A bound concrete value cannot be reinterpreted as raw constructor data.
+    if (
+      space &&
+      !(value.kind === "view" && value.provisional) &&
+      space.numeric !== "rational"
+    ) {
+      const inward = choices.filter((choice) => this.choiceIdentity(choice));
+      return inward.length ? { kind: "union", choices: inward } : undefined;
+    }
+    const direct = choices.filter((choice) => {
+      if (
+        choice.kind !== "test" &&
+        choice.kind !== "node" &&
+        choice.kind !== "postfix"
+      )
+        return false;
+      if (
+        choice.kind === "test" &&
+        !(Array.isArray(choice.identity) && choice.identity[0] === "literal")
+      )
+        return false;
+      return true;
+    });
+    return direct.length && direct.length < choices.length
+      ? { kind: "union", choices, preferred: direct }
+      : undefined;
+  }
+  private concreteUnionMember(type: TypeValue, value: Value): boolean {
+    if (type.packaged || type.baseType) return false;
+    const space = concreteSpace(value);
+    return (
+      !!space &&
+      (this.immediateUnionChoices(type) ?? []).some((choice) => {
+        const member = this.choiceIdentity(choice);
+        return member && member === typeIdentity(space);
+      })
+    );
+  }
+  private uniqueMatchUnionMember(
+    prior: TypeValue,
+    value: Value,
+    target: TypeValue,
+  ): boolean {
+    const choices = this.immediateUnionChoices(prior);
+    if (!choices) return false;
+    const payload = value.kind === "view" ? value.base : unwrap(value);
+    const space = concreteSpace(payload);
+    const exact = space
+      ? choices.filter(
+          (choice) => this.choiceIdentity(choice) === typeIdentity(space),
+        )
+      : [];
+    if (exact.length)
+      return (
+        exact.length === 1 && typeIdentity(space!) === typeIdentity(target)
+      );
+    const hits: string[] = [];
+    let constructorHit = false;
+    for (const choice of choices) {
+      try {
+        this.interpretMatch(choice, singleton(payload));
+        const member = this.choiceIdentity(choice);
+        if (member) hits.push(member);
+        else constructorHit = true;
+      } catch (error) {
+        if (!(error instanceof Mismatch)) throw error;
+      }
+    }
+    return (
+      !constructorHit && hits.length === 1 && hits[0] === typeIdentity(target)
+    );
   }
   private check(type: TypeValue, value: Value, env?: Scope): Field<Value>[] {
     this.requireExactNumericDesignation(type, value);
@@ -3711,7 +4052,11 @@ export class Interpreter {
   private typeFromSyntax(n: Syntax, env: Scope): TypeValue {
     env =
       lexicalScopes.get(n) ??
-      (n.kind === "apply" ? lexicalScopes.get(n.head) : undefined) ??
+      (n.kind === "apply"
+        ? lexicalScopes.get(n.head)
+        : n.kind === "postfix"
+          ? lexicalScopes.get(n.operand)
+          : undefined) ??
       env;
     let cache = this.evaluatedTypes.get(env);
     if (!cache) this.evaluatedTypes.set(env, (cache = new WeakMap()));
@@ -3751,18 +4096,6 @@ export class Interpreter {
                 },
               ],
             },
-          };
-        if (name === "?")
-          return {
-            kind: "union",
-            choices: [
-              literalPattern(valSymbol("None")),
-              {
-                kind: "node",
-                head: literalPattern(valSymbol("Some")),
-                body: positionalPattern([this.typePattern(element)]),
-              },
-            ],
           };
         if (name === "^")
           return {
@@ -3843,6 +4176,14 @@ export class Interpreter {
       return type;
     }
     if (n.kind === "quote") return this.anonymousType(n, env);
+    if (n.kind === "postfix") {
+      if (n.operator === "*" || n.operator === "^")
+        return this.modifiedType(
+          n.operator,
+          this.typeFromSyntax(n.operand, env),
+        );
+      return this.anonymousType(n, env);
+    }
     if (n.kind === "apply" || n.kind === "literal")
       return this.anonymousType(n, env);
     throw new LanguageError("expected a type expression", n.span);

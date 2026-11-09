@@ -35,7 +35,12 @@ export type Pattern<T> =
       /** Compiler metadata only; never part of a type's structural identity. */
       origin?: { syntax: Syntax; implicit: boolean };
     }
-  | { kind: "union"; choices: Pattern<T>[]; preserveSpace?: boolean }
+  | {
+      kind: "union";
+      choices: Pattern<T>[];
+      preserveSpace?: boolean;
+      preferred?: Pattern<T>[];
+    }
   | { kind: "sequence"; parts: Pattern<T>[] }
   | {
       kind: "fields";
@@ -54,6 +59,7 @@ export type Pattern<T> =
       span?: Span;
     }
   | { kind: "node"; head: Pattern<T>; body: Pattern<T> }
+  | { kind: "postfix"; operator: Pattern<T>; operand: Pattern<T> }
   | {
       kind: "ref";
       key: unknown;
@@ -92,6 +98,8 @@ export interface Adapter<T> {
   equal: (a: T, b: T) => boolean;
   decompose: (value: T) => { head: T; body: Field<T>[] } | undefined;
   rebuild: (value: T, head: T, body: Field<T>[]) => T;
+  postfix?: (value: T) => { operator: T; operand: T } | undefined;
+  rebuildPostfix?: (value: T, operator: T, operand: T) => T;
   row?: (value: T) => Field<T>[] | undefined;
   rebuildRow?: (value: T, fields: Field<T>[]) => T;
   collection?: (values: Field<T>[]) => T;
@@ -217,7 +225,16 @@ export class Matcher<T> {
     if (
       this.recognizing &&
       item?.value === this.deferredDefault &&
-      ["any", "test", "node", "ref", "map", "reader", "union"].includes(p.kind)
+      [
+        "any",
+        "test",
+        "node",
+        "postfix",
+        "ref",
+        "map",
+        "reader",
+        "union",
+      ].includes(p.kind)
     )
       return one();
     switch (p.kind) {
@@ -318,8 +335,14 @@ export class Matcher<T> {
         );
       case "union": {
         const matches: Match<T>[] = [];
+        if (p.preferred) {
+          for (const choice of p.preferred)
+            matches.push(...(yield { pattern: choice, items, position: pos }));
+          if (matches.length) return matches;
+        }
         for (const choice of p.choices)
-          matches.push(...(yield { pattern: choice, items, position: pos }));
+          if (!p.preferred?.includes(choice))
+            matches.push(...(yield { pattern: choice, items, position: pos }));
         // Both pattern and type unions require one interpretation. Do not
         // coalesce successful witnesses and silently conceal ambiguous branches.
         return matches;
@@ -626,6 +649,46 @@ export class Matcher<T> {
                 },
               ],
         );
+      case "postfix": {
+        const node = item && this.adapter.postfix?.(item.value);
+        if (!node) return this.reject("expected a postfix value");
+        const operators = (yield {
+          pattern: p.operator,
+          items: [{ label: "_1", value: node.operator }],
+          position: 0,
+        }).filter((m) => m.end === 1);
+        if (!operators.length) return [];
+        const operands = (yield {
+          pattern: p.operand,
+          items: [{ label: "_1", value: node.operand }],
+          position: 0,
+        }).filter((m) => m.end === 1);
+        return operators.flatMap((h) =>
+          operands.flatMap((b) => {
+            const captures = this.merge(h.captures, b.captures);
+            return captures
+              ? [
+                  {
+                    end: pos + 1,
+                    fields: [
+                      {
+                        label: item.label,
+                        value: this.adapter.rebuildPostfix
+                          ? this.adapter.rebuildPostfix(
+                              item.value,
+                              h.fields[0].value,
+                              b.fields[0].value,
+                            )
+                          : item.value,
+                      },
+                    ],
+                    captures,
+                  },
+                ]
+              : [];
+          }),
+        );
+      }
       case "node": {
         const node = item && this.adapter.decompose(item.value);
         if (!node) return this.reject("expected a constructed value");

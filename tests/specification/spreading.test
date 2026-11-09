@@ -1,30 +1,30 @@
 test "C19 horizontal rest remains a typed positional list"
   expect
-    def copy(xs... :: Float32*) [xs...] :: Float32*
+    def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
     copy()
   result
     (
       []
     ) :: (
-      def copy(xs... :: Float32*) [xs...] :: Float32*
-      Float32*
+      def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
+      type [_... :: Float32*]
     )
   end
 
   expect
-    def copy(xs... :: Float32*) [xs...] :: Float32*
+    def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
     copy(0.5)
   result
     (
       [0.5]
     ) :: (
-      def copy(xs... :: Float32*) [xs...] :: Float32*
-      Float32*
+      def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
+      type [_... :: Float32*]
     )
   end
 
   todo expect
-    def copy(xs... :: Float32*) [xs...] :: Float32*
+    def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
     packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
     Packet(first, rest... :: Float32*, color: c, **) = packet
@@ -33,16 +33,16 @@ test "C19 horizontal rest remains a typed positional list"
     (
       [1]
     ) :: (
-      def copy(xs... :: Float32*) [xs...] :: Float32*
+      def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
       type Packet concrete Packet(Float32, Float32, color: String, note: String)
       packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
       Packet(first, rest... :: Float32*, color: c, **) = packet
-      Float32*
+      type [_... :: Float32*]
     )
   end
 
   todo expect
-    def copy(xs... :: Float32*) [xs...] :: Float32*
+    def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
     type Packet concrete Packet(Float32, Float32, color: String, note: String)
     packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
     Packet(first, rest... :: Float32*, color: c, **) = packet
@@ -51,7 +51,7 @@ test "C19 horizontal rest remains a typed positional list"
     (
       "blue"
     ) :: (
-      def copy(xs... :: Float32*) [xs...] :: Float32*
+      def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
       type Packet concrete Packet(Float32, Float32, color: String, note: String)
       packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
       Packet(first, rest... :: Float32*, color: c, **) = packet
@@ -85,7 +85,7 @@ test "C20 row capture and spreading are mirror images"
         2, 4
       ] :: Matrix)
       rows = x.cells
-      Float32**
+      type [_... :: Float32**]
     )
   end
 
@@ -150,7 +150,7 @@ test "C20 row capture and spreading are mirror images"
       oneEmptyRow = ([
         ()
       ] :: Matrix)
-      Float32**
+      type [_... :: Float32**]
     )
   end
 
@@ -198,7 +198,7 @@ test "C20 row capture and spreading are mirror images"
       oneEmptyRow = ([
         ()
       ] :: Matrix)
-      Float32**
+      type [_... :: Float32**]
     )
   end
 
@@ -253,7 +253,7 @@ test "C21 vertical-only capture is a list of items"
           "second"
         end
       end
-      String*
+      type [_... :: String*]
     )
   end
 end
@@ -264,7 +264,7 @@ test "C22 keyword remainder retains its record field types"
     type Person abstract {name: String, id: Int64, **}
     type AgeInfo concrete {age: Int8}
     def extra(person :: Person)
-      {name: name, id: id, rest**: {**}} = person
+      {name: name, id: id, **rest: {**}} = person
       rest
     end
     john = ({name: "John", id: 5, age: 48} :: PersonRecord)
@@ -277,7 +277,7 @@ test "C22 keyword remainder retains its record field types"
       type Person abstract {name: String, id: Int64, **}
       type AgeInfo concrete {age: Int8}
       def extra(person :: Person)
-        {name: name, id: id, rest**: {**}} = person
+        {name: name, id: id, **rest: {**}} = person
         rest
       end
       john = ({name: "John", id: 5, age: 48} :: PersonRecord)

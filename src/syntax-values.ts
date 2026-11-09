@@ -9,8 +9,14 @@ import {
   syntaxOrigins,
   concreteSpace,
   isRational,
-  rationalLiteralParts,
 } from "./values.ts";
+import {
+  syntaxNumber,
+  syntaxFromNumeric,
+  reduceRational,
+  float64ToRational,
+} from "./rational.ts";
+import type { Rational } from "./rational.ts";
 import type { Value } from "./values.ts";
 import { typeData } from "./type-data.ts";
 import { primitiveNames } from "./primitive-names.ts";
@@ -112,6 +118,13 @@ export function syntaxData(n: Syntax, insertions?: Map<Syntax, Value>): Value {
         body: n.body.map((e) => ({ ...e, value: child(e.value) })),
       };
       break;
+    case "postfix":
+      result = {
+        kind: "postfix",
+        operator: valSymbol(n.operator),
+        operand: child(n.operand),
+      };
+      break;
     case "pack":
       result = {
         kind: "pack",
@@ -143,14 +156,9 @@ export function dataSyntax(value: Value): Syntax {
   if (v.kind === "symbol")
     return { kind: "symbol", name: v.name, quoted: false };
   if (v.kind === "literal") {
-    if (isRational(v.value)) {
-      const parts = rationalLiteralParts(v.value);
-      return {
-        kind: "literal",
-        value: parts.value,
-        spelling: parts.spelling,
-      };
-    }
+    if (typeof v.value === "string") return { kind: "literal", value: v.value };
+    if (typeof v.value === "number" || isRational(v.value))
+      return syntaxFromNumeric(v.value);
     return { kind: "literal", value: v.value };
   }
   if (v.kind === "term")
@@ -159,6 +167,20 @@ export function dataSyntax(value: Value): Syntax {
       head: dataSyntax(v.head),
       body: v.body.map((e) => ({ ...e, value: dataSyntax(e.value) })),
     };
+  if (v.kind === "postfix") {
+    const operator = unwrap(v.operator);
+    if (operator.kind !== "symbol")
+      throw new LanguageError(
+        "cannot insert a function value into quoted syntax",
+        undefined,
+        { code: "E_UNQUOTE_VALUE", phase: "expand" },
+      );
+    return {
+      kind: "postfix",
+      operator: operator.name,
+      operand: dataSyntax(v.operand),
+    };
+  }
   if (v.kind === "pack")
     return {
       kind: "pack",
@@ -181,18 +203,14 @@ export function literalSyntax(value: Value): Syntax {
   const quoted = (node: Syntax): Syntax => ({ kind: "quote", value: node });
   let expression: Syntax;
   if (raw.kind === "literal") {
-    if (isRational(raw.value)) {
-      const magnitude =
-        raw.value.n < 0n
-          ? { n: -raw.value.n, d: raw.value.d }
-          : raw.value;
-      const parts = rationalLiteralParts(magnitude);
-      const negative = raw.value.n < 0n;
-      const node: Syntax = {
-        kind: "literal",
-        value: parts.value,
-        spelling: parts.spelling,
-      };
+    if (typeof raw.value === "string")
+      expression = { kind: "literal", value: raw.value };
+    else {
+      const r: Rational = isRational(raw.value)
+        ? raw.value
+        : float64ToRational(raw.value);
+      const negative = r.n < 0n;
+      const node = syntaxNumber(negative ? reduceRational(-r.n, r.d) : r);
       expression = negative
         ? {
             kind: "apply",
@@ -200,15 +218,7 @@ export function literalSyntax(value: Value): Syntax {
             body: pack(node),
           }
         : node;
-    } else
-      expression =
-        typeof raw.value === "number" && raw.value < 0
-          ? {
-              kind: "apply",
-              head: { kind: "symbol", name: "negate", quoted: false },
-              body: pack({ kind: "literal", value: -raw.value }),
-            }
-          : { kind: "literal", value: raw.value };
+    }
   } else if (raw.kind === "symbol")
     expression = { kind: "symbol", name: raw.name, quoted: true };
   else if (raw.kind === "type") expression = quoted(dataSyntax(typeData(raw)));
@@ -221,6 +231,19 @@ export function literalSyntax(value: Value): Syntax {
         { code: "E_UNQUOTE_VALUE" },
       );
     expression = quoted(dataSyntax(raw));
+  } else if (raw.kind === "postfix") {
+    const operator = unwrap(raw.operator);
+    if (operator.kind !== "symbol")
+      throw new LanguageError(
+        "this value needs a portable constant representation before insertion",
+        undefined,
+        { code: "E_UNQUOTE_VALUE" },
+      );
+    expression = {
+      kind: "postfix",
+      operator: operator.name,
+      operand: literalSyntax(raw.operand),
+    };
   } else if (raw.kind === "term") {
     const body = raw.body.map((field) => ({
       ...field,

@@ -1,0 +1,75 @@
+test "Postfix punctuation distinct from prefix application"
+  def PostfixAt type String@
+  def PrefixAt type
+    @(String)
+  end
+  (x :: PostfixAt) = "foo"@
+  (y :: PrefixAt) = @"bar"
+
+  expect x == y error "E_INCOMPARABLE_TYPES"
+  s = match x
+    (captured :: String)@ -> captured
+  end
+  t = match y
+    @(captured :: String) -> captured
+  end
+  expect s result "foo" :: String
+  expect t result "bar" :: String
+end
+
+test "Source optional convention has unwrapped present values"
+  expect "x" :: String? result "x" :: String?
+  expect :None :: String? result :None :: String?
+  expect Some("x") :: String? error "E_PATTERN_MISMATCH"
+  expect "x"? error "E_NO_METHOD"
+end
+
+test "Ordinary definitions give postfix operators meaning"
+  def (n :: Rational)@ n + 1
+  expect 2@ result 3 :: Rational
+  prefix = @(2)
+  expect prefix result
+    @(2) :: Expression
+  end
+end
+
+test "Another source postfix type convention"
+  def (T :: Type)~ type T | :Absent
+  expect 3 :: Int~ result 3 :: Int~
+  expect :Absent :: Int~ result :Absent :: Int~
+end
+
+test "Postfix type descriptions preserve matching after round trip"
+  def T type Int@
+  t = parse(Type)(toString(Type)(T))
+  assert T == t
+  assert 1@ .matches T
+  assert 1@ .matches t
+  expect Postfix(:@, 1) .matches t result False :: Bool
+end
+
+test "Postfix values can be type factory arguments"
+  def Box(x) type :Box(x)
+  t = Box(1@)
+  assert t == parse(Type)(toString(Type)(t))
+  assert :Box(1@) .matches t
+  expect :Box(Postfix(:@, 1)) .matches t result False :: Bool
+end
+
+test "Postfix hash and percent are punctuation"
+  def Hash type String#
+  def Percent type String%
+  (h :: Hash) = "data"#
+  (p :: Percent) = "data"%
+  expect h result "data"# :: Hash
+  expect p result "data"% :: Percent
+  assert parse(Hash)(toString(Hash)(h)) == h
+  assert parse(Percent)(toString(Percent)(p)) == p
+end
+
+test "Lifting remains a future source convention"
+  (present :: Float?) = 4
+  (absent :: Float?) = :None
+  todo expect sqrt?(present) result 2 :: Float?
+  todo expect sqrt?(absent) result :None :: Float?
+end

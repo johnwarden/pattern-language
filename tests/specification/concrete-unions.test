@@ -1,0 +1,28 @@
+test "A direct union arm takes precedence over inward designation"
+  (outer :: Float??) = :None
+  (sameOuter :: Float??) = :None :: Float??
+  (inner :: Float??) = :None :: Float?
+
+  expect outer result :None :: Float??
+  expect inner result (:None :: Float?) :: Float??
+  assert outer == sameOuter
+  expect outer == inner result False :: Bool
+  assert parse(Float??)(toString(Float??)(outer)) == outer
+  assert parse(Float??)(toString(Float??)(inner)) == inner
+end
+
+test "An explicit concrete member identifies an otherwise ambiguous branch"
+  def MyType type String? | Float?
+  (x :: MyType) = :None :: String?
+  (y :: MyType) = :None :: Float?
+
+  expect x result (:None :: String?) :: MyType
+  expect y result (:None :: Float?) :: MyType
+  expect x == y result False :: Bool
+  assert parse(MyType)(toString(MyType)(x)) == x
+  assert parse(MyType)(toString(MyType)(y)) == y
+  expect
+    (ambiguous :: MyType) = :None
+    ambiguous
+  error "E_AMBIGUOUS_PATTERN"
+end

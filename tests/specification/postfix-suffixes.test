@@ -22,10 +22,10 @@ test "A pack field ** is not a suffix wrap on the previous field"
   assert parse(Code)("Rect(w, h, **)") != parse(Code)("Rect(w, h**)")
 end
 
-test "Tight bang currently rejects as reserved"
-  expect ()! error "E_RESERVED_OPERATOR"
+test "Tight bang is a postfix construction"
+  expect 1! result 1! :: Expression
 end
 
-test "Int* is a list type"
+test "The bootstrap list convention retains list matching"
   expect [1, 2] :: Int* result [1, 2] :: Int*
 end
