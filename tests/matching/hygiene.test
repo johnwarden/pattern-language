@@ -1,0 +1,54 @@
+test "Hygiene preserves quoted literal patterns"
+  macro :make Args() Code` :foo -> 1
+  f = (make Args())
+
+  expect f(:foo) result 1 :: Rational
+end
+
+test "Hygiene preserves literal constructor heads"
+  macro :make Args() Code` (tag, tag(value)) -> value
+  f = (make Args())
+
+  expect f(1, :tag(3)) result 3 :: Rational
+end
+
+test "Default expressions use the surrounding scope before binding captures"
+  size = 9
+  macro :make Args() Code` (size: Int = size) -> size
+  f = (make Args())
+
+  expect f() result 9 :: Int
+end
+
+test "Hygiene renames all alternative sites together"
+  macro :make Args() Code` (:Some(x) | :Other(x)) -> x
+  f = (make Args())
+  (some, other) = (f(Some(3)), f(Other(4)))
+
+  expect some result 3 :: Rational
+  expect other result 4 :: Rational
+end
+
+test "Inserted patterns stay in their caller scope"
+  macro :make Args(p) Code$` $(p) -> 42
+  f = (make Args(:foo))
+
+  expect f(:foo) result 42 :: Rational
+end
+
+test "Alpha-renaming cannot hide duplicate captures in separate parameter packs"
+  expect
+    macro :make Args() Code` (
+      def f(x)(x) x
+      1
+    )
+    (make Args())
+  error "duplicate capture name"
+end
+
+test "No sequence repetition or alternation extension is introduced"
+  expect
+    macro :many Args(Int Int) Code` 0
+    many Args(1 2)
+  error "unsupported grammar pattern"
+end

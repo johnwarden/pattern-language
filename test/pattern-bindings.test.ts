@@ -1,8 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  Interpreter,
-  displayResults,
   parseExpression,
   Grammar,
   normal,
@@ -14,7 +12,6 @@ import {
 import { patternBindings } from "../src/pattern-captures.ts";
 import type { Pattern } from "../src/pattern.ts";
 
-const run = (source: string) => displayResults(new Interpreter().run(source));
 test("compiled binding metadata identifies explicit, implicit, typed and rest sites", () => {
   const metadata = patternBindings(
     bindingPattern([
@@ -79,68 +76,13 @@ test("compiled references and local capture maps keep their own binding scopes",
     [],
   );
 });
-test("one positional and rest pattern agrees across bindings, parameters, arms, types, macros and grammar", () => {
+test("a grammar rest pattern keeps compiled first and rest bindings", () => {
   const spec = "Pair(first :: Int,rest... :: Int*)",
     value = "Pair(1, 2, 3)";
-  for (const source of [
-    spec + " = " + value + "\nrest",
-    "def f(" + spec + ") rest\nf(" + value + ")",
-    "match " + value + "\n  " + spec + " -> rest\nend",
-    "def P type " + spec + "\np = " + value + " :: P\np.rest",
-    "macro :take Args(" +
-      spec +
-      ") Code$` [$(rest...)]\n(take Args(" +
-      value +
-      "))",
-  ])
-    assert.equal(run(source), "[2, 3]", source);
   const grammar = new Grammar("def P type " + spec);
   assert.equal(normal(grammar.parseAs(value, "P")), value);
   assert.deepEqual(
     [...patternBindings(grammar.rules.get("P")!).keys()],
     ["first", "rest"],
-  );
-});
-test("hygiene preserves quoted literal patterns and literal constructor heads", () => {
-  assert.equal(
-    run("macro :make Args() Code` :foo -> 1\nf = (make Args())\nf(:foo)"),
-    "1",
-  );
-  assert.equal(
-    run(
-      "macro :make Args() Code` (tag,tag(value)) -> value\nf = (make Args())\nf(1,:tag(3))",
-    ),
-    "3",
-  );
-});
-test("default expressions use the surrounding scope before binding captures", () => {
-  assert.equal(
-    run(
-      "size = 9\nmacro :make Args() Code` (size: Int = size) -> size\nf = (make Args())\nf()",
-    ),
-    "9",
-  );
-});
-test("hygiene renames all alternative sites together and leaves inserted patterns in their caller scope", () => {
-  assert.equal(
-    run(
-      "macro :make Args() Code` (:Some(x) | :Other(x)) -> x\nf = (make Args())\n(f(Some(3)),f(Other(4)))",
-    ),
-    "(3, 4)",
-  );
-  assert.equal(
-    run(
-      "macro :make Args(p) Code$` $(p) -> 42\nf = (make Args(:foo))\nf(:foo)",
-    ),
-    "42",
-  );
-});
-test("alpha-renaming cannot hide duplicate captures in separate parameter packs", () => {
-  assert.throws(
-    () =>
-      run(
-        "macro :make Args() Code` (\n  def f(x)(x) x\n  1\n)\n(make Args())",
-      ),
-    /duplicate capture name/,
   );
 });

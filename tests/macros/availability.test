@@ -1,0 +1,22 @@
+test "Constant defaults remain available to a generated macro"
+  def outer(x)
+    (value: y = 3) = ()
+    macro :good Args() Code$` $(y)
+    (good Args())
+  end
+
+  expect outer(7) result 3 :: Rational
+end
+
+test "Quoted annotation operators are literal heads, not pattern computations"
+  def outer(x)
+    match :(1 :: 2)
+      :(a :: x) ->
+        macro :good Args() Code$` $(a)
+        (good Args())
+      end
+    end
+  end
+
+  expect outer(7) result 1 :: Rational
+end

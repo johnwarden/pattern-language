@@ -45,7 +45,7 @@ No failing placeholder is substituted for an unspecified target result.
 
 | Area | Current home and reason |
 | --- | --- |
-| Pattern metadata, compiler captures, hygiene and cross-context grammar maps | test/pattern-bindings.test.ts; mixed language/host invariants are retained intact |
+| Pattern metadata, compiler captures and Grammar rest maps | test/pattern-bindings.test.ts; portable matching/hygiene moved to tests/matching; host keeps compiled capture metadata |
 | Default host invocation counters, declaration rollback and exact source diagnostics | test/binding-defaults.test.ts; API/state/span observations need host access |
 | Type identity, abstract slots, caches, unsupported host environments and transport | existing type/value/abstract tests; retain direct representation/fresh-process checks |
 | Numeric exactness/conversion, overlapping unions and remaining type/evidence behavior | host and tests/numeric/*.test regressions; supported slices replace their corresponding legacy expectations |
@@ -151,6 +151,35 @@ program.
 | equals-in-block, actions absent, reserved `!` | language/blocks#equals-*; language/namespaces#actions-are-absent; language/namespaces#prefix-exclamation-stays-reserved | `parseExpression("()!").kind` and `normal("Int!")` remain in TypeScript |
 
 Retained language host coverage is printer/pack display, `parseExpression` structure and ASCII spelling, Grammar-object parse/rejection, REPL commit/rollback, and the exact `E_AMBIGUOUS_CALL` code on competing callable/accessor names. No expected-failure or legacy marker was added or changed. `#48` (concrete/abstract declaration spelling) and `#52` (application-head specification queue) were not edited; bootstrap `def … type` setup and existing head-evaluation examples stay on current syntax.
+
+## Matching and availability migration
+
+The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) grouped `test/consistency.test.ts`,
+`test/pattern-bindings.test.ts` and `test/milestone-two-review.test.ts` as the next
+mixed batch. Portable cross-context matching and available-default examples now
+run under `tests/matching/` and `tests/macros/availability.test`. Expected results
+are authored data. `#32` has landed; bootstrap `def … type` remains setup, not a
+declaration-product change.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| consistency: sidefix spread rejected but argument-pack spread remains valid | matching/sidefix#argument-pack-rest-is-valid-in-a-pair-constructor; matching/sidefix#argument-pack-rest-is-valid-in-args | Positive Pair/Args rest moved; exact `E_SIDEFIX_SPREAD` stays in TypeScript |
+| consistency: a list annotation means a list in direct and constructor-shaped sidefix parameters | matching/sidefix#a-list-annotation-means-a-list-in-a-constructor-shaped-sidefix-parameter; matching/sidefix#a-list-annotation-means-a-list-in-a-direct-sidefix-parameter; matching/sidefix#a-list-annotation-does-not-accept-adjacent-operands-as-a-list | Both positive lists and the adjacent-operand grammar error |
+| consistency: a named structural pattern works in all five contexts | matching/cross-context#a-named-structural-pattern-works-as-* | Ascription, binding, function, Args macro, sidefix and match |
+| consistency: named pattern grammar respects block scope and failed REPL transactions | — | Interpreter REPL commit/rollback remains a host session check |
+| consistency: head quoting and structural interpolation produce the same data | matching/cross-context#head-quoting-and-structural-interpolation-produce-the-same-data | Quoted constructor head and interpolated Expression tree |
+| consistency: source formatting of constructed literals | — | `normal` of host syntax trees plus `displayString` stays |
+| consistency: no sequence repetition or alternation extension | matching/hygiene#no-sequence-repetition-or-alternation-extension-is-introduced | Language error moved; `parseExpression("x").kind` stays |
+| pattern-bindings: compiled metadata, non-binding sites, alternative/duplicate paths, ref/map scopes | — | `patternBindings`, `validatePatternCaptures`, `bindingPattern` and direct Pattern objects stay |
+| pattern-bindings: one positional and rest pattern across contexts | matching/cross-context#one-positional-and-rest-pattern-agrees-in-* | Binding, function, match, type accessor and macro; Grammar `parseAs` and compiled `first`/`rest` keys stay |
+| pattern-bindings: hygiene of quoted literals, constructor heads, defaults, alternatives, inserted patterns | matching/hygiene#hygiene-preserves-quoted-literal-patterns; matching/hygiene#hygiene-preserves-literal-constructor-heads; matching/hygiene#default-expressions-use-the-surrounding-scope-before-binding-captures; matching/hygiene#hygiene-renames-all-alternative-sites-together; matching/hygiene#inserted-patterns-stay-in-their-caller-scope | Original programs |
+| pattern-bindings: alpha-renaming cannot hide duplicate captures | matching/hygiene#alpha-renaming-cannot-hide-duplicate-captures-in-separate-parameter-packs | Message substring; not an exact diagnostic-code host check |
+| milestone-two-review: omitted defaults, match captures, helper defaults/annotations hide runtime | — | Exact `E_MACRO_RUNTIME_CAPTURE` stays |
+| milestone-two-review: constant defaults and quoted runtime references remain available | macros/availability#constant-defaults-remain-available-to-a-generated-macro; macros/evaluation#quoted-runtime-references-and-inserted-syntax-stay-available | Constant default moved; quoted runtime reference already had a source counterpart |
+| milestone-two-review: quoted root heads agree between grammar, runtime types and macro signatures | matching/cross-context#quoted-root-heads-agree-at-runtime-types; matching/cross-context#quoted-root-heads-agree-in-a-macro-signature | `.matches` and sidefix take moved; Grammar-object `parseAs` stays |
+| milestone-two-review: quoted annotation operators are literal heads | macros/availability#quoted-annotation-operators-are-literal-heads-not-pattern-computations | Positive match moved; the runtime-capture default failure stays |
+
+Host remainder is compiler capture metadata, Grammar objects, REPL rollback, exact diagnostic codes, constructed-literal formatting and `parseExpression` kind. No expected-failure or legacy marker was added or changed. `#48` and `#52` were not edited.
 
 ## Existing source cases
 
