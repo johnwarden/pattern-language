@@ -82,11 +82,11 @@ import {
   integerValue,
   isExactFloat32,
   isExactFloat64,
-  rationalLiteralParts,
   parseNumericSpelling,
   rationalFromSyntax,
   rationalToNumber,
   isRational,
+  syntaxNumber,
   addRationals,
   subRationals,
   mulRationals,
@@ -1356,17 +1356,9 @@ export class Interpreter {
               const magnitude = asRational(raw);
               const negative = !!magnitude && magnitude.n < 0n;
               if (negative) {
-                const parts = rationalLiteralParts({
-                  n: -magnitude.n,
-                  d: magnitude.d,
-                });
                 literal = apply(
                   symbol("negate"),
-                  packOf({
-                    kind: "literal",
-                    value: parts.value,
-                    spelling: parts.spelling,
-                  }),
+                  packOf(syntaxNumber({ n: -magnitude.n, d: magnitude.d })),
                 );
               }
               if (!space || space.numeric === "rational")
@@ -1482,12 +1474,11 @@ export class Interpreter {
     if (n.kind === "block") return this.evaluateBlock(n, env);
     if (n.kind === "pack") return this.evaluateFields(n.body, env);
     if (n.kind === "literal") {
-      if (typeof n.value === "number") {
-        const r = rationalFromSyntax(n);
-        if (!r) throw new LanguageError("malformed numeric source literal", n.span);
-        return this.ascribeRational(valRational(r.n, r.d));
-      }
-      return singleton(valLiteral(n.value));
+      if (typeof n.value === "string") return singleton(valLiteral(n.value));
+      const r = rationalFromSyntax(n);
+      if (!r)
+        throw new LanguageError("malformed numeric source literal", n.span);
+      return this.ascribeRational(valRational(r.n, r.d));
     }
     if (n.kind === "symbol") {
       if (n.quoted) return singleton(this.symbolValue(n.name));

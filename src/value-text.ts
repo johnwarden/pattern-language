@@ -14,11 +14,11 @@ import {
   syntaxOrigins,
   equal,
   isRational,
-  rationalLiteralParts,
   parseNumericSpelling,
   valRational,
-  float64ToRational,
   integerValue,
+  syntaxFromNumeric,
+  rationalFromSyntax,
 } from "./values.ts";
 import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
@@ -239,14 +239,9 @@ export function valueText(
     }
     if (v.kind === "type") return typeSyntax(v, root && expandRootType);
     if (v.kind === "literal") {
-      if (isRational(v.value)) {
-        const parts = rationalLiteralParts(v.value);
-        return {
-          kind: "literal",
-          value: parts.value,
-          spelling: parts.spelling,
-        };
-      }
+      if (typeof v.value === "string") return { kind: "literal", value: v.value };
+      if (typeof v.value === "number" || isRational(v.value))
+        return syntaxFromNumeric(v.value);
       return { kind: "literal", value: v.value };
     }
     if (v.kind === "symbol")
@@ -486,20 +481,10 @@ export function parseValueText(
       if (alias) return alias;
     }
     if (n.kind === "literal") {
-      if (typeof n.value === "number") {
-        const spelling =
-          n.spelling ??
-          (n.span?.source &&
-          n.span.start !== undefined &&
-          n.span.end !== undefined
-            ? n.span.source.text.slice(n.span.start, n.span.end)
-            : undefined);
-        const parsed = spelling ? parseNumericSpelling(spelling) : undefined;
-        if (parsed) return valRational(parsed.n, parsed.d);
-        const rounded = float64ToRational(n.value);
-        return valRational(rounded.n, rounded.d);
-      }
-      return lit(n.value);
+      if (typeof n.value === "string") return lit(n.value);
+      const parsed = rationalFromSyntax(n);
+      if (!parsed) return fail("malformed numeric source literal", n);
+      return valRational(parsed.n, parsed.d);
     }
     if (n.kind === "quote") return decode(n.value, pattern);
     if (n.kind === "symbol")
@@ -538,10 +523,11 @@ export function parseValueText(
       n.head.kind === "symbol" &&
       n.head.name === "-" &&
       n.body.length === 1 &&
-      n.body[0].value.kind === "literal" &&
-      typeof n.body[0].value.value === "number"
-    )
-      return lit(-n.body[0].value.value);
+      n.body[0].value.kind === "literal"
+    ) {
+      const r = rationalFromSyntax(n.body[0].value);
+      if (r) return valRational(-r.n, r.d);
+    }
     if (!pattern) {
       if (
         n.head.kind === "apply" &&
@@ -644,10 +630,11 @@ export function parseValueText(
         if (
           n.head.name === "-" &&
           n.body.length === 1 &&
-          n.body[0].value.kind === "literal" &&
-          typeof n.body[0].value.value === "number"
-        )
-          return lit(-n.body[0].value.value);
+          n.body[0].value.kind === "literal"
+        ) {
+          const r = rationalFromSyntax(n.body[0].value);
+          if (r) return valRational(-r.n, r.d);
+        }
       }
     }
     return {

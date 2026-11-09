@@ -13,9 +13,9 @@ test("Float32 membership is exact representability, not finite-after-fround", ()
   assert.equal(run("0.5 :: Float"), "0.5");
 });
 
-test("hex Rational syntax encoding keeps the Float64 payload", () => {
+test("hex Rational syntax encoding keeps the exact Float64-rounded Rational", () => {
   assert.notEqual(run("syntaxTree(0f0.1)"), "NumberLiteral(0)");
-  assert.equal(run("syntaxTree(0f0.1)"), "NumberLiteral(0.1)");
+  assert.equal(run("syntaxTree(0f0.1)"), "NumberLiteral(0x1.999999999999Ap-4)");
 });
 
 test("non-dyadic Rationals stay exact internally without a ratified spelling", () => {

@@ -188,7 +188,12 @@ Some(3) .matches (type :Some(Int))`;
         : normal(tree);
     get("tree").textContent = JSON.stringify(
       tree,
-      (_k, v) => (v instanceof Map ? Object.fromEntries(v) : v),
+      (_k, v) =>
+        typeof v === "bigint"
+          ? v.toString()
+          : v instanceof Map
+            ? Object.fromEntries(v)
+            : v,
       2,
     );
   }

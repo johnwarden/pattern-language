@@ -101,7 +101,7 @@ test("row reconstruction retains numeric interpretation through serialization", 
     run(
       "def Matrix type [\n xs... :: Float32**\n ...\n]\n(m :: Matrix) = [\n float32(3.14), 1\n]\n(m.xs,toString(Matrix)(m),parse(Matrix)(toString(Matrix)(m)) == m)",
     ),
-    '([[3.140000104904175, 1]], "[\\n  (3.140000104904175, 1)\\n]", True)',
+    '([[3.140000104904175, 1]], "[\\n  (0x1.91EB86p1, 1)\\n]", True)',
   );
   rejects(
     "def Matrix type [\n xs... :: Float32**\n ...\n]\n(m :: Matrix) = [\n 3.14, 1\n]",

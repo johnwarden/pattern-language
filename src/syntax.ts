@@ -5,6 +5,8 @@ import type { ApplicationNotation } from "./application-format.ts";
 import { LanguageError } from "./diagnostics.ts";
 import type { Captures } from "./pattern.ts";
 import type { SourceDocument } from "./diagnostics.ts";
+import type { Rational } from "./rational.ts";
+import { isRational, formatRational } from "./rational.ts";
 export { LanguageError } from "./diagnostics.ts";
 /** Lossless structural distinctions; packs occur at call/result boundaries. */
 export interface Span {
@@ -43,7 +45,7 @@ export type Syntax =
   | { kind: "symbol"; name: string; quoted: boolean; span?: Span }
   | {
       kind: "literal";
-      value: string | number;
+      value: string | number | Rational;
       spelling?: string;
       span?: Span;
     }
@@ -282,8 +284,11 @@ export function normal(n: Syntax, indent = 0): string {
     case "symbol":
       return (n.quoted ? ":" : "") + n.name;
     case "literal": {
-      if (typeof n.value === "number") return n.spelling ?? String(n.value);
-      return stringSource(n.value, indent);
+      if (typeof n.value === "string") return stringSource(n.value, indent);
+      if (n.spelling) return n.spelling;
+      if (typeof n.value === "number") return String(n.value);
+      if (isRational(n.value)) return formatRational(n.value);
+      return stringSource(String(n.value), indent);
     }
     case "pack":
       return "(" + body(n.body) + ")";
@@ -353,7 +358,9 @@ export function syntaxKey(n: Syntax): string {
   const key = (n: Syntax): unknown => {
     switch (n.kind) {
       case "literal":
-        return ["literal", n.value];
+        return isRational(n.value)
+          ? ["literal", n.value.n.toString(), n.value.d.toString()]
+          : ["literal", n.value];
       case "symbol":
         return ["symbol", n.name, n.quoted];
       case "quote":

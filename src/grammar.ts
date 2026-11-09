@@ -32,7 +32,14 @@ import {
   readerDescriptions,
   typeGrammarDescription,
 } from "./language-description.ts";
-import { valLiteral, valSymbol, equal, unwrap } from "./values.ts";
+import {
+  valLiteral,
+  valSymbol,
+  equal,
+  unwrap,
+  compareRationals,
+  rationalFromSyntax,
+} from "./values.ts";
 import type { Value } from "./values.ts";
 export const DEFAULT_GRAMMAR = `def Definition type :def (signature :: Signature) (body :: Body)
 def MacroRegistration type :macro (signature :: Signature) (body :: Body)
@@ -237,7 +244,13 @@ export class Grammar {
             return {
               kind: "test",
               name: normal(n),
-              test: (v) => v.kind === "literal" && v.value === n.value,
+              test: (v) => {
+                if (v.kind !== "literal") return false;
+                const left = rationalFromSyntax(v),
+                  right = rationalFromSyntax(n);
+                if (left && right) return compareRationals(left, right) === 0;
+                return v.value === n.value;
+              },
             };
           throw new LanguageError("unsupported grammar pattern", n.span);
         },
@@ -271,12 +284,13 @@ export class Grammar {
       return {
         kind: "test",
         name,
-        test: (n) =>
-          n.kind === "literal" &&
-          (name === "String"
-            ? typeof n.value === "string"
-            : typeof n.value === "number" &&
-              (name !== "Int" || Number.isInteger(n.value))),
+        test: (n) => {
+          if (n.kind !== "literal") return false;
+          if (name === "String") return typeof n.value === "string";
+          const r = rationalFromSyntax(n);
+          if (!r) return typeof n.value === "number";
+          return name !== "Int" || r.d === 1n;
+        },
       };
     if (name === "Pattern") return { kind: "test", name, test: () => true };
     if (name === "PatternBody")

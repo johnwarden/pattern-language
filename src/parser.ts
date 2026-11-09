@@ -9,6 +9,7 @@ import {
   packOf,
   isName,
 } from "./syntax.ts";
+import { parseNumericSpelling, syntaxNumber } from "./rational.ts";
 import type { Syntax, Field, Span } from "./syntax.ts";
 import {
   punctuation,
@@ -674,21 +675,25 @@ class Reader {
       return { kind: "quote", value: this.atom(stops), span };
     }
     if (t.kind === "name") return { ...symbol(t.text, !!t.quoted), span };
-    if (t.kind === "numberSource")
+    if (t.kind === "numberSource") {
+      if (!this.options.specification) {
+        const value = parseNumericSpelling(t.text);
+        if (!value)
+          throw new LanguageError("malformed numeric source literal", t);
+        return { ...syntaxNumber(value, t.text), span };
+      }
       return {
         ...apply(symbol("NumericSource", true), [
           { label: "_1", value: { kind: "literal", value: t.text } },
         ]),
         span,
       };
+    }
     if (t.kind === "number") {
-      const value = Number(t.text);
-      if (
-        !Number.isFinite(value) ||
-        (Number.isInteger(value) && !Number.isSafeInteger(value))
-      )
-        throw new LanguageError("number exceeds safe numeric range", t);
-      return { kind: "literal", value, span };
+      const value = parseNumericSpelling(t.text);
+      if (!value)
+        throw new LanguageError("malformed numeric source literal", t);
+      return { ...syntaxNumber(value, t.text), span };
     }
     if (t.kind === "string") return { ...t.textNode!, span };
     if (t.kind === "(") {

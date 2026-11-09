@@ -88,7 +88,7 @@ verification gate includes build and type checks.
 
 ### Bootstrap behaviors superseded by the intended design
 
-- JS-backed Int/Float/Float32 and Number-as-Float, rather than exact Rational literals.
+- JS-backed Int/Float/Float32 and Number-as-Float value payloads, rather than exact Rational payloads throughout.
 - Syntax-disjointness required for every UnionType, rather than a separate DSL requirement.
 - Old def/type construction and accessor products; duplicate structural declarations
   rejected across visible scopes, with a replacement policy still unresolved.
@@ -233,8 +233,8 @@ in grammar patterns and unquoted in grammar-directed data text. Reject ambiguity
 Define useful Code categories as ordinary pattern/grammar types over one stated
 surface representation. Extend the bounded source grammar with functions, control
 forms, matching and complete bodies. Freeze the public raw-tree/typed-code/descriptor
-mapping first; optional runtime Expression/ExpressionTree is a remaining choice,
-not a mandatory new primitive taxonomy. Avoid generic applications swallowing
+mapping first; parse directly into Expression remains a later migration, not a
+mandatory new primitive taxonomy. Avoid generic applications swallowing
 statement forms by accidental priority.
 
 **Complete when:** direct ordinary patterns classify/destructure representative Code,
