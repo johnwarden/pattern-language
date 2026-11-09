@@ -19,6 +19,19 @@ const fail = (
   }
   throw new Error("expected diagnostic");
 };
+test("malformed value text reports the serialized text and its location", () => {
+  for (const [text, column] of [
+    ["(", 1],
+    ["1 +", 3],
+    ["f (1)", 3],
+  ] as const) {
+    const error = fail(`parse(Int)(${JSON.stringify(text)})`);
+    assert.equal(error.diagnostic.primary?.source?.name, "serialized value");
+    assert.equal(error.diagnostic.primary?.source?.text, text);
+    assert.equal(error.diagnostic.primary?.line, 1);
+    assert.equal(error.diagnostic.primary?.column, column);
+  }
+});
 test("unbound names carry exact range and source excerpt", () => {
   const error = fail("x = 1\nx + unknown");
   assert.equal(error.diagnostic.code, "E_UNBOUND_NAME");

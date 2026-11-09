@@ -110,6 +110,12 @@ test "Line breaks inside a value-text argument do not change the decoded tree"
   assert parse(Box)("Box(\n  f(1)\n)") == parse(Box)("Box(f(1))")
 end
 
+test "Malformed value text is a syntax error"
+  expect parse(Int)("(") error "unclosed delimiter"
+  expect parse(Int)("1 +") error "Missing second argument to infix operation"
+  expect parse(Int)("f (1)") error "a term cannot be followed by a spaced '('"
+end
+
 test "Removing the space from a spaced call is a different tree, not a second valid parse"
   def f(x) x
 

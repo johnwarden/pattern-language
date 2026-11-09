@@ -512,21 +512,14 @@ export function parseValueText(
   if (numeric && !typeExpected) return valRational(numeric.n, numeric.d);
   const forms = layoutForms?.size ? layoutForms : emptyLayoutForms();
   const structural = !!(layoutForms?.size || layoutForms?.structural);
-  let tree: Syntax;
-  try {
-    tree = parseSurface(text, "serialized value", { layoutForms: forms });
-    if (tree.kind === "block" && tree.lines.length === 1) {
-      const line = tree.lines[0];
-      if (line.kind === "sequence" && line.items.length === 1)
-        tree = line.items[0];
-      else if (line.kind !== "sequence" && line.kind !== "form") tree = line;
-    } else if (tree.kind === "sequence" && tree.items.length === 1)
-      tree = tree.items[0];
-  } catch (error) {
-    if (error instanceof LanguageError && error.diagnostic.primary)
-      error.diagnostic.primary.source = source;
-    throw error;
-  }
+  let tree = parseSurface(text, source.name, { layoutForms: forms });
+  if (tree.kind === "block" && tree.lines.length === 1) {
+    const line = tree.lines[0];
+    if (line.kind === "sequence" && line.items.length === 1)
+      tree = line.items[0];
+    else if (line.kind !== "sequence" && line.kind !== "form") tree = line;
+  } else if (tree.kind === "sequence" && tree.items.length === 1)
+    tree = tree.items[0];
   let work = 0;
   const positional = (
     n: Extract<Syntax, { kind: "apply" }>,
