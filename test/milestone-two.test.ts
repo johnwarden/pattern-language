@@ -39,7 +39,6 @@ test("recursive Language schema is executable and generated documentation is cur
     ),
     LANGUAGE_SCHEMA,
   );
-  assert.equal(run("language() .matches languageSchema()"), "True");
 });
 test("AST transport distinguishes source quotation from similarly named applications", () => {
   for (const source of [
@@ -77,12 +76,6 @@ test("default and edited grammars round trip through ordinary language-descripti
       syntaxKey(grammar.parse(source)),
     );
   }
-  assert.equal(
-    run(
-      "l = language()\ns = toString(Expression)(l)\nr = parse(Expression)(s)\n(r == l,r .matches languageSchema())",
-    ),
-    "(True, True)",
-  );
 });
 test("source parseSyntax uses the transported grammar without evaluating source", () => {
   const i = new Interpreter();
@@ -101,14 +94,6 @@ test("scoped sidefix and structural rules are reflected without transporting mac
   assert.throws(
     () => fresh.run("answer Args(3)"),
     /sidefix macro is not available: answer/,
-  );
-});
-test("language schemas and descriptions transfer into fresh interpreters", () => {
-  assert.equal(
-    run(
-      "t = languageSchema()\ns = toString(Type)(t)\nu = parse(Type)(s)\n(t == u,language() .matches u)",
-    ),
-    "(True, True)",
   );
 });
 test("language descriptions reject changed host policies, duplicate rules and invalid AST variants", () => {
@@ -160,81 +145,45 @@ test("AST codec has an explicit recursion budget", () => {
   assert.throws(() => encodeSyntax(ast), /codec budget/);
 });
 
-const contexts = (spec: string, value: string, result: string) => [
-  spec + " = " + value + "\n" + result,
-  "def f(" + spec + ")\n  " + result + "\nend\nf(" + value + ")",
-  "match " + value + "\n  " + spec + " -> " + result + "\nend",
-  "macro :take Args(" +
-    spec +
-    ") Code$` (" +
-    result.replace(/\b(n|c|rest)\b/g, (name) => "$" + name) +
-    ")\n(take Args(" +
-    value +
-    "))",
-];
-for (const [name, spec, value, result, expected] of [
-  [
-    "label order and explicit label openness",
-    "Box(n :: Int,color: c :: String,**)",
-    'Box(3,extra: 7,color: "red")',
-    "(n,c)",
-    '(3, "red")',
-  ],
-  [
-    "defaults only bind omitted captures",
-    'Box(n :: Int,color: c :: String = "red")',
-    "Box(3)",
-    "(n,c)",
-    '(3, "red")',
-  ],
-  [
-    "positional rest never consumes labels",
-    "Box(n :: Int,rest... :: Int*,color: c :: String,**)",
-    'Box(1,2,3,color: "red",extra: 9)',
-    "rest",
-    "[2, 3]",
-  ],
-] as const) {
-  test("binding/parameter/arm conformance: " + name, () => {
-    for (const source of contexts(spec, value, result))
-      assert.equal(run(source), expected, source);
+test("grammar parseAs agrees with open-label, default and rest binding patterns", () => {
+  for (const [spec, value] of [
+    [
+      "Box(n :: Int,color: c :: String,**)",
+      'Box(3,extra: 7,color: "red")',
+    ],
+    ['Box(n :: Int,color: c :: String = "red")', "Box(3)"],
+    [
+      "Box(n :: Int,rest... :: Int*,color: c :: String,**)",
+      'Box(1,2,3,color: "red",extra: 9)',
+    ],
+  ] as const) {
     assert.equal(
       normal(new Grammar("def B type " + spec).parseAs(value, "B")),
       normal(parseExpression(value)),
     );
-  });
-}
-test("required fields, exactness and ambiguity reject consistently across binding contexts and grammar", () => {
+  }
+});
+test("grammar parseAs rejects missing labels, extra fields and ambiguous constructors", () => {
   for (const [spec, value] of [
     ["Box(n :: Int,color: c :: String,**)", "Box(3,extra: 7)"],
     ["Box(n :: Int)", "Box(3,extra: 7)"],
     ["(Box(n :: Int) | Box(n :: Float))", "Box(3)"],
   ]) {
-    for (const source of contexts(spec, value, "n"))
-      assert.throws(() => run(source));
     assert.throws(() => new Grammar("def B type " + spec).parseAs(value, "B"));
   }
-});
-test("type defaults remain forbidden, and facet accessors preserve original fields", () => {
-  assert.throws(
-    () => run('def B type Box(color: String = "red")\n0'),
-    /defaults/,
-  );
-  assert.equal(
-    run(
-      'def B type Box(n :: Int,color: c :: String,**)\nb = Box(3,color: "red",extra: 7) :: (type Box(Int,color: String,extra: Int))\n(v :: B) = b\n(v.n,v.c)',
-    ),
-    '(3, "red")',
-  );
 });
 
 test("duplicate capture diagnostics agree across every applicable pattern context", () => {
   const spec = "Box(n :: Int,n :: Int)",
     value = "Box(1,2)";
-  for (const source of [
-    ...contexts(spec, value, "n"),
+  const contexts = [
+    spec + " = " + value + "\nn",
+    "def f(" + spec + ")\n  n\nend\nf(" + value + ")",
+    "match " + value + "\n  " + spec + " -> n\nend",
+    "macro :take Args(" + spec + ") Code$` $n\n(take Args(" + value + "))",
     "def B type " + spec + "\n0",
-  ])
+  ];
+  for (const source of contexts)
     assert.throws(
       () => run(source),
       (e: unknown) =>

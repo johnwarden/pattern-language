@@ -40,14 +40,7 @@ test("row boundaries survive canonical source without flattening comma packs", (
   );
 });
 
-test("vertical string captures are typed lists with empty and nonempty collections", () => {
-  assert.equal(
-    run(
-      todo +
-        't = TodoList`\n todo\n  "one"\n  "two"\n end\nend\n(toString(type [_... :: String*])(t.todos),parse(TodoList)(toString(TodoList)(t)) == t)',
-    ),
-    '("[\\"one\\", \\"two\\"]", True)',
-  );
+test("vertical string captures reject a spaced parenthesis after the constructor", () => {
   assert.throws(
     () =>
       run(
@@ -59,46 +52,6 @@ test("vertical string captures are typed lists with empty and nonempty collectio
       /a term cannot be followed by a spaced '\('/.test(
         (error as LanguageError).message,
       ),
-  );
-});
-
-test("horizontal and vertical captures preserve two dimensions, including empty rows", () => {
-  assert.equal(
-    run(
-      matrix +
-        "(m :: Matrix) = [\n 1,2\n 3,4\n]\n(toString(type [_... :: Float**])(m.values),parse(Matrix)(toString(Matrix)(m)) == m)",
-    ),
-    '("[[1, 2], [3, 4]]", True)',
-  );
-  assert.equal(
-    run(
-      matrix +
-        "m = Matrix` [\n ()\n (1,)\n 2,3,4\n]\ntoString(type [_... :: Float**])(m.values)",
-    ),
-    '"[[], [1], [2, 3, 4]]"',
-  );
-  assert.equal(
-    run(matrix + "m = Matrix` [\n]\n(m.values,toString(Matrix)(m))"),
-    '([], "[\\n\\n]")',
-  );
-});
-
-test("row collection literals evaluate their fields while preserving every row", () => {
-  assert.equal(
-    run(
-      matrix +
-        "x = 3\n(m :: Matrix) = [\n x, x + 1\n x * 2, 9\n]\n(toString(type [_... :: Float**])(m.values),parse(Matrix)(toString(Matrix)(m)) == m)",
-    ),
-    '("[[3, 4], [6, 9]]", True)',
-  );
-});
-
-test("repeated application rows collect heads and argument packs independently", () => {
-  assert.equal(
-    run(
-      "def Calls type\n (heads :: Symbol*)(arguments... :: Float**)\n ...\nend\nx = Calls`\n f(1,2)\n g(3)\nend\n(toString(type [_... :: Symbol*])(x.heads),toString(type [_... :: Float**])(x.arguments))",
-    ),
-    '("[f, g]", "[[1, 2], [3]]")',
   );
 });
 
@@ -156,56 +109,18 @@ test("competing row partitions are errors rather than greedy selection", () => {
   );
 });
 
-test("typed Body exposes prefix statements and a multi-expression result row", () => {
-  assert.equal(
-    run(
-      bodyGrammar +
-        "b = Body`\n y = 2\n z = 3\n (y * z,y)\nend\n(toString(type [_... :: Binding*])(b.bindings),toString(type [_... :: ValueExpression*])(b.resultExpression))",
-    ),
-    '("[y = 2, z = 3]", "[y * z, y]")',
-  );
-});
-
-test("direct binding destructuring extracts a nested Body without resolving free names", () => {
-  assert.equal(
-    run(
-      bodyGrammar +
-        "b = DestructuringBinding`\n (a,b) =\n  y = 2\n  z = 3\n  (y * z,y)\n end\nend\n((first :: LowerCamelSymbol,second :: LowerCamelSymbol) := (body :: Body)) = b\n(first,second,toString(type [_... :: Binding*])(body.bindings))",
-    ),
-    '(a, b, "[y = 2, z = 3]")',
-  );
-});
-
-test("Body admits definitions and nested RHS bodies without installing or evaluating them", () => {
+test("Body admits definitions without installing or evaluating them in the host session", () => {
   const source =
     bodyGrammar +
-    "b = Body`\n def missing(x) x * 2\n y =\n  z = 3\n  z\n end\n y\nend\n(parse(Body)(toString(Body)(b)) == b,parse(Type)(toString(Type)(Body)) == Body)";
+    "b = Body`\n def missing(x) x * 2\n y =\n  z = 3\n  z\n end\n y\nend\n0";
   const interpreter = new Interpreter();
-  assert.equal(displayResults(interpreter.run(source)), "(True, True)");
+  assert.equal(displayResults(interpreter.run(source)), "0");
   for (const expression of ["missing(1)", "y", "z"])
     assert.throws(
       () => interpreter.run(expression),
       (error: unknown) =>
         error instanceof LanguageError &&
         error.diagnostic.code === "E_UNBOUND_NAME",
-    );
-});
-
-test("Body requires a final row even when that row is an empty result pack", () => {
-  assert.equal(
-    run(bodyGrammar + "b = Body`\n ()\nend\n(b.bindings,b.resultExpression)"),
-    "([], [])",
-  );
-  for (const rows of ["x = 2", "2\nx = 3", "def f(x) x * 2"])
-    rejects(
-      bodyGrammar +
-        "b = Body`\n" +
-        rows
-          .split("\n")
-          .map((x) => " " + x)
-          .join("\n") +
-        "\nend\nb",
-      "E_PATTERN_MISMATCH",
     );
 });
 

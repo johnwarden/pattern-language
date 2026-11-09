@@ -14,8 +14,6 @@ test("documented schema is the exact runtime bootstrap source", () => {
 });
 
 test("language schema gates descriptor shapes without consulting the user scope", () => {
-  // These shapes previously fell through the host decoder as ordinary nodes,
-  // despite using heads reserved by the descriptor grammar.
   for (const source of ["Type(:(String(:A)))", "Type(:|(:A,:B))"])
     assert.throws(() => run(source), /invalid type-description shape/);
   assert.equal(
@@ -27,11 +25,6 @@ test("language schema gates descriptor shapes without consulting the user scope"
   assert.throws(
     () => run("def ordinaryHead(h) True\nType(:|(:A,:B))"),
     /invalid type-description shape/,
-  );
-  // Explicit Apply describes a literal reserved head without ambiguity.
-  assert.equal(
-    run("Type(Apply(Literal(String),Fields(:A))) == (type String(:A))"),
-    "True",
   );
 });
 
@@ -92,88 +85,11 @@ test("pattern schema rejects malformed reserved constructors rather than accepti
     );
 });
 
-test("quoted operator heads are literal patterns across matching contexts", () => {
-  assert.equal(run("def split(:|(a)(b))\n  (a,b)\nend\nsplit(:(X | Y))"), "(X, Y)");
-  assert.equal(run(":|(a)(b) = :(X | Y)\n(a,b)"), "(X, Y)");
-  assert.equal(run("match :(X | Y)\n  :|(a)(b) -> (a,b)\nend"), "(X, Y)");
-  assert.equal(
-    run("t =\n  type\n    :|(Symbol)(Symbol)\n  end\nend\nx = :(X | Y)\nx .matches t"),
-    "True",
-  );
-  assert.equal(
-    run("x = :name\nmatch x\n  :name -> True\n  _ -> False\nend"),
-    "True",
-  );
-});
-
-test("alternative branch captures erase without shared slots", () => {
-  assert.equal(
-    run(
-      "t = type :A(Int) | :B(Int)\nu = parse(Type)(toString(Type)(t))\n(t == u,A(1) .matches u,B(2) .matches u)",
-    ),
-    "(True, True, True)",
-  );
-  assert.equal(
-    run(
-      "t = type :Pair((:A(Int) | :B(Int)),Int)\nPair(A(1),2) .matches t",
-    ),
-    "True",
-  );
-});
-
-test("String constructor patterns round trip without becoming string literals", () => {
-  for (const pattern of ["String([65])", "String(Int)", "String()"])
-    assert.equal(
-      run("t = type " + pattern + "\nparse(Type)(toString(Type)(t)) == t"),
-      "True",
-    );
-});
-
-test("refinements preserve the concrete member selected by unions and Any", () => {
-  assert.equal(
-    run(
-      "u = UnionType(type Int,type String)\nr = u .where (x -> True)\n(a :: r) = (1 :: Int)\n(a .matches (type Int),a .matches u)",
-    ),
-    "(True, True)",
-  );
-  assert.equal(
-    run(
-      "u = UnionType(type Int,type String)\nr = u .where (x -> True)\n(a :: r) = (1 :: Int)\n(a :: Int) == (1 :: Int)",
-    ),
-    "True",
-  );
-  assert.equal(
-    run(
-      "r = (type Any) .where (x -> True)\n(x :: r) = (1 :: Int)\nx .matches (type Int)",
-    ),
-    "True",
-  );
-});
-
-test("failed dispatch candidates do not evaluate defaults", () => {
-  assert.equal(
-    run(
-      'def f(A(y: Int = 1 / 0),x: Int) 1\ndef f(A(),x: String) 2\nf(A(),x: "hello")',
-    ),
-    "2",
-  );
-  assert.equal(run("def f(A(x: Int = 1 / 0)) 1\ndef f(B()) 2\nf(B())"), "2");
-  assert.equal(
-    run('def f(x: Int,y: Int = 1 / 0) 1\ndef f(x: String) 2\nf(x: "hello")'),
-    "2",
-  );
-});
-
-test("public type equality requires value trees, never host closure identity", () => {
+test("public type equality rejects invalid Type constructors", () => {
   assert.throws(
     () => run("Type(Apply(:A,Int))"),
     /invalid type-description shape/,
   );
-  assert.throws(
-    () => run("t = (type Int) .where (n -> True)\nt == t"),
-    /value has no structural representation/,
-  );
-  assert.equal(run("(type :A | :B) == (type :B | :A)"), "True");
 });
 
 test("schema and decoder agree on generated single-value and argument-pack positions", () => {
@@ -227,8 +143,6 @@ test("schema and decoder agree on generated single-value and argument-pack posit
     for (const pack of ["Fields()", "OpenFields()"])
       check(context(pack), false);
   }
-  // Repetition belongs directly in a pack, never in a scalar position or
-  // inside another repetition. Direct pack repetition remains valid.
   for (const descriptor of [
     "Type(Repeat(:A))",
     "Type(Apply(Repeat(:A),Fields()))",

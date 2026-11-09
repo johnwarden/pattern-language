@@ -1,0 +1,202 @@
+test "Label order and explicit label openness in a binding"
+  Box(n :: Int, color: c :: String, **) = Box(3, extra: 7, color: "red")
+
+  expect n result 3 :: Int
+  expect c result "red" :: String
+end
+
+test "Label order and explicit label openness as a function parameter"
+  def f(Box(n :: Int, color: c :: String, **))
+    (n, c)
+  end
+  (n, c) = f(Box(3, extra: 7, color: "red"))
+
+  expect n result 3 :: Int
+  expect c result "red" :: String
+end
+
+test "Label order and explicit label openness in a match arm"
+  (n, c) =
+    match Box(3, extra: 7, color: "red")
+      Box(n :: Int, color: c :: String, **) -> (n, c)
+    end
+  end
+
+  expect n result 3 :: Int
+  expect c result "red" :: String
+end
+
+test "Label order and explicit label openness in a macro parameter"
+  macro :take Args(Box(n :: Int, color: c :: String, **)) Code$` ($n, $c)
+  (n, c) = (take Args(Box(3, extra: 7, color: "red")))
+
+  expect n result 3 :: Rational
+  expect c result "red" :: String
+end
+
+test "Defaults only bind omitted captures in a binding"
+  Box(n :: Int, color: c :: String = "red") = Box(3)
+
+  expect n result 3 :: Int
+  expect c result "red" :: String
+end
+
+test "Defaults only bind omitted captures as a function parameter"
+  def f(Box(n :: Int, color: c :: String = "red"))
+    (n, c)
+  end
+  (n, c) = f(Box(3))
+
+  expect n result 3 :: Int
+  expect c result "red" :: String
+end
+
+test "Defaults only bind omitted captures in a match arm"
+  (n, c) =
+    match Box(3)
+      Box(n :: Int, color: c :: String = "red") -> (n, c)
+    end
+  end
+
+  expect n result 3 :: Int
+  expect c result "red" :: String
+end
+
+test "Defaults only bind omitted captures in a macro parameter"
+  macro :take Args(Box(n :: Int, color: c :: String = "red")) Code$` ($n, $c)
+  (n, c) = (take Args(Box(3)))
+
+  expect n result 3 :: Rational
+  expect c result "red" :: String
+end
+
+test "Positional rest never consumes labels in a binding"
+  Box(n :: Int, rest... :: Int*, color: c :: String, **) = Box(1, 2, 3, color: "red", extra: 9)
+
+  expect rest result [2, 3] :: (type [_... :: Int*])
+end
+
+test "Positional rest never consumes labels as a function parameter"
+  def f(Box(n :: Int, rest... :: Int*, color: c :: String, **)) rest
+
+  expect f(Box(1, 2, 3, color: "red", extra: 9)) result [2, 3] :: (type [_... :: Int*])
+end
+
+test "Positional rest never consumes labels in a match arm"
+  expect
+    match Box(1, 2, 3, color: "red", extra: 9)
+      Box(n :: Int, rest... :: Int*, color: c :: String, **) -> rest
+    end
+  result [2, 3] :: (type [_... :: Int*])
+end
+
+test "Positional rest never consumes labels in a macro parameter"
+  macro :take Args(Box(n :: Int, rest... :: Int*, color: c :: String, **)) Code$` [$(rest...)]
+
+  expect
+    (take Args(Box(1, 2, 3, color: "red", extra: 9)))
+  result [2, 3] :: Expression
+end
+
+test "A missing required label is rejected in a binding"
+  expect
+    Box(n :: Int, color: c :: String, **) = Box(3, extra: 7)
+    n
+  error "missing required labeled argument"
+end
+
+test "A missing required label is rejected as a function parameter"
+  expect
+    def f(Box(n :: Int, color: c :: String, **)) n
+    f(Box(3, extra: 7))
+  error "missing required labeled argument"
+end
+
+test "A missing required label is rejected in a match arm"
+  expect
+    match Box(3, extra: 7)
+      Box(n :: Int, color: c :: String, **) -> n
+    end
+  error "no matching arm"
+end
+
+test "A missing required label is rejected in a macro parameter"
+  expect
+    macro :take Args(Box(n :: Int, color: c :: String, **)) Code$` $n
+    (take Args(Box(3, extra: 7)))
+  error "unknown or incomplete macro form"
+end
+
+test "An unexpected label is rejected in a binding"
+  expect
+    Box(n :: Int) = Box(3, extra: 7)
+    n
+  error "unexpected labeled field"
+end
+
+test "An unexpected label is rejected as a function parameter"
+  expect
+    def f(Box(n :: Int)) n
+    f(Box(3, extra: 7))
+  error "unexpected labeled field"
+end
+
+test "An unexpected label is rejected in a match arm"
+  expect
+    match Box(3, extra: 7)
+      Box(n :: Int) -> n
+    end
+  error "no matching arm"
+end
+
+test "An unexpected label is rejected in a macro parameter"
+  expect
+    macro :take Args(Box(n :: Int)) Code$` $n
+    (take Args(Box(3, extra: 7)))
+  error "unknown or incomplete macro form"
+end
+
+test "Overlapping constructor alternatives are ambiguous in a binding"
+  expect
+    (Box(n :: Int) | Box(n :: Float)) = Box(3)
+    n
+  error "ambiguous pattern"
+end
+
+test "Overlapping constructor alternatives are ambiguous as a function parameter"
+  expect
+    def f((Box(n :: Int) | Box(n :: Float))) n
+    f(Box(3))
+  error "ambiguous pattern"
+end
+
+test "Overlapping constructor alternatives are ambiguous in a match arm"
+  expect
+    match Box(3)
+      (Box(n :: Int) | Box(n :: Float)) -> n
+    end
+  error "ambiguous pattern"
+end
+
+test "Overlapping constructor alternatives are rejected as a macro parameter"
+  expect
+    macro :take Args((Box(n :: Int) | Box(n :: Float))) Code$` $n
+    (take Args(Box(3)))
+  error "unknown grammar reference"
+end
+
+test "Type definitions cannot carry binding defaults"
+  expect
+    def B type Box(color: String = "red")
+    0
+  error "defaults are only allowed in binding patterns"
+end
+
+test "Facet accessors preserve original fields"
+  def B type Box(n :: Int, color: c :: String, **)
+  b = Box(3, color: "red", extra: 7) :: (type Box(Int, color: String, extra: Int))
+  (v :: B) = b
+
+  expect v.n result 3 :: Int
+  expect v.c result "red" :: String
+end

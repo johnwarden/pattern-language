@@ -1,0 +1,52 @@
+test "Vertical matrix capture preserves empty and nonempty rows"
+  def Matrix type [
+    values... :: Float**
+    ...
+  ]
+  m = Matrix` [
+    ()
+    (1,)
+    2, 3, 4
+  ]
+
+  expect m.values result [[], [1], [2, 3, 4]] :: (type [_... :: Float**])
+end
+
+test "An empty vertical matrix is an empty list of rows"
+  def Matrix type [
+    values... :: Float**
+    ...
+  ]
+  m = Matrix` [
+  ]
+
+  expect m.values result [] :: (type [_... :: Float**])
+end
+
+test "Row collection literals evaluate their fields"
+  def Matrix type [
+    values... :: Float**
+    ...
+  ]
+  x = 3
+  (m :: Matrix) = [
+    x, x + 1
+    x * 2, 9
+  ]
+
+  expect m.values result [[3, 4], [6, 9]] :: (type [_... :: Float**])
+end
+
+test "Repeated application rows collect heads and argument packs independently"
+  def Calls type
+    (heads :: Symbol*)(arguments... :: Float**)
+    ...
+  end
+  x = Calls`
+    f(1, 2)
+    g(3)
+  end
+
+  expect x.heads result [f, g] :: (type [_... :: Symbol*])
+  expect x.arguments result [[1, 2], [3]] :: (type [_... :: Float**])
+end

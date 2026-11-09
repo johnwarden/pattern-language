@@ -1,0 +1,88 @@
+test "Explicit Apply describes a literal reserved head"
+  assert Type(Apply(Literal(String), Fields(:A))) == (type String(:A))
+end
+
+test "String constructor patterns round trip without becoming string literals"
+  t = type String([65])
+  assert parse(Type)(toString(Type)(t)) == t
+  t = type String(Int)
+  assert parse(Type)(toString(Type)(t)) == t
+  t = type String()
+  assert parse(Type)(toString(Type)(t)) == t
+end
+
+test "Alternative branch captures erase without shared slots"
+  t = type :A(Int) | :B(Int)
+  u = parse(Type)(toString(Type)(t))
+  (same, a, b) = (t == u, A(1) .matches u, B(2) .matches u)
+
+  expect same result True :: Bool
+  expect a result True :: Bool
+  expect b result True :: Bool
+end
+
+test "A nested alternative still matches after reconstruction"
+  t = type :Pair((:A(Int) | :B(Int)), Int)
+
+  assert Pair(A(1), 2) .matches t
+end
+
+test "Refinements preserve the concrete member selected by a union"
+  u = UnionType(type Int, type String)
+  r = u .where (x -> True)
+  (a :: r) = (1 :: Int)
+  (member, union) = (a .matches (type Int), a .matches u)
+
+  expect member result True :: Bool
+  expect union result True :: Bool
+  assert (a :: Int) == (1 :: Int)
+end
+
+test "A refinement of Any keeps the concrete Int member"
+  r = (type Any) .where (x -> True)
+  (x :: r) = (1 :: Int)
+
+  assert x .matches (type Int)
+end
+
+test "Failed dispatch candidates do not evaluate defaults"
+  def f(A(y: Int = 1 / 0), x: Int) 1
+  def f(A(), x: String) 2
+  expect f(A(), x: "hello") result 2 :: Rational
+
+  def g(A(x: Int = 1 / 0)) 1
+  def g(B()) 2
+  expect g(B()) result 2 :: Rational
+
+  def h(x: Int, y: Int = 1 / 0) 1
+  def h(x: String) 2
+  expect h(x: "hello") result 2 :: Rational
+end
+
+test "Unordered union types compare equal"
+  assert (type :A | :B) == (type :B | :A)
+end
+
+test "A refinement has no structural representation for equality"
+  expect
+    t = (type Int) .where (n -> True)
+    t == t
+  error "value has no structural representation"
+end
+
+test "The language schema round-trips as a type and as Expression"
+  assert language() .matches languageSchema()
+  t = languageSchema()
+  s = toString(Type)(t)
+  u = parse(Type)(s)
+  (same, matches) = (t == u, language() .matches u)
+  expect same result True :: Bool
+  expect matches result True :: Bool
+
+  l = language()
+  text = toString(Expression)(l)
+  restored = parse(Expression)(text)
+  (sameText, schema) = (restored == l, restored .matches languageSchema())
+  expect sameText result True :: Bool
+  expect schema result True :: Bool
+end

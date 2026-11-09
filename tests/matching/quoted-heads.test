@@ -1,0 +1,49 @@
+test "A quoted operator head matches as a function parameter"
+  def split(:|(a)(b))
+    (a, b)
+  end
+  (left, right) = split(:(X | Y))
+
+  expect left result :X :: Expression
+  expect right result :Y :: Expression
+end
+
+test "A quoted operator head matches in a binding"
+  :|(a)(b) = :(X | Y)
+
+  expect a result :X :: Expression
+  expect b result :Y :: Expression
+end
+
+test "A quoted operator head matches in a match arm"
+  (left, right) =
+    match :(X | Y)
+      :|(a)(b) -> (a, b)
+    end
+  end
+
+  expect left result :X :: Expression
+  expect right result :Y :: Expression
+end
+
+test "A quoted operator head matches a type"
+  t =
+    type
+      :|(Symbol)(Symbol)
+    end
+  end
+  x = :(X | Y)
+
+  assert x .matches t
+end
+
+test "A quoted name is a literal match head"
+  x = :name
+
+  expect
+    match x
+      :name -> True
+      _ -> False
+    end
+  result True :: Bool
+end
