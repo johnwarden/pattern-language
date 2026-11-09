@@ -15,8 +15,7 @@ describes the implemented model; the drafts under design/ are not specifications
 
 Primitive type atoms are self-evaluating language values: Rational, Int, Float, Float32, Float64, Bool,
 String, ReservedSymbol, Expression, Body, Any, and Type. `Symbol` is a prelude
-union of the intrinsic symbol classes, not a reserved primitive. There is no Number alias;
-global text uses Float. Int currently uses JavaScript-safe integers,
+union of the intrinsic symbol classes, not a reserved primitive. There is no Number type yet. Int currently uses JavaScript-safe integers,
 Float uses finite Float64 arithmetic, and Float32 rounds explicitly.
 
 ```text
@@ -118,7 +117,6 @@ v
 Only one named declaration for an equal structural type identity may be visible.
 Primitive names are reserved. Independent scopes may use different names for equal
 types. References and ordinary variable bindings do not create a new declaration.
-The Number spelling is withdrawn until its definition is decided.
 
 ## Captures, accessors and defaults
 
@@ -207,7 +205,7 @@ a type value is the factory call; print a type with toString(Type)(t). The domai
 are deliberately disjoint, rather than choosing a different overload implicitly.
 
 Playground Run and REPL inspection use local names for the result's type annotation, while a type
-value itself is displayed structurally. Boolean constants and built-in predicates produce interpreted Bool values without inference. Quoted `:True` is rejected; True is a primitive, not an ordinary symbol. Raw uninterpreted values show Expression;
+value itself is displayed structurally. Boolean constants and built-in predicates produce interpreted Bool values without inference. Quoted `:True` stays uninterpreted Expression data. Raw uninterpreted values show Expression;
 there is still no general inference or implicit constructor-interpretation pass.
 Use r = Rect(2,2) :: Rect or (r :: Rect) = Rect(2,2) for a concrete interpretation.
 

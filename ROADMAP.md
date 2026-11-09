@@ -75,10 +75,7 @@ selected. Ordinary where refinements remain in scope.
 IEEE signed zero, NaN identity/payloads and infinities remain deferred. Numeric
 family aliases, edge rounding/overflow and canonical spelling remain provisional.
 
-**Open: `Number`.** The bootstrap has no `Number` alias or type. It will later
-be defined as an abstract union of fixed-width number types. Keep it removed
-until that membership is written. GRAMMAR.md's sketch is not an implementation
-and is not the former Float alias.
+`Number` will later be an abstract union of fixed-width number types.
 
 Type declaration keywords, angle parameter sugar, MemberOf, bare-family facets,
 parameter recovery and singleton abstract policy remain explicitly
@@ -288,9 +285,7 @@ repetition/alternation and unrelated syntax additions are not prerequisites.
 
 Implement an evaluator in the language over a documented pure Code subset: literals,
 symbols, complete packs, application, bindings, functions, conditionals and matching.
-Evaluating `parse(Code)(":(Int)")` should yield `Int :: ReservedSymbol`. Ordinary
-quoted names such as `:Foo` become `:Foo :: QuotedSymbol` (Symbols only) once the
-full Code grammar exists; do not invent QuotedSymbol before that.
+Code gains `QuotedSymbol` (Symbols only): `:Foo` parses as `:Foo :: QuotedSymbol` and `:Int` is rejected.
 Environments, primitive callable vocabulary and closed dependencies are explicit.
 Start a portable closed-callable subset without claiming general closure transport.
 An embedding adapter may handle external files/console; no source-language native

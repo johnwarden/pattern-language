@@ -54,8 +54,7 @@ Types are ordinary values, and all applications use argument packs. There is no
 angle-bracket application or generic AST node. Primitive Int, Float, Float32, Bool,
 String, ReservedSymbol, Any, Expression, Body and Type are self-evaluating language
 atoms. `Symbol` is a prelude union, not a reserved primitive.
-There is no `Number` alias; that name is withdrawn until its definition is decided.
-Other bare names resolve their bindings;
+There is no `Number` type yet. Other bare names resolve their bindings;
 Foo is an error when unbound, :Foo is a symbol, and Foo(1) uses a constructor tag.
 Named type factories and defined functions still dispatch on matching argument packs.
 
@@ -835,10 +834,10 @@ See [TYPE-VALUES.md](TYPE-VALUES.md) for examples and explicit limits.
 ## One value equality
 
 Primitive names are `ReservedSymbol` values: `Int` inspects as
-`Int :: ReservedSymbol`. Evaluating `:Int` and `parse(Code)(":Int")` are
-`E_QUOTED_PRIMITIVE`. `parse(Code)(":(Int)")` succeeds. `ReservedSymbol` is
-disjoint from `UpperCamelSymbol`. `type Int` is the Int type.
-`:(Int)` is the quoted Code expression `Int`, not the `Int` value. Type(Int) has
+`Int :: ReservedSymbol`, and the Int type `type Int` compares equal to it. `ReservedSymbol` is disjoint from `UpperCamelSymbol`.
+Quoting a primitive name has no special rule: `:Int` and `:(Int)` evaluate to
+the uninterpreted `Int :: Expression`, and `parse(Code)(":(Int)")` is
+`:(Int) :: Code`. Type(Int) has
 a distinct wrapped tree. Their compiled
 matchers are caches and do not participate in comparison. Canonical uncached type
 trees work in annotations, generic calls, and matching, and have the same global
