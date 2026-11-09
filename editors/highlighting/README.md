@@ -34,12 +34,17 @@ performed in the development environment.
 The package selects **Pattern Language Dark** for `.pattern` and `.test` files.
 Four roles have deliberately different colors, using their existing token scopes:
 
-| Role                                | Dark             | Light            |
-| ----------------------------------- | ---------------- | ---------------- |
-| Numbers                             | Orange `#F4A261` | Orange `#9C4B00` |
-| UpperCamel and type names           | Cyan `#62D6E8`   | Blue `#006B88`   |
-| Control, declaration and test words | Purple `#C792EA` | Purple `#7A3EAC` |
-| Quoted symbols                      | Green `#B7D97A`  | Green `#426F13`  |
+| Role                                            | Dark             | Light            |
+| ----------------------------------------------- | ---------------- | ---------------- |
+| Numbers                                         | Orange `#F4A261` | Orange `#9C4B00` |
+| UpperCamel and type names                       | Cyan `#62D6E8`   | Blue `#006B88`   |
+| Control, declaration and test words             | Purple `#C792EA` | Purple `#7A3EAC` |
+| Quoted, UpperSnake and constructor-like symbols | Green `#B7D97A`  | Green `#426F13`  |
+
+Tight UpperCamel call heads use the symbol color: `Some` in `Some(Int)` is green,
+and `Int` remains blue. Bare UpperCamel names retain the type-name color, as do
+built-in names in call position. This is a lexical cue for the call shape;
+resolving user-defined constructors and type factories remains semantic work.
 
 To use the light palette, open a Pattern Language file, choose **Preferences →
 Settings – Syntax Specific**, and add this setting to the user settings:
@@ -144,5 +149,5 @@ With a Pattern Language file active, the Sublime console can check the resolved
 foregrounds against the palette table:
 
 ```python
-[(scope, view.style_for_scope("source.pattern-language " + scope + ".pattern-language")["foreground"]) for scope in ("constant.numeric", "entity.name.type", "keyword.control", "constant.other.symbol")]
+[(scope, view.style_for_scope("source.pattern-language " + scope + ".pattern-language")["foreground"]) for scope in ("constant.numeric", "entity.name.type", "keyword.control", "constant.other.symbol", "constant.other.symbol.constructor", "constant.other.symbol.upper-snake")]
 ```

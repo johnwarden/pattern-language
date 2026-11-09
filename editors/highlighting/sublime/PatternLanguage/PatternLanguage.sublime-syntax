@@ -55,6 +55,8 @@ contexts:
       scope: entity.name.tag.pattern-language
     - match: (?<![\p{L}\p{N}_])(?:(?:[A-Z]{1,2}_|[A-Z]{3,}[A-Z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z][A-Z0-9]*)+))(?![\p{L}\p{N}_])
       scope: constant.other.symbol.upper-snake.pattern-language
+    - match: (?<![\p{L}\p{N}_])(?:[A-Z][A-Za-z0-9]*)(?![\p{L}\p{N}_])(?=\()
+      scope: constant.other.symbol.constructor.pattern-language
     - match: (?<![\p{L}\p{N}_])(?:[A-Z][A-Za-z0-9]*)(?![\p{L}\p{N}_])
       scope: entity.name.type.pattern-language
     - match: (?<![\p{L}\p{N}_])(?:_(?:[0-9]+)?)(?![\p{L}\p{N}_])

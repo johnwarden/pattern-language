@@ -41,6 +41,9 @@ const atoms = [
   match(words(lexical.intrinsicTypes), "support.type"),
   match(`${word("[a-z][A-Za-z0-9]*")}(?=:(?!:))`, "entity.name.tag"),
   match(word(p.upperSnake), "constant.other.symbol.upper-snake"),
+  // A tight UpperCamel call head is a lexical constructor-like shape. Built-in
+  // names above retain their roles; resolving user type factories is semantic.
+  match(`${word("[A-Z][A-Za-z0-9]*")}(?=\\()`, "constant.other.symbol.constructor"),
   match(word("[A-Z][A-Za-z0-9]*"), "entity.name.type"),
   match(word(p.wildcard), "variable.language.wildcard"),
   match(word("[a-z][A-Za-z0-9]*"), "variable.other"),

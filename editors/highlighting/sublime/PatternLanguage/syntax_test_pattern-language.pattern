@@ -52,6 +52,44 @@ ABC_bad lower_snake αname
 #       ^^^^^^^^^^^ source.pattern-language - variable.other
 #                   ^^^^^ source.pattern-language - variable.other
 
+# tight UpperCamel call heads are constructor-like symbols after built-ins
+Some(Int)
+# <- constant.other.symbol.constructor - entity.name.type
+#^^^ constant.other.symbol.constructor - entity.name.type
+#    ^^^ support.type - constant.other.symbol
+Outer(Some(String), Pair(Float, Rational))
+# <- constant.other.symbol.constructor
+#^^^^ constant.other.symbol.constructor
+#     ^^^^ constant.other.symbol.constructor
+#                   ^^^^ constant.other.symbol.constructor
+#          ^^^^^^ support.type
+#                        ^^^^^ support.type
+#                               ^^^^^^^^ support.type
+Int(String) Float(Rational) Type(Bool)
+# <- support.type - constant.other.symbol
+#^^ support.type - constant.other.symbol
+#           ^^^^^ support.type - constant.other.symbol
+#                           ^^^^ support.type - constant.other.symbol
+#                                ^^^^ support.type - constant.other.symbol
+Some Some (Int)
+# <- entity.name.type - constant.other.symbol
+#^^^ entity.name.type - constant.other.symbol
+#    ^^^^ entity.name.type - constant.other.symbol
+Factory(Int) Factory
+# <- constant.other.symbol.constructor
+#^^^^^^ constant.other.symbol.constructor
+#            ^^^^^^^ entity.name.type - constant.other.symbol
+ABC(Int) A_(String)
+# <- constant.other.symbol.upper-snake
+#^^ constant.other.symbol.upper-snake
+#        ^^ constant.other.symbol.upper-snake
+:Some(Int) :Int(String)
+#^^^^ constant.other.symbol - constant.other.symbol.constructor
+#           ^^^ constant.other.symbol - support.type
+Some?(Int)
+# <- entity.name.type - constant.other.symbol
+#^^^ entity.name.type - constant.other.symbol
+
 # patterns bindings macros and test DSL use ordinary lexical scopes
 todo test "captures"
 # <- keyword.other.test

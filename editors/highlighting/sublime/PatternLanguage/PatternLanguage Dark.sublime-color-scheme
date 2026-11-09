@@ -39,8 +39,8 @@
       "foreground": "#C792EA",
     },
     {
-      "name": "Quoted symbols and UpperSnake symbols: green",
-      "scope": "source.pattern-language constant.other.symbol.pattern-language",
+      "name": "Quoted, UpperSnake and constructor-like symbols: green",
+      "scope": "source.pattern-language constant.other.symbol",
       "foreground": "#B7D97A",
     },
     {

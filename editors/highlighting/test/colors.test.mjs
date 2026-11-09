@@ -32,6 +32,10 @@ const source = [
   ":None :UpperCamel :String :if",
   'value = $"$(42) $(UpperCamel) $(:None)"',
   '"42 UpperCamel if :None" # 42 UpperCamel if :None',
+  "Some(Int) Outer(Some(String), Pair(Float, Rational)) Factory(Int)",
+  "Int(String) Float(Rational) Type(Bool)",
+  "BareType Some Some (Int) Some?(Int) Factory",
+  "ABC(Int) A_(String) :Some(Int) :Int(String)",
 ].join("\n");
 
 function luminance(color) {
@@ -116,8 +120,9 @@ for (const scheme of schemes) {
         theme: theme.name,
       });
       const colorAt = (lineNumber, text, offset = 0) => {
-        const column = source.split("\n")[lineNumber].indexOf(text) + offset;
-        assert.ok(column >= 0, text);
+        const found = source.split("\n")[lineNumber].indexOf(text);
+        assert.ok(found >= 0, text);
+        const column = found + offset;
         const token = tokens[lineNumber].find((item) => {
           const start =
             item.offset -
@@ -181,6 +186,61 @@ for (const scheme of schemes) {
         expected.number,
         "string text is not recolored as a number",
       );
+      for (const spelling of [
+        "Some(Int)",
+        "Outer",
+        "Some(String)",
+        "Pair",
+        "Factory",
+      ])
+        assert.equal(
+          colorAt(6, spelling),
+          expected.symbol,
+          `tight call head ${spelling}`,
+        );
+      for (const spelling of ["Int", "String", "Float", "Rational"])
+        assert.equal(
+          colorAt(6, spelling),
+          expected.type,
+          `primitive argument ${spelling}`,
+        );
+      for (const spelling of [
+        "Int",
+        "String",
+        "Float",
+        "Rational",
+        "Type",
+        "Bool",
+      ])
+        assert.equal(
+          colorAt(7, spelling),
+          expected.type,
+          `built-in call head or argument ${spelling}`,
+        );
+      for (const spelling of [
+        "BareType",
+        "Some",
+        "Some (Int)",
+        "Some?(Int)",
+        "Factory",
+      ])
+        assert.equal(
+          colorAt(8, spelling),
+          expected.type,
+          `ordinary UpperCamel ${spelling}`,
+        );
+      for (const spelling of ["ABC", "A_"])
+        assert.equal(
+          colorAt(9, spelling),
+          expected.symbol,
+          `UpperSnake ${spelling}`,
+        );
+      for (const spelling of [":Some", ":Int"])
+        assert.equal(
+          colorAt(9, spelling, 1),
+          expected.symbol,
+          `quoted head ${spelling}`,
+        );
       assert.equal(new Set(Object.values(expected)).size, 4);
       for (const color of Object.values(expected)) {
         const [light, dark] = [
