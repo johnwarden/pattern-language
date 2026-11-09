@@ -168,7 +168,7 @@ const failures: [string, string, RegExp][] = [
     /not exactly representable as Float/,
   ],
   [
-    "withdrawn Number type",
+    "no Number type",
     "0.1 :: Number",
     /unbound/,
   ],
