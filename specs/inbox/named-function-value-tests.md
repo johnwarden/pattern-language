@@ -8,15 +8,18 @@ is approved, but its complete representation-level test conversion is pending.
 
 ## Existing executable todos
 
-The source file has eleven cases and thirteen todo assertions. It checks:
+The source file has fifteen cases and seventeen todo assertions. It checks:
 
 1. Bind, pass, return and directly supply a named predicate to `where`.
 2. Capture a value despite a caller parameter with the same name.
 3. Retain two levels of referenced definitions despite caller-local replacements.
 4. Call a mutually recursive group through a stored function value.
-5. Preserve complete successive argument packs and ordinary partial application.
-6. Avoid evaluating an unused failing default when closing the function.
-7. Return a named function that captures a departed scope's parameter.
+5. Preserve complete successive argument packs, labeled parameter binders, rest
+   capture binders and ordinary partial application.
+6. Avoid evaluating an unused failing default when closing the function, while
+   retaining captured values used by a selected default.
+7. Return a named function that captures a departed scope's parameter, or uses
+   that scope's local type and accessor definitions.
 8. Preserve identity through aliases, while keeping structurally different
    implementations unequal even when their behavior agrees.
 

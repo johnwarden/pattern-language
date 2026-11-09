@@ -62,6 +62,45 @@ test "Closing a named function does not evaluate unused defaults"
   result 8 :: Int
 end
 
+test "Named function values preserve labeled parameter binders"
+  def join(first: String, second: String) first + ":" + second
+
+  todo expect
+    f = join
+    f(second: "b", first: "a")
+  result "a:b" :: String
+end
+
+test "Named function values preserve rest capture binders"
+  def collect(xs... :: Int*) [xs...] :: (concrete [_... :: Int*])
+
+  todo expect
+    f = collect
+    f(1 :: Int, 2 :: Int, 3 :: Int)
+  result [1, 2, 3] :: (concrete [_... :: Int*])
+end
+
+test "Named function defaults retain their captured values"
+  fallback = 3 :: Int
+  def choose(value: Int = fallback) value
+  def invoke(f, fallback :: Int) f()
+
+  todo expect invoke(choose, 100 :: Int) result 3 :: Int
+end
+
+test "A returned named function retains local type and accessor definitions"
+  def makeReader()
+    type Box concrete Box(value :: Int)
+    def read(box :: Box) box.value
+    read
+  end
+
+  todo expect
+    f = makeReader()
+    f(Box(3))
+  result 3 :: Int
+end
+
 test "A returned named function retains a departed scope's captured value"
   def makeShift(offset :: Int)
     def shift(n :: Int) n + offset
@@ -105,7 +144,7 @@ test "A named function can be passed and returned as a value"
 end
 
 test "A where predicate accepts the value of a named function"
-  def Rectangle type Rect(width :: Int, height :: Int)
+  type Rectangle concrete Rect(width :: Int, height :: Int)
   def isSquare(r :: Rectangle) r.width == r.height
 
   assert

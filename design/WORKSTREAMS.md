@@ -30,15 +30,17 @@ The concrete/abstract declaration syntax in C05/C06/C13/C15/C16, its plain
 type-producing counterpart, and parameterized C05/C12/C18 cases are explicit
 roadmap targets. #31's value alignment and #32's declaration-product separation
 are integrated. #39's inbox handoff is closed pending clarification in the project
-chat and approved spec records; its branch is preserved for reference. #48 is the
-next declaration-syntax handoff. The spec queue lives directly in `specs/` on
-master; #52's draft is retired after carrying its content onto master.
+chat and approved spec records; its branch is preserved for reference. #48's
+non-generic concrete/abstract syntax is integrated. The spec queue lives directly
+in `specs/` on master; #52's draft is retired. See the
+[proposed todo implementation queue](workstreams/08-todo-implementation-queue.md)
+for the next coherent slices and their dependencies.
 
-[#48](https://github.com/johnwarden/pattern-language/pull/48) is claimed by
-session `/root/declaration_syntax_48`, targeting the existing C05/C06/C13/C16
-declaration and type-expression assertions. Its
-[scope](workstreams/07-declaration-syntax-conformance.md) records shared methods
-and validation. The separate test-migration agent retains its own branch.
+[#48](https://github.com/johnwarden/pattern-language/pull/48) is merged after
+independent review and passing CI. Its
+[scope](workstreams/07-declaration-syntax-conformance.md) records the fulfilled
+non-generic C05/C06/C13/C16 assertions and remaining obligations. The separate
+test-migration agent retains its own workstream.
 
 Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): discuss decisions in the project
 chat, commit them to `specs/approved/` on master, write or revise executable contracts,

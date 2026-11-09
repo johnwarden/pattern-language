@@ -43,7 +43,8 @@ valid aliases is not settled here.
 
 [named-function-values.test](../../tests/specification/named-function-values.test)
 contains todo checks for captured values, transitive referenced definitions,
-finite recursive calls, successive packs, lazy defaults, returned captures and
+finite recursive calls, successive packs, label/rest binders, captured/lazy
+defaults, returned captures, local type/accessor definitions and
 structural identity, alongside the original callable-use cases. Those behavioral
 tests alone do not prove a portable representation without a hidden environment.
 
