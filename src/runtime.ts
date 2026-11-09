@@ -1591,16 +1591,7 @@ export class Interpreter {
     }
     if (n.kind === "symbol") {
       if (n.quoted) {
-        if (isSelfEvaluating(n.name))
-          throw new LanguageError(
-            "quoted " +
-              n.name +
-              " is not a symbol; " +
-              n.name +
-              " is a primitive",
-            n.span,
-            { code: "E_QUOTED_PRIMITIVE", phase: "evaluate" },
-          );
+        if (isSelfEvaluating(n.name)) throw this.quotedPrimitive(n);
         return singleton(this.symbolValue(n.name));
       }
       const primitive = primitiveNames.get(n.name);
@@ -1867,6 +1858,7 @@ export class Interpreter {
         body: this.evaluateFields(n.body, env),
       });
     if (n.head.kind === "symbol" && n.head.quoted) {
+      if (isSelfEvaluating(n.head.name)) throw this.quotedPrimitive(n.head);
       if (n.head.name === "NumericSource") {
         const args = this.evaluateFields(n.body, env);
         const spelling = unwrap(args[0]?.value);
@@ -2672,6 +2664,7 @@ export class Interpreter {
     dimensions = 0,
     allowProjection = false,
   ): PatternCompiler<Value> {
+    const phase = typeMode ? "declaration" : "match";
     const lookup = (n: Syntax) =>
       lexicalScopes.get(n) ??
       (n.kind === "apply"
@@ -2792,6 +2785,15 @@ export class Interpreter {
                 ? this.typePattern(type, !typeMode, allowProjection)
                 : undefined;
             }
+            // Reserved names are never quoted, so a reserved head in a type
+            // pattern names the constructor rather than calling the primitive.
+            if (
+              typeMode &&
+              n.head.kind === "symbol" &&
+              !n.head.quoted &&
+              isSelfEvaluating(n.head.name)
+            )
+              return undefined;
             if (
               typeMode &&
               this.isTypeCall(n, lookup(n)) &&
@@ -2809,7 +2811,11 @@ export class Interpreter {
         defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {
-          if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
+          if (n.kind === "symbol") {
+            if (n.quoted && isSelfEvaluating(n.name))
+              throw this.quotedPrimitive(n, phase);
+            return literalPattern(valSymbol(n.name));
+          }
           // Application heads are structural patterns, not unary type-factory
           // calls: the head of (a :* b) is the partial tree *(a).
           if (
@@ -2885,6 +2891,8 @@ export class Interpreter {
         },
         atom: (n) => {
           if (n.kind === "symbol") {
+            if (n.quoted && isSelfEvaluating(n.name))
+              throw this.quotedPrimitive(n, phase);
             const binding = lookup(n).get(n.name);
             if (!n.quoted && primitiveNames.has(n.name)) return reference(n);
             if (!n.quoted && constantNames.has(n.name))
@@ -3761,6 +3769,16 @@ export class Interpreter {
         };
       },
     };
+  }
+  private quotedPrimitive(
+    n: Extract<Syntax, { kind: "symbol" }>,
+    phase: "evaluate" | "declaration" | "match" = "evaluate",
+  ): LanguageError {
+    return new LanguageError(
+      "quoted " + n.name + " is not a symbol; " + n.name + " is a primitive",
+      n.span,
+      { code: "E_QUOTED_PRIMITIVE", phase },
+    );
   }
   private reserved(name: string): Field<Value>[] {
     const fields = this.check(

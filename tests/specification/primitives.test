@@ -50,6 +50,14 @@ test "Quoted primitive names in Code"
   expect :Int error "E_QUOTED_PRIMITIVE"
   expect :True error "E_QUOTED_PRIMITIVE"
   expect Int == :Int error "E_QUOTED_PRIMITIVE"
+  expect :String(:A) error "E_QUOTED_PRIMITIVE"
+  expect
+    type :Int
+  error "E_QUOTED_PRIMITIVE"
+  expect
+    type :String(:A)
+  error "E_QUOTED_PRIMITIVE"
+  assert (type String(:A)) == Type(Apply(Literal(String), Fields(:A)))
   expect :(Int) result Int :: Expression
   expect parse(Code)(":Int") result :Int :: Code
   expect parse(Code)(":(Int)") result :(Int) :: Code
