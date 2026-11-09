@@ -167,3 +167,7 @@ and PR; leave unclear
 semantics explicitly pending with the missing decision. Comments and placeholder
 assertions do not cover the proposal. Keep inbox optional in default runs and
 runnable by explicit path. Do not change an expected result to observed output.
+
+Do not comment out authored inbox cases or replace them with no-op assertions to
+get green checks. Inbox discovery is already optional; keep proposals visible
+and restore temporarily commented code before triage, preserving open questions.

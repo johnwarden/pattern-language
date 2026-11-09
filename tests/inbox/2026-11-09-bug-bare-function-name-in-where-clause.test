@@ -2,17 +2,16 @@
 test "BUG: bare function name in where clause"
 	def isSquare(r :: Rectangle) r.width == r.height
 	def Rectangle type Rect(width :: Int, height :: Int)
-	
-	assert 1 == 1
-	# test "this works"
-	# 	def Square type Rectangle .where r -> isSquare(r)
-	# 	(s :: Square) = Rect(2, 2)
-	# end
 
-	# todo test "But this produces an error"
-	# 	def Square type Rectangle .where r -> isSquare(r)
-	# 	(s :: Square) = Rect(2, 2)
-	# end
+	test "this works"
+		def Square type Rectangle .where r -> isSquare(r)
+		(s :: Square) = Rect(2, 2)
+	end
+
+	todo test "But this produces an error"
+		def Square type Rectangle .where r -> isSquare(r)
+		(s :: Square) = Rect(2, 2)
+	end
 end
 
 

@@ -98,6 +98,11 @@ Read the submitted source and comments before classifying it. Preserve its inten
 an obsolete assertion delimiter or placeholder `assert 1 == 1` is not evidence
 that the underlying proposal is implemented or covered.
 
+Keep authored draft examples visible. Do not comment them out or substitute
+passing no-op assertions to satisfy CI; optional inbox discovery already keeps
+unapproved drafts out of default runs. Restore temporarily commented examples
+before triage, preserving their intended expectations and open questions.
+
 Split a submission when it contains both settled behavior and open questions.
 Each settled portion should take one of these routes:
 
@@ -123,8 +128,9 @@ no-op checks or an expected failure caused only by a different unsupported synta
 
 ## Current order
 
-#31 and #32 are integrated. Complete #39's specified boundary regressions and
-make the concrete/abstract declaration surface in #48 work against
+#31 and #32 are integrated. #39's inbox handoff is closed while its needed
+decisions are clarified in the project chat and captured as approved specs.
+Make the concrete/abstract declaration surface in #48 work against
 the existing named cases, then work through their generic, projection, evidence
 and interoperability obligations in explicit slices. Keep the later internal
 foundation handoffs #43-#45 parked until these priorities are addressed and those

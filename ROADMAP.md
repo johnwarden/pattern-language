@@ -160,8 +160,8 @@ The current declaration syntax includes these targets:
 | `type NonZero refinement Rational .where nonZero` | C07-C10: refinement syntax, then the separately specified evidence and overload rules |
 
 #31's value alignment and #32's declaration-product separation are integrated.
-#39's concrete binding/match regressions remain pending at the shared matcher
-boundary. #48 is the next declaration-syntax handoff; #52 holds the active spec
+#39's inbox handoff is closed; its pending questions return to the project chat
+before approved specs and implementation PRs. #48 is the next declaration-syntax handoff; #52 holds the active spec
 queue. Make the concrete/abstract declaration and type-producing syntax above work
 against its existing cases; isolate parser support from later generic/evidence
 obligations so failures identify the actual missing feature. Preserve current

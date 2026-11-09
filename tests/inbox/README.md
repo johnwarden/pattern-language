@@ -14,12 +14,18 @@ runner support during triage. See [the lifecycle](../../specs/README.md).
 
 | Submission                                                    | Current disposition                                                                      | Destination / next action                                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `2026-raw-and-typed-expressions.test`                         | Split: concrete-boundary regression; raw-expression mode remains pending                 | [#39](https://github.com/johnwarden/pattern-language/pull/39) seeds `tests/bindings/concrete-value-boundary.test`: ordinary bindings/dispatch cannot open a concrete value; explicit match can. The two negative cases need implementation. Keep the optional raw runtime Expression mode question open. |
-| `2026-11-09-bug-bare-function-name-in-where-clause.test`      | Pending a concrete bare-name example and the named-function-value decision               | The two commented examples currently contain the same lambda; `assert 1 == 1` covers neither. Clarify the intended bare-name form before adding its specification todo or claiming a bug. A supported lambda control can become an example; do not enable first-class overload sets implicitly.          |
-| `2026-09-11-printing-values-of-ambiguous-concrete-types.test` | Split: nested-absence semantics already specified; exact printing intent remains pending | Active nested-option cases live in `tests/bindings/nested-option-designation.test` and `tests/specification/concrete-unions.test`. Resolve the outer `String` versus `String??` tag and global/local text intent before adopting new goldens. The original `value` clause is obsolete.                   |
+| `2026-raw-and-typed-expressions.test` | Original code restored; raw runtime Expression/mode decision pending | [Raw-expression proposal](../../specs/inbox/raw-expression-values.md). #39 is closed at Jonathan's request; its branch is preserved as a regression seed, not an active implementation. |
+| `2026-11-09-bug-bare-function-name-in-where-clause.test` | Both examples restored; bare-name form and callable policy pending | [Named-predicate proposal](../../specs/inbox/named-where-predicates.md). Both authored examples currently contain the same lambda. Preserve that source until the intended difference is clarified here in the project chat. |
+| `2026-09-11-printing-values-of-ambiguous-concrete-types.test` | Nested-absence semantics already specified; exact printing intent pending | [Value-text proposal](../../specs/inbox/ambiguous-value-text.md). Existing nested-option and concrete-union tests cover branch identity. The authored text/tag expectations remain unchanged. |
 
-This register records triage, not completed implementation. #39 is still a draft;
-its regression seed does not mean an implementing agent has claimed it. Preserve
-the unresolved parts until Jonathan supplies their decisions. When destinations
-are implemented or accepted into the specification/examples, update the links and
-retire the covered inbox content so it cannot become a competing contract.
+This register records triage, not completed implementation. The inbox-processing
+handoff #39 is closed; discussion and clarification belong in the project chat.
+After agreement, create approved records, then write or update actual contracts
+in a PR for those records. Preserve unresolved parts until the author decides.
+
+The commented code in the first two files was restored at Jonathan's request and
+their placeholder `assert 1 == 1` checks were removed. These submissions retain
+their original draft syntax, including obsolete `value` clauses and nested test
+examples; explicit runs may report syntax errors. They remain optional in default
+runs. Do not comment out meaningful examples or replace them with passing no-ops
+to get green checks; discovery already provides the optional inbox boundary.

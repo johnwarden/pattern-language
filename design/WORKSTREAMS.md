@@ -29,7 +29,8 @@ Implement accepted existing specification todos before starting new foundations.
 The concrete/abstract declaration syntax in C05/C06/C13/C15/C16, its plain
 type-producing counterpart, and parameterized C05/C12/C18 cases are explicit
 roadmap targets. #31's value alignment and #32's declaration-product separation
-are integrated. #39's concrete-boundary regressions remain pending; #48 is the
+are integrated. #39's inbox handoff is closed pending clarification in the project
+chat and approved spec records; its branch is preserved for reference. #48 is the
 next declaration-syntax handoff, and #52 holds the current spec queue.
 
 Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): discuss decisions in the project
