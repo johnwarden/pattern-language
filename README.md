@@ -44,6 +44,8 @@ configuration. Analysis never executes open programs or tests.
 - [Decision record and 27 design cases](design/LANGUAGE-DECISIONS.md): reasons,
   statuses and decision-to-case coverage.
 - [Test-suite milestone](design/TEST-SUITE.md): revised DSL, todo and selective migration.
+- [Development workflow](design/TESTING-WORKFLOW.md): specification-first changes,
+  todo promotion and inbox triage.
 - [Vision](VISION.md) and [engineering checklist](TODO.md).
 
 Working prototype syntax is documented separately in the

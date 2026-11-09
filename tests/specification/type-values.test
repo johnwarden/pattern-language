@@ -30,38 +30,18 @@ test "C05 types are structural values"
   end
 
   todo assert
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    t = Rectangle
-    u = concrete Rect(Rational, Rational)
-    assert t == u
     type Box<T> concrete Box(T)
     (Box<String> == (concrete Box(String)))
   end
 
   todo expect
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    t = Rectangle
-    u = concrete Rect(Rational, Rational)
-    assert t == u
     type Box<T> concrete Box(T)
-    assert Box<String> == (concrete Box(String))
     b = (Box("hello") :: Box<String>)
-    Box(text) = b
-    text
+    match b
+      Box(text) -> text
+    end
   result
-    (
-      "hello"
-    ) :: (
-      type Rectangle concrete Rect(w :: Rational, h :: Rational)
-      t = Rectangle
-      u = concrete Rect(Rational, Rational)
-      assert t == u
-      type Box<T> concrete Box(T)
-      assert Box<String> == (concrete Box(String))
-      b = (Box("hello") :: Box<String>)
-      Box(text) = b
-      String
-    )
+    "hello" :: String
   end
 end
 
@@ -72,5 +52,5 @@ test "C06 equal spellings can belong to different concrete spaces"
     red = (:Red :: PrimaryColor)
     stopped = (:Red :: TicketStatus)
     (red == stopped)
-  error "incomparable concrete spaces"
+  error "E_INCOMPARABLE_TYPES"
 end

@@ -49,7 +49,10 @@ u = concrete Rect(Float32,Float32)
 The declaration binds/registers the type name and local accessor/printing metadata.
 Plain type construction is capture-free and must not install methods. This makes
 ordinary type values storable, passable and comparable without a declaration effect.
-The exact keyword/sugar remains provisional where the decision record says so.
+The concrete/abstract declaration and type-expression forms already written in
+`tests/specification/` are current implementation targets; their missing support
+is tracked as todo. Additional qualifiers and policies remain provisional where
+the decision record says so. See the roadmap's immediate conformance priorities.
 
 Local aliases and parameterized display names do not change structural identity.
 Functional equality alone does not justify banning multiple names for an equal
@@ -71,10 +74,11 @@ concrete types can contain abstract fields. Whether an explicitly written single
 abstract union is rejected or a computed singleton collapses remains a policy choice.
 Terminology does not require adding a new runtime wrapper for an abstract label.
 
-Parameterized factories continue to operate on ordinary type values. Angle
-parameters such as `<T>` are proposed declaration/application sugar; they do not
-collapse the runtime pack distinction between f(a)(b) and f(a,b). The bootstrap
-currently uses ordinary packs, for example `List(Int)`.
+Parameterized factories continue to operate on ordinary type values. The simple
+angle declaration/application forms in C05/C12/C18 are current todo targets; they
+do not collapse the runtime pack distinction between f(a)(b) and f(a,b). The
+bootstrap currently uses ordinary packs, for example `List(Int)`. Unspecified
+parameter constraints and family-recovery policies remain separate decisions.
 
 Bare-family facets, for example Rectangle admitting some Rectangle<N>, and MemberOf
 constraints remain proposals. Parameters need not be recoverable from a descriptor:
