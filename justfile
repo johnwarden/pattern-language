@@ -102,6 +102,9 @@ build:
 lint:
     shellcheck .githooks/pre-commit .githooks/pre-push test/cursor_dockerfile_devbox_align_test.sh test/just_recipes_test.sh
 
+install-sublime-syntax-highlighting:
+    python3 editors/highlighting/package_sublime.py --output PatternLanguage.sublime-package && mv PatternLanguage.sublime-package ~/Library/Application\ Support/Sublime\ Text\ 3/Installed\ Packages
+
 # Every CI gate. Build before host tests so playground checks see the bundle.
 # Host tests and the source suite run together after that; their logs print in order.
 check:
