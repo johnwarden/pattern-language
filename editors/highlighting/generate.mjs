@@ -25,9 +25,10 @@ const typedHead = word(p.identifier);
 const quoteScope = s("punctuation.definition.string.begin");
 
 const atoms = [
+  match("(:)(::)", undefined, { 1: capture(s("punctuation.definition.symbol")), 2: capture(s("constant.other.symbol")) }),
   match("::", "keyword.operator.type"),
   match("\\.\\.\\.|…", "keyword.operator.rest"),
-  match(`(:)((?:${p.identifier}|${p.wildcard})(?![\\p{L}\\p{N}_])|\\[\\]|\\{\\}|${p.operators})`, undefined, {
+  match(`(?<![\\p{L}\\p{N}_])(:)((?:${p.identifier}|${p.wildcard})(?![\\p{L}\\p{N}_])|\\[\\]|\\{\\}|${p.operators})`, undefined, {
     1: capture(s("punctuation.definition.symbol")),
     2: capture(s("constant.other.symbol")),
   }),

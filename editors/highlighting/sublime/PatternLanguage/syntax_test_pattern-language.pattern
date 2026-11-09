@@ -50,6 +50,7 @@ ABC_bad lower_snake αname
 # <- source.pattern-language - constant.other.symbol - variable.other
 #^^^^^^ source.pattern-language - constant.other.symbol - variable.other
 #       ^^^^^^^^^^^ source.pattern-language - variable.other
+#                   ^^^^^ source.pattern-language - variable.other
 
 # patterns bindings macros and test DSL use ordinary lexical scopes
 todo test "captures"
@@ -80,6 +81,11 @@ end
 concrete refinement FutureKeyword
 # <- variable.other - keyword - storage
 #^^^^^^^ variable.other - keyword - storage
+{label:value, other:None} :::String
+#^^^^^ entity.name.tag
+#      ^^^^^ variable.other - constant.other.symbol
+#                   ^^^^ entity.name.type - constant.other.symbol
+#                          ^^ constant.other.symbol
 
 # prefix postfix and infix punctuation do not bake in optional semantics
 x~ x! x@ x$ x% x^ x& x* x? @(String) (s :: String)@ a + b

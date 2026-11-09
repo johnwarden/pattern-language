@@ -48,12 +48,13 @@
       { "line": 0, "text": ":+", "offset": 1, "scope": "constant.other.symbol" },
       { "line": 0, "text": ":(x)", "length": 1, "scope": "punctuation.definition.quotation" },
       { "line": 1, "text": "ABC_bad", "not": ["constant.other.symbol", "variable.other"] },
-      { "line": 1, "text": "lower_snake", "not": ["variable.other"] }
+      { "line": 1, "text": "lower_snake", "not": ["variable.other"] },
+      { "line": 1, "text": "αname", "not": ["variable.other"] }
     ]
   },
   {
     "name": "patterns bindings macros and test DSL use ordinary lexical scopes",
-    "source": "todo test \"captures\"\n  def Vector(T, Ns...) type [T...]\n  macro accessor(x) x.width\n  match x (s :: String)@\n  expect [s, tail…] result {name: s, rest: tail} :: Vector(String)\n  assert True error \"mismatch\"\n  legacy expect False result False :: Bool\nend\nconcrete refinement FutureKeyword",
+    "source": "todo test \"captures\"\n  def Vector(T, Ns...) type [T...]\n  macro accessor(x) x.width\n  match x (s :: String)@\n  expect [s, tail…] result {name: s, rest: tail} :: Vector(String)\n  assert True error \"mismatch\"\n  legacy expect False result False :: Bool\nend\nconcrete refinement FutureKeyword\n{label:value, other:None} :::String",
     "checks": [
       { "line": 0, "text": "todo", "scope": "keyword.other.test" },
       { "line": 0, "text": "test", "scope": "keyword.other.test" },
@@ -70,7 +71,11 @@
       { "line": 5, "text": "True", "scope": "constant.language" },
       { "line": 6, "text": "legacy", "scope": "keyword.other.test" },
       { "line": 7, "text": "end", "scope": "keyword.control" },
-      { "line": 8, "text": "concrete", "scope": "variable.other", "not": ["keyword", "storage"] }
+      { "line": 8, "text": "concrete", "scope": "variable.other", "not": ["keyword", "storage"] },
+      { "line": 9, "text": "label", "scope": "entity.name.tag" },
+      { "line": 9, "text": "value", "scope": "variable.other", "not": ["constant.other.symbol"] },
+      { "line": 9, "text": "None", "scope": "entity.name.type", "not": ["constant.other.symbol"] },
+      { "line": 9, "text": ":::String", "offset": 1, "length": 2, "scope": "constant.other.symbol" }
     ]
   },
   {

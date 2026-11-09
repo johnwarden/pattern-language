@@ -25,11 +25,15 @@ contexts:
     - include: groups
     - include: atoms
   atoms:
+    - match: (:)(::)
+      captures:
+        "1": punctuation.definition.symbol.pattern-language
+        "2": constant.other.symbol.pattern-language
     - match: "::"
       scope: keyword.operator.type.pattern-language
     - match: \.\.\.|…
       scope: keyword.operator.rest.pattern-language
-    - match: (:)((?:(?:[A-Za-z][A-Za-z0-9]*|[A-Z]{1,2}_|[A-Z]{3,}[A-Z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z][A-Z0-9]*)+)|_(?:[0-9]+)?)(?![\p{L}\p{N}_])|\[\]|\{\}|[$+*/=<>!&|^%~?@\\-]+)
+    - match: (?<![\p{L}\p{N}_])(:)((?:(?:[A-Za-z][A-Za-z0-9]*|[A-Z]{1,2}_|[A-Z]{3,}[A-Z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z][A-Z0-9]*)+)|_(?:[0-9]+)?)(?![\p{L}\p{N}_])|\[\]|\{\}|[$+*/=<>!&|^%~?@\\-]+)
       captures:
         "1": punctuation.definition.symbol.pattern-language
         "2": constant.other.symbol.pattern-language
