@@ -461,6 +461,7 @@ assert (Int .matches UpperCamelSymbol) == False
 
 The type description of `type Int` is the reserved symbol itself, not `:Int`.
 `Symbol` is not reserved; the prelude defines it as the union of the four ordinary classes.
+Prelude `not : Bool -> Bool` is the ordinary function `def not(x :: Bool) x == False`.
 
 `True` and `False` are reserved names but not `ReservedSymbol` values. They are
 `Bool` values, the same type as computed comparison results (L10):

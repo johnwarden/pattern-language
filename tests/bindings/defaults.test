@@ -19,7 +19,7 @@ test "Declarations cannot rewrite symbolic construction"
 
   expect Rectangle(2, 3) result Rectangle(2, 3) :: Expression
 
-  assert False == Rect(2, 3) .matches (type Rectangle)
+  assert not(Rect(2, 3) .matches (type Rectangle))
 end
 
 test "Destructuring defaults bind captures without adding fields"

@@ -45,7 +45,7 @@ test "Postfix type descriptions preserve matching after round trip"
   assert T == t
   assert 1@ .matches T
   assert 1@ .matches t
-  assert False == (Postfix(:@, 1) .matches t)
+  assert not(Postfix(:@, 1) .matches t)
 end
 
 test "Postfix values can be type factory arguments"
@@ -53,7 +53,7 @@ test "Postfix values can be type factory arguments"
   t = Box(1@)
   assert t == parse(Type)(toString(Type)(t))
   assert :Box(1@) .matches t
-  assert False == (:Box(Postfix(:@, 1)) .matches t)
+  assert not(:Box(Postfix(:@, 1)) .matches t)
 end
 
 test "Postfix percent remains punctuation; hash is a comment"

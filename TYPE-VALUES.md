@@ -31,7 +31,8 @@ inspection of values keep those roles separate. Numeric literals denote
 exact Rationals; ordinary strings, Bool values and symbolic values have intrinsic
 interpretations. Reserved primitive atoms cannot simultaneously become ordinary
 UpperCamelSymbol values because of their spelling. `Symbol` is a prelude union,
-not a reserved primitive.
+not a reserved primitive. The prelude also defines `not : Bool -> Bool` as
+`def not(x :: Bool) x == False`.
 
 The proposed primitive vocabulary includes self-evaluating PrimitiveType, with Bool
 and PrimitiveType as its values. The complete metatype and redundant primitive-quote

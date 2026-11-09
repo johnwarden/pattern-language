@@ -207,7 +207,7 @@ end
 
 test "Named order does not change equality or ordering"
   assert R(z: 2, a: 1) == R(a: 1, z: 2)
-  assert False == (R(z: 2, a: 1) < R(a: 1, z: 2))
+  assert not(R(z: 2, a: 1) < R(a: 1, z: 2))
   assert R(z: 9, a: 1) < R(a: 2, z: 0)
 end
 

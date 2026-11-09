@@ -56,8 +56,8 @@ test "Compiled type trees equal quoted trees"
   assert a == b
   assert toString(Expression)(a) == toString(Expression)(b)
   assert UnionType(Int, String) == :(UnionType(Int, String))
-  assert False == (Type(Int) == Int)
-  assert False == (Type(10) < Type(2))
+  assert not(Type(Int) == Int)
+  assert not(Type(10) < Type(2))
 end
 
 test "A quoted type tree can be installed as a named type"
@@ -68,7 +68,7 @@ test "A quoted type tree can be installed as a named type"
 end
 
 test "Invalid type-shaped data is not a Type"
-  assert False == (:(Primitive(Bogus)) .matches (type Type))
+  assert not(:(Primitive(Bogus)) .matches (type Type))
   assert Int .matches (type Type)
 
   x = :(UnionType(1, 2))
@@ -94,7 +94,7 @@ test "Postfix type descriptions are not prefix quotation"
     :*(Int)
   end
 
-  assert False == (Suffix == Prefix)
+  assert not(Suffix == Prefix)
 end
 
 test "Reserved primitive names cannot be redeclared"

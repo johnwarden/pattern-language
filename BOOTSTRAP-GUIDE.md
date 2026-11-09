@@ -377,6 +377,8 @@ This is an experimental interpreter, not a compiler or a statically typed langua
   source-defined; lifting, actions and error lifting remain future work. No
   console, file, network or library-import capabilities are supplied. See
   [POSTFIX.md](design/POSTFIX.md).
+- `not : Bool -> Bool` is a source-prelude function, defined with
+  `def not(x :: Bool) x == False`. It is an ordinary name, not a grammar keyword.
 - Recursive declaration groups are supported. Per-type parse/toString function
   synthesis remains planned.
 

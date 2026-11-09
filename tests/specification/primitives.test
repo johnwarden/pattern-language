@@ -8,13 +8,13 @@ test "C01 intrinsic primitive values"
   expect :foo result foo :: LowerCamelSymbol
   expect :Symbol result Symbol :: UpperCamelSymbol
   assert Int .matches ReservedSymbol
-  assert False == (Int .matches UpperCamelSymbol)
-  assert False == (Int .matches Symbol)
-  assert False == (True .matches UpperCamelSymbol)
-  assert False == (True .matches ReservedSymbol)
+  assert not(Int .matches UpperCamelSymbol)
+  assert not(Int .matches Symbol)
+  assert not(True .matches UpperCamelSymbol)
+  assert not(True .matches ReservedSymbol)
   assert False .matches Bool
   assert :Widget .matches UpperCamelSymbol
-  assert False == (:Widget .matches ReservedSymbol)
+  assert not(:Widget .matches ReservedSymbol)
   assert :Widget .matches Symbol
   assert :foo .matches Symbol
   assert (type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)
@@ -29,21 +29,21 @@ end
 
 test "Literal and computed Booleans share one Bool type"
   assert True == (1 == 1)
-  assert False == (True != (1 == 1))
+  assert not(True != (1 == 1))
   assert (1 == 1) == True
-  assert False == ((1 == 1) != True)
-  assert False == (True == (1 == 2))
+  assert not((1 == 1) != True)
+  assert not(True == (1 == 2))
   assert True != (1 == 2)
-  assert False == ((1 == 2) == True)
+  assert not((1 == 2) == True)
   assert (1 == 2) != True
-  assert False == (False == (1 == 1))
+  assert not(False == (1 == 1))
   assert False != (1 == 1)
-  assert False == ((1 == 1) == False)
+  assert not((1 == 1) == False)
   assert (1 == 1) != False
-  assert False == (1 == 2)
-  assert False == (False != (1 == 2))
+  assert not(1 == 2)
+  assert not(False != (1 == 2))
   assert (1 == 2) == False
-  assert False == ((1 == 2) != False)
+  assert not((1 == 2) != False)
   expect
     True == Int
   error "E_INCOMPARABLE_TYPES"
@@ -143,9 +143,9 @@ test "C03 exact designation differs from rounding"
     (0.1 :: Float32)
   error "not exactly representable as Float32"
   assert 0.5 .matches Float32
-  assert False == (0.1 .matches Float32)
+  assert not(0.1 .matches Float32)
   assert 0.5 .matches Float
-  assert False == (0.1 .matches Float)
+  assert not(0.1 .matches Float)
   assert 0f0.1 .matches Float
   expect 0.5 :: Float result 0.5 :: Float
 
