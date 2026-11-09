@@ -1,0 +1,13 @@
+test "Printing values of ambiguous concrete types"
+  a = :None :: String?
+  a
+  ( z :: String?? ) = ( a :: String? ) 
+  
+  expect 
+    toString(String??)(z) 
+  value '(:None :: String?) :: String' :: String
+
+  expect 
+    toString(Any)(z) 
+  value '(:None :: String?) :: Type(:None | String?)' :: String
+end

@@ -99,7 +99,7 @@ A DSL can separately require an **unambiguous** grammar with no concrete-type re
 
 The proposed `type Name ...` declaration binds the type and registers its local accessor/printing metadata. Ordinary type-valued expressions must be capture-free; `t = concrete Rect(w :: Float32,h :: Float32)` must not quietly install methods. Capture-free type values remain ordinary values and can be passed, stored and compared. Parameterized declarations can supply compact local names for instantiated type descriptions without changing identity.
 
-The author accepted that functional equality alone does not justify banning all duplicate declaration names for equal descriptors. **No replacement alias/import policy has yet been chosen.** Do not assume either that the old ban survives unchanged or that multiple accessor bundles can be imported without collision rules. **Sources:** A “Local Accessors,” AR acknowledgment; R1/R2.
+The author accepted that functional equality alone does not justify a permanent ban on all duplicate declaration names for equal descriptors. **On 9 November the author deferred the replacement policy and explicitly retained equivalent-declaration and accessor-collision errors for now.** Preserve that guard while separating declaration effects from ordinary type construction. No final alias/import/preferred-name policy is selected. **Sources:** A “Local Accessors,” AR acknowledgment; R1/R2; subsequent author clarification.
 
 ### D09. Designation and projection are settled, different operations — confirmed
 
@@ -397,7 +397,7 @@ computation, which may be omitted entirely.
 | IEEE NaN/infinities, signed zero and special equality | **Deferred.** AR's union recipe is a possibility, not a chosen representation. |
 | Designation/projection | **Settled.** Only faithful wording/checking and eventual tests remain; no renewed policy debate is requested. |
 | Bare generic-family facets, MemberOf and parameter recovery | **Proposed.** Constraint vocabulary, structural matching and non-injective cases remain unresolved. |
-| Duplicate local type names, accessor bundles/imports and preferred display names | **Unresolved policy.** Functional equality is not a sufficient reason for a blanket ban; no alternative has been ratified. |
+| Duplicate local type names, accessor bundles/imports and preferred display names | **Deferred policy; current errors retained.** Equivalent declarations and accessor collisions remain errors for now. No final alias/import policy is selected. |
 | Singleton abstract unions and qualifiers narrowed to one member | **Unresolved.** Author proposed rejecting explicit singleton unions; normalization is only a reviewer recommendation. |
 | Runtime Expression *value* computation and descriptor/value comparison | **Optional.** Ordinary programs may omit computing over Expression. Separate from the parser destination, which is Expression (L8); Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
 | Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |

@@ -5,6 +5,10 @@ import { TEST_SCHEMA } from "../src/test-schema.ts";
 import { loadTests } from "../src/test-suite.ts";
 import { sourceFiles } from "./source-files.ts";
 
+const sourceCases = loadTests(
+  sourceFiles(new URL("../tests/", import.meta.url)),
+);
+
 test("the published Test schema is the source used by the harness", () => {
   assert.equal(
     readFileSync(
@@ -19,9 +23,6 @@ test("the published Test schema is the source used by the harness", () => {
 // host-only inventory and canonical-source checks that the CLI does not cover.
 import { Interpreter } from "../src/runtime.ts";
 import { normal } from "../src/syntax.ts";
-const allSourceTests = loadTests(
-  sourceFiles(new URL("../tests/", import.meta.url)),
-);
 test("every legacy assertion has a same-subject todo or an explicit unresolved decision", () => {
   const inventory = readFileSync(
     new URL("../design/LEGACY-ASSERTIONS.md", import.meta.url),
@@ -31,7 +32,7 @@ test("every legacy assertion has a same-subject todo or an explicit unresolved d
     .map((m) => m[1] + " :: " + m[2])
     .sort();
   const unresolved: string[] = [];
-  for (const value of allSourceTests) {
+  for (const value of sourceCases) {
     for (const legacy of value.steps.filter(
       (s) => s.mode === "legacy" && s.kind !== "setup",
     )) {
@@ -50,8 +51,8 @@ test("every legacy assertion has a same-subject todo or an explicit unresolved d
     "pair legacy with a real replacement, or document the specific unresolved decision",
   );
 });
-for (const value of loadTests(
-  sourceFiles(new URL("../tests/conformance/", import.meta.url)),
+for (const value of sourceCases.filter((value) =>
+  value.file.startsWith("conformance/"),
 )) {
   test("canonical source: " + value.id, () => {
     const tree = new Interpreter().parse(value.source);
@@ -69,8 +70,8 @@ for (const value of loadTests(
 }
 
 test("specification corpus names design cases C01 through C27", () => {
-  const cases = loadTests(
-    sourceFiles(new URL("../tests/specification/", import.meta.url)),
+  const cases = sourceCases.filter((value) =>
+    value.file.startsWith("specification/"),
   );
   const present = new Set(
     cases.flatMap((value) => {
