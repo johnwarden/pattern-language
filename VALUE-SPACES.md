@@ -1,5 +1,9 @@
 # Value spaces and interpretation
 
+The [executable `.test` contracts](tests/specification/README.md) are the language
+specification. This guide explains their model and rationale. Missing rules need
+tests before implementation; change the tests and their explanations together.
+
 Updated 7 November 2026. This is the intended semantic contract integrated from
 [the decision record](design/LANGUAGE-DECISIONS.md). Confirmed rules are distinct
 from explicitly provisional choices. The TypeScript bootstrap has not yet been
@@ -16,8 +20,10 @@ concrete boundaries and the set of concrete alternatives remain structural.
 Type equality is ordinary structural value equality, not host identity, a declaration
 ID, or extensional equivalence of arbitrary predicates. Evaluating distinct syntax
 can yield the same value. That does not imply that every inert syntax description
-is automatically the evaluated type/value it describes. Optional runtime Expression
-support and that descriptor-decoding boundary remain explicitly undecided.
+is automatically the evaluated type/value it describes. Raw runtime Expressions
+are allowed for now; [the contracts](specs/implemented/raw-expression-values.md)
+separate them from interpreted concrete values. The public descriptor-decoding
+boundary remains undecided.
 
 Values in different known concrete spaces are not made comparable by identical
 payload spelling. `None` in a String option and `None` in a Float32 option can
@@ -231,7 +237,8 @@ Specialization is only a later compiler optimization preserving an independently
 defined abstract-call contract. First-class overload-set values are a separate
 unaccepted proposal. Bare generic-family facets, MemberOf constraints and parameter
 recovery remain proposals; no nominal construction history is inferred from a family
-name. Runtime Expression and automatic descriptor decoding remain optional/unsettled.
+name. Raw runtime Expressions are currently permitted; automatic descriptor
+decoding remains unsettled.
 
 ## Current bootstrap boundary
 

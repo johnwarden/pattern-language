@@ -225,8 +225,7 @@ test "Ordinary factory with defaults"
 
   expect r result Rect(3, 4, color: "black") :: Rectangle
   expect r.color result "black" :: String
-  legacy expect Rectangle(3, 4) result Rectangle(3, 4) :: Expression
-  todo expect Rectangle(3, 4) error "no concrete interpretation established"
+  expect Rectangle(3, 4) result Rectangle(3, 4) :: Expression
   (r, r.color, Rectangle(3, 4))
 end
 

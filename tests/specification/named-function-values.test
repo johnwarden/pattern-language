@@ -1,0 +1,34 @@
+test "A named function can be stored and invoked as a value"
+  def square(n :: Int) n * n
+
+  todo expect
+    f = square
+    f(3 :: Int)
+  result 9 :: Int
+end
+
+test "A named function can be passed and returned as a value"
+  def square(n :: Int) n * n
+  def apply(f, n :: Int) f(n)
+  def getSquare() square
+
+  todo expect apply(square, 4 :: Int) result 16 :: Int
+  todo expect getSquare()(5 :: Int) result 25 :: Int
+end
+
+test "A where predicate accepts the value of a named function"
+  def Rectangle type Rect(width :: Int, height :: Int)
+  def isSquare(r :: Rectangle) r.width == r.height
+
+  assert
+    def Square Rectangle .where (r -> isSquare(r))
+    (s :: Square) = Rect(2, 2)
+    isSquare(s)
+  end
+
+  todo assert
+    def Square Rectangle .where isSquare
+    (s :: Square) = Rect(2, 2)
+    isSquare(s)
+  end
+end

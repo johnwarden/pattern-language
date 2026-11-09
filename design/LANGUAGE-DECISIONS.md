@@ -1,10 +1,18 @@
-# Language decisions and conformance specification
+# Language decisions and conformance notes
 
-**Integrated 7 November 2026. This specifies design direction, not implementation status.**
+**Decision rationale and case index. Executable language contracts live in `.test` files.**
 
 This is the integrated decision record authorized by the author. Confirmed and retained rules are the intended contract; passages explicitly marked proposed or deferred keep that status. Named cases C01–C27 live in [tests/specification](../tests/specification) and execute through the test DSL, with assertion-level todo and legacy modifiers. Those `.test` files are the executable specs; this document explains the decisions with focused examples and does not have to match them byte-for-byte. Expected failures record future contracts; supported assertions already pass normally. This does not claim conformance with all of the future language semantics. [TEST-SUITE.md](TEST-SUITE.md) defines the runner contract; the [roadmap](../ROADMAP.md) tracks the language work separately.
 
 ## Status and sources
+
+The `.test` files are the language specification. This record preserves rationale
+and links to cases; it must not evolve into a competing prose contract. New rules
+are discussed in the project chat and recorded directly in `specs/approved/` on
+master. The queue and validated test-only contract changes live there; feature
+implementation uses PRs. Write or revise executable contracts before implementation,
+with adjacent explanations where needed. See [the lifecycle](../specs/README.md) and
+[the specification index](../tests/specification/README.md).
 
 - **Confirmed:** an explicit author decision or subsequent clarification.
 - **Retained:** an existing contract not withdrawn by the new decisions.
@@ -31,6 +39,8 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
 | L9 | Author rulings on 9 November 2026 for PR #31 (settled 14:17 Madrid, refined 14:34 and 14:59): Strings are intrinsic primitives. Every symbol prints bare in value text, including `None`; `:` is needed only in code where a bare name would bind. Value text is read with the expected type's own grammar, with no layout-keyword quoting. Primitive names are `ReservedSymbol` values, not symbols, and type descriptions use them directly. A quoted primitive name such as `:Int` in program source is an error, including application heads and type declarations; parsing Code and decoding value text have no special check for it. `Number` is removed for now. |
 | L10 | Author ruling on 9 November 2026 (15:02 Madrid): master's Boolean behavior is correct. Literal `True`/`False` are `Bool` values, the same type as computed comparison results, not `ReservedSymbol` values. Refined 15:11: match arms use bare `True`/`False`; a quoted primitive in any pattern stays `E_QUOTED_PRIMITIVE`. |
+| L11 | Author's subsequent clarification on 9 November: `True(1)`, `1(1)` and similar applications remain valid parsed Code. A head must be a Symbol constructor head or evaluate to a function; invalid head values fail during evaluation, not grammar recognition. The executable contract is application-heads.test and its adjacent note. The grammar-rejection proposal in #49 is superseded. |
+| L12 | Author's subsequent clarification on 9 November: a named function resolves to a function value containing the full implementation, with no free user variables; primitive and possibly prelude/standard-library names form the remaining callable vocabulary. Raw expressions are allowed at runtime for now. `toString(T)` follows its already documented type-directed contract. See the linked approved/implemented records below. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -70,13 +80,22 @@ interpolation and separation of quotation from execution otherwise remain
 unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved
 Symbols,” AR; R2; L9.
 
-### D03. Structured runtime values require concrete interpretation — confirmed; parse into Expression
+### D03. Raw runtime Expressions are allowed for now; parse into Expression
 
-A structured expression cannot become a runtime value with unspecified concrete identity. An explicit annotation, typed quotation or a sufficiently informative context must determine its interpretation. Thus an unconstrained `z = Rect(2,2)` is rejected; `Rect(2,2) :: Rectangle` can succeed. Primitive literals already have intrinsic interpretations.
+L12 supersedes the earlier blanket rejection of raw construction. `z = Rect(2,2)`
+is allowed as a raw runtime Expression; an explicit annotation, typed quotation
+or sufficient expected context can establish a concrete interpretation such as
+Rectangle. Raw fields are Rational values; interpreted fields follow the concrete
+type. Ordinary binding does not implicitly unwrap that concrete boundary. See
+[C04 and the raw-expression contracts](../specs/implemented/raw-expression-values.md).
 
 The parser destination is Expression. Number literals in that domain are exact Rationals (D04). The bootstrap currently has three trees: host `Syntax` (parser product, including quote/sequence/block/form), runtime `Value` (`term` ≈ `apply`, plus packs/literals/symbols), and public `SyntaxNode` transport (`NumberLiteral(Rational) | Apply | Postfix | …`, via `syntaxTree` / `syntaxExpression` / `parseSyntax`). Exact numeric syntax transport is implemented. Those Syntax layers are adapters to remove after staged consumer migration with behavior preserved. The migration is not implemented yet and is not a prerequisite for distinct postfix application.
 
-Whether ordinary programs expose a first-class Expression *value* to compute over remains optional. If they do, an Expression-typed descriptor does not automatically equal the type it describes. R2's recommendation to require explicit decoding remains a recommendation. There is no pending public `NumberLiteral(Float)` A/B redesign. **Sources:** A “Require Annotation…,” P “Raw Expressions…,” AR “Expression”; R2; L8.
+Permitting raw runtime Expressions does not make an Expression-typed descriptor
+equal the type it describes or choose the public descriptor-decoding API. R2's
+recommendation to require explicit decoding remains a recommendation. There is no
+pending public `NumberLiteral(Float)` A/B redesign. **Sources:** A “Require
+Annotation…,” P “Raw Expressions…,” AR “Expression”; R2; L8; superseding L12.
 
 ### D04. All numeric literals denote exact Rational values — confirmed
 
@@ -155,6 +174,14 @@ The intended bare-family view, such as using `Rectangle` to admit some `Rectangl
 
 It must preserve abstract-call behavior, dispatch and errors; it must not create source-visible overloads or make otherwise invalid definitions valid only at known call sites. The exploratory overload-expansion account in S is superseded by AR. First-class overload-set values remain a separate **unaccepted proposal**; returning a defined function name as `OverloadedFunction(...)` is not approved by accepting specialization. **Sources:** S; AR “only a compiler optimization”; R1/R2.
 
+L12 separately approves ordinary named-function values: a name resolves to the
+full closed implementation, without free user variables. It may be bound,
+passed, returned and supplied directly to `where`. Primitive callable references
+are the baseline; the exact admissible prelude/standard-library vocabulary and
+the rule for a name with multiple definitions remain unspecified. This decision
+does not depend on specialization. See
+[the approved record and partial contracts](../specs/approved/named-function-values.md).
+
 ### D14. Interoperability follows structural descriptors — confirmed intent
 
 Independently scoped declarations with equivalent capture-free descriptions exchange equal values without a shared nominal declaration or importing accessor names. Consumers may destructure their known shapes. This does not yet specify source modules, simultaneous imports or duplicate local accessor policy. **Sources:** I; A structural identity; O.
@@ -228,11 +255,13 @@ Live: `0.5 :: Float32` and `float32(0.5)` succeed; `0.1 :: Float32` errors becau
 it is not exactly representable; `.matches Float32` is True for `0.5` and False
 for `0.1`. Todo: `0f0.5 :: Decimal32`, `0f0.1 :: Float64`, and `0.5 :: Int16`.
 
-### C04 — structured values require interpretation
+### C04 — raw expressions and explicit concrete interpretation
 
-Todo. `Rect(2, 2) :: Rectangle` can succeed once `type Rectangle concrete Rect(...)`
-is available; a bare `x = Rect(2, 2)` must still error with no concrete interpretation.
-The first annotation supplies context. The second binding deliberately supplies none.
+Raw `x = Rect(2, 2)` and Rational captures are ordinary checks. The explicit
+`type Rectangle concrete ...` spelling remains todo. Bootstrap declaration syntax
+already supplies the concrete designation and explicit-match controls in
+[raw-expressions.test](../tests/specification/raw-expressions.test); ordinary
+constructor binding through the concrete boundary remains a todo rejection.
 
 ### C05 — ordinary capture-free type values and a type factory
 
@@ -481,10 +510,10 @@ rejected. These are todo checks today. `Number` is removed for now.
 | Bare generic-family facets, MemberOf and parameter recovery | **Proposed.** Constraint vocabulary, structural matching and non-injective cases remain unresolved. |
 | Duplicate local type names, accessor bundles/imports and preferred display names | **Deferred policy; current errors retained.** Equivalent declarations and accessor collisions remain errors for now. No final alias/import policy is selected. |
 | Singleton abstract unions and qualifiers narrowed to one member | **Unresolved.** Author proposed rejecting explicit singleton unions; normalization is only a reviewer recommendation. |
-| Runtime Expression *value* computation and descriptor/value comparison | **Optional.** Ordinary programs may omit computing over Expression. Separate from the parser destination, which is Expression (L8); Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
+| Runtime Expression *value* computation and descriptor/value comparison | **Raw runtime Expressions allowed for now (L12).** Descriptor decoding/equality is separate and remains unsettled. Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
 | Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |
 | Specialization | **Deferred optimization only.** No source-visible generated overload semantics. |
-| First-class overload sets | **Unaccepted proposal.** No approved bare-name callable-value behavior change. |
+| Named functions and first-class overload sets | **Named function values approved (L12).** Full closed implementation, with no free user variables. A new overload-set representation and multiple-definition resolution remain unspecified. |
 | Numeric aliases/families, rounding edge policies and canonical spelling | **Provisional.** Do not infer these from isolated draft typos or examples. |
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
@@ -501,7 +530,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D02 primitives and quotation | C01; C27 is an **unaccepted lexical candidate**, not confirmed behavior |
 | D19 symbol value text vs code quotation | C01 `Widget`; `None` in the postfix, nested-option and concrete-union specs |
 | D20 ReservedSymbol and quoted primitive names | C01; quoted primitive names in Code, including QuotedSymbol todos; symbol-class disjointness |
-| D03 mandatory interpretation / parse into Expression | C04, C05; first-class Expression *value* computation remains optional; SyntaxNode numeric A/B superseded |
+| D03 raw expressions / explicit interpretation / parse into Expression | C04 and raw-expressions.test; raw runtime values are allowed for now (L12), explicit concrete boundaries remain; SyntaxNode numeric A/B superseded |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |
 | D06 concrete/refinement/abstract kinds | C06, C07, C13, C15; singleton policy deliberately unassigned |
@@ -511,7 +540,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D10 evidence and refinement-qualified functions | C07–C10; C08 depends on the future static evidence checker |
 | D11 factories and binding-only defaults | C17 |
 | D12 type-valued generics / proposed family views | C05, C12, C18; no case pretends family recovery or MemberOf is settled |
-| D13 specialization and first-class overloads | No optimization-dependent expected result; C09/C10/C12 must retain their semantics independently of specialization |
+| D13 specialization and named function values | named-function-values.test captures approved binding/argument/return/predicate uses; closed representation and overload selection remain work. C09/C10/C12 stay independent of specialization |
 | D14 structural interoperability | C18, with transport law in C23 |
 | D15 captures/spreading/keyword remainders | C19–C22; new spread/rest surface mechanics explicitly proposed |
 | D16 constructedBy deferral | No active or pending expected-result case selects a semantics |

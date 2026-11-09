@@ -28,11 +28,16 @@ claim explicitly. Do not force-push another owner's branch.
 Implement accepted existing specification todos before starting new foundations.
 The concrete/abstract declaration syntax in C05/C06/C13/C15/C16, its plain
 type-producing counterpart, and parameterized C05/C12/C18 cases are explicit
-roadmap targets. #31, #32 and #39 already own the overlapping value, declaration
-product and concrete-boundary work; coordinate their integration as above.
+roadmap targets. #31's value alignment and #32's declaration-product separation
+are integrated. #39's inbox handoff is closed pending clarification in the project
+chat and approved spec records; its branch is preserved for reference. #48 is the
+next declaration-syntax handoff. The spec queue lives directly in `specs/` on
+master; #52's draft is retired after carrying its content onto master.
 
-Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): accepted specification, focused
-executable contracts, implementation, then deliberate todo removal. Claim an
+Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): discuss decisions in the project
+chat, commit them to `specs/approved/` on master, write or revise executable contracts,
+then implement and remove fulfilled todos. Move a decision to `specs/implemented/`
+when actual tests capture it; that does not claim runtime completion. Claim an
 implementation by naming its existing cases and shared methods. If a contract is
 missing, write it before implementing. A documentation-only draft and a green
 expected-failure count are not feature progress.
@@ -89,7 +94,8 @@ The earlier authorization for #27/#28 does not authorize these new PRs.
   replacement policy is deferred; it does not block separating ordinary type
   construction from declaration effects.
 - Intrinsic String behavior is accepted. It does not choose the PrimitiveType
-  metatype, raw Expression exposure, descriptor equality/decoding or new syntax.
+  metatype, descriptor equality/decoding or new syntax. Raw runtime Expressions
+  are separately allowed for now; see [their contracts](../specs/implemented/raw-expression-values.md).
 - The public inspection/decoding examples belong to the author. If a workstream
   genuinely depends on that decision, report the smallest concrete example and
   continue independent work; do not invent the boundary.

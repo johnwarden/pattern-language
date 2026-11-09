@@ -4,12 +4,59 @@ The executable language specification drives implementation. Existing accepted
 todo contracts under `tests/specification/` take priority over unrelated roadmap
 foundations. The roadmap records what remains to make those contracts pass; it
 must include their actual surface syntax, not describe only internal machinery.
+The `.test` files are the language specification. Prose explains and indexes the
+cases; it must not define a competing contract that can drift independently.
+
+## Decisions, specification queue and PR boundaries
+
+Discuss and clarify new rules with Jonathan in the project chat. After agreement,
+create a record in `specs/approved/` containing the settled decision, motivating
+examples, scope and source inbox paths, and commit it directly to `master`.
+The specification queue lives on master. Remove the corresponding inbox file when
+the approved record preserves all its intent; split out unsettled portions first.
+New intake belongs in `specs/inbox/`. Existing optional `tests/inbox/` drafts remain
+explicitly runnable while triaged. See [the lifecycle](../specs/README.md).
+
+Commit spec records, queue maintenance and test-only contract batches directly to
+master after appropriate validation. Do not keep a queue branch or queue PR.
+Open implementation PRs for one or more approved specs. A feature PR can add or
+refine its actual tests before changing implementation; record unmerged test
+dependencies explicitly rather than silently altering another branch's contract.
+
+When actual tests capture an approved decision, move the record to
+`specs/implemented/` on master, adding links to the files/cases and their commit
+or implementation PR. This means
+implemented **as tests**, not completed runtime behavior: the tests may remain
+todo. Do not move a partially captured record as if complete; split it or keep it
+approved. Once captured, the tests carry the executable contract and the moved
+record preserves the decision and links. Return new design questions to chat.
+
+A specification change may update existing tests, make mass edits, or illustrate
+a new syntax/rule without adding a new case. There is no required one-to-one
+mapping between a spec example, a test case and an implementation PR. Each
+implementation chooses how to apply and validate the relevant contract, and names
+the affected `.test` files or specification commits.
+
+When possible, every implementation PR names the `.test` file and case titles it
+implements. An existing case on master is already an executable specification;
+do not add a duplicate just to create a new todo. For missing behavior, write the
+todo contract first, then make it an ordinary check when implemented. Tooling,
+host/protocol or build work should state why a meaningful language test cannot
+express its observation and use the appropriate host check.
+
+Put additional explanations beside the relevant `.test` file when needed, such as
+[application-heads.md](../tests/specification/application-heads.md). Keep notes and
+contracts in the same change. Roadmap, grammar and decision documents link to
+those cases, summarize status and preserve rationale; avoid separate copies of
+the normative examples. A new author ruling may correct a stale test, but the
+contract and its explanation must be updated before implementation proceeds.
 
 ## From a specification to implementation
 
-1. Establish the intended behavior from the current specification and Jonathan's
-   decisions. Distinguish accepted behavior, unsupported implementation and open
-   design questions. Reconcile a stale case with a later settled decision first.
+1. Establish the intended behavior from existing tests and approved decisions.
+   Discuss unsettled questions in the project chat, then record agreed changes
+   directly to `specs/approved/` on master. Distinguish approved behavior, missing implementation and
+   open questions. Reconcile stale cases with later decisions first.
 2. Add or update focused `.test` contracts **before implementation**. Start with
    the existing specification cases; add missing coverage rather than copying a
    large scenario into several files. Give each assertion one clear obligation
@@ -19,8 +66,10 @@ must include their actual surface syntax, not describe only internal machinery.
    and owning workstream. Execute the case and inspect its actual failure. A
    parser/setup/expected-type failure can hide the behavioral rule being tested;
    an expected todo failure is not proof that the right rejection occurred.
-4. Claim an implementation PR with the target test cases, session, branch and
-   shared methods. Implement the smallest coherent change that satisfies them.
+4. Claim the PR with its approved specs, target test cases, session, branch and
+   shared methods. Keep its queue record on master; move fully captured specs to
+   `specs/implemented/` there with test and commit/PR links. Implement the smallest
+   coherent change that satisfies those contracts.
    A design/scope-only PR is a handoff, not permission to implement unspecified
    behavior. Do not choose a public API or branch policy to make a test pass.
 5. Run the targeted cases without their todo modifiers on the implementation
@@ -45,11 +94,17 @@ invented implementations simply because a larger todo scenario mentions them.
 
 ## Inbox intake and triage
 
-`tests/inbox/` is a staging area for authored examples, questions and bug reports.
-Default suites and pre-push exclude it; an explicit file/directory path runs it.
+`specs/inbox/` holds new proposals, questions and motivating examples. Existing
+`tests/inbox/` drafts remain an intake source during triage; default suites and
+pre-push exclude them, and an explicit file/directory path runs them.
 Read the submitted source and comments before classifying it. Preserve its intent;
 an obsolete assertion delimiter or placeholder `assert 1 == 1` is not evidence
 that the underlying proposal is implemented or covered.
+
+Keep authored draft examples visible. Do not comment them out or substitute
+passing no-op assertions to satisfy CI; optional inbox discovery already keeps
+unapproved drafts out of default runs. Restore temporarily commented examples
+before triage, preserving their intended expectations and open questions.
 
 Split a submission when it contains both settled behavior and open questions.
 Each settled portion should take one of these routes:
@@ -57,7 +112,7 @@ Each settled portion should take one of these routes:
 | Route                                     | Destination and action                                                                                                                              | Completion evidence                                                                                                                                                    |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Confirmed bug in specified behavior       | Extract a minimal ordinary regression in the relevant default-suite topic and fix it on a bugfix PR. Keep the PR draft while the regression is red. | The regression fails for the intended reason before the fix and passes after it; related behavior remains valid.                                                       |
-| Accepted specification addition or change | Update the specification and add focused todo cases under `tests/specification/` before implementation.                                             | The contract is executable, its current failure is understood, and its owning implementation PR names it. Remove todo when the intended behavior passes.               |
+| Accepted specification addition or change | Commit the chat decision to `specs/approved/` on master; write or revise actual tests before implementation, directly on master for test-only batches. | Move the record to `specs/implemented/` on master with test and commit/PR links; todo remains until the intended behavior passes. |
 | Example of supported behavior             | Add a runnable case under `tests/examples/` using current supported syntax and meaningful assertions.                                               | The example executes and checks its stated behavior through the shared corpus. A future feature belongs in a specification todo rather than a passing-looking example. |
 
 If behavior is not yet decided, keep that portion explicitly **pending decision**
@@ -67,17 +122,18 @@ serialization string. The public inspection/decoding boundary, bare named
 function values and deferred collision policy remain governed by their existing
 decisions. A filename containing `bug` is not itself a language decision.
 
-Record the original file, disposition, destination case(s), PR and remaining
-questions in [the inbox register](../tests/inbox/README.md). Once an item is fully
-covered, move/remove the draft or retain only a short pointer with its resolution;
+Record the original file, disposition, destination case(s), commit or PR and remaining
+questions in [the inbox register](../tests/inbox/README.md) or the proposal's spec
+record. Once approved content fully captures an inbox item, remove that draft;
 do not leave competing active copies of the same specification. A split item's
 unresolved portion may remain, clearly marked. No item is resolved by comments,
 no-op checks or an expected failure caused only by a different unsupported syntax.
 
 ## Current order
 
-Finish the existing value/declaration/boundary work in #31, #32 and #39 with their
-specified regressions. Make the concrete/abstract declaration surface work against
+#31 and #32 are integrated. #39's inbox handoff is closed while its needed
+decisions are clarified in the project chat and captured as approved specs.
+Make the concrete/abstract declaration surface in #48 work against
 the existing named cases, then work through their generic, projection, evidence
 and interoperability obligations in explicit slices. Keep the later internal
 foundation handoffs #43-#45 parked until these priorities are addressed and those

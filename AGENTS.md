@@ -142,8 +142,36 @@ implementation. Existing accepted todos in `tests/specification/` take priority
 over new roadmap foundations. Name the target cases in each implementation PR;
 remove todo only when the intended behavior passes, not an unrelated setup failure.
 
-Triage `tests/inbox/` into bug regressions/fixes, accepted specification todo tests,
-or supported runnable examples. Record the destination and PR; leave unclear
+Discuss and clarify new language decisions with Jonathan in the project chat.
+Once agreed, commit the decision and examples directly to `specs/approved/` on
+`master`. The specification queue and test-only contract updates live on master,
+not a long-running queue branch or PR. Validate contract changes before committing;
+runtime implementation still uses feature PRs with separate merge authorization.
+New proposals belong in `specs/inbox/`;
+existing `tests/inbox/` drafts remain optional until triaged. Remove a corresponding
+inbox file when its content is fully captured; split out unresolved content first.
+
+When possible, every implementation PR implements named cases in a `.test` file.
+Add or revise the actual tests before changing implementation; the approved spec
+may illustrate a rule or require mass edits rather than add a new case. Move the
+spec to `specs/implemented/` on master with links to the actual tests and their
+commit or implementation PR when those tests are written.
+That records conversion into tests, not runtime completion: tests may remain todo.
+Existing cases on master satisfy the contract requirement. Tooling/host-only work
+should explain why its observation needs a host test rather than a language example.
+
+The `.test` files are the executable language specification. Approved records guide
+changes not yet captured in tests; implemented records preserve decisions and link
+to the resulting cases. Keep necessary explanations adjacent to tests and update
+them together; do not maintain a competing prose specification.
+
+Triage inbox submissions into bug regressions/fixes, approved specs and their
+specification todo tests, or supported runnable examples. Record the destination
+and commit or PR; leave unclear
 semantics explicitly pending with the missing decision. Comments and placeholder
 assertions do not cover the proposal. Keep inbox optional in default runs and
 runnable by explicit path. Do not change an expected result to observed output.
+
+Do not comment out authored inbox cases or replace them with no-op assertions to
+get green checks. Inbox discovery is already optional; keep proposals visible
+and restore temporarily commented code before triage, preserving open questions.

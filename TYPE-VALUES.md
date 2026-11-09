@@ -4,6 +4,11 @@ Updated 7 November 2026. This describes the intended model and explicitly marked
 open choices. [TYPE-VALUES-BOOTSTRAP.md](TYPE-VALUES-BOOTSTRAP.md) documents the
 unchanged implementation's concrete descriptor encoding and syntax.
 
+The authoritative contracts are the [executable specification](tests/specification/README.md).
+This guide explains the type-value and declaration cases. Update their `.test`
+contracts and adjacent notes before implementation; this prose is not a separate
+specification.
+
 ## Identity is structural
 
 Types are ordinary values with finite structural representations. A compiled matcher,
@@ -38,10 +43,11 @@ which write `type String(:A)` rather than `type :String(:A)` (D20). `True` and
 `False` are `Bool` values like computed comparison results, not `ReservedSymbol`
 values.
 
-An explicitly interpreted Expression descriptor, if exposed, need not equal the result
-of evaluating it. Whether runtime Expression computation exists, and the exact public
-decoding operation for descriptors, remain unsettled. The raw parsing/pattern domain
-need not become a permanent additional runtime space.
+Raw expressions are allowed at runtime for now, including `e = Rect(2, 2)`;
+[C04 and its follow-up contracts](specs/implemented/raw-expression-values.md)
+cover raw captures and concrete interpretation. An Expression descriptor does not
+automatically equal the result of evaluating it. The exact public descriptor
+decoding operation remains unsettled.
 
 ## Declarations and plain type values
 

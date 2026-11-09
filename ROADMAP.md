@@ -1,10 +1,17 @@
-# Roadmap and current specification
+# Roadmap and conformance status
 
 Updated 9 November 2026. This is the current design, implementation boundary and
 milestone sequence, not a development history. The integrated
 [decision/conformance record](design/LANGUAGE-DECISIONS.md) supplies reasons, status
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
 [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
+
+The executable [`.test` specification](tests/specification/README.md) is the
+language contract. This roadmap and the linked prose explain its decisions and
+track implementation, rather than maintain an independent specification. Discuss
+new rules in the project chat, record settled changes in `specs/approved/`, then
+open a PR to write or revise their tests before changing implementation. See
+[the specification lifecycle](specs/README.md).
 
 ## Vision and accepted direction
 
@@ -24,6 +31,9 @@ must test composition and state role differences explicitly.
   and f are distinct. Dot/infix/outfix are sugar; infix has equal precedence and
   right associativity. Labels are lowercase, unique and canonically sorted after
   positional fields. () is an empty pack, not an implicit unit value.
+- Callability is checked when Code is evaluated, not by restricting application
+  syntax. See [application-head contracts](tests/specification/application-heads.test)
+  and their [phase explanation](tests/specification/application-heads.md).
 - Formatting and whitespace mistakes must produce syntax errors, never logic
   errors, within a form fixed by the applied grammar. Raw layout and explicitly
   declared keyword alternatives are exceptions; see
@@ -52,7 +62,9 @@ must test composition and state role differences explicitly.
   captures only; type defaults and implicit normalization remain excluded.
 - Refinement-qualified functions are legal. Missing evidence is a checking failure;
   overlapping base/refinement overloads do not gain priority by evaluating predicates.
-- Structured runtime values require an established concrete interpretation. Distinct
+- Raw runtime Expressions are allowed for now; an expected type can establish a
+  concrete interpretation. [C04 and the raw-expression cases](specs/implemented/raw-expression-values.md)
+  cover the distinction and explicit projection. Distinct
   source syntax evaluating to the same primitive is not a type-equality exception.
   The parser destination is Expression, not a lasting parallel syntax tree:
   number literals in Expressions are exact Rationals. Host `Syntax`, public
@@ -68,6 +80,10 @@ must test composition and state role differences explicitly.
   where needed; concrete paths need not universally retain it.
 - Code-producing functions do not automatically register macros. Explicit registration,
   phase availability and hygiene remain separate from runtime Code-valued functions.
+- A named function resolves to a self-contained function value, without free user
+  variables. Binding, argument, return and predicate uses have
+  [source todos](tests/specification/named-function-values.test); the complete
+  portable representation remains [approved work](specs/approved/named-function-values.md).
 
 ### Deliberately deferred or provisional
 
@@ -87,9 +103,10 @@ provisional/unresolved. Equivalent local declarations and accessor collisions
 remain errors for now; their replacement alias/import policy is deferred by the
 author. First-class overload sets are
 not accepted. Specialization is only a deferred optimization of already defined
-abstract-call semantics, never a source-visible overload generator. Whether
-ordinary programs expose a first-class runtime Expression *value* remains
-optional; that is separate from the parser destination, which is Expression.
+abstract-call semantics, never a source-visible overload generator. The rule for
+multiple definitions when resolving a name to a function value remains open.
+Permitting raw runtime Expressions does not settle public descriptor decoding
+or require the parser's Expression migration to be completed first.
 
 ## What is implemented now
 
@@ -149,9 +166,11 @@ The current declaration syntax includes these targets:
 | `type Box<T> concrete Box(T)` and `Box<String>` | C05/C12/C18: parameterized structural type values and independent-scope interoperability |
 | `type NonZero refinement Rational .where nonZero` | C07-C10: refinement syntax, then the separately specified evidence and overload rules |
 
-First finish #31's value alignment and #32's declaration-product work, with #39's
-concrete binding/match regressions coordinated at their shared matcher boundary.
-Next make the concrete/abstract declaration and type-producing syntax above work
+#31's value alignment and #32's declaration-product separation are integrated.
+#39's inbox handoff is closed; its pending questions return to the project chat
+before approved specs and implementation PRs. #48 is the next declaration-syntax
+handoff. The spec queue is committed directly to master under `specs/`; #52 is
+retired. Make the concrete/abstract declaration and type-producing syntax above work
 against its existing cases; isolate parser support from later generic/evidence
 obligations so failures identify the actual missing feature. Preserve current
 equivalent-declaration/accessor-collision errors and the deferred public inspection

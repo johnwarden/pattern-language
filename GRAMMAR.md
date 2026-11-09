@@ -25,6 +25,13 @@ exceptions and the bootstrap boundaries that still need review.
 
 An application has an arbitrary expression head and one argument pack. Successive
 packs are separate applications: f(a)(b) is not f(a,b). Bare f differs from f().
+
+The [application-head tests](tests/specification/application-heads.test) separate
+syntax from evaluation: Code may contain `True(1)` or `1(1)`. A head's callability
+is checked when that Code is evaluated, not by the grammar. See the
+[adjacent explanation](tests/specification/application-heads.md). These executable
+contracts are authoritative; grammar prose explains their rules and must be kept
+in sync with them.
 Parentheses group expressions or delimit packs; (x,) and (x) have the same single
 positional content in pack position. () is an empty pack, not a standalone unit.
 Outfix brackets/braces put their closing delimiter after the pack; they have heads
@@ -87,11 +94,11 @@ Their exact keywords, qualifier order and angle-parameter sugar remain provision
 Do not implement an ad-hoc parser exception for a semantic requirement: grammar forms
 must remain ordinary tree patterns or an explicitly documented bootstrap seed.
 
-Structured runtime values require a concrete interpretation from an annotation,
-typed quote or sufficient context. Raw syntax for parsing/recognition does not have
-to be an exposed runtime Expression space. Optional runtime Expression and automatic
-descriptor decoding remain unsettled; the current compatibility value is not the
-accepted default identity for all constructed trees.
+Raw structured expressions are allowed at runtime for now. An annotation, typed
+quote or sufficient expected context can give that expression a concrete
+interpretation. [C04 and the raw-expression contracts](specs/implemented/raw-expression-values.md)
+record the distinction. Parsed Code and evaluated raw values are separate roles;
+automatic descriptor decoding and the public inspection API remain unsettled.
 
 ## Designation, projection and evidence
 

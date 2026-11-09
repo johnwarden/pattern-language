@@ -57,8 +57,9 @@ Same-space refinement unions remain rejected. Concrete pattern alternatives such
 
 ## Syntax interpretation and Code
 
-Structured runtime expressions need a concrete interpretation. A raw parsing/pattern
-domain is distinct in role from an optional explicitly interpreted Expression value;
+Raw structured expressions are allowed at runtime for now; expected types can
+establish concrete interpretations. The raw parsing/pattern domain remains
+distinct in role from an evaluated Expression value;
 no decision requires permanent primitive Application/Binding categories or automatically
 identifies descriptor syntax with an evaluated type. The public representation mapping
 is settled before full Code grammar expansion.
