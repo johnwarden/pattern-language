@@ -1,9 +1,18 @@
+# Overloading, libraries and printed function values
+
+The [closed immutable value and exact local-printing principles](../approved/library-closure-and-local-printing.md)
+are approved in the project chat. The Library representation, overloaded constant
+selection and printed type annotations below remain proposals. The
+[test plan](named-function-value-tests.md) separates agreed behavioral contracts
+from cases that need those decisions; the original examples are retained below.
 
 So I think the value of overloaded definitions, or definitions in general (with def), should be something like a "library". 
 I think even constants can be overloaded.
 
-As when printing types, when printing function values, the local-print logic just print the *function name* when it is defined in scope. 
-If it prints the body, substitute inline function calls with functions available in scope.
+Local printing may reuse an in-scope name only for the exact complete value,
+including referenced definitions; that settled portion is in the approved record.
+The precise Function/Library value grammar and the illustrative strings below
+still need clarification.
 
 I think printed function body should have type annotations?
 

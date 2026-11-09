@@ -7,6 +7,94 @@ test "A named function can be stored and invoked as a value"
   result 9 :: Int
 end
 
+test "Named function values retain captured values across caller shadowing"
+  offset = 3 :: Int
+  def shift(n :: Int) n + offset
+  def invoke(f, offset :: Int) f(2 :: Int)
+
+  todo expect invoke(shift, 100 :: Int) result 5 :: Int
+end
+
+test "Named function values retain transitive referenced definitions"
+  def twice(n :: Int) n * (2 :: Int)
+  def step(n :: Int) twice(n) + (1 :: Int)
+  def calculate(n :: Int) step(n)
+  def invoke(f)
+    def twice(n :: Int) n * (100 :: Int)
+    def step(n :: Int) 999 :: Int
+    f(3 :: Int)
+  end
+
+  todo expect invoke(calculate) result 7 :: Int
+end
+
+test "Named function values retain a finite mutually recursive group"
+  def even(n :: Int) if n == (0 :: Int) True else odd(n - (1 :: Int))
+  def odd(n :: Int) if n == (0 :: Int) False else even(n - (1 :: Int))
+
+  todo expect
+    f = even
+    f(8 :: Int)
+  result True :: Bool
+
+  todo expect
+    f = even
+    f(9 :: Int)
+  result False :: Bool
+end
+
+test "Named function values preserve successive argument packs"
+  def add(x :: Int)(y :: Int) x + y
+
+  todo expect
+    f = add
+    partial = f(2 :: Int)
+    partial(3 :: Int)
+  result 5 :: Int
+end
+
+test "Closing a named function does not evaluate unused defaults"
+  def choose(value: Int = (1 / 0)) value
+
+  todo expect
+    f = choose
+    f(value: 8)
+  result 8 :: Int
+end
+
+test "A returned named function retains a departed scope's captured value"
+  def makeShift(offset :: Int)
+    def shift(n :: Int) n + offset
+    shift
+  end
+
+  todo expect
+    f = makeShift(3 :: Int)
+    f(2 :: Int)
+  result 5 :: Int
+end
+
+test "Aliases of one named function value preserve identity"
+  def identity(n :: Int) n
+
+  todo assert
+    f = identity
+    g = f
+    f == g
+  end
+end
+
+test "Different implementations do not become equal from equivalent behavior"
+  def unchanged(n :: Int) n
+  def addZero(n :: Int) n + (0 :: Int)
+
+  todo expect
+    f = unchanged
+    g = addZero
+    f == g
+  result False :: Bool
+end
+
 test "A named function can be passed and returned as a value"
   def square(n :: Int) n * n
   def apply(f, n :: Int) f(n)

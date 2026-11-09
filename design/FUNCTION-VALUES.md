@@ -7,6 +7,9 @@ returned or supplied to `where` without an anonymous wrapper. That value contain
 the complete implementation with no free user variables. The
 [approved record](../specs/approved/named-function-values.md) links the current
 callable-use todos and identifies the still-missing portable representation tests.
+The [closed-value and local-printing decision](../specs/approved/library-closure-and-local-printing.md)
+also confirms immutable snapshots and exact-value abbreviation. Referenced
+definitions are ordinary definitions; "helper" is not a language category.
 
 Specialization is only a later compiler optimization. First-class OverloadedFunction
 values remain an unaccepted separate proposal; generating private specializations
@@ -29,9 +32,9 @@ the principle that their public representations stand on their own.
   local bindings, local declarations and literal quoted symbols are not free uses.
 - Substitute captured values while preserving their concrete interpretations and
   abstract-position annotations. Do not stringify and reparse them as code.
-- Include the transitive definitions of called helpers and relevant accessors/type
-  dependencies. Repeated helper definitions can be shared in local defs/lets.
-- Preserve recursive/mutually recursive helpers as a finite declaration group.
+- Include transitive referenced definitions and relevant accessors/type
+  dependencies. Repeated definitions can be shared in local defs/lets.
+- Preserve recursive/mutually recursive definitions as a finite declaration group.
   Recursion must never require infinite inlining.
 - Without static dispatch selection, include the reachable overload set required
   by a call, preserving its ambiguity/error behavior. Named functions are values;
@@ -40,9 +43,10 @@ the principle that their public representations stand on their own.
   must not evaluate a default early or change when it is selected.
 
 Self-contained means no hidden lexical environment is needed to reconstruct the
-callable. Symbolic primitive callable references are the baseline; which prelude
-or standard-library names may remain external is not yet enumerated. User helpers
-must be part of the closed implementation. This does not mean the function is
+callable. Only the fixed primitive vocabulary remains external initially;
+ordinary prelude and standard-library definitions are included like other
+referenced definitions. Later external references must identify exact definitions.
+This does not mean the function is
 pure. A portable primitive vocabulary,
 capability values and unsupported captures need explicit policies; opaque host
 handles cannot become public syntax merely by assigning them an ID.
@@ -58,6 +62,9 @@ a fresh environment. Local printing can reuse an in-scope name only when its
 actual definition is the dependency being displayed; matching spelling is not
 sufficient. Shadowing must fall back to the closed definition. This parallels
 local/global type printing and does not alter value identity.
+Another exact visible alias may also be used; preferred naming among multiple
+valid aliases remains unspecified. Abbreviation must preserve the entire value,
+including any definition group, and cannot silently incorporate later additions.
 
 The exact Function grammar, binder naming/canonicalization, dependency ordering,
 recursive reference representation, primitive references, bounds on closing work,
