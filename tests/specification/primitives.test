@@ -1,6 +1,6 @@
 test "C01 intrinsic primitive values"
-  expect True result True :: ReservedSymbol
-  expect False result False :: ReservedSymbol
+  expect True result True :: Bool
+  expect False result False :: Bool
   expect Int result Int :: ReservedSymbol
   expect "hello" result "hello" :: String
   expect 5 result 5 :: Rational
@@ -11,6 +11,8 @@ test "C01 intrinsic primitive values"
   expect Int .matches UpperCamelSymbol result False :: Bool
   expect Int .matches Symbol result False :: Bool
   expect True .matches UpperCamelSymbol result False :: Bool
+  expect True .matches ReservedSymbol result False :: Bool
+  expect False .matches Bool result True :: Bool
   expect :Widget .matches UpperCamelSymbol result True :: Bool
   expect :Widget .matches ReservedSymbol result False :: Bool
   expect :Widget .matches Symbol result True :: Bool
@@ -27,7 +29,7 @@ test "C01 intrinsic primitive values"
   todo expect PrimitiveType result PrimitiveType :: PrimitiveType
 end
 
-test "Literal and computed Booleans are comparable whether or not they are equal"
+test "Literal and computed Booleans share one Bool type"
   expect True == (1 == 1) result True :: Bool
   expect True != (1 == 1) result False :: Bool
   expect (1 == 1) == True result True :: Bool
@@ -44,6 +46,11 @@ test "Literal and computed Booleans are comparable whether or not they are equal
   expect False != (1 == 2) result False :: Bool
   expect (1 == 2) == False result True :: Bool
   expect (1 == 2) != False result False :: Bool
+  expect
+    True == Int
+  error "E_INCOMPARABLE_TYPES"
+  t = type True | False
+  assert parse(Type)(toString(Type)(t)) == t
 end
 
 test "Quoted primitive names in Code"

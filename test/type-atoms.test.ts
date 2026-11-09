@@ -20,14 +20,13 @@ const rejects = (source: string, code: string) =>
 test("Boolean constants and native predicates have a known Bool result type", () => {
   const i = new Interpreter();
   assert.equal(i.inspect(i.run("1 == 1")), "True :: Bool");
-  assert.equal(i.inspect(i.run("True")), "True :: ReservedSymbol");
   assert.equal(
     i.inspect(
       i.run(
         "(True,False,1 != 1,1 < 2,2 > 1,1 <= 2,2 >= 1,isInt64(3),2 .matches Int)",
       ),
     ),
-    "(True :: ReservedSymbol, False :: ReservedSymbol, False :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool)",
+    "(True :: Bool, False :: Bool, False :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool)",
   );
 });
 
