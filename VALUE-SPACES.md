@@ -248,8 +248,9 @@ implementation facts, not new accepted constraints. Details are in
 [The roadmap](ROADMAP.md) schedules alignment. [The decision record](design/LANGUAGE-DECISIONS.md)
 contains 27 named design cases; [the suite specification](design/TEST-SUITE.md) defines
 how all cases execute. Assertions can be ordinary, legacy (must pass until retired),
-or todo (must fail; a pass demands removal of todo). These are assertion modifiers,
-not alternate kinds of test or value. Every value expectation checks the observed
+or todo (must fail; a pass demands removal of todo). The todo modifier also
+applies to whole tests, including their setup: the case runs as one expected-failure
+unit, and a fully passing case demands removal of its todo marker. Every value expectation checks the observed
 result type as well as value identity. No assertion grants proof facts to another.
 `just test-language` reports the current suite, including legacy checks and
 expected todo failures. Those outcomes do not implement the revised evidence or projection

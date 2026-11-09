@@ -19,7 +19,7 @@ try {
       fixture = decodeSource(readFileSync(path), path);
     } else if (arg === "--help") {
       console.log(
-        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: recursively scan tests/**/*.test, excluding tests/inbox. Select tests/inbox or a file inside it to opt in. Discovery reads source only. Todo assertions run and must fail; legacy assertions must pass.",
+        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: recursively scan tests/**/*.test, excluding tests/inbox. Select tests/inbox or a file inside it to opt in. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
       );
       process.exit(0);
     } else if (arg.startsWith("--")) throw new Error("unknown option " + arg);
@@ -31,7 +31,8 @@ try {
     passed = 0,
     assertions = 0,
     legacy = 0,
-    expectedFailures = 0;
+    expectedFailures = 0,
+    todoTests = 0;
   for (const [name, source] of Object.entries(files)) {
     if (!list) console.log("FILE " + name);
     let tests;
@@ -56,15 +57,20 @@ try {
             " · " +
             value.name +
             " · " +
+            (value.mode === "todo" ? "todo test · " : "") +
             Object.entries(counts)
               .map(([mode, n]) => n + " " + mode)
               .join(", "),
         );
       } else {
         const report = runTest(value, fixture);
-        console.log(
-          (report.passed ? "PASS " : "FAIL ") + report.id + " · " + report.name,
-        );
+        const label =
+          report.status === "expected-failure"
+            ? "TODO "
+            : report.passed
+              ? "PASS "
+              : "FAIL ";
+        console.log(label + report.id + " · " + report.name);
         assertions += report.checks.filter((c) => c.status === "passed").length;
         legacy += report.checks.filter(
           (c) => c.mode === "legacy" && c.status === "passed",
@@ -72,7 +78,8 @@ try {
         expectedFailures += report.checks.filter(
           (c) => c.status === "expected-failure",
         ).length;
-        if (report.passed) passed++;
+        if (report.status === "expected-failure") todoTests++;
+        else if (report.passed) passed++;
         else {
           failures++;
           console.log(report.phase + ": " + report.message);
@@ -83,7 +90,8 @@ try {
   if (!testCount && !failures) throw new Error("no .test files found");
   if (!list)
     console.log(
-      `${passed} tests passed, ${failures} tests failed; ${assertions} assertions passed (${legacy} legacy), ${expectedFailures} todo assertions failed as expected`,
+      `${passed} tests passed, ${failures} tests failed; ${assertions} assertions passed (${legacy} legacy), ${expectedFailures} todo assertions failed as expected` +
+        (todoTests ? `; ${todoTests} todo tests failed as expected` : ""),
     );
   if (failures) process.exitCode = 1;
 } catch (error) {

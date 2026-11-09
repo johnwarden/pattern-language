@@ -9,8 +9,9 @@ The runner recursively discovers tests/**/*.test, grouped by broad topic. Each f
 contains one or more named test blocks. Shared setup belongs inside the test. IDs
 are root-relative file paths without .test plus the title slug, and survive selecting
 only a subset or inserting/reordering cases. Discovered symlinks are not traversed.
-Duplicate title slugs in a file reject. Modifiers apply to assertions and setup,
-never whole tests.
+Duplicate title slugs in a file reject. `todo` can modify a whole test, an
+assertion, or setup. `legacy` modifies assertions and setup only. A file may
+contain a single `todo test` block.
 
 ```text
 test "A value and a predicate"
@@ -28,7 +29,8 @@ end
 ```
 
 The schema is generated from src/test-schema.ts into examples/test-schema.pattern.
-TestFileContent has a required first Test row and a vertical Test* tail. ExpectedResult
+TestFileContent has a required first TestBlock row and a vertical TestBlock* tail.
+TestBlock accepts either Test or TodoTest through an ordinary source union. ExpectedResult
 uses an ordinary pattern containing literal ::, quoted ::: in its definition:
 
 ```text
@@ -119,6 +121,26 @@ observation. Selecting/building examples never runs them to generate expectation
 
 ## Modifiers, scope and failures
 
+A whole-test todo applies to the case as a unit:
+
+```text
+todo test "A future capability"
+  expect missing() result 1 :: Rational
+end
+```
+
+The runner executes the test, including shared setup, with the ordinary assertion
+rules inside it. A language failure in setup/body or an assertion mismatch is an
+expected test failure, reported as `TODO` and counted separately from passing
+tests. Some assertions may already pass. Once the whole case succeeds, the suite
+fails with “This test now passes; remove todo.” Assertion-level todos retain their
+own required-failure contract; a fulfilled inner todo cannot be hidden by the
+outer modifier. Whole-test todos are not executable playground examples.
+
+Malformed files, fixture failures, missing checks, and host exceptions remain
+failures. Each case still has its own interpreter; a failing todo setup cannot
+leak into another test.
+
 Bindings and definitions may also use legacy/todo prefixes:
 
 ```text
@@ -133,8 +155,9 @@ are silent and cannot leak partial bindings. Incoming ordinary setup and fixture
 remain available. Without an adjacent legacy group, a trial uses current setup.
 Consecutive definitions stay grouped to preserve mutual recursion. Normal checks
 end the adjacency between alternatives. Setup trial groups count as todo checks;
-legacy setup is not counted as a legacy assertion. Actual host errors, malformed
-files and failing ordinary/legacy setup are not expected failures.
+legacy setup is not counted as a legacy assertion. Assertion/setup-level todo
+does not swallow failing ordinary/legacy setup. Whole-test todo includes such
+language failures; actual host errors and malformed files remain failures.
 
 The bootstrap host runner recreates trial scopes by replaying committed pure setup;
 it does not expose a new evaluator or a runtime environment capability to source.
@@ -156,9 +179,10 @@ The same modifiers apply to expect subject error "reason". An E_ string matches
 a subject diagnostic code exactly; another string matches its message by
 substring.
 Finding the expected error satisfies an error assertion, so it is an unexpected
-success when that assertion is todo. Setup, fixture, malformed source and host
-exceptions are never swallowed by todo. All assertions run after ordinary check
-failures. Expected failures are counted separately from passing assertions; no case
+success when that assertion is todo. Assertion-level todo does not swallow
+shared setup failures. Fixture failures, malformed source and host exceptions
+are never swallowed by either todo form. All assertions run after ordinary
+check failures. Expected failures are counted separately from passing assertions; no case
 is skipped. A case containing only expected failures satisfies its test contract
 with zero passing assertions. The term inert is reserved for capability/value meaning.
 

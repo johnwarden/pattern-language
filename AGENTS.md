@@ -119,9 +119,11 @@ The source suite is tests/**/*.test, grouped by topic. `tests/inbox` is optional
 default host/source runs and pre-push exclude it. Run `just test tests/inbox`
 or select an inbox file to opt in. Source runs print each filename. Assertions use
 expect subject result expected :: Type, assert, and expect subject error "reason".
-Expected results are data, not expressions to execute. Todo assertions run and must
-fail; an unexpected success requires removing todo. Legacy assertions must pass
-until explicitly retired. Do not generate expected values from current outputs.
+Expected results are data, not expressions to execute. `todo test` marks a whole
+expected-failure case, including language failures in its shared setup; it runs
+and must fail as a unit. A file may contain only one todo test. Todo assertions
+still run and must fail individually; an unexpected success requires removing
+todo. Legacy assertions must pass until explicitly retired. Do not generate expected values from current outputs.
 Pair each legacy assertion with a same-subject todo, or record the unresolved
 replacement in design/LEGACY-ASSERTIONS.md. Supported behavior uses ordinary checks.
 
