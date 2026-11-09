@@ -2,10 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { TEST_SCHEMA } from "../src/test-schema.ts";
+import { loadTests } from "../src/test-suite.ts";
 import { sourceFiles } from "./source-files.ts";
-import { registerSourceTests } from "./source-suite-runner.ts";
 
-const sourceCases = registerSourceTests(
+const sourceCases = loadTests(
   sourceFiles(new URL("../tests/", import.meta.url)),
 );
 
@@ -19,7 +19,8 @@ test("the published Test schema is the source used by the harness", () => {
   );
 });
 
-// These source cases retain the former host canonical-source checks.
+// Source-language execution lives in `just test-language`. This file keeps the
+// host-only inventory and canonical-source checks that the CLI does not cover.
 import { Interpreter } from "../src/runtime.ts";
 import { normal } from "../src/syntax.ts";
 test("every legacy assertion has a same-subject todo or an explicit unresolved decision", () => {
