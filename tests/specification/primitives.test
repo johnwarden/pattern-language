@@ -53,6 +53,13 @@ test "Literal and computed Booleans share one Bool type"
   assert parse(Type)(toString(Type)(t)) == t
 end
 
+test "True and False are not call heads in Code"
+  expect parse(Code)("True(1)") error "E_CONSTANT_CALL"
+  expect parse(Code)("False(1)") error "E_CONSTANT_CALL"
+  expect parse(Code)("f(True(1))") error "E_CONSTANT_CALL"
+  expect parse(Code)("f(True)") result f(True) :: Code
+end
+
 test "Match arms use bare True and False"
   expect
     match 1 == 1

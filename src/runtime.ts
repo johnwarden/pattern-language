@@ -303,6 +303,49 @@ const positionalPattern = (patterns: Pattern<Value>[]): Pattern<Value> => ({
 });
 const captureNames = (node: Syntax): Set<string> =>
   validatePatternCaptures([node]);
+/** Constants such as True are values, never call heads. Raw quotes stay exempt. */
+function constantCallHead(
+  n: Syntax,
+): Extract<Syntax, { kind: "apply" }> | undefined {
+  const first = (xs: Syntax[]) => {
+    for (const x of xs) {
+      const found = constantCallHead(x);
+      if (found) return found;
+    }
+  };
+  switch (n.kind) {
+    case "apply":
+      if (
+        n.head.kind === "symbol" &&
+        !n.head.quoted &&
+        constantNames.has(n.head.name)
+      )
+        return n;
+      return first([n.head, ...n.body.map((f) => f.value)]);
+    case "postfix":
+      return constantCallHead(n.operand);
+    case "pack":
+      return first(n.body.map((f) => f.value));
+    case "template":
+      return first([
+        ...(n.reader ? [n.reader] : []),
+        ...n.parts.flatMap((part) => (part.kind === "hole" ? [part.value] : [])),
+      ]);
+    case "typedQuote":
+      return constantCallHead(n.grammar);
+    case "sequence":
+      return first(n.items);
+    case "block":
+      return first(n.lines);
+    case "form":
+      return first([
+        ...n.items,
+        ...[...n.captures.values()].flatMap((c) => c.fields.map((f) => f.value)),
+      ]);
+    default:
+      return undefined;
+  }
+}
 export class Interpreter {
   grammar: Grammar;
   lastTree?: Syntax;
@@ -436,6 +479,7 @@ export class Interpreter {
   /** Interpret inert surface data using an ordinary type/grammar. */
   interpretSyntax(type: TypeValue, tree: Syntax): Value {
     try {
+      this.rejectConstantCall(type, tree);
       return single(
         this.transaction(() =>
           this.check(type, syntaxData(this.grammarInput(type, tree))),
@@ -598,16 +642,19 @@ export class Interpreter {
   ): Field<Value>[] {
     this.parsingDataDepth++;
     try {
+      if (type.treeGrammar || type.baseType?.treeGrammar) {
+        const tree = readCode(text);
+        this.rejectConstantCall(type, tree);
+        return this.check(type, syntaxData(tree));
+      }
       return this.check(
         type,
-        type.treeGrammar || type.baseType?.treeGrammar
-          ? syntaxData(readCode(text))
-          : parseValueText(
-              text,
-              this.textDomain(env),
-              typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
-              this.layoutFormsFromPattern(type.pattern()),
-            ),
+        parseValueText(
+          text,
+          this.textDomain(env),
+          typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
+          this.layoutFormsFromPattern(type.pattern()),
+        ),
       );
     } finally {
       this.parsingDataDepth--;
@@ -3568,10 +3615,13 @@ export class Interpreter {
         name: "syntax matching " + treeSchema.name,
         identity: ["treeGrammar", typeData(treeSchema)],
         test: (value) => {
+          const tree = dataSyntax(value);
+          if (this.isCodeSchema(treeSchema) && constantCallHead(tree))
+            return false;
           try {
             valueMatcher().match(
               treeSchema.pattern(),
-              singleton(encodeSyntax(dataSyntax(value))),
+              singleton(encodeSyntax(tree)),
             );
             return true;
           } catch (error) {
@@ -3780,6 +3830,23 @@ export class Interpreter {
       n.span,
       { code: "E_QUOTED_PRIMITIVE", phase },
     );
+  }
+  private isCodeSchema(treeSchema?: TypeValue): boolean {
+    const code = this.codeType?.treeGrammar;
+    return (
+      !!treeSchema && !!code && typeIdentity(treeSchema) === typeIdentity(code)
+    );
+  }
+  private rejectConstantCall(type: TypeValue, tree: Syntax): void {
+    if (!this.isCodeSchema(type.treeGrammar ?? type.baseType?.treeGrammar))
+      return;
+    const call = constantCallHead(tree);
+    if (call?.head.kind === "symbol")
+      throw new LanguageError(
+        call.head.name + " is a constant, not a call head",
+        call.head.span ?? call.span,
+        { code: "E_CONSTANT_CALL", phase: "parse" },
+      );
   }
   private reserved(name: string): Field<Value>[] {
     const fields = this.check(
