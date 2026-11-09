@@ -1,0 +1,117 @@
+test "Multiple results"
+  f = x -> (x, x)
+  (a, b) = f(3)
+
+  expect a + b result 6 :: Rational
+end
+
+test "Ignore named binding result"
+  x = (1, foo: "bar")
+
+  expect x result 1 :: Rational
+end
+
+test "Capture named binding result"
+  (x, foo: f) = (1, foo: "bar")
+
+  expect f result "bar" :: String
+end
+
+test "Ignore preceding extra name"
+  (x, foo: f) = (1, unused: 2, foo: "bar")
+
+  expect f result "bar" :: String
+end
+
+test "Nested bindings require explicit label openness"
+  Rect(x, **) = Rect(1, extra: 2)
+
+  expect x result 1 :: Rational
+end
+
+test "Nested function patterns permit explicitly ignored labels"
+  def f(Rect(x, **)) x
+
+  expect f(Rect(1, extra: 2)) result 1 :: Rational
+end
+
+test "All calls ignore extra names"
+  def f(x) x
+
+  expect f(1, foo: 2) result 1 :: Rational
+  expect toString(3, extra: 4) result "3" :: String
+  expect
+    +(1, extra: 4)(2, other: 5)
+  result 3 :: Rational
+end
+
+test "Accessors ignore extra names"
+  def R type :R(x :: Int)
+  r = R(2) :: R
+
+  expect x(r, extra: 3) result 2 :: Int
+end
+
+test "Calls require positional and named pattern fields"
+  expect
+    def f(size: Int) size
+    f(other: 3)
+  error "no applicable"
+
+  expect
+    def f(x) x
+    f(1, 2, extra: 3)
+  error "no applicable"
+end
+
+test "Anonymous wrappers remain values"
+  def f(x) x + 1
+  def use(g) g(3)
+
+  expect use(x -> f(x)) result 4 :: Rational
+end
+
+test "Pack partial applications remain values"
+  def f(x)(y) x + y
+  g = f(2)
+
+  expect g(3) result 5 :: Rational
+end
+
+test "Macro in head"
+  f = x -> x + 1
+  g = x -> x + 2
+
+  expect (if True f else g)(3) result 4 :: Rational
+end
+
+test "Extra positional result"
+  expect
+    x = (1, 2)
+    x
+  error "received 2"
+end
+
+test "Extra positional block result"
+  expect
+    x =
+      y = 1
+      (y, y)
+    end
+    x
+  error "received 2"
+end
+
+test "Binding cannot consume zero results"
+  expect
+    x = ()
+    x
+  error "expected field"
+end
+
+test "Wrong first pack"
+  expect
+    def f(x, y)(z) z
+    f(1)
+  error "no applicable"
+end

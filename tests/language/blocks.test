@@ -1,0 +1,132 @@
+test "Block result pack"
+  (a, b) =
+    y = 1
+    (y, y)
+  end
+
+  expect a + b result 2 :: Rational
+end
+
+test "Block def"
+  def f(x)
+    y = x ^ 2
+    y + 1
+  end
+
+  expect f(3) result 10 :: Rational
+end
+
+test "Nested definition"
+  def outer(x)
+    def inner(y) x + y
+    inner(2)
+  end
+
+  expect outer(3) result 5 :: Rational
+end
+
+test "Anonymous block"
+  f = x ->
+    y = x ^ 2
+    y + 1
+  end
+
+  expect f(3) result 10 :: Rational
+end
+
+test "If clauses"
+  expect
+    if 1 < 2
+      x = 1
+      x + 1
+    else
+      3
+    end
+  result 2 :: Rational
+end
+
+test "Match"
+  expect
+    match Some(2)
+      :Some(v) -> v
+      :None -> 0
+    end
+  result 2 :: Rational
+end
+
+test "Equals binds only in a block interpretation"
+  x = 5
+  y = 1
+
+  expect x + y result 6 :: Rational
+end
+
+test "Equals does not bind inside a pack"
+  expect R(z: (x = 1), a: x) error "unbound name"
+end
+
+test "Equals does not bind inside an argument"
+  expect
+    def f(x) x
+    f(y = 1)
+  error "unbound name"
+end
+
+test "Equals can be a constructor in a type"
+  def Syntax type
+    :=(Int)(Int)
+  end
+
+  expect
+    (:=(1)(2)) :: Syntax
+  result
+    (1 = 2) :: Syntax
+  end
+end
+
+test "Empty results"
+  def f()
+    ()
+  end
+
+  assert
+    () = f()
+    True
+  end
+end
+
+test "Empty lambda"
+  f = x -> ()
+
+  assert
+    () = f(1)
+    True
+  end
+end
+
+test "Program final binding"
+  expect
+    x = 1
+  error "must end with a result"
+end
+
+test "Block final binding"
+  expect
+    def f(x)
+      y = x
+    end
+    0
+  error "must end with a result"
+end
+
+test "Program final definition"
+  expect
+    def f(x) x
+  error "must end with a result"
+end
+
+test "Grouped layout must consume every source line"
+  expect parse(Code)("(\n  1\n0 / 0\n)") error "inconsistent indentation"
+  expect parse(Code)("(\n  1\nx = 2\n)") error "inconsistent indentation"
+  expect parse(Code)("f(\n  1\n2\n)") error "inconsistent indentation"
+end
