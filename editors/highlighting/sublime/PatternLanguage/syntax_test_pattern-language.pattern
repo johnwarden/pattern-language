@@ -1,0 +1,251 @@
+# SYNTAX TEST "Packages/PatternLanguage/PatternLanguage.sublime-syntax"
+# Generated from test/cases.json; expectations are authored, not recorded output.
+
+# hash comments touch punctuation and identifiers
+x# this is a comment
+# <- variable.other - comment
+#^^^^^^ comment.line
+x@# also a comment
+#^ keyword.operator
+# ^^^^^^ comment.line
+"# stays in text"
+#^^^^^^^ string.quoted.double - comment
+
+# source numeric spellings remain exact Rational spellings
+1_024 0.1 12e-3 0f0.1 0F1_000e-2 0x1.4p3 0X1_F.8P-2 0b1.01p+2 0B10_01
+# <- constant.numeric
+#^^^^ constant.numeric
+#     ^^^ constant.numeric
+#         ^^^^^ constant.numeric
+#               ^^^^^ constant.numeric
+#                     ^^^^^^^^^^ constant.numeric
+#                                ^^^^^^^ constant.numeric
+#                                        ^^^^^^^^^^ constant.numeric
+#                                                   ^^^^^^^^^ constant.numeric
+#                                                             ^^^^^^^ constant.numeric
+-2 1//3 0xFFjunk 0b102 0fInfinity
+# <- keyword.operator - constant.numeric
+#   ^^ keyword.operator - constant.numeric
+#       ^^^^^^^^ source.pattern-language - constant.numeric
+#                ^^^^^ source.pattern-language - constant.numeric
+#                      ^^^^^^^^^^ source.pattern-language - constant.numeric
+
+# ASCII symbol classes include short UpperSnake trailing underscores
+foo UpperCamel ABC ABC1 A_ AB_ A_B _ _12 :None :A_ :[] :{} :+ :(x)
+# <- variable.other
+#^^ variable.other
+#   ^^^^^^^^^^ entity.name.type
+#              ^^^ constant.other.symbol.upper-snake
+#                       ^^ constant.other.symbol.upper-snake
+#                          ^^^ constant.other.symbol.upper-snake
+#                              ^^^ constant.other.symbol.upper-snake
+#                                    ^^^ variable.language.wildcard
+#                                         ^^^^ constant.other.symbol
+#                                               ^^ constant.other.symbol
+#                                                   ^^ constant.other.symbol
+#                                                       ^^ constant.other.symbol
+#                                                           ^ constant.other.symbol
+#                                                             ^ punctuation.definition.quotation
+ABC_bad lower_snake αname
+# <- source.pattern-language - constant.other.symbol - variable.other
+#^^^^^^ source.pattern-language - constant.other.symbol - variable.other
+#       ^^^^^^^^^^^ source.pattern-language - variable.other
+#                   ^^^^^ source.pattern-language - variable.other
+
+# tight UpperCamel call heads are constructor-like symbols after built-ins
+Some(Int)
+# <- constant.other.symbol.constructor - entity.name.type
+#^^^ constant.other.symbol.constructor - entity.name.type
+#    ^^^ support.type - constant.other.symbol
+Outer(Some(String), Pair(Float, Rational))
+# <- constant.other.symbol.constructor
+#^^^^ constant.other.symbol.constructor
+#     ^^^^ constant.other.symbol.constructor
+#                   ^^^^ constant.other.symbol.constructor
+#          ^^^^^^ support.type
+#                        ^^^^^ support.type
+#                               ^^^^^^^^ support.type
+Int(String) Float(Rational) Type(Bool)
+# <- support.type - constant.other.symbol
+#^^ support.type - constant.other.symbol
+#           ^^^^^ support.type - constant.other.symbol
+#                           ^^^^ support.type - constant.other.symbol
+#                                ^^^^ support.type - constant.other.symbol
+Some Some (Int)
+# <- entity.name.type - constant.other.symbol
+#^^^ entity.name.type - constant.other.symbol
+#    ^^^^ entity.name.type - constant.other.symbol
+Factory(Int) Factory
+# <- constant.other.symbol.constructor
+#^^^^^^ constant.other.symbol.constructor
+#            ^^^^^^^ entity.name.type - constant.other.symbol
+ABC(Int) A_(String)
+# <- constant.other.symbol.upper-snake
+#^^ constant.other.symbol.upper-snake
+#        ^^ constant.other.symbol.upper-snake
+:Some(Int) :Int(String)
+#^^^^ constant.other.symbol - constant.other.symbol.constructor
+#           ^^^ constant.other.symbol - support.type
+Some?(Int)
+# <- entity.name.type - constant.other.symbol
+#^^^ entity.name.type - constant.other.symbol
+
+# patterns bindings macros and test DSL use ordinary lexical scopes
+todo test "captures"
+# <- keyword.other.test
+#^^^ keyword.other.test
+#    ^^^^ keyword.other.test
+  def Vector(T, Ns...) type [T...]
+# ^^^ storage.type
+#                 ^^^ keyword.operator.rest
+  macro accessor(x) x.width
+# ^^^^^ storage.type
+#                    ^ punctuation.separator
+  match x (s :: String)@
+# ^^^^^ keyword.control
+#            ^^ keyword.operator.type
+#               ^^^^^^ support.type
+  expect [s, tail…] result {name: s, rest: tail} :: Vector(String)
+# ^^^^^^ keyword.other.test
+#                ^ keyword.operator.rest
+#                           ^^^^ entity.name.tag
+  assert True error "mismatch"
+#        ^^^^ constant.language
+  legacy expect False result False :: Bool
+# ^^^^^^ keyword.other.test
+end
+# <- keyword.control
+#^^ keyword.control
+concrete refinement FutureKeyword
+# <- variable.other - keyword - storage
+#^^^^^^^ variable.other - keyword - storage
+{label:value, other:None} :::String
+#^^^^^ entity.name.tag
+#      ^^^^^ variable.other - constant.other.symbol
+#                   ^^^^ entity.name.type - constant.other.symbol
+#                          ^^ constant.other.symbol
+
+# prefix postfix and infix punctuation do not bake in optional semantics
+x~ x! x@ x$ x% x^ x& x* x? @(String) (s :: String)@ a + b
+#^ keyword.operator
+#   ^ keyword.operator
+#      ^ keyword.operator
+#         ^ keyword.operator
+#            ^ keyword.operator
+#               ^ keyword.operator
+#                  ^ keyword.operator
+#                     ^ keyword.operator
+#                        ^ keyword.operator - support.type - keyword.control
+#                                                     ^ keyword.operator
+def T? type T | :None
+#                ^^^^ constant.other.symbol
+(x :: Float??) = (:None :: Float?)
+#          ^^ keyword.operator
+
+# raw strings are literal while double quotes decode escapes
+raw = 'literal \n $name # text'
+#              ^^ string.quoted.single - constant.character.escape
+#                 ^^^^^ string.quoted.single - variable.other.interpolation - punctuation.definition.interpolation - comment
+#                       ^^^^^^ string.quoted.single - comment
+escaped = "line\n\x41\u0041\U0001F680 $name # text"
+#              ^^ constant.character.escape
+#                ^^^^ constant.character.escape
+#                    ^^^^^^ constant.character.escape
+#                          ^^^^^^^^^^ constant.character.escape
+#                                     ^^^^^ string.quoted.double - variable.other.interpolation
+
+# explicit holes contain nested code and quotes
+value = $"Hello $name $(f(2, "#")) $$ $$(g(3))"
+#                ^^^^ variable.other.interpolation
+#                       ^ variable.other
+#                         ^ constant.numeric
+#                             ^ string.quoted.double - comment
+#                                  ^^ constant.character.escape.dollar
+#                                          ^ constant.numeric
+raw = $'Hello $(f("nested")) and $name'
+#                  ^^^^^^ string.quoted.double
+#                                 ^^^^ variable.other.interpolation
+
+# raw reader apostrophe opens rest of line and keeps hash inert
+html' apostrophe's \n $name # reader payload
+# <- entity.name.function.reader
+#^^^ entity.name.function.reader
+#     ^^^^^^^^^^^^ string.unquoted.reader.raw
+#                     ^^^^^ string.unquoted.reader.raw - variable.other.interpolation
+#                           ^^^^^^^^ string.unquoted.reader.raw - comment
+html$' hello $name $(f(1)) # also payload
+#             ^^^^ variable.other.interpolation
+#                      ^ constant.numeric
+#                          ^^^^^^ string.unquoted.reader.raw - comment
+html$"<p>$name</p>"
+# <- entity.name.function.reader
+#^^^ entity.name.function.reader
+#         ^^^^ variable.other.interpolation
+
+# typed quotes contain inert syntax trees with opt-in interpolation
+raw = Code` hello($name, 1) # a code comment
+#     ^^^^ entity.name.type.quotation - string
+#           ^^^^^ variable.other - string
+#                 ^ keyword.operator - punctuation.definition.interpolation
+#                           ^^^ comment.line
+expanded = Code$` hello($name, $(f(2)))
+#                        ^^^^ variable.other.interpolation
+#                                  ^ constant.numeric
+next = 3
+# <- variable.other - meta.quotation
+#^^^ variable.other - meta.quotation
+
+# indented raw block ends at precisely aligned end
+  raw = '
+# ^^^ variable.other - string
+    end
+#   ^^^ string.quoted.single - keyword.control
+    # text $name \n
+#   ^^^^^^ string.quoted.single - comment
+#          ^^^^^ string.quoted.single - variable.other.interpolation
+#                ^^ string.quoted.single - constant.character.escape
+  end # closes block
+# ^^^ keyword.control - string
+next = 1
+# <- variable.other - string
+#^^^ variable.other - string
+
+# interpolated double block retains nested holes and escapes
+  text = $"
+    Hello $name $(f(2, "#")) \n
+#   ^^^^^ string.quoted.double
+#          ^^^^ variable.other.interpolation
+#                   ^ constant.numeric
+#                       ^ string.quoted.double - comment
+#                            ^^ constant.character.escape
+  end
+# ^^^ keyword.control - string
+next = 1
+# <- variable.other - string
+#^^^ variable.other - string
+
+# indented raw reader uses aligned end rather than closing apostrophe
+  html'
+# ^^^^ entity.name.function.reader
+    <p>reader's # text</p>
+#      ^^^^^^^^^^^^^^^ string.quoted.single - comment
+  end
+# ^^^ keyword.control - string
+next = 1
+# <- variable.other - string
+#^^^ variable.other - string
+
+# indented typed quote preserves code and nested block structure
+  value = Code`
+#         ^^^^ entity.name.type.quotation - string
+    if True
+#   ^^ keyword.control - string
+      f(1)
+#       ^ constant.numeric - string
+    end
+#   ^^^ keyword.control
+  end
+# ^^^ keyword.control
+next = 2
+# <- variable.other - meta.quotation
+#^^^ variable.other - meta.quotation

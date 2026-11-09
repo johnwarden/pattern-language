@@ -1,0 +1,11 @@
+{
+  "pattern-language": {
+    "enabled": true,
+    "command": [
+      "/absolute/path/to/node",
+      "/absolute/path/to/pattern-language/dist/pattern-language-lsp.mjs",
+      "--stdio"
+    ],
+    "selector": "source.pattern-language"
+  }
+}

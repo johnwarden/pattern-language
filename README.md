@@ -23,12 +23,16 @@ build, host tests and the source suite.
 | Named type declarations register accessors; plain type construction is capture-free | `def ... type ...` and existing type-expression accessor products |
 | Structured values need an established concrete interpretation | Raw Expression compatibility values are still allowed |
 | Refinement requirements use evidence; projection crosses one explicit boundary | One-boundary match projection and direct-member designation; proof checking remains future work |
-| Test DSL supports assertion-level todo and legacy contracts | Implemented source-defined steps, grouped .test files, executed expected-failure assertions, shared CLI/CI/browser corpus |
+| Test DSL supports whole-test todo and assertion-level todo/legacy contracts | Implemented source-defined steps, grouped .test files, executed expected-failure assertions, shared CLI/CI/browser corpus |
 
 ConstructedBy is tabled until refinement decoding is solved. IEEE special-value
 identity remains deferred. Specialization is only a later compiler optimization.
 There is no source-language module system, static checker, source `code.evaluate`,
 or compiler yet.
+
+Editor diagnostics and outlines are available through the
+[Node language server](editors/lsp/README.md), including a Sublime Text 4166
+configuration. Analysis never executes open programs or tests.
 
 ## Read the specification
 
@@ -91,8 +95,9 @@ for binding defaults, type accessors, ordered match arms and macro staging.
 ## The conformance DSL
 
 Milestone **5a.1 is implemented**. Test files use `.test`, live in broad groups
-under `tests/`, and contain one or more `test` blocks. The runner
-recursively discovers every `.test` file; the playground embeds runnable cases
+under `tests/`, and contain one or more `test` or `todo test` blocks. A file may
+contain only a single todo test. The runner recursively discovers `.test` files
+(excluding the optional inbox unless directly selected); the playground embeds runnable cases
 from `tests/examples/`.
 
 ```text
@@ -104,12 +109,15 @@ test "Current and future text result types"
 end
 ```
 
-Modifiers apply to assertions and setup bindings/definitions, never whole tests.
+`todo` also applies to whole tests. Such cases run as one expected-failure unit,
+allow partial progress, and require removing the marker once the full case passes.
+`legacy` applies only to assertions and setup bindings/definitions.
 Legacy setup supplies current definitions; adjacent todo setup is tried in isolation
 from the same incoming scope, so duplicate names cannot mask an implemented replacement.
 Ordinary and legacy assertions
 must pass. Todo assertions run and must fail; failures are silent, while successes
-fail the suite with a request to remove todo. Shared setup, malformed source and
+fail the suite with a request to remove todo. Shared setup failures count as
+expected only inside a whole-test todo. Fixture failures, malformed source and
 internal harness errors still fail normally. Values and their observed types are
 checked independently; expected values use data syntax, not expressions to evaluate.
 A result annotation replaces separate value/type clauses. Destructure multi-return

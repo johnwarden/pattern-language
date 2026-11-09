@@ -1,10 +1,11 @@
 import { loadTests, runTest } from "../src/test-suite.ts";
 import { sourceFiles } from "./source-files.ts";
 const suiteFiles = sourceFiles(new URL("../tests/examples/", import.meta.url));
-const initialExample = loadTests(suiteFiles).find(
+const exampleTests = loadTests(suiteFiles);
+const initialExample = exampleTests.find(
   (value) => value.name === "DSL: Recursive expression grammar",
 )!.id;
-import test from "node:test";
+import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
@@ -50,22 +51,49 @@ const oldDefaultGrammar = DEFAULT_GRAMMAR.replace(
   "def UnionTypeExpression type :unionType pattern :: PatternBody\n",
   "",
 );
-for (const state of ["fresh", "restored old grammar"]) {
-  test(`all playground examples execute against the shared Test corpus: ${state}`, () => {
-    const saved =
-      state === "fresh"
-        ? undefined
-        : JSON.stringify({
-            version: 4,
-            source: "my unfinished draft",
-            grammar: oldDefaultGrammar,
-            mode: "program",
-            example: "draft",
-            draft: "my unfinished draft",
-            history: [],
-            output: { error: "cached old failure" },
-          });
-    const { dom, el } = mount(saved);
+const exampleLanguage = new Map<
+  string,
+  {
+    report: ReturnType<typeof runTest>;
+    display?: string;
+    inspect?: string;
+  }
+>();
+function languageFor(value: (typeof exampleTests)[number]) {
+  let cached = exampleLanguage.get(value.id);
+  if (!cached) {
+    const report = runTest(value);
+    cached = { report };
+    if (!report.expectedError) {
+      const interpreter = new Interpreter();
+      const results = interpreter.run(value.source);
+      cached.display = displayResults(results);
+      cached.inspect = interpreter.inspect(results);
+    }
+    exampleLanguage.set(value.id, cached);
+  }
+  return cached;
+}
+describe(
+  "all playground examples execute against the shared Test corpus",
+  { concurrency: 2 },
+  () => {
+    for (const state of ["fresh", "restored old grammar"]) {
+      test(state, () => {
+        const saved =
+          state === "fresh"
+            ? undefined
+            : JSON.stringify({
+                version: 4,
+                source: "my unfinished draft",
+                grammar: oldDefaultGrammar,
+                mode: "program",
+                example: "draft",
+                draft: "my unfinished draft",
+                history: [],
+                output: { error: "cached old failure" },
+              });
+        const { dom, el } = mount(saved);
     assert.equal(el("result").textContent, "");
     assert.equal(el("error").textContent, "");
     assert.equal(
@@ -73,7 +101,7 @@ for (const state of ["fresh", "restored old grammar"]) {
       saved ? "Draft restored · examples load their bundled grammar" : "Ready",
     );
     assert.equal(el("type-schema").textContent, TYPE_SCHEMA);
-    const tests = loadTests(suiteFiles).filter((value) => value.program);
+    const tests = exampleTests.filter((value) => value.program);
     assert.equal(
       tests.length,
       76,
@@ -110,7 +138,7 @@ for (const state of ["fresh", "restored old grammar"]) {
       assert.equal(el("error").textContent, "");
       assert.equal(el("status").textContent, "Example loaded");
       el("run").click();
-      const report = runTest(value);
+      const { report, display, inspect } = languageFor(value);
       assert.equal(report.passed, true, value.id + ": " + report.message);
       if (report.expectedError)
         assert.ok(
@@ -119,18 +147,8 @@ for (const state of ["fresh", "restored old grammar"]) {
         );
       else {
         assert.equal(el("error").textContent, "", value.id);
-        const interpreter = new Interpreter();
-        const results = interpreter.run(value.source);
-        assert.equal(
-          displayResults(results),
-          displayResults(report.results!),
-          value.id,
-        );
-        assert.equal(
-          el("result").textContent,
-          interpreter.inspect(results),
-          value.id,
-        );
+        assert.equal(display, displayResults(report.results!), value.id);
+        assert.equal(el("result").textContent, inspect, value.id);
       }
     }
     if (saved) {
@@ -143,8 +161,10 @@ for (const state of ["fresh", "restored old grammar"]) {
       assert.equal(el<HTMLTextAreaElement>("grammar").value, oldDefaultGrammar);
     }
     dom.window.close();
-  });
-}
+      });
+    }
+  },
+);
 test("example grammar stays separate from the saved custom draft across remounts", () => {
   const app = mount();
   const customGrammar = DEFAULT_GRAMMAR.replace(":if ", ":when ");

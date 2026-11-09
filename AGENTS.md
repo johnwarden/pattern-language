@@ -98,7 +98,9 @@ Commands are `just` recipes. Run `just check` before claiming done (on a laptop,
 
 This repository has no application secrets. Do not add Bitwarden wiring or invent credentials. Ignore `.env`. Do not source secrets from `setup`, `test`, or `check`.
 
-`just check` is every CI gate, in order: lint, typecheck, build, host tests, source-language tests. Build before host tests because playground checks exercise the generated browser bundle. Checks use `America/Denver`.
+`just check` is every CI gate: lint, typecheck, then build, then host tests and
+source-language tests together. Build before host tests because playground checks
+exercise the generated browser bundle. Checks use `America/Denver`.
 
 | Recipe | Purpose |
 |---|---|
@@ -109,9 +111,10 @@ This repository has no application secrets. Do not add Bitwarden wiring or inven
 | `just test [path]` | A `.test` file or directory runs source-language tests; a TypeScript file runs host tests. No path runs host tests plus Dockerfile/devbox alignment and finite recipe smokes. |
 | `just test-language` | Source suite (`tests/**/*.test`, excluding inbox). `just test-language --list` lists cases. |
 | `just typecheck` | `tsc --noEmit`. |
-| `just build` | Generate the browser bundles. |
+| `just build` | Generate browser bundles and the Node-only language server. |
+| `just lsp` | Start the built stdio language server for editor clients. |
 | `just lint` | ShellCheck on repo shell scripts. |
-| `just check` | All of the above, in the order CI requires. |
+| `just check` | All of the above. Build precedes host tests; host tests and the source suite then run together. |
 
 On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
@@ -119,9 +122,11 @@ The source suite is tests/**/*.test, grouped by topic. `tests/inbox` is optional
 default host/source runs and pre-push exclude it. Run `just test tests/inbox`
 or select an inbox file to opt in. Source runs print each filename. Assertions use
 expect subject result expected :: Type, assert, and expect subject error "reason".
-Expected results are data, not expressions to execute. Todo assertions run and must
-fail; an unexpected success requires removing todo. Legacy assertions must pass
-until explicitly retired. Do not generate expected values from current outputs.
+Expected results are data, not expressions to execute. `todo test` marks a whole
+expected-failure case, including language failures in its shared setup; it runs
+and must fail as a unit. A file may contain only one todo test. Todo assertions
+still run and must fail individually; an unexpected success requires removing
+todo. Legacy assertions must pass until explicitly retired. Do not generate expected values from current outputs.
 Pair each legacy assertion with a same-subject todo, or record the unresolved
 replacement in design/LEGACY-ASSERTIONS.md. Supported behavior uses ordinary checks.
 

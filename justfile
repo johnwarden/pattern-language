@@ -55,9 +55,28 @@ test path="":
         {{ node }} --test "$1"
       fi
     else
+      align_log="$(mktemp)"
+      smoke_log="$(mktemp)"
+      trap 'rm -f "$align_log" "$smoke_log"' EXIT
+      bash test/cursor_dockerfile_devbox_align_test.sh >"$align_log" 2>&1 &
+      align_pid=$!
+      bash test/just_recipes_test.sh >"$smoke_log" 2>&1 &
+      smoke_pid=$!
+      set +e
       npm test
-      bash test/cursor_dockerfile_devbox_align_test.sh
-      bash test/just_recipes_test.sh
+      npm_status=$?
+      wait "$align_pid"
+      align_status=$?
+      wait "$smoke_pid"
+      smoke_status=$?
+      set -e
+      cat "$align_log"
+      cat "$smoke_log"
+      if ((npm_status != 0 || align_status != 0 || smoke_status != 0)); then
+        printf 'just test failed: host %s, dockerfile align %s, recipe smokes %s\n' \
+          "$npm_status" "$align_status" "$smoke_status" >&2
+        exit 1
+      fi
     fi
 
 # Source-language suite (tests/**/*.test)
@@ -67,11 +86,15 @@ test-language *args:
     set -euo pipefail
     npm run test:language -- "$@"
 
+# Start the built stdio language server (run just build first)
+lsp:
+    node dist/pattern-language-lsp.mjs --stdio
+
 # Static types
 typecheck:
     npm run check
 
-# Generate browser bundles
+# Generate browser bundles and the Node-only language server
 build:
     npm run build
 
@@ -79,5 +102,27 @@ build:
 lint:
     shellcheck .githooks/pre-commit .githooks/pre-push test/cursor_dockerfile_devbox_align_test.sh test/just_recipes_test.sh
 
-# Every CI gate
-check: lint typecheck build test test-language
+# Every CI gate. Build before host tests so playground checks see the bundle.
+# Host tests and the source suite run together after that; their logs print in order.
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just lint
+    just typecheck
+    just build
+    lang_log="$(mktemp)"
+    trap 'rm -f "$lang_log"' EXIT
+    just test-language >"$lang_log" 2>&1 &
+    lang_pid=$!
+    set +e
+    just test
+    test_status=$?
+    wait "$lang_pid"
+    lang_status=$?
+    set -e
+    cat "$lang_log"
+    if ((test_status != 0 || lang_status != 0)); then
+      printf 'just check failed: just test %s, just test-language %s\n' \
+        "$test_status" "$lang_status" >&2
+      exit 1
+    fi

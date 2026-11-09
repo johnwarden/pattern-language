@@ -100,7 +100,10 @@ test("each result requires the stated type and canonical data spelling", () => {
   );
   const wrongType = runTest(sample(":Widget", "result Widget :: Expression"));
   assert.equal(wrongType.passed, false);
-  assert.match(wrongType.message, /type mismatch.*Expression.*UpperCamelSymbol/);
+  assert.match(
+    wrongType.message,
+    /type mismatch.*Expression.*UpperCamelSymbol/,
+  );
   for (const type of ["Expression", "UpperCamelSymbol"]) {
     const quoted = runTest(sample(":Widget", `result :Widget :: ${type}`));
     assert.equal(quoted.passed, false);
@@ -147,7 +150,9 @@ end`).passed,
     "() = (1)",
     "(x, color: c) = (1)",
   ]) {
-    const result = run(`test "Bad pack"\n assert\n  ${body}\n  True\n end\nend`);
+    const result = run(
+      `test "Bad pack"\n assert\n  ${body}\n  True\n end\nend`,
+    );
     assert.equal(result.passed, false, body);
   }
 });
@@ -269,7 +274,7 @@ test("test-file values retain unresolved operands through data round trips", () 
   if (text.kind !== "literal" || typeof text.value !== "string") assert.fail();
   assert.ok(equal(i.readValue(type, text.value), value.fileValue));
 });
-test("files require nonempty test blocks, stable IDs, and assertion-level modifiers", () => {
+test("files require nonempty test blocks and stable IDs", () => {
   const a = 'test "First case"\n expect 1 result 1 :: Expression\nend';
   const b = 'test "Second case"\n todo assert False\nend';
   const before = loadTests({ "group/a.test": a + "\n" + b }),
@@ -283,7 +288,7 @@ test("files require nonempty test blocks, stable IDs, and assertion-level modifi
     "",
     "x = 1",
     a + "\n" + a,
-    'todo test "Not a modifier here"\n expect 1 result 1 :: Expression\nend',
+    'legacy test "Not a test modifier"\n expect 1 result 1 :: Expression\nend',
     'test "Bad nesting"\n todo test "Nested"\n  1\n end\nend',
     'test "Malformed"\n (\nend',
   ])
@@ -408,7 +413,10 @@ test("0f source denotes a Float64-rounded Rational", () => {
   assert.equal(r.passed, true, r.message);
 });
 test("assertions require a positional Bool result and preserve ordinary operator lexing", () => {
-  assert.equal(run('test "Labels"\n x = (ok: True)\n assert x\nend').passed, false);
+  assert.equal(
+    run('test "Labels"\n x = (ok: True)\n assert x\nend').passed,
+    false,
+  );
   assert.equal(run('test "Truthiness"\n assert 1\nend').passed, false);
   assert.equal(
     run(

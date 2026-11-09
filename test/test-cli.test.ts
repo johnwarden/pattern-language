@@ -121,6 +121,29 @@ test("selecting a project group retains the same IDs as default discovery", () =
   for (const name of bindings) assert.equal(subset[name], full[name]);
 });
 
+test("CLI runs and lists a file containing a single todo test", () =>
+  temporary((dir) => {
+    const file = join(dir, "future.test");
+    writeFileSync(
+      file,
+      'todo test "Future"\n  assert True\n  expect missing() result 1 :: Rational\nend',
+    );
+    const listed = invoke("--list", file);
+    assert.equal(listed.status, 0, listed.stderr);
+    assert.match(listed.stdout, /future#future · Future · todo test/);
+    const result = invoke(file);
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    assert.match(result.stdout, /FILE future\.test/);
+    assert.match(result.stdout, /TODO future#future/);
+    assert.match(result.stdout, /0 tests passed, 0 tests failed/);
+    assert.match(result.stdout, /1 todo tests failed as expected/);
+    writeFileSync(file, 'todo test "Future"\n  assert True\nend');
+    const fulfilled = invoke(file);
+    assert.equal(fulfilled.status, 1);
+    assert.match(fulfilled.stdout, /FAIL future#future/);
+    assert.match(fulfilled.stdout, /This test now passes; remove todo/);
+  }));
+
 test("inbox is excluded from broad discovery but explicit file and directory paths opt in", () =>
   temporary((dir) => {
     const inbox = join(dir, "inbox");

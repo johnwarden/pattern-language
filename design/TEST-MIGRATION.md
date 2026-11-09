@@ -65,6 +65,24 @@ No whole-file migration is claimed for candidate files outside the selected batc
 A smaller TypeScript-only suite does not imply lost semantic coverage; expected failures
 are not new passing assertions.
 
+## Minus and type-capture migration
+
+The next batch moves ordinary language observations out of
+`test/minus.test.ts` and `test/titlecase-captures.test.ts`. It adds no runtime
+features or todo assertions. Expected values remain explicit data.
+
+| Former host observations | Source home | Retained host boundary |
+| --- | --- | --- |
+| Prefix negation, parenthesized negation, subtraction and a negated right operand | tests/numeric/minus.test | Four exact parser/normal-form assertions remain in test/minus.test.ts |
+| Prefix/infix minus Code text round trips | tests/numeric/minus.test | All six direct Interpreter.evaluateCode checks remain; source tests do not substitute reading stored Code for executing it |
+| Type-valued captures in factories, bindings, labeled parameters and match arms | tests/bindings/type-captures.test | Invalid-capture diagnostics and bare UpperCamel reference rules remain in test/titlecase-captures.test.ts |
+| Type-valued accessors and structural type equality | tests/bindings/type-captures.test | Macro hygiene and capture-validation diagnostics remain in test/titlecase-captures.test.ts |
+
+The minus host tests also keep both exact `E_NO_METHOD` checks proving that the
+first infix pack is validated before a missing right operand is evaluated,
+including the quoted-Code execution path. No source evaluator API is introduced
+for this migration.
+
 ## Existing source cases
 
 | Former source | Current `.test` case ID |

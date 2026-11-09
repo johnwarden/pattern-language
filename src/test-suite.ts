@@ -22,6 +22,7 @@ import type { Value, TypeValue } from "./values.ts";
 import { primitiveNames } from "./primitive-names.ts";
 import type { Pattern } from "./pattern.ts";
 import { renderDiagnostic } from "./diagnostics.ts";
+import { lineIndent } from "./indent.ts";
 import {
   TEST_SCHEMA,
   TEST_STEP_TYPES,
@@ -42,6 +43,7 @@ export interface TestCase {
   id: string;
   file: string;
   name: string;
+  mode: "check" | "todo";
   value: Value;
   fileValue: Value;
   body: Syntax;
@@ -50,10 +52,10 @@ export interface TestCase {
   source: string;
   program: boolean;
 }
-export type TestStatus = "passed" | "failed";
+export type TestStatus = "passed" | "failed" | "expected-failure";
 export interface CheckReport {
   kind: TestStep["kind"];
-  status: TestStatus | "expected-failure";
+  status: TestStatus;
   mode: AssertionMode;
   message: string;
   actual?: string;
@@ -132,13 +134,13 @@ export function testSourceText(tree: Syntax): string {
 function dedent(text: string, indentation?: number): string {
   const lines = text.split("\n"),
     nonempty = lines.filter((line) => line.trim());
-  const indent =
-    indentation ??
-    (nonempty.length
-      ? Math.min(...nonempty.map((line) => line.match(/^ */)![0].length))
-      : 0);
+  let prefix = lineIndent(nonempty[0] ?? "");
+  if (indentation !== undefined) prefix = prefix.slice(0, indentation);
+  else
+    for (const line of nonempty.slice(1))
+      while (!line.startsWith(prefix)) prefix = prefix.slice(0, -1);
   return lines
-    .map((line) => line.slice(Math.min(indent, line.match(/^ */)![0].length)))
+    .map((line) => (line.startsWith(prefix) ? line.slice(prefix.length) : line))
     .join("\n");
 }
 function scalarString(value: Value): string {
@@ -385,7 +387,7 @@ class TestReader {
     } catch (error) {
       if (error instanceof LanguageError)
         error.diagnostic.notes.push(
-          "A .test file contains one or more test blocks; todo and legacy modify assertions, not tests.",
+          "A .test file contains one or more test or todo test blocks; legacy modifies assertions and setup, not whole tests.",
         );
       throw error;
     }
@@ -396,11 +398,12 @@ class TestReader {
       throw new Error("TestFileContent projection failed");
     const ids = new Set<string>();
     return collection.body.map((entry) => {
-      const [name, content] = this.schema.call(
+      const [modifier, name, content] = this.schema.call(
         "testParts",
         singleton(entry.value),
       );
-      const title = scalarString(name.value),
+      const mode = scalarString(modifier.value) as TestCase["mode"],
+        title = scalarString(name.value),
         body = dataSyntax(content.value);
       if (body.kind !== "block")
         throw problem(
@@ -424,7 +427,8 @@ class TestReader {
       const output = supported.at(-1)?.kind === "output";
       const singleProgram =
         assertions.length === 1 && assertions[0] === supported.at(-1);
-      const program = singleProgram || (output && assertions.length > 0);
+      const program =
+        mode !== "todo" && (singleProgram || (output && assertions.length > 0));
       const source = program
         ? supported
             .filter((step) =>
@@ -437,6 +441,7 @@ class TestReader {
         id,
         file,
         name: title,
+        mode,
         value: entry.value,
         fileValue: value,
         body,
@@ -596,28 +601,48 @@ function compareResult(
     );
 }
 
-/** Execute every assertion. Todo expects failure; legacy retains current behavior. */
+/** Execute checks; whole-test todo expects a case failure, never a host/fixture failure. */
 export function runTest(test: TestCase, fixture = ""): TestReport {
   const checks: CheckReport[] = [];
   let phase: TestReport["phase"] = "fixture",
     results: Field<Value>[] | undefined,
     expectedError: string | undefined;
   const interpreter = new Interpreter();
-  const report = (status: TestStatus, message: string): TestReport => ({
-    id: test.id,
-    name: test.name,
-    status,
-    passed: status === "passed",
-    phase,
-    message,
-    checks,
-    results,
-    expectedError,
-    interpreter,
-  });
+  let unexpectedTodo = false;
+  const report = (
+    outcome: "passed" | "failed",
+    message: string,
+    todoEligible = false,
+  ): TestReport => {
+    const expectedFailure =
+      test.mode === "todo" &&
+      outcome === "failed" &&
+      todoEligible &&
+      !unexpectedTodo;
+    const fulfilled = test.mode === "todo" && outcome === "passed";
+    const status: TestStatus = expectedFailure
+      ? "expected-failure"
+      : fulfilled
+        ? "failed"
+        : outcome;
+    return {
+      id: test.id,
+      name: test.name,
+      status,
+      passed: status !== "failed",
+      phase,
+      message: fulfilled ? "This test now passes; remove todo." : message,
+      checks,
+      results,
+      expectedError,
+      interpreter,
+    };
+  };
   let firstFailure: { phase: TestReport["phase"]; message: string } | undefined;
-  const fail = (message: string) => {
-    firstFailure ??= { phase, message };
+  const fail = (message: string, todoEligible = true) => {
+    if (!todoEligible) unexpectedTodo = true;
+    if (!firstFailure || (test.mode === "todo" && !todoEligible))
+      firstFailure = { phase, message };
   };
   try {
     if (fixture) interpreter.run(fixture, "repl", test.file + ":fixture");
@@ -678,7 +703,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
             message,
             span: step.subject.span,
           });
-          if (!failed) fail(message);
+          if (!failed) fail(message, false);
           continue;
         }
         if (setup.length && setup[0].mode !== step.mode) flush();
@@ -784,7 +809,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
           expected: expectedOutput,
           span: step.subject.span,
         });
-        fail(mismatch);
+        fail(mismatch, step.mode !== "todo");
       } else
         checks.push({
           kind: step.kind,
@@ -805,13 +830,20 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
       );
     if (firstFailure) {
       phase = firstFailure.phase;
-      return report("failed", firstFailure.message);
+      return report("failed", firstFailure.message, true);
     }
     return report(
       "passed",
       checks.filter((c) => c.status === "passed").length + " assertions passed",
     );
   } catch (error) {
-    return report("failed", renderDiagnostic(error));
+    return report(
+      "failed",
+      renderDiagnostic(error),
+      error instanceof LanguageError &&
+        phase !== "fixture" &&
+        error.diagnostic.code !== "E_TEST_NO_CHECK" &&
+        test.steps.some((step) => isAssertion(step) || step.mode === "todo"),
+    );
   }
 }

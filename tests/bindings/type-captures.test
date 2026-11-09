@@ -1,0 +1,33 @@
+test "UpperCamel captures specialize ordinary functions and type factories"
+  def nonZero(T :: Type)(n :: T) n != (0 :: T)
+  expect nonZero(Int)(5) result True :: Bool
+  expect nonZero(Int)(0) result False :: Bool
+
+  def List(T :: Type) type :Nil | Cons(T, List(T))
+  expect Cons(3, :Nil) :: List(Int) result Cons(3, Nil) :: List(Int)
+end
+
+test "UpperCamel captures work in bindings and labeled parameters"
+  (T :: Type) = Int
+  x = 3 :: T
+  expect x result 3 :: Int
+
+  def identity(elementType: U :: Type)(value :: U) value
+  expect identity(elementType: Int)(3) result 3 :: Int
+end
+
+test "UpperCamel captures work in match arms"
+  assert
+    match Int
+      (T :: Type) -> T == (type Int)
+    end
+  end
+end
+
+test "Type captures supply accessors without changing structural identity"
+  def Box type Box(T :: Type)
+  box = Box(Int) :: Box
+  assert box.T == (type Int)
+  assert T(box) == (type Int)
+  assert Box == (type Box(Type))
+end
