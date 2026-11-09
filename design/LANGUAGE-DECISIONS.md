@@ -30,7 +30,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | L8 | Author instruction on 8 November: parse directly into Expression; Expression number literals are exact Rationals; get rid of the lasting syntax-tree layer. This supersedes any pending public `NumberLiteral(Float)` redesign. Distinct postfix punctuation application is a separate smaller item, not blocked on full parser migration. |
 | W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
 | L9 | Author rulings on 9 November 2026 for PR #31 (settled 14:17 Madrid, refined 14:34 and 14:59): Strings are intrinsic primitives. Every symbol prints bare in value text, including `None`; `:` is needed only in code where a bare name would bind. Value text is read with the expected type's own grammar, with no layout-keyword quoting. Primitive names are `ReservedSymbol` values, not symbols, and type descriptions use them directly. A quoted primitive name such as `:Int` in program source is an error, including application heads and type declarations; parsing Code and decoding value text have no special check for it. `Number` is removed for now. |
-| L10 | Author ruling on 9 November 2026 (15:02 Madrid): master's Boolean behavior is correct. Literal `True`/`False` are `Bool` values, the same type as computed comparison results, not `ReservedSymbol` values. |
+| L10 | Author ruling on 9 November 2026 (15:02 Madrid): master's Boolean behavior is correct. Literal `True`/`False` are `Bool` values, the same type as computed comparison results, not `ReservedSymbol` values. Refined 15:11: match arms use bare `True`/`False`; a quoted primitive in any pattern stays `E_QUOTED_PRIMITIVE`. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -435,6 +435,16 @@ The type description of `type Int` is the reserved symbol itself, not `:Int`.
 expect True result True :: Bool
 expect (1 == 2) == False result True :: Bool
 expect True .matches ReservedSymbol result False :: Bool
+```
+
+Match arms use the bare names; `:True ->` is `E_QUOTED_PRIMITIVE`:
+
+```text
+match 1 == 1
+  True -> "yes"
+  False -> "no"
+end
+# "yes" :: String
 ```
 
 A quoted primitive name in program source is an error, including application

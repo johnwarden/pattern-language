@@ -53,6 +53,39 @@ test "Literal and computed Booleans share one Bool type"
   assert parse(Type)(toString(Type)(t)) == t
 end
 
+test "Match arms use bare True and False"
+  expect
+    match 1 == 1
+      True -> "yes"
+      False -> "no"
+    end
+  result "yes" :: String
+  expect
+    match True
+      True -> "yes"
+      False -> "no"
+    end
+  result "yes" :: String
+  expect
+    match 1 == 2
+      True -> "yes"
+      False -> "no"
+    end
+  result "no" :: String
+  expect
+    match 1 == 1
+      :True -> "yes"
+      _ -> "no"
+    end
+  error "E_QUOTED_PRIMITIVE"
+  expect
+    match False
+      :False -> "yes"
+      _ -> "no"
+    end
+  error "E_QUOTED_PRIMITIVE"
+end
+
 test "Quoted primitive names in Code"
   expect :Int error "E_QUOTED_PRIMITIVE"
   expect :True error "E_QUOTED_PRIMITIVE"
