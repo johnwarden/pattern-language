@@ -9,6 +9,6 @@ todo test "Failure expectation uses fails"
   expect 1(1) fails "E_NOT_CALLABLE"
 end
 
-# Confirmed vocabulary, with semantics still awaiting a concrete author example:
-# expect actual contains expected
+# String-only substring checks and their expected failures are drafted separately
+# in expect-contains.test, with the authored outcomes in expect-contains.md.
 # Future predicates such as isApprox are extension points, not implemented here.

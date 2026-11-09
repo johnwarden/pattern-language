@@ -1,0 +1,48 @@
+# Future Test DSL input. Expected PASS/FAIL outcomes are in expect-contains.md.
+# Deliberately failing cases exercise the assertion runner, not missing features.
+
+test "contains finds exact contiguous text"
+  expect "hello world" contains "hello"
+  expect "hello world" contains "lo wo"
+  expect "hello world" contains "world"
+  expect "hello world" contains "hello world"
+end
+
+test "contains accepts a computed String"
+  def greeting(name :: String) "hello " + name
+
+  expect greeting("world") contains "lo wo"
+end
+
+test "contains treats punctuation literally"
+  expect "a.c" contains "."
+  expect "a*c" contains "*"
+end
+
+test "contains fails when the substring is absent"
+  expect "hello world" contains "goodbye"
+end
+
+test "contains does not match a noncontiguous subsequence"
+  expect "abcdef" contains "ace"
+end
+
+test "contains requires exact letter case"
+  expect "hello" contains "Hello"
+end
+
+test "contains does not interpret a regular expression"
+  expect "abc" contains "a.c"
+end
+
+test "contains rejects a numeric subject instead of stringifying it"
+  expect 123 contains "23"
+end
+
+test "contains rejects a numeric needle instead of stringifying it"
+  expect "123" contains 23
+end
+
+test "contains rejects a collection subject"
+  expect ["hello", "world"] contains "hello"
+end

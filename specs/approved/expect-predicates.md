@@ -27,10 +27,12 @@ The coordinated migration is authorized for `master` and affected branches at
 do not merge unrelated features. This timing is for the migration, not a general
 license to choose unspecified language behavior.
 
-`expect subject contains expected` is requested vocabulary whose predicate
-semantics remain [pending](../inbox/contains-predicate.md). Do not implement those
-semantics without clarification in the project chat. Leave room for later predicates such as
-`isApprox` without implementing them now.
+`expect subject contains expected` now has the separately
+[approved String-substring contract](expect-contains.md). Its
+[draft fixtures](../../test/fixtures/expect-contains.test) include both successful
+checks and intentionally failing runner inputs with authored outcomes. Include
+the predicate and real harness checks in the coordinated migration. Leave room
+for later predicates such as `isApprox` without implementing them now.
 
 Move this record to `../implemented/` when real tests capture the new syntax;
 replace the pending-fixture note with links to those tests and the migration PR.
