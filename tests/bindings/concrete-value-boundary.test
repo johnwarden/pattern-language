@@ -1,0 +1,38 @@
+# Accepted contracts extracted from tests/inbox/2026-raw-and-typed-expressions.test.
+# This draft intentionally has failing target assertions until the matcher is aligned.
+
+test "Ordinary constructor bindings cannot open a concrete value"
+  def Rectangle type Rect(width :: Int, height :: Int)
+  (rectangle :: Rectangle) = Rect(2, 2)
+
+  expect rectangle result Rect(2, 2) :: Rectangle
+
+  expect
+    Rect(width, height) = rectangle
+    width
+  error "E_PATTERN_MISMATCH"
+end
+
+test "Ordinary constructor parameters cannot open a concrete value"
+  def Rectangle type Rect(width :: Int, height :: Int)
+  (rectangle :: Rectangle) = Rect(2, 2)
+  def rawWidth(Rect(width, height)) width
+
+  expect rawWidth(rectangle) error "E_NO_METHOD"
+end
+
+test "Explicit match opens the concrete shape and retains field types"
+  def Rectangle type Rect(width :: Int, height :: Int)
+  (rectangle :: Rectangle) = Rect(2, 2)
+
+  (width, height) = match rectangle
+    Rect(w, h) -> (w, h)
+  end
+  expect width result 2 :: Int
+  expect height result 2 :: Int
+
+  copy = match rectangle
+    (same :: Rectangle) -> same
+  end
+  assert copy == rectangle
+end
