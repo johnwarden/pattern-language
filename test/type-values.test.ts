@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Interpreter, displayResults, LanguageError } from "../src/index.ts";
-import { single, unwrap, valLiteral, valSymbol } from "../src/values.ts";
+import { equal, single, unwrap, valLiteral, valSymbol } from "../src/values.ts";
 import { term } from "../src/type-data.ts";
 const run = (s: string) => displayResults(new Interpreter().run(s));
 const stringResult = (i: Interpreter, s: string) => {
@@ -215,6 +215,55 @@ test("global text does not depend on names; local aliases resolve in the caller 
     ),
     "Rectangle",
   );
+});
+
+test("an exact local alias prints a whole refinement without transporting its predicate", () => {
+  const source =
+    "type Rectangle concrete Rect(width :: Int, height :: Int)\n" +
+    "square = Rectangle .where (s -> width(s) == height(s))\n" +
+    "(toStringLocal(Type)(square),toStringLocal(Type)(parseLocal(Type)(toStringLocal(Type)(square))))";
+  assert.equal(run(source), '("square", "square")');
+  assert.throws(
+    () =>
+      run(
+        source.replace("toStringLocal(Type)(square)", "toString(Type)(square)"),
+      ),
+    /portable predicate description/,
+  );
+});
+
+test("local refinement aliases resolve the identical value and stop after shadowing", () => {
+  const i = new Interpreter();
+  const original = i.run(
+    "type Rectangle concrete Rect(width :: Int, height :: Int)\n" +
+      "square = Rectangle .where (s -> width(s) == height(s))\n" +
+      "square",
+  )[0].value;
+  assert.equal(i.inspect([{ label: "_1", value: original }]), "square :: Type");
+  assert.strictEqual(
+    unwrap(i.run('parseLocal(Type)("square")')[0].value),
+    original,
+  );
+  i.env.bindings.set("square", i.run("Int")[0].value);
+  assert.throws(
+    () => i.inspect([{ label: "_1", value: original }]),
+    /portable predicate description/,
+  );
+});
+
+test("local inspection keeps nested type values structural in raw data", () => {
+  const i = new Interpreter();
+  i.run("type Rectangle concrete Rect(width :: Int)\nRectangle");
+  const rectangle = single(i.run("Rectangle"));
+  const value = term("Box", rectangle);
+  assert.equal(
+    i.inspect([{ label: "_1", value }]),
+    "Box(Type(Rect(Int))) :: Expression",
+  );
+  const restored = single(
+    i.run('parseLocal(Expression)("Box(Type(Rect(Int)))")'),
+  );
+  assert.equal(equal(restored, value), true);
 });
 
 test("every Unicode-scalar string shape has lossless text without evaluating interpolation", () => {

@@ -29,6 +29,8 @@ import {
 } from "./values.ts";
 import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
+import { isInfixApplication } from "./application-format.ts";
+import { infixPunctuation } from "./lexical.ts";
 
 const singleton = (value: Syntax) => [{ label: "_1", value }];
 /** Value text prints every symbol bare. Colon quotation is a code-domain form. */
@@ -66,6 +68,7 @@ export function valueText(
   domain?: TextDomain,
   expected?: TypeValue,
   expandRootType = false,
+  outerLeftOperand = false,
 ): string {
   let steps = 0;
   const implicit = new WeakSet<object>();
@@ -292,7 +295,7 @@ export function valueText(
       }
       return syntax(v.base, root, inert);
     }
-    if (v.kind === "type") return typeSyntax(v, root && expandRootType);
+    if (v.kind === "type") return typeSyntax(v, root && expandRootType, root);
     if (v.kind === "literal") {
       if (typeof v.value === "string")
         return { kind: "literal", value: v.value };
@@ -419,41 +422,56 @@ export function valueText(
       { code: "E_VALUE_SERIALIZATION" },
     );
   }
-  function typeSyntax(t: TypeValue, expand = false): Syntax {
-    const alias = domain?.localName?.(t);
+  function typeSyntax(t: TypeValue, expand = false, allowAlias = true): Syntax {
+    // Untyped value children decode as data symbols. Their type values need
+    // structural text; local names are only decoded in type positions.
+    const alias = allowAlias ? domain?.localName?.(t) : undefined;
     if (alias && !expand) return parseExpression(alias);
     // Type's argument is pattern data, so its descriptor constructors are literal.
     const referenceNames = new Set(domain?.localReferences?.values());
-    const data: Value = domain?.localReferences
-      ? (() => {
-          const description =
-            t.treeGrammar && domain.localName?.(t.treeGrammar)
-              ? {
+    let data: Value;
+    try {
+      data = domain?.localReferences
+        ? (() => {
+            const description =
+              t.treeGrammar && domain.localName?.(t.treeGrammar)
+                ? {
+                    kind: "term" as const,
+                    head: sym("TreeGrammar"),
+                    body: [
+                      {
+                        label: "_1",
+                        value: sym(domain.localName(t.treeGrammar)!),
+                      },
+                    ],
+                  }
+                : typeDescription(t, domain.localReferences);
+            return (description.kind === "symbol" &&
+              primitiveNames.has(description.name)) ||
+              (description.kind === "term" &&
+                description.head.kind === "symbol" &&
+                ["Type", "UnionType", "Facet", "TreeGrammar"].includes(
+                  description.head.name,
+                ))
+              ? description
+              : {
                   kind: "term" as const,
-                  head: sym("TreeGrammar"),
-                  body: [
-                    {
-                      label: "_1",
-                      value: sym(domain.localName(t.treeGrammar)!),
-                    },
-                  ],
-                }
-              : typeDescription(t, domain.localReferences);
-          return (description.kind === "symbol" &&
-            primitiveNames.has(description.name)) ||
-            (description.kind === "term" &&
-              description.head.kind === "symbol" &&
-              ["Type", "UnionType", "Facet", "TreeGrammar"].includes(
-                description.head.name,
-              ))
-            ? description
-            : {
-                kind: "term" as const,
-                head: sym("Type"),
-                body: [{ label: "_1", value: description }],
-              };
-        })()
-      : typeData(t);
+                  head: sym("Type"),
+                  body: [{ label: "_1", value: description }],
+                };
+          })()
+        : typeData(t);
+    } catch (error) {
+      // A whole exact alias can describe a local refinement even when its
+      // predicate has no portable structural description yet.
+      if (
+        alias &&
+        error instanceof LanguageError &&
+        error.diagnostic.code === "E_TYPE_SERIALIZATION"
+      )
+        return parseExpression(alias);
+      throw error;
+    }
     function patternSyntax(v: Value, head = false): Syntax {
       if (v.kind === "symbol")
         return {
@@ -497,7 +515,23 @@ export function valueText(
     }
     return patternSyntax(data);
   }
-  return normal(syntax(value, true));
+  const root = syntax(value, true);
+  const grouped =
+    outerLeftOperand &&
+    (root.kind === "sequence" ||
+      root.kind === "form" ||
+      isInfixApplication(root, {
+        application: (node: Syntax) =>
+          node.kind === "apply" ? node : undefined,
+        punctuation: (node: Syntax) =>
+          node.kind === "symbol" && infixPunctuation(node.name)
+            ? node.name
+            : undefined,
+        render: () => "",
+        fields: () => "",
+      }));
+  const text = normal(root);
+  return grouped ? "(" + text + ")" : text;
 }
 
 /** Decodes the small data-constructor algebra; it has no evaluator or environment. */
