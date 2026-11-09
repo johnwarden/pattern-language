@@ -1,0 +1,48 @@
+'use client';
+import {useCallback,useEffect,useRef,useState, type ReactNode} from 'react';
+import {ArrowLeft,ArrowRight,Play,RotateCcw,Code2,Check,ExternalLink} from 'lucide-react';
+import lessons from 'tour:lessons';
+import {PatternCode} from './pattern-code';
+
+type Run={status:'idle'|'running'|'success'|'error';output?:string;message?:string;duration?:number};
+function inline(s:string):ReactNode[]{return s.split(/(`[^`]+`|\*\*[^*]+\*\*)/g).map((v,i)=>v.startsWith('`')?<code key={i}>{v.slice(1,-1)}</code>:v.startsWith('**')?<strong key={i}>{v.slice(2,-2)}</strong>:v);}
+function Markdown({body}:{body:string}){return <>{body.replace(/```pattern\n[\s\S]*?```/g,'').split(/\n\s*\n/).filter(Boolean).map((part,i)=>{if(part.startsWith('# '))return null;if(part.startsWith('## '))return <h2 key={i}>{inline(part.slice(3))}</h2>;if(/^[-*] /.test(part))return <ul key={i}>{part.split('\n').map((s,j)=><li key={j}>{inline(s.replace(/^[-*] /,''))}</li>)}</ul>;return <p key={i}>{inline(part.replace(/\n/g,' '))}</p>;})}</>}
+export default function Tour(){
+ const [index,setIndex]=useState(0),[playground,setPlayground]=useState(false),[source,setSource]=useState(lessons[0].examples[0]),[example,setExample]=useState(0),[run,setRun]=useState<Run>({status:'idle'}),[done,setDone]=useState<string[]>([]),[ready,setReady]=useState(false);
+ const editor=useRef<HTMLTextAreaElement>(null),paint=useRef<HTMLPreElement>(null),numbers=useRef<HTMLDivElement>(null),worker=useRef<Worker|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null),request=useRef(0),debounce=useRef<ReturnType<typeof setTimeout>|null>(null),dirty=useRef(false);
+ const lesson=lessons[index];
+ const execute=useCallback((code:string)=>{
+  if(debounce.current){clearTimeout(debounce.current);debounce.current=null;}dirty.current=false;worker.current?.terminate();if(timer.current)clearTimeout(timer.current);const id=++request.current;setRun({status:'running'});
+  const w=new Worker('/tour-worker.js');worker.current=w;
+  w.onmessage=({data})=>{if(data.requestId!==request.current)return;if(timer.current)clearTimeout(timer.current);setRun(data);w.terminate();};
+  w.onerror=()=>{if(id!==request.current)return;if(timer.current)clearTimeout(timer.current);setRun({status:'error',message:'The interpreter could not start. Try running again.'});w.terminate();};
+  timer.current=setTimeout(()=>{if(id!==request.current)return;w.terminate();setRun({status:'error',message:'Execution stopped after 10 seconds. Edit the program and try again.'});},10000);
+  w.postMessage({requestId:id,source:code,sourceName:'tour.pattern'});
+ },[]);
+ const choose=useCallback((n:number,mode=false,ex=0,history=true)=>{
+  n=Math.max(0,Math.min(lessons.length-1,n));const l=lessons[n];let code=l.examples[ex];try{code=localStorage.getItem(`pattern-tour:${mode?"playground:":""}${l.slug}:${ex}`)??code;}catch{}
+  setIndex(n);setPlayground(mode);setExample(ex);setSource(code);setRun({status:'idle'});execute(code);
+  if(history)window.history.pushState({},'',`?lesson=${l.slug}${mode?'&mode=playground':''}`);
+ },[execute]);
+ useEffect(()=>{const restore=()=>{const p=new URLSearchParams(location.search);const n=lessons.findIndex(l=>l.slug===p.get('lesson'));choose(n<0?0:n,p.get('mode')==='playground',0,false);};restore();try{setDone(JSON.parse(localStorage.getItem('pattern-tour:done')||'[]'));}catch{}setReady(true);window.addEventListener('popstate',restore);return()=>{window.removeEventListener('popstate',restore);worker.current?.terminate();if(timer.current)clearTimeout(timer.current);if(debounce.current)clearTimeout(debounce.current);};},[choose]);
+ function edit(code:string){setSource(code);dirty.current=true;if(debounce.current)clearTimeout(debounce.current);debounce.current=setTimeout(()=>execute(code),450);try{localStorage.setItem(`pattern-tour:${playground?"playground:":""}${lesson.slug}:${example}`,code);}catch{}}
+ function reset(){const code=lesson.examples[example];edit(code);execute(code);editor.current?.focus();}
+ function sync(){if(paint.current&&editor.current){paint.current.scrollTop=editor.current.scrollTop;paint.current.scrollLeft=editor.current.scrollLeft;if(numbers.current)numbers.current.scrollTop=editor.current.scrollTop;}}
+ function key(e:React.KeyboardEvent<HTMLTextAreaElement>){
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.preventDefault();execute(source);return;}
+  if(e.key!=='Tab'&&!((e.metaKey||e.ctrlKey)&&['[',']'].includes(e.key)))return;
+  e.preventDefault();const el=e.currentTarget,start=el.selectionStart,end=el.selectionEnd;const a=source.lastIndexOf('\n',start-1)+1,b=source.indexOf('\n',end);const finish=b<0?source.length:b;const block=source.slice(a,finish);const dedent=e.key==='['||(e.key==='Tab'&&e.shiftKey);let removed=0;const next=block.split('\n').map(line=>{if(!dedent)return '  '+line;const m=line.match(/^( {1,2}|\t)/);removed+=m?.[0].length||0;return line.slice(m?.[0].length||0);}).join('\n');edit(source.slice(0,a)+next+source.slice(finish));requestAnimationFrame(()=>{el.selectionStart=a;el.selectionEnd=a+next.length;sync();});
+ }
+ function complete(){const next=Array.from(new Set([...done,lesson.slug]));setDone(next);try{localStorage.setItem('pattern-tour:done',JSON.stringify(next));}catch{}if(index<lessons.length-1)choose(index+1);}
+ return <div className="shell">
+  <aside className="sidebar"><a className="brand" href="?lesson=a-typed-rectangle"><span className="brandmark">{'{·}'}</span><span>patterns as types<small>A SHORT TOUR</small></span></a><div className="navlabel">THE BASICS <span>{done.length} / {lessons.length}</span></div><nav aria-label="Lessons">{lessons.map((l,i)=><button key={l.slug} className={!playground&&i===index?'navitem active':'navitem'} onClick={()=>choose(i)} aria-current={!playground&&i===index?'page':undefined}><span className="number">{done.includes(l.slug)?<Check size={13}/>:String(i+1).padStart(2,'0')}</span><span>{l.title}</span></button>)}</nav><div className="sidebarbottom"><button className={'navitem '+(playground?'active':'')} onClick={()=>choose(index,true)}><Code2 size={17}/>Playground<ArrowRight size={14}/></button><p>An experimental language.<br/>Small programs. One idea at a time.</p></div></aside>
+  <main><header><span>{playground?'Playground':'The basics'} <span className="slash">/</span> {playground?'Make something small':lesson.title}</span><a href="https://github.com/johnwarden/pattern-language" target="_blank" rel="noreferrer">Language source <ExternalLink size={12}/></a></header>
+   <div className={'workspace '+(playground?'isplayground':'')}><article className="lesson"><div className="eyebrow">{playground?'YOUR SANDBOX':`LESSON ${String(index+1).padStart(2,'0')} OF ${String(lessons.length).padStart(2,'0')}`}</div><h1>{playground?'Follow an idea.':lesson.title}</h1>{playground?<><p>Start with this example, or make it your own. Every run starts a fresh interpreter session.</p><p>Your edits stay in this browser. Edits run after a short pause, or when you leave the editor. Use <code>⌘ Enter</code> to run immediately.</p><button className="textbutton" onClick={()=>choose(index)}>Return to the lesson <ArrowRight size={15}/></button></>:<Markdown body={lesson.body}/>}
+   <div className="lessonfoot"><span className="smalllabel">KEEP EXPLORING</span><p>{playground?'Patterns, types, and values share the same language.':'Read a little. Change a little. See what happens.'}</p></div></article>
+   <section className="coding" aria-label="Runnable example"><div className="editorcard"><div className="editorbar"><span><span className="filedot"/>{playground?'playground.pattern':lesson.slug+'.pattern'}</span><button title="Restore original example" aria-label="Reset example" onClick={reset}><RotateCcw size={15}/>Reset</button></div>{lesson.examples.length>1&&<select aria-label="Example" value={example} onChange={e=>choose(index,playground,Number(e.target.value))}>{lesson.examples.map((_,i)=><option key={i} value={i}>Example {i+1}</option>)}</select>}
+    <div className="editor"><div ref={numbers} className="linenumbers" aria-hidden="true">{source.split('\n').map((_,i)=><div key={i}>{i+1}</div>)}</div><div className="codearea"><pre ref={paint} aria-hidden="true"><PatternCode source={source+'\n'} onReady={()=>requestAnimationFrame(sync)}/></pre><textarea ref={editor} aria-label="Pattern source" spellCheck={false} autoCapitalize="off" autoCorrect="off" value={source} onChange={e=>edit(e.target.value)} onBlur={()=>{if(dirty.current)execute(source);}} onKeyDown={key} onScroll={sync} wrap="off"/></div></div>
+    <div className="runbar"><span>Edits saved in this browser</span><div><kbd>⌘ ↵</kbd><button className="runbutton" disabled={!ready||run.status==='running'} onClick={()=>execute(source)}><Play size={13} fill="currentColor"/>{run.status==='running'?'Running…':'Run'}</button></div></div></div>
+    <div className={'output '+run.status} aria-live="polite"><div className="outputbar"><span><span className="statusdot"/>RESULTS</span><span>{run.status==='running'?'Running':run.duration!==undefined?`${Math.round(run.duration)} ms`:''}</span></div><pre>{run.status==='running'?'Running your program…':run.status==='error'?run.message:run.output||'No output.'}</pre></div><div className="editorhint"><span>Native interpreter</span><span>Runs automatically after edits</span></div></section></div>
+   {!playground&&<footer><button className="back" disabled={index===0} onClick={()=>choose(index-1)}><ArrowLeft size={15}/>Previous</button><span>{index+1} / {lessons.length}</span><button className="next" onClick={complete}>{index===lessons.length-1?(done.includes(lesson.slug)?'Completed':'Finish the tour'):'Next lesson'}<ArrowRight size={15}/></button></footer>}
+  </main></div>
+}

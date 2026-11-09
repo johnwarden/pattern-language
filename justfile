@@ -39,6 +39,15 @@ watch FILE:
       find src -type f -name '*.ts' -print
     } | entr -n -c just run "$file"
 
+# Run the local Markdown tutorial (installs its locked UI dependencies on first use)
+tour port="4174":
+    {{ node }} tutorial/dev.mjs "{{ port }}"
+
+# Check starter programs, local serving, native worker output and Markdown rebuilds
+test-tour:
+    {{ node }} tutorial/check.mjs
+    {{ node }} --test tutorial/dev.test.mjs
+
 # Interactive CLI
 repl:
     {{ node }} src/cli.ts --repl
