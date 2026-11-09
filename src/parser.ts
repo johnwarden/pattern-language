@@ -772,7 +772,7 @@ class Reader {
       if (t.quoted || (touching && next.kind === "("))
         return { ...symbol(t.text, !!t.quoted), span };
       if (this.stop(stops)) return { ...symbol(t.text, !!t.quoted), span };
-      if (t.kind === "op" && next && !touching && next.kind !== "(")
+      if (t.kind === "op" && next && !touching)
         throw new LanguageError(
           "prefix and postfix operators must touch their operand",
           t,

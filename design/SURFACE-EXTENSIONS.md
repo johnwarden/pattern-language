@@ -81,10 +81,11 @@ wrapping of those suffixes, not prefix `*(String?)` / `^(…)`. T** is (T*)* and
 new two-character postfix operator. Prefix punctuation still forms maximal symbols.
 The surface reader recognizes ... and bare ** markers; their repetition/openness
 meaning belongs to interpretation. Prefix and postfix operators must touch their
-operand. `T * *` is an error (write `T**`); standalone `* *x` is an error.
-Infix `*` may take a touching prefix or postfix operand: `1 * *x`, `1 * x*`,
-and `x* * 1` parse. The same touching rule applies to every prefix/postfix
-punctuation symbol, not only `*`. Keyword remainder capture/spread is prefix
+operand. `T * *` is an error (write `T**`); standalone `* *x` is an error;
+standalone `- (x)` is an error (`-(x)` and `-x` parse). Infix may take a
+grouped operand (`1 - (x)`) or a touching prefix/postfix operand (`1 * *x`,
+`1 * x*`, `x* * 1`). The same touching rule applies to every prefix/postfix
+punctuation symbol, not only `*` or `-`. Keyword remainder capture/spread is prefix
 `**rest` / `**(x)` / `**rest: pattern` and remains later work; it cannot silently
 change the suffix rule that T** is (T*)*. Effects are still deferred.
 

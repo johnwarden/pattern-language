@@ -121,8 +121,9 @@ not establish actual iOS lifecycle/storage behavior.
   spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
 - Prefix punctuation is a maximal symbol. Tight postfix `* ? ! ^ @ $ & ~` are
   distinct from prefix/infix application. Prefix and postfix operators must
-  touch their operand: `T**` is `(T*)*`, while `T * *` and standalone `* *x`
-  are errors; `1 * *x`, `1 * x*`, and `x* * 1` parse. In type position, `T?` is
+  touch their operand: `T**` is `(T*)*`, while `T * *`, standalone `* *x`, and
+  standalone `- (x)` are errors; `-(x)`, `-x`, `1 - (x)`, `1 * *x`, `1 * x*`,
+  and `x* * 1` parse. In type position, `T?` is
   `concrete T | :None` and `T*` / `T^` are the list and error type constructors.
   Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those types.
   Prefix `$` remains unquote; interpolating `T$` quotes stay lexer prefixes, not

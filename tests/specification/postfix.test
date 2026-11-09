@@ -93,11 +93,16 @@ test "Prefix and postfix operators must touch their operand"
   expect parse(Code)("* *x") error "must touch their operand"
   expect parse(Code)("T ? ?") error "must touch their operand"
   expect parse(Code)("? ?x") error "must touch their operand"
+  expect parse(Code)("- (x)") error "must touch their operand"
+  expect parse(Code)("* (x)") error "must touch their operand"
   parse(Code)("1 * *x")
   parse(Code)("1 * x*")
   parse(Code)("x* * 1")
   parse(Code)("1 ? ?x")
   parse(Code)("x? ? 1")
+  parse(Code)("-(x)")
+  parse(Code)("-x")
+  parse(Code)("1 - (x)")
   assert parse(Code)("1 * *x") == parse(Code)("*(1)(*(x))")
   assert parse(Code)("1 * x*") == parse(Code)("*(1)(x*)")
   assert parse(Code)("x* * 1") == parse(Code)("*(x*)(1)")

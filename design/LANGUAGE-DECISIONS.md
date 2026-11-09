@@ -148,12 +148,12 @@ the whole operand is a syntax error (`assert (x)`, `assert ((1 + 2) == 3)`,
 sequence as today.
 
 This exists so the compiler does not have to check whether `a(b)` and `a b` both
-have meaning, and so `assert (x)` cannot mean `assert x`. Infix and prefix
-operators are not terms, so `a - (b)`, `x == (y)`, and `- (x)` stay valid.
+have meaning, and so `assert (x)` cannot mean `assert x`. Infix operators are not
+terms, so `a - (b)`, `x == (y)`, and `1 - (x)` stay valid. Prefix operators must
+touch their operand: `-(x)` and `-x` parse; standalone `- (x)` is a syntax error.
 Packs after `=`, `->`, `:`, or commas stay valid. Tight `todo()` is the empty
 call; spaced `todo ()` and an empty vertical pack `todo (` / `)` stay errors.
-Postfix suffixes remain tight. No indented-operand exception is required for
-parenthesized-prefix operands.
+Postfix suffixes remain tight.
 
 **Sources:** AR (call-spacing ratification; 2026-11-09 operand-continues clarification).
 
@@ -417,7 +417,7 @@ computation, which may be omitted entirely.
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
 | Test DSL modifiers | Implemented assertion-level todo/legacy execution and reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
-| Postfix vs prefix punctuation application | **Decided.** Every current suffix (`* ? ! ^ @ $ & ~`) is a distinct postfix construction. Type `T?` is `concrete T | :None` (postfix `?` is only the type constructor; present values are unwrapped; `"x"?` is not an inhabitant). List `T*` and error `T^` are the type constructors from #18. Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those types. Prefix `$` remains unquote; interpolating quotes are lexer prefixes. `T+` is not in the current suffix inventory. A punctuation symbol may be prefix/infix or postfix; prefix and postfix operators must touch their operand (`T * *` and `* *x` are errors; `1 * *x`, `1 * x*`, `x* * 1` parse). |
+| Postfix vs prefix punctuation application | **Decided.** Every current suffix (`* ? ! ^ @ $ & ~`) is a distinct postfix construction. Type `T?` is `concrete T | :None` (postfix `?` is only the type constructor; present values are unwrapped; `"x"?` is not an inhabitant). List `T*` and error `T^` are the type constructors from #18. Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those types. Prefix `$` remains unquote; interpolating quotes are lexer prefixes. `T+` is not in the current suffix inventory. A punctuation symbol may be prefix/infix or postfix; prefix and postfix operators must touch their operand (`T * *`, `* *x`, and `- (x)` are errors; `1 * *x`, `1 * x*`, `x* * 1`, `-(x)`, `-x`, and `1 - (x)` parse). |
 
 Obvious draft slips are normalized only to express the intended rules: String/sqrt examples meant an integer type; inconsistent normalizer names refer to one function; the Float union's self-reference is not a proposed recursive numeric member; mismatched id widths and Matrix dimensions are corrected explicitly. No semantic decision is extracted from those slips.
 

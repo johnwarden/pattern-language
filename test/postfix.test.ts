@@ -225,4 +225,19 @@ test("postfix T* / T** and prefix **x do not share a spaced tree", () => {
   assert.equal(normal(parseExpression("1 * *x")), "1 * *(x)");
   assert.equal(normal(parseExpression("1 * x*")), "1 * x*");
   assert.equal(normal(parseExpression("x* * 1")), "x* * 1");
+  assert.throws(
+    () => parseExpression("- (x)"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /must touch their operand/.test(e.message),
+  );
+  assert.throws(
+    () => parseExpression("* (x)"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /must touch their operand/.test(e.message),
+  );
+  assert.equal(normal(parseExpression("-(x)")), "-(x)");
+  assert.equal(normal(parseExpression("-x")), "-(x)");
+  assert.equal(normal(parseExpression("1 - (x)")), "1 - x");
 });

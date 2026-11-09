@@ -29,7 +29,8 @@ Outfix brackets/braces put their closing delimiter after the pack; they have hea
 Infix operators require surrounding spaces, have equal precedence and associate
 right. Prefix punctuation groups a maximal symbol except the quote prefix; postfix
 modifiers are read individually. Prefix and postfix operators must touch their
-operand (`T * *` and `* *x` are errors; `1 * *x`, `1 * x*`, `x* * 1` parse).
+operand (`T * *`, `* *x`, and `- (x)` are errors; `-(x)`, `-x`, `1 - (x)`,
+`1 * *x`, `1 * x*`, `x* * 1` parse).
 Dot and prefix/application chains preserve their
 left-associated head structure. Binary punctuation uses infix canonical spelling
 where its two-pack shape permits; parentheses preserve the tree. Outfix forms keep
