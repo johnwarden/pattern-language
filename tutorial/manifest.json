@@ -1,0 +1,50 @@
+[
+  {
+    "slug": "a-typed-rectangle",
+    "title": "A typed Rectangle",
+    "section": "Patterns in practice",
+    "summary": "Start with a shape, give it a type, and calculate its area.",
+    "file": "pages/01-a-typed-rectangle.md",
+    "expectedOutput": "12 :: Int"
+  },
+  {
+    "slug": "take-a-value-apart",
+    "title": "Take a value apart",
+    "section": "Patterns in practice",
+    "summary": "Use the same shape to capture the pieces of a value.",
+    "file": "pages/02-take-a-value-apart.md",
+    "expectedOutput": "(3 :: Int, 4 :: Int)"
+  },
+  {
+    "slug": "patterns-in-functions",
+    "title": "Patterns in function inputs",
+    "section": "Patterns in practice",
+    "summary": "Recognize and unpack an argument at the function boundary.",
+    "file": "pages/03-patterns-in-functions.md",
+    "expectedOutput": "12 :: Int"
+  },
+  {
+    "slug": "choose-a-matching-arm",
+    "title": "Choose a matching arm",
+    "section": "Patterns in practice",
+    "summary": "Give one calculation several possible shapes.",
+    "file": "pages/04-choose-a-matching-arm.md",
+    "expectedOutput": "12 :: Int"
+  },
+  {
+    "slug": "capture-the-rest",
+    "title": "Capture the rest",
+    "section": "Patterns in practice",
+    "summary": "Match the front of a collection and retain what follows.",
+    "file": "pages/05-capture-the-rest.md",
+    "expectedOutput": "(1 :: Int, [2 :: Int, 3 :: Int] :: Expression)"
+  },
+  {
+    "slug": "types-are-values",
+    "title": "Types are values",
+    "section": "Patterns in practice",
+    "summary": "Pass a type into an ordinary function that builds a pattern.",
+    "file": "pages/06-types-are-values.md",
+    "expectedOutput": "5 :: Int"
+  }
+]
