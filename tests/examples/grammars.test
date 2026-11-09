@@ -14,7 +14,7 @@ test "DSL: Infix syntax and distinct argument packs"
   # Surface sugar preserves the application tree, including pack boundaries.
   assert infix == prefix
 
-  assert False == (packed == successive)
+  assert not(packed == successive)
   expect text result "a + b" :: String
 
   assert parse(ValueExpr)(text) == infix

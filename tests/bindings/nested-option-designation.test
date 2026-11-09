@@ -5,7 +5,7 @@ test "Unwrapped nested option designates a unique String"
 
   expect outer result "Hello" :: Nested
   assert "Hello" .matches Nested
-  assert False == ((type Nested) == (type Inner))
+  assert not((type Nested) == (type Inner))
 end
 
 test "Bare nested absence selects the direct outer arm"
@@ -16,7 +16,7 @@ test "Bare nested absence selects the direct outer arm"
 
   expect outer result None :: Nested
   expect inner result (None :: Inner) :: Nested
-  assert False == (outer == inner)
+  assert not(outer == inner)
 end
 
 test "Match projects one unwrapped option boundary"
@@ -120,7 +120,7 @@ test "Nested postfix String?? designates a unique String"
   result "Hello" :: String??
 
   assert "Hello" .matches (type String??)
-  assert False == ((type String??) == (type String?))
+  assert not((type String??) == (type String?))
 end
 
 test "Nested postfix absence preserves explicit member evidence"
@@ -132,7 +132,7 @@ test "Nested postfix absence preserves explicit member evidence"
   expect inner result (None :: String?) :: String??
   expect same result None :: String??
   assert outer == same
-  assert False == (outer == inner)
+  assert not(outer == inner)
 end
 
 test "Match projects one postfix option boundary"

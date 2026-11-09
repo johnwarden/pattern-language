@@ -8,7 +8,7 @@ test "A direct union arm takes precedence over inward designation"
   expect toString(Float??)(outer) result "None" :: String
   expect toString(Float??)(inner) result "None :: Type(Float | :None)" :: String
   assert outer == sameOuter
-  assert False == (outer == inner)
+  assert not(outer == inner)
   assert parse(Float??)(toString(Float??)(outer)) == outer
   assert parse(Float??)(toString(Float??)(inner)) == inner
 end
@@ -30,7 +30,7 @@ test "An explicit concrete member identifies an otherwise ambiguous branch"
   expect y result (None :: Float?) :: MyType
   expect toString(MyType)(x) result "None :: Type(:None | String)" :: String
   expect toString(MyType)(y) result "None :: Type(Float | :None)" :: String
-  assert False == (x == y)
+  assert not(x == y)
   assert parse(MyType)(toString(MyType)(x)) == x
   assert parse(MyType)(toString(MyType)(y)) == y
   expect

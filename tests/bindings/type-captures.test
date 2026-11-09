@@ -1,7 +1,7 @@
 test "UpperCamel captures specialize ordinary functions and type factories"
   def nonZero(T :: Type)(n :: T) n != (0 :: T)
   assert nonZero(Int)(5)
-  assert False == (nonZero(Int)(0))
+  assert not(nonZero(Int)(0))
 
   def List(T :: Type) type :Nil | Cons(T, List(T))
   expect Cons(3, :Nil) :: List(Int) result Cons(3, Nil) :: List(Int)

@@ -15,7 +15,8 @@ describes the implemented model; the drafts under design/ are not specifications
 
 Primitive type atoms are self-evaluating language values: Rational, Int, Float, Float32, Float64, Bool,
 String, ReservedSymbol, Expression, Body, Any, and Type. `Symbol` is a prelude
-union of the intrinsic symbol classes, not a reserved primitive. There is no Number type yet. Int currently uses JavaScript-safe integers,
+union of the intrinsic symbol classes, not a reserved primitive. The prelude also
+defines `not : Bool -> Bool` as `def not(x :: Bool) x == False`. There is no Number type yet. Int currently uses JavaScript-safe integers,
 Float uses finite Float64 arithmetic, and Float32 rounds explicitly.
 
 ```text
@@ -298,7 +299,7 @@ category types remain subject to the general refinement serialization gap.
 
 LowerCamelSymbol, UpperCamelSymbol, UpperSnakeSymbol and PunctuationSymbol are
 intrinsic classes. Symbol is their prelude union; ReservedSymbol and Bool are
-disjoint from those classes and from each other. A bare ordinary symbol receives its natural class;
+disjoint from those classes and from each other. Prelude `not` inverts a Bool. A bare ordinary symbol receives its natural class;
 its immediate context can interpret it, while a stored typed variable cannot be
 silently converted to a different space. unionType A | B normalizes to UnionType(A,B).
 Union members must be provably disjoint in the supported structural subset. Shared

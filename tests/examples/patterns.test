@@ -49,7 +49,7 @@ test "Patterns as values"
 
   assert testPair(p)
 
-  assert False == (Pair(1, "x") .matches p)
+  assert not(Pair(1, "x") .matches p)
   (testPair(p), Pair(1, "x") .matches p)
 end
 

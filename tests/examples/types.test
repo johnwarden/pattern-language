@@ -34,7 +34,7 @@ test "Factory defaults and complete types"
   # Legacy blocked: public descriptor text is still provisional.
   legacy expect toString(Type)(type Rectangle) result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: String
 
-  assert False == (:Rect(3, 4) .matches (type Rectangle))
+  assert not(:Rect(3, 4) .matches (type Rectangle))
   (r, r.color, toString(Type)(type Rectangle), :Rect(3, 4) .matches (type Rectangle))
 end
 
@@ -157,7 +157,7 @@ test "Type arguments use ordinary packs"
 
   assert nonZero(Int)(5)
 
-  assert False == (nonZero(Int)(0))
+  assert not(nonZero(Int)(0))
   assert nonZero(Float)(0.5)
   (nonZero(Int)(5), nonZero(Int)(0), nonZero(Float)(0.5))
 end

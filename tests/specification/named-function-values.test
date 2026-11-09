@@ -39,7 +39,7 @@ test "Named function values retain a finite mutually recursive group"
 
   todo assert
     f = even
-    False == (f(9 :: Int))
+    not(f(9 :: Int))
   end
 end
 
@@ -130,7 +130,7 @@ test "Different implementations do not become equal from equivalent behavior"
   todo assert
     f = unchanged
     g = addZero
-    False == (f == g)
+    not(f == g)
   end
 end
 

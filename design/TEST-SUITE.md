@@ -76,7 +76,7 @@ in UpperCamelSymbol: every symbol prints bare in value text, and colon quotation
 is a code form. Quoting Widget in that expected data rejects. The shared printer
 uses a space after every comma, without changing the content of string values.
 
-Use assert condition for predicates and assert condition == False for negative
+Use assert condition for predicates and assert not(condition) for negative
 predicates. Assert requires one positional value of the actual Bool space, not a
 same-spelled constructor from another type and not truthiness. Keep a result check
 when the boolean's own type or literal representation is the point being tested.

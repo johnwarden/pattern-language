@@ -15,7 +15,7 @@ test "A direct constructor arm wins over an inward path"
   (inner :: Outer) = Box("x") :: Inner
   (same, roundTrip) = (direct == inner, parse(Outer)(toString(Outer)(inner)) == inner)
 
-  assert False == same
+  assert not(same)
   assert roundTrip
 end
 
@@ -26,7 +26,7 @@ test "A direct constructor arm wins regardless of branch order"
   (inner :: Outer) = Box("x") :: Inner
   (same, roundTrip) = (direct == inner, parse(Outer)(toString(Outer)(inner)) == inner)
 
-  assert False == same
+  assert not(same)
   assert roundTrip
 end
 

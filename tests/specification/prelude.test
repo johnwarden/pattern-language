@@ -1,0 +1,9 @@
+test "Prelude not inverts Bool"
+  assert not(False)
+  assert not(1 == 2)
+  assert not(not(True))
+end
+
+test "Prelude not requires a Bool argument"
+  expect not(1) error "E_NO_METHOD"
+end
