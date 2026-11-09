@@ -1,0 +1,25 @@
+test "Concrete declarations retain recursive declaration groups"
+  assert
+    type Left concrete :StopLeft | L(Right)
+    type Right concrete :StopRight | R(Left)
+    (value :: Left) = L(R(:StopLeft))
+    parse(Left)(toString(Left)(value)) == value
+  end
+end
+
+test "Equivalent concrete declarations keep the duplicate-type guard"
+  expect
+    type First concrete Box(value :: Rational)
+    type Second concrete Box(item :: Rational)
+    Second
+  error "E_DUPLICATE_TYPE"
+end
+
+test "Concrete declaration accessors keep collision errors"
+  expect
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    def w(x) 99
+    r = Rect(2, 3) :: Rectangle
+    r.w
+  error "E_AMBIGUOUS_CALL"
+end

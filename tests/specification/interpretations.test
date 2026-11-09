@@ -109,12 +109,12 @@ test "C12 designation is recursive only when unambiguous"
 end
 
 test "C13 abstract union retains overlapping numeric members"
-  todo assert
+  assert
     domain = abstract Float32 | Float64
     (domain == (unionType Float32 | Float64))
   end
 
-  todo expect
+  expect
     type EitherFloat abstract Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
     (b :: EitherFloat) = float64(0.5)
@@ -130,7 +130,7 @@ test "C13 abstract union retains overlapping numeric members"
     )
   end
 
-  todo expect
+  expect
     type EitherFloat abstract Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
     (b :: EitherFloat) = float64(0.5)
@@ -146,7 +146,7 @@ test "C13 abstract union retains overlapping numeric members"
     )
   end
 
-  todo assert
+  assert
     type EitherFloat abstract Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
     (b :: EitherFloat) = float64(0.5)

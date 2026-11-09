@@ -10,6 +10,26 @@ const uri = "file:///workspace/unsaved.pattern";
 const read = (text: string, file = uri) =>
   analyze({ uri: file, text, version: 7 });
 
+test("LSP outlines concrete and abstract declarations through the shared grammar", () => {
+  const result = read(
+    "type Rectangle concrete\n  Rect(w :: Rational, h :: Rational)\nend\ntype Either abstract Float32 | Float64\nEither",
+  );
+  assert.deepEqual(result.diagnostics, []);
+  assert.deepEqual(
+    result.symbols.map((symbol) => symbol.name),
+    ["Rectangle", "Either"],
+  );
+  assert.deepEqual(result.symbols[0].selectionRange.start, {
+    line: 0,
+    character: 5,
+  });
+  assert.deepEqual(result.symbols[0].range.end, { line: 2, character: 3 });
+  assert.deepEqual(result.symbols[1].selectionRange.start, {
+    line: 3,
+    character: 5,
+  });
+});
+
 test("LSP diagnoses ordinary code outside a .test envelope without checking its operands", () => {
   for (const invalid of ["foo 1 2", "foo()", "1", "x = 1"]) {
     const result = read(

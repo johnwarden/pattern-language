@@ -1,5 +1,5 @@
 test "C23 supported global typed text preserves value identity"
-  todo assert
+  assert
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
     r = (Rect(2, 3) :: Rectangle)
     text = toString(Rectangle)(r)

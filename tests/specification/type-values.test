@@ -6,7 +6,7 @@ test "C04 raw expressions are allowed and explicit types establish an interpreta
   expect w result 2 :: Rational
   expect h result 2 :: Rational
 
-  todo expect
+  expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
     r = (Rect(2, 2) :: Rectangle)
     r
@@ -22,7 +22,7 @@ test "C04 raw expressions are allowed and explicit types establish an interpreta
 end
 
 test "C05 types are structural values"
-  todo assert
+  assert
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     t = Rectangle
     u = concrete Rect(Rational, Rational)
@@ -46,7 +46,7 @@ test "C05 types are structural values"
 end
 
 test "C06 equal spellings can belong to different concrete spaces"
-  todo expect
+  expect
     type PrimaryColor concrete :Red | :Green | :Blue
     type TicketStatus concrete :Red | :Green
     red = (:Red :: PrimaryColor)
