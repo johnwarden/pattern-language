@@ -1,9 +1,10 @@
 # Workstream 2: intrinsic String values
 
-Status: implementation complete, awaiting review. Ordinary runtime String
+Status: implemented in PR #31, awaiting review. Ordinary runtime String
 literals and String-returning natives ascribe the String primitive. Quoted Code
-splices those values as string literals, matching Rational. PrimitiveType and
-public inspection/decoding remain unchosen.
+splices those values as string literals, matching Rational. The PR also carries
+the 9 November primitive-name and symbol-printing rulings (LANGUAGE-DECISIONS
+D19, D20). PrimitiveType and public inspection/decoding remain unchosen.
 
 ## Accepted behavior
 
@@ -20,7 +21,7 @@ expect "a" + "b" result "ab" :: String
 expect toString(Rational)(0.1) result "0.1" :: String
 ```
 
-They are intended contracts, not a claim that this draft implements them.
+These checks are live in `tests/specification/primitives.test`.
 
 ## Scope and boundaries
 
