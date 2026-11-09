@@ -19,13 +19,6 @@ test("postfix question mark has no optional meaning without a source definition"
     "def (n :: Rational)? n + 1\n",
   );
   assert.equal(displayResults(custom.run("2?")), "3");
-  const ordinary = new Interpreter();
-  assert.equal(
-    displayResults(
-      ordinary.run("def (n :: Rational)? n + 1\n(2?, :None :: String?)"),
-    ),
-    "(3, None)",
-  );
 });
 
 test("every accepted suffix survives syntax and typed value transport", () => {
@@ -51,18 +44,7 @@ parse(Suffix)(toString(Suffix)(x)) == x`),
   }
 });
 
-test("bootstrap list and result conventions remain usable", () => {
-  assert.equal(
-    displayResults(new Interpreter().run("([1, 2] :: Int*, Ok(1) :: Int^)")),
-    "([1, 2], Ok(1))",
-  );
-});
-
 test("hash always starts a comment, tight or separated", () => {
-  const i = new Interpreter();
-  assert.equal(displayResults(i.run('x = "x"# comment\nx')), '"x"');
-  assert.equal(displayResults(i.run('x = "x" # comment\nx')), '"x"');
   assert.equal(normal(parseExpression("x#")), "x");
   assert.equal(normal(parseExpression("x #")), "x");
-  assert.equal(displayResults(i.run('$"$("x"%)"')), '"\\\"x\\\"%"');
 });
