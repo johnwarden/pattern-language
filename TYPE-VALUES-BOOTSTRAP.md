@@ -80,8 +80,8 @@ no special optional rule. Present values are unwrapped; explicit member
 annotations distinguish inner absence in nested concrete unions. Bare `:None`
 selects a matching outer arm before inward designation.
 
-Tight `~ ! @ # $ % ^ & * ?` produce postfix trees distinct from prefix/infix
-application. The bootstrap retains list `T*` and result `T^` type constructors;
+Tight `~ ! @ $ % ^ & * ?` produce postfix trees distinct from prefix/infix
+application. `#` is a comment, not a postfix operator. The bootstrap retains list `T*` and result `T^` type constructors;
 list-rest annotations also use `T*`. Other postfix trees acquire meaning through
 definitions or explicit structural matching. Prefix `$` remains unquote and quote prefixes retain their
 lexical meaning. See [POSTFIX.md](design/POSTFIX.md) for definitions and unknown

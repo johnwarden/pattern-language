@@ -119,8 +119,12 @@ not establish actual iOS lifecycle/storage behavior.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
 - All infix operators have equal precedence and associate right. They require
   spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
-- Prefix punctuation is a maximal symbol. Tight postfix `~ ! @ # $ % ^ & * ?` are
-  distinct from prefix/infix application. `Int?*` is postfix `*` of postfix `?`
+- Prefix punctuation is a maximal symbol. Tight postfix `~ ! @ $ % ^ & * ?` are
+  distinct from prefix/infix application. `#` is a comment, not a postfix
+  operator. Prefix and postfix operators must touch their operand: `T**` is
+  `(T*)*`, while `T * *`, standalone `* *x`, and standalone `- (x)` are errors;
+  `-(x)`, `-x`, `1 - (x)`, `1 * *x`, `1 * x*`, and `x* * 1` parse. Prefix `-(a)`
+  negates; infix `-(a)(b)` subtracts. `Int?*` is postfix `*` of postfix `?`
   of `Int`, not the list type `Int?*` as a `[]` rest annotation. Prefix `*(Int?)`
   is ordinary prefix application, not a list type. Prefix `$` remains unquote;
   interpolating `T$` quotes stay lexer prefixes, not postfix `$`.
@@ -349,8 +353,10 @@ This is an experimental interpreter, not a compiler or a statically typed langua
   conversions use finite binary values, with round-to-nearest ties-to-even;
   designation is exact. Unsafe Int values are rejected. IEEE special values and
   the remaining width/overflow policies are deferred. Arithmetic operators
-  consume two successive one-element packs; `-(x)` is the first pack of
-  subtraction, and `negate(x)` performs numeric negation.
+  consume two successive one-element packs, except `-`: prefix `-(a)` / `-x` /
+  `-(x)` negates, while infix `-(a)(b)` / `1 - x` subtracts. The Code interpreter
+  distinguishes those trees rather than treating `-` as an ordinary curried
+  function.
 - Data order is numbers, strings, symbols, then constructed terms. Terms compare
   head, ordered field labels/values, then length. Opaque functions currently lack
   public structural equality/ordering; interpreter object identity is not language

@@ -6,9 +6,11 @@ tracked in ROADMAP.md; examples here do not imply that the bootstrap implements 
 ## Postfix expressions and conventions
 
 [POSTFIX.md](POSTFIX.md) is the authoritative postfix contract, including the
-9 November clarification. Shifted top-row punctuation `~ ! @ # $ % ^ & *`, plus
-`?`, has distinct postfix syntax. Each suffix wraps once. Prefix and postfix
-application remain different trees throughout matching and transport.
+9 November clarification. Shifted top-row punctuation `~ ! @ $ % ^ & *`, plus
+`?`, has distinct postfix syntax. `#` is a comment, not a postfix operator.
+Each suffix wraps once. Prefix and postfix application remain different trees
+throughout matching and transport. Prefix and postfix operators must touch their
+operand. Prefix `-(a)` negates; infix `-(a)(b)` subtracts.
 
 Optional `T?` is the source-defined convention `concrete T | :None`; it is not a
 reader or matcher primitive. Nested unions preserve explicitly designated member

@@ -614,10 +614,20 @@ class Reader {
           "infix operators require spaces on both sides",
           name,
         );
+      const right = this.expression(stops);
+      if (
+        right.kind === "symbol" &&
+        !right.quoted &&
+        POSTFIX_SUFFIX.test(right.name)
+      )
+        throw new LanguageError(
+          "prefix and postfix operators must touch their operand",
+          right.span ?? name,
+        );
       return {
         ...apply(
           apply(symbol(name.text, !!name.quoted), packOf(left)),
-          packOf(this.expression(stops)),
+          packOf(right),
         ),
         span: left.span,
       };
@@ -764,9 +774,15 @@ class Reader {
     if (t.kind === "block") return t.block!;
     if (t.kind === "op" || t.kind === "spread") {
       const next = this.peek();
-      if (t.quoted || (next && next.start === t.end && next.kind === "("))
+      const touching = !!next && next.start === t.end;
+      if (t.quoted || (touching && next.kind === "("))
         return { ...symbol(t.text, !!t.quoted), span };
       if (this.stop(stops)) return { ...symbol(t.text, !!t.quoted), span };
+      if (t.kind === "op" && next && !touching)
+        throw new LanguageError(
+          "prefix and postfix operators must touch their operand",
+          t,
+        );
       return { ...apply(symbol(t.text), packOf(this.postfix(stops))), span };
     }
     throw new LanguageError("unexpected token " + t.text, t);

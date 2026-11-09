@@ -66,6 +66,7 @@ import {
   packOf,
   listLayer,
   isTypeSpecification,
+  isName,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
 import { Matcher, Mismatch, any } from "./pattern.ts";
@@ -920,19 +921,7 @@ export class Interpreter {
       );
     scope.bindings.set(
       "negate",
-      this.native("negate", [1], ([v]) => {
-        const space = concreteSpace(v);
-        if (!space || space.numeric === "rational") {
-          const r = asRational(v);
-          if (!r) throw new LanguageError("expected a number");
-          const value = valRational(-r.n, r.d);
-          return space
-            ? this.check(space, value)
-            : single(this.ascribeRational(value));
-        }
-        const value = checked(-numeric(v));
-        return space ? this.check(space, value) : value;
-      }),
+      this.native("negate", [1], ([v]) => this.negateValue(v)),
     );
     for (const [method, target] of [
       ["toInt", "Int"],
@@ -1758,6 +1747,33 @@ export class Interpreter {
           { code: "E_ABSTRACT_ASCRIPTION", phase: "match" },
         );
       return this.check(typ, v, env);
+    }
+    const subtraction = binary(n, "-");
+    if (subtraction) {
+      const lookup =
+        (n.head.kind === "apply"
+          ? lexicalScopes.get(n.head.head)
+          : undefined) ?? env;
+      const minus = {
+        kind: "overload" as const,
+        name: "-",
+        candidates: lookup.visible("-"),
+      };
+      if (minus.candidates.length) {
+        const left = singleton(
+          single(this.evaluate(subtraction[0], env), "subtraction"),
+        );
+        const partial = single(this.invoke(minus, left, env));
+        const right = singleton(
+          single(this.evaluate(subtraction[1], env), "subtraction"),
+        );
+        return this.invoke(partial, right, env);
+      }
+    }
+    if (isName(n.head, "-")) {
+      const args = this.evaluateFields(n.body, env);
+      if (args.length === 1 && positional(args[0].label))
+        return this.negateValue(args[0].value);
     }
     if (
       n.head.kind === "symbol" &&
@@ -3684,6 +3700,31 @@ export class Interpreter {
   }
   private ascribeRational(value: Value): Field<Value>[] {
     return this.check(this.primitives.get("Rational")!, value);
+  }
+  /** Prefix `-(a)` is negation; infix `-(a)(b)` remains subtraction. */
+  private negateValue(v: Value): Field<Value>[] {
+    const space = concreteSpace(v);
+    if (!space || space.numeric === "rational") {
+      const r = asRational(v);
+      if (!r) throw new LanguageError("expected a number");
+      const value = valRational(-r.n, r.d);
+      return space ? this.check(space, value) : this.ascribeRational(value);
+    }
+    const r = asRational(v);
+    if (!r) throw new LanguageError("expected a number");
+    const n = rationalToNumber(r);
+    if (!Number.isFinite(n)) throw new LanguageError("expected a number");
+    const negated = -n;
+    if (
+      !Number.isFinite(negated) ||
+      (space.numeric !== "float32" &&
+        space.numeric !== "float64" &&
+        Number.isInteger(negated) &&
+        !Number.isSafeInteger(negated))
+    )
+      throw new LanguageError("result exceeds safe numeric range");
+    const value = valLiteral(negated);
+    return space ? this.check(space, value) : singleton(value);
   }
   private requireExactNumericDesignation(type: TypeValue, value: Value) {
     const numeric = type.numeric ?? type.baseType?.numeric;

@@ -28,6 +28,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | L | Author clarification on 6 November: table constructedBy; settle designation/projection as stated below; defer IEEE details; add todo to the intended test DSL |
 | L7 | Author instruction on 7 November: integrate this record into the project docs and plan a small DSL-suite milestone covering these cases and cogent TypeScript migrations |
 | L8 | Author instruction on 8 November: parse directly into Expression; Expression number literals are exact Rationals; get rid of the lasting syntax-tree layer. This supersedes any pending public `NumberLiteral(Float)` redesign. Distinct postfix punctuation application is a separate smaller item, not blocked on full parser migration. |
+| W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -36,6 +37,17 @@ The spelling `type Name concrete/refinement/abstract ...` is used consistently f
 ### D01. Preserve the structural application model — retained
 
 An application has one head and one argument pack. `f(a)(b)` differs from `f(a,b)`; bare `f` differs from `f()`. Empty and multiple results are packs, not implicit unit/tuple values. Ordinary partial application consumes complete packs. Infix operators retain equal precedence and right associativity; parentheses preserve intended grouping. Type-parameter notation must not flatten runtime packs. Reason: these are the common structural rules; none of the new proposals withdraws them. **Sources:** O, A, S.
+
+Formatting and whitespace mistakes must produce syntax errors rather than logic
+errors within a form fixed by the applied grammar. They must not silently select
+a different scope, call, fixity, clause or comment interpretation. Raw parsing
+without an applied grammar may retain different expression/layout trees, and a
+grammar may explicitly admit both forms of a keyword. These exceptions do not
+justify silently repairing malformed use of one form. Explicit aligned `end`s
+and the call/operator spacing constraints follow from this rule. `#` is always a
+comment rather than a whitespace-selected postfix operator.
+[WHITESPACE.md](WHITESPACE.md) records the examples and remaining bootstrap review
+boundaries. **Source:** W9.
 
 ### D02. Primitive values and syntax are distinct levels — confirmed direction; lexical details proposed
 
@@ -395,7 +407,7 @@ computation, which may be omitted entirely.
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
 | Test DSL modifiers | Implemented assertion-level todo/legacy execution and reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
-| Postfix vs prefix punctuation application | **Decided.** Tight `~ ! @ # $ % ^ & * ?` are distinct postfix constructions. Definitions supply meaning; optional `?` is a source-prelude convention. Explicit member evidence distinguishes inner absence; raw None selects a direct outer arm. Lifting remains future work. See [POSTFIX.md](POSTFIX.md). |
+| Postfix vs prefix punctuation application | **Decided.** Tight `~ ! @ $ % ^ & * ?` are distinct postfix constructions. `#` is a comment, not a postfix operator (`x#` and `x #` are both `x`). Definitions supply meaning; optional `?` is a source-prelude convention. Explicit member evidence distinguishes inner absence; raw None selects a direct outer arm. Prefix and postfix operators must touch their operand (`T * *`, `* *x`, and `- (x)` are errors; `1 * *x`, `-(x)`, `-x`, and `1 - (x)` parse). Prefix `-(a)` negates; infix `-(a)(b)` subtracts. Lifting remains future work. See [POSTFIX.md](POSTFIX.md). |
 
 Obvious draft slips are normalized only to express the intended rules: String/sqrt examples meant an integer type; inconsistent normalizer names refer to one function; the Float union's self-reference is not a proposed recursive numeric member; mismatched id widths and Matrix dimensions are corrected explicitly. No semantic decision is extracted from those slips.
 

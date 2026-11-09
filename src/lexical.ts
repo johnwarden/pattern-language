@@ -1,12 +1,9 @@
 /** Shared punctuation-token boundaries for the reader and canonical formatter. */
-export const punctuation = new Set("#$+-*/=<>!&|^%~?@\\…");
+export const punctuation = new Set("$+-*/=<>!&|^%~?@\\…");
 
-/** A tight # belongs to punctuation; a separated # starts a line comment. */
+/** `#` always starts a line comment, whether or not it touches the previous token. */
 export function isCommentStart(source: string, position: number): boolean {
-  return (
-    source[position] === "#" &&
-    (position === 0 || /\s/.test(source[position - 1]))
-  );
+  return source[position] === "#";
 }
 
 export function punctuationEnd(

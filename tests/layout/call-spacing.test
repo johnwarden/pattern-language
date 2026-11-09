@@ -45,8 +45,11 @@ test "Infix operator then grouped operand stays valid"
   expect 1 == (1) result True :: Bool
 end
 
-test "Prefix operator then spaced parenthesis stays valid"
-  assert :(- (4)) == :(-(4))
+test "Prefix operator then spaced parenthesis is a syntax error"
+  expect parse(Code)("- (x)") error "must touch their operand"
+  expect parse(Code)("* (x)") error "must touch their operand"
+  assert parse(Code)("-(x)") == parse(Code)("-x")
+  parse(Code)("1 - (x)")
 end
 
 test "Pack after assignment, arrow, colon, or comma stays valid"
