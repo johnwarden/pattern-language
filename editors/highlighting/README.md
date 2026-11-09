@@ -29,6 +29,32 @@ and [4075 changelog](https://www.sublimetext.com/dev). Compatibility with build
 4166 is based on that format support. A native Sublime 4166 run has not been
 performed in the development environment.
 
+## Token colors
+
+The package selects **Pattern Language Dark** for `.pattern` and `.test` files.
+Four roles have deliberately different colors, using their existing token scopes:
+
+| Role                                | Dark             | Light            |
+| ----------------------------------- | ---------------- | ---------------- |
+| Numbers                             | Orange `#F4A261` | Orange `#9C4B00` |
+| UpperCamel and type names           | Cyan `#62D6E8`   | Blue `#006B88`   |
+| Control, declaration and test words | Purple `#C792EA` | Purple `#7A3EAC` |
+| Quoted symbols                      | Green `#B7D97A`  | Green `#426F13`  |
+
+To use the light palette, open a Pattern Language file, choose **Preferences →
+Settings – Syntax Specific**, and add this setting to the user settings:
+
+```json
+"color_scheme": "Packages/PatternLanguage/PatternLanguage Light.sublime-color-scheme"
+```
+
+Selection is specific to Pattern Language. The UI theme and other languages keep
+their existing settings. These are complete palettes, so Pattern Language's text
+area uses the selected palette's dark or light background. Syntax-specific user
+settings can choose another scheme. The files use the documented
+[JSON color-scheme format](https://www.sublimetext.com/docs/color_schemes.html),
+with filename-based selection and no inheritance extension.
+
 ## Coverage and limits
 
 Recognizes declarations, patterns/bindings, macros, match/control forms, test DSL
@@ -68,7 +94,10 @@ import { createPatternFenceHighlighter } from "./examples/markdown.mjs";
 
 const renderer = await createPatternFenceHighlighter();
 try {
-  const html = renderer.highlight('todo test "Future"\n  assert False\nend', "pattern");
+  const html = renderer.highlight(
+    'todo test "Future"\n  assert False\nend',
+    "pattern",
+  );
   // Supply renderer.highlight as the highlight option in a Markdown renderer.
 } finally {
   renderer.dispose();
@@ -100,7 +129,20 @@ with the language's lexer/numeric helpers, compile the Sublime patterns, check
 context references and generated-file consistency, and render escaped Markdown
 fences. They do not emulate Sublime's syntax engine.
 
+Color checks apply the actual palette rules through TextMate/Shiki and assert the
+rendered colors of numbers, UpperCamel/type names, clause words and quoted symbols,
+including interpolation. Both palettes also check contrast against their background
+and hue separation for the previously colliding pairs. Native scheme application
+on Sublime 4166 still needs verification.
+
 To run the native assertions, install the unpacked package, open
 `sublime/PatternLanguage/syntax_test_pattern-language.pattern` in Sublime and run
 **Tools → Build**. The fixture is generated from authored `test/cases.json` checks;
 edit the fixtures or generator rather than generated grammar files.
+
+With a Pattern Language file active, the Sublime console can check the resolved
+foregrounds against the palette table:
+
+```python
+[(scope, view.style_for_scope("source.pattern-language " + scope + ".pattern-language")["foreground"]) for scope in ("constant.numeric", "entity.name.type", "keyword.control", "constant.other.symbol")]
+```
