@@ -18,7 +18,20 @@ const some = (answers: Answer[]): Answer =>
     : answers.includes("unknown")
       ? "unknown"
       : "no";
-const numeric = new Set(["int64", "float32", "float64", "rational"]);
+const numeric = new Set([
+  "int64",
+  "float32",
+  "float64",
+  "rational",
+  "Int",
+  "Int64",
+  "Float",
+  "Float32",
+  "Float64",
+  "Number",
+  "Num",
+  "Rational",
+]);
 const symbols = new Set([
   "Symbol",
   "LowerCamelSymbol",
@@ -30,7 +43,9 @@ const symbols = new Set([
 const id = (p: Extract<P, { kind: "test" }>): unknown[] | undefined =>
   Array.isArray(p.identity) ? p.identity : undefined;
 /** Conservative, bounded proof over structural patterns. Unknown is never disjoint.
- * It never calls a user predicate, default, constructor or reader. */
+ * It never calls a user predicate, default, constructor or reader.
+ * General UnionType no longer requires disjoint syntax (D07). C14 unambiguous
+ * certification may still consult this proof; do not treat it as membership policy. */
 export function patternOverlap(left: P, right: P): Answer {
   let work = 0,
     depth = 0;

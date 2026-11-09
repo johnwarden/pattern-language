@@ -88,8 +88,9 @@ verification gate includes build and type checks.
 
 ### Bootstrap behaviors superseded by the intended design
 
-- JS-backed Int/Float/Float32 and Number-as-Float, rather than exact Rational literals.
-- Syntax-disjointness required for every UnionType, rather than a separate DSL requirement.
+- Exact Rational literals, `0f`, and Float32/Float64 converters exist; IEEE payload
+  `toString` still uses JS decimals, so `0.1` is Rational 1/10 rather than live Float64 bits.
+- Overlapping `UnionType` members are allowed; `unambiguous` certification is unimplemented.
 - Old def/type construction and accessor products; duplicate structural declarations
   rejected across visible scopes, with a replacement policy still unresolved.
 - Raw Expression compatibility values, legacy primitive-atom/cache equality and runtime

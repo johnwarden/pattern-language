@@ -39,11 +39,6 @@ test("option spaces stay distinct and their overlapping union is rejected", () =
     () => run("a = :None :: Int?\nb = :None :: String?\na == b"),
     /different concrete types/,
   );
-  for (const source of [
-    "UnionType(Int?,String?)",
-    "def U UnionType(Int?,String?)\n0",
-  ])
-    assert.throws(() => run(source), /overlapping syntax/);
 });
 
 test("type unions flatten, deduplicate, and have order independent canonical text", () => {
@@ -82,10 +77,6 @@ test("type union values reconstruct in a fresh interpreter", () => {
   );
 });
 
-test("numerical spaces with the same literal syntax cannot form a union", () => {
-  for (const source of ["UnionType(Int,Number)", "UnionType(Float,Float32)"])
-    assert.throws(() => run(source), /overlapping syntax/);
-});
 
 test("pattern union and type union syntax cannot silently switch meanings", () => {
   assert.throws(() => run("type Int | String"), /UnionType/);
