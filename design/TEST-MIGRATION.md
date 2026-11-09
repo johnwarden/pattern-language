@@ -83,6 +83,35 @@ first infix pack is validated before a missing right operand is evaluated,
 including the quoted-Code execution path. No source evaluator API is introduced
 for this migration.
 
+## Macro evaluation and hygiene migration
+
+The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) classifies the host
+suite by its observations and records the later candidates and decision boundaries.
+Its first implemented batch moves 17 scalar observations from two mixed host files
+into 12 ordinary source cases. Expected results are authored directly; the
+defaulted Int parameter keeps its Int result and the other results are Rational.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| macros: sidefix macros receive unevaluated arguments and recursively expand Code | macros/evaluation#sidefix-macros-receive-syntax-and-recursively-expand-code | All four results: direct/recursive expansion, unused failing operand and lazy branch |
+| macros: a user-defined if expands into match and keeps the other branch unevaluated | macros/evaluation#user-defined-if-expands-into-match-and-leaves-the-other-branch-inert | The user-defined match transformer and failing unselected branch remain in the program |
+| macros: quotation keeps caller names separate from template lambda binders | macros/hygiene#inserted-caller-references-stay-separate-from-template-lambda-binders | Both caller-shadowing and binder-reuse examples |
+| macros: template free functions resolve in the macro definition scope | macros/hygiene#template-free-functions-resolve-in-the-macro-definition-scope | Caller-local helper still conflicts with the definition-site helper |
+| macros: template block bindings and defaulted lambda labels are hygienic | macros/hygiene#template-block-bindings-preserve-caller-references; macros/hygiene#template-lambda-labels-retain-defaulted-captures | Caller/template block bindings and the defaulted Int capture remain separate checks |
+| macros: macro templates retain locally declared sidefix grammars | macros/hygiene#macro-templates-retain-locally-declared-sidefix-grammars | Nested macro's definition-time grammar |
+| macros: macro expansion supports definitions in a generated local block | macros/hygiene#macro-expansion-supports-definitions-in-a-generated-local-block | Generated local definition is called after expansion |
+| registration: only explicit registration suppresses argument evaluation | macros/evaluation#only-registered-expansion-suppresses-argument-evaluation | Positive expansion moved; ordinary-builder E_UNBOUND_NAME remains in TypeScript |
+| registration: sidefix registration can delegate to an ordinary code builder | macros/evaluation#sidefix-registration-delegates-to-an-ordinary-code-builder | Positive delegation moved; implicit-registration E_MACRO_REGISTRATION remains in TypeScript |
+| registration: raw references and macro syntax arguments do not read runtime values | macros/evaluation#quoted-runtime-references-and-inserted-syntax-stay-available | Both quoted-runtime reference and ordinary-builder insertion examples |
+| registration: registered transformers retain hygienic helper references | macros/hygiene#registered-ordinary-builders-retain-hygienic-helper-references | Ordinary builder keeps definition-site helper despite caller-local shadowing |
+
+Nine complete host blocks and two positive assertions in mixed blocks were removed
+after the source cases passed. Retained macro/registration host coverage includes
+all exact error-code checks, REPL/parse-only/rollback state, call/definition related
+locations, expansion limits, canonical-tree round trips, complete packs and Code
+display observations. The mixed host blocks were renamed to describe the failures
+they still check. No expected-failure or legacy marker was added or changed.
+
 ## Existing source cases
 
 | Former source | Current `.test` case ID |
