@@ -79,8 +79,11 @@ family aliases, edge rounding/overflow and canonical spelling remain provisional
 
 `Number` will later be an abstract union of fixed-width number types.
 
-Type declaration keywords, angle parameter sugar, MemberOf, bare-family facets,
-parameter recovery and singleton abstract policy remain explicitly
+The concrete/abstract declaration forms and simple parameterized forms already
+written in `tests/specification/` are current implementation targets. Their
+missing parser/runtime support must not be treated as a reason to postpone those
+cases indefinitely. Unspecified extensions to generic constraints, MemberOf,
+bare-family facets, parameter recovery and singleton abstract policy remain
 provisional/unresolved. Equivalent local declarations and accessor collisions
 remain errors for now; their replacement alias/import policy is deferred by the
 author. First-class overload sets are
@@ -125,6 +128,41 @@ The [bootstrap guide](BOOTSTRAP-GUIDE.md), [grammar](GRAMMAR-BOOTSTRAP.md) and
 rewrite their current observations as if all target changes were shipped.
 
 ## Milestones
+
+### Immediate priority: implement the executable specification
+
+Development is specification first: write or update focused `.test` contracts for
+accepted behavior, then implement against them. Prioritize the accepted todo
+cases already under `tests/specification/` over unrelated new foundations. See
+[TESTING-WORKFLOW.md](design/TESTING-WORKFLOW.md) for the implementation loop and
+inbox triage. A todo failing at an unsupported declaration does not demonstrate
+that the deeper rule in that assertion has been implemented correctly.
+
+The current declaration syntax includes these targets:
+
+| Target form | Existing specification and next work |
+| --- | --- |
+| `type Rectangle concrete Rect(w :: Rational, h :: Rational)` | C05/C06/C16: declare one concrete space and its local products |
+| `concrete Rect(Rational, Rational)` | C05/C16: construct an equal capture-free type value without declaration/accessor effects |
+| `type EitherFloat abstract Float32 \| Float64` | C13: retain overlapping members and their concrete identities; no first-match branch priority |
+| `abstract Float32 \| Float64` | C13: construct the same abstract member domain as an ordinary value without a named declaration |
+| `type Rectangular abstract {width: Float32, height: Float32, **}` | C15: identity-preserving abstract views and facet composition |
+| `type Box<T> concrete Box(T)` and `Box<String>` | C05/C12/C18: parameterized structural type values and independent-scope interoperability |
+| `type NonZero refinement Rational .where nonZero` | C07-C10: refinement syntax, then the separately specified evidence and overload rules |
+
+First finish #31's value alignment and #32's declaration-product work, with #39's
+concrete binding/match regressions coordinated at their shared matcher boundary.
+Next make the concrete/abstract declaration and type-producing syntax above work
+against its existing cases; isolate parser support from later generic/evidence
+obligations so failures identify the actual missing feature. Preserve current
+equivalent-declaration/accessor-collision errors and the deferred public inspection
+boundary. Add missing focused cases before implementing a gap; reconcile stale
+tests with settled decisions rather than changing the language to satisfy them.
+
+The internal-foundation drafts #43, #44 and #45 are parked behind this conformance
+work. Their existence is not authorization to start implementation before their
+specification and executable acceptance tests exist. `unambiguous` details,
+nonempty-list source syntax and other unresolved policies remain explicitly open.
 
 ### Accepted surface and test-runner work
 
@@ -200,8 +238,9 @@ bootstrap declaration spelling and are distinct from pending declaration changes
 
 Ordinary source Test types and the external runner recognize files containing one
 or more named test blocks. Files use **.test**, are grouped by topic under **tests/**,
-and are recursively discovered. Assertions may be plain, legacy or todo. Modifiers
-do not apply to tests. Ordinary/legacy checks must pass. Todos execute; their own
+and are recursively discovered. Assertions may be plain, legacy or todo. A whole
+test may also be marked todo; a file may contain just one todo test. Legacy does
+not modify whole tests. Ordinary/legacy checks must pass. Todos execute; their own
 language-level failures are silent expected failures. A success fails the suite with
 “This assertion now passes; remove todo.” Fixture/setup/file/host errors remain failures.
 

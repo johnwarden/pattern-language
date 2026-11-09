@@ -80,19 +80,15 @@ test "C12 designation is recursive only when unambiguous"
     )
   end
 
-  todo expect
+  todo assert
     type Option<T> concrete T | :None
-    (outer :: Option<Option<String>>) = "Hello"
-    text = match outer
-      (inner :: Option<String>) -> match inner
-        (s :: String) -> s
-        :None -> "inner absent"
-      end
-      :None -> "outer absent"
-    end
-    (ambiguous :: Option<Option<String>>) = :None
-    ambiguous
-  error "None has more than one designation path"
+    (outer :: Option<Option<String>>) = :None
+    (explicitOuter :: Option<Option<String>>) = :None :: Option<Option<String>>
+    (inner :: Option<Option<String>>) = :None :: Option<String>
+
+    assert outer == explicitOuter
+    (outer != inner)
+  end
 
   todo expect
     type Option<T> concrete T | :None
@@ -113,6 +109,11 @@ test "C12 designation is recursive only when unambiguous"
 end
 
 test "C13 abstract union retains overlapping numeric members"
+  todo assert
+    domain = abstract Float32 | Float64
+    (domain == (unionType Float32 | Float64))
+  end
+
   todo expect
     type EitherFloat abstract Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
