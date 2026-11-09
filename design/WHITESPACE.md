@@ -3,7 +3,7 @@
 **Ratified layout contract.** Block and clause completeness come from the active
 surface grammar’s quoted keyword chains, not a hardcoded `assert`/`expect`/`else`
 list. Indentation is not a semantic delimiter. Parse failures of malformed inner
-source belong in [TEST-SUITE.md](TEST-SUITE.md) (`expect parse` of quoted text).
+source belong in [TEST-SUITE.md](TEST-SUITE.md) (`expect parse(Code)(text) error` of quoted text).
 
 Indentation makes structure readable. It must not be the sole evidence that an
 executable indented block has ended. Layout-introduced forms require an explicit
@@ -134,14 +134,16 @@ form's final `end`. Dedentation alone is not a semantic delimiter.
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
 indentation changes, an expectation borrowing its test's end, an error clause
 completing without a preceding `end`, quoted if/else branches, extra `end`
-after a complete inline clause, incomplete infix, and `expect parse` of quoted
+after a complete inline clause, incomplete infix, and `parse(Code)` of quoted
 malformed source.
 tests/layout/indent-prefixes.test covers pure tabs, pure spaces, mixed prefixes,
-and quote-indent stripping. tests/layout/custom-grammar.test covers a session
-`macro` plus `expect parse` for `hold` without `end`. Required infix spacing
-remains an ordinary check. Host test/layout-ends.test.ts keeps Grammar-object
-`parseSurface` (including `:otherwise` vs `:else`) and sequential session macros
-for probe/then success. test/repl.test.ts covers grammar-driven REPL completeness.
+and quote-indent stripping. tests/layout/custom-grammar.test installs a session
+`hold` macro, evaluates `hold` with an aligned `end`, and checks `hold` without
+`end` through `parse(Code)` (default Code grammar, not session macros). Required
+infix spacing remains an ordinary check. Host test/layout-ends.test.ts keeps
+Grammar-object `parseSurface` (including `:otherwise` vs `:else`) and sequential
+session macros for probe/then success and extra-`end` parse failure.
+test/repl.test.ts covers grammar-driven REPL completeness.
 test/indent-prefix.test.ts keeps the prefix-relation unit checks.
 tests/specification/postfix-suffixes.test covers suffix wrap order (`T**` is
 `(T*)*`), spaced infix trees, that a pack field `**` is not a suffix on the
