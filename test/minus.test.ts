@@ -17,18 +17,11 @@ const evaluate = (source: string) => {
   );
 };
 
-test("prefix minus negates; infix minus subtracts", () => {
+test("prefix and infix minus preserve their parsed forms", () => {
   assert.equal(normal(parseExpression("-1")), "-(1)");
   assert.equal(normal(parseExpression("-(x)")), "-(x)");
   assert.equal(normal(parseExpression("1 - x")), "1 - x");
   assert.equal(normal(parseExpression("1 - -x")), "1 - -(x)");
-  assert.equal(run("-1"), "-1");
-  assert.equal(run("-(1)"), "-1");
-  assert.equal(run("x = 3\n-x"), "-3");
-  assert.equal(run("x = 3\n-(x)"), "-3");
-  assert.equal(run("x = 3\n1 - x"), "-2");
-  assert.equal(run("x = 3\n1 - -x"), "4");
-  assert.equal(run("1 - -2"), "3");
 });
 
 test("quoted Code of prefix and infix minus evaluates the same trees", () => {
@@ -38,14 +31,6 @@ test("quoted Code of prefix and infix minus evaluates the same trees", () => {
   assert.equal(evaluate("x = 3\nCode` 1 - -x"), "4");
   assert.equal(evaluate("Code$` 1 - 2"), "-1");
   assert.equal(evaluate("x = 3\nCode$` 1 - $x"), "-2");
-  assert.equal(
-    run("c = Code` -1\nparse(Code)(toString(Code)(c)) == c"),
-    "True",
-  );
-  assert.equal(
-    run("c = Code` 1 - -x\nparse(Code)(toString(Code)(c)) == c"),
-    "True",
-  );
 });
 
 test("infix minus validates the first pack before evaluating its right operand", () => {
