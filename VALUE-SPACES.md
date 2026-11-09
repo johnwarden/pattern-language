@@ -192,8 +192,9 @@ type descriptions, macro signatures and DSL grammars. Roles add explicit policy:
 
 Different names for equal descriptors do not inherently break functional equality.
 The replacement policy for duplicate local declarations, imported accessor bundles
-and preferred display names remains unresolved; the prototype's blanket ban is not
-silently retained as a final rule.
+and preferred display names is deferred. The author explicitly retains equivalent
+declarations and accessor collisions as errors for now. This temporary guard does
+not block capture-free type construction or independently scoped structural interop.
 
 Typed keyword remainders and mirrored vertical spreading are intended extensions.
 The remainder is an actual typed record preserving labels and field types; it is

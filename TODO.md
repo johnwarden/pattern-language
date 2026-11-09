@@ -1,6 +1,6 @@
 # Engineering checklist
 
-Updated 7 November 2026. [ROADMAP.md](ROADMAP.md) owns milestone order and completion
+Updated 9 November 2026. [ROADMAP.md](ROADMAP.md) owns milestone order and completion
 criteria; [LANGUAGE-DECISIONS.md](design/LANGUAGE-DECISIONS.md) owns the integrated
 agreement and future conformance examples. Checked items describe the bootstrap
 subset, not completion of the revised design.
@@ -12,7 +12,7 @@ subset, not completion of the revised design.
 - [x] Exact/open fields, independent rest axes and binding-only defaults.
 - [x] Structural type descriptions, abstract slots/facets and supported typed text.
 - [x] Explicit sidefix registration, typed quotation/interpolation and diagnostics.
-- [x] Shared source corpus: all 126 cases execute, including 76 playground examples and 27 design cases.
+- [x] Shared source corpus, executable playground examples and named design cases C01–C27. Run `just test-language` for current case/assertion totals.
 - [x] Recursive declaration groups, rollback, portable recursive descriptions and inspection.
 - [x] Vertical aggregate captures and bounded source Body grammar.
 - [x] Integrate the revised decision record into docs, with provisional/deferred status.
@@ -52,7 +52,7 @@ subset, not completion of the revised design.
 
 ## Decisions not to implement by accident
 
-- [ ] Resolve duplicate alias/accessor import policy; do not infer it from functional equality.
+- [ ] Duplicate equivalent declarations and accessor collisions remain errors while the replacement policy is deferred. Do not infer an alias/import policy from functional equality.
 - [ ] Resolve generic-family membership/parameter recovery, MemberOf and singleton policies.
 - [ ] Choose exact type/generic/rest/unambiguous spellings before treating tentative cases as parser contracts.
 - [ ] Decide optional runtime Expression and descriptor decoding explicitly.
