@@ -30,6 +30,10 @@ identity remains deferred. Specialization is only a later compiler optimization.
 There is no source-language module system, static checker, source `code.evaluate`,
 or compiler yet.
 
+Editor diagnostics and outlines are available through the
+[Node language server](editors/lsp/README.md), including a Sublime Text 4166
+configuration. Analysis never executes open programs or tests.
+
 ## Read the specification
 
 - [Roadmap](ROADMAP.md): current state, boundaries, milestones and completion gates.

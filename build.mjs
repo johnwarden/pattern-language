@@ -55,6 +55,18 @@ await build({
   outfile: "dist/playground.js",
   sourcemap: true,
 });
-console.log(
-  "Built browser bundles from the same TypeScript modules used by the CLI.",
-);
+await build({
+  entryPoints: {
+    "pattern-language-lsp": "src/lsp/server.ts",
+    "pattern-language-lsp-worker": "src/lsp/worker.ts",
+  },
+  bundle: true,
+  format: "esm",
+  platform: "node",
+  target: "node24",
+  packages: "external",
+  outdir: "dist",
+  outExtension: { ".js": ".mjs" },
+  sourcemap: true,
+});
+console.log("Built browser bundles and the Node-only language server.");

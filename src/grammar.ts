@@ -92,11 +92,17 @@ const entry = (value: Syntax, label = "_1"): Field<Syntax> => ({
 export const syntaxGrammars = new WeakMap<Syntax, Grammar>();
 export class Grammar {
   deferBlocks = false;
+  /** Inert schema reading: Expression/Body captures retain one surface operand. */
+  private opaqueExpressions: boolean;
   rules = new Map<string, Pattern<Syntax>>();
   private ruleSyntax = new Map<string, Syntax[]>();
   private structuralNames = new Set<string>();
   keywords = new Map<string, string>();
-  constructor(source = DEFAULT_GRAMMAR) {
+  constructor(
+    source = DEFAULT_GRAMMAR,
+    options: { opaqueExpressions?: boolean } = {},
+  ) {
+    this.opaqueExpressions = options.opaqueExpressions ?? false;
     for (const { name, pattern: items } of readBootstrap(source)) {
       if (
         this.rules.has(name.name) ||
@@ -342,6 +348,17 @@ export class Grammar {
               ];
           }
           return [];
+        },
+      };
+    if (this.opaqueExpressions && ["Expression", "Body"].includes(name))
+      return {
+        kind: "reader",
+        name,
+        read: (items, pos) => {
+          const item = items[pos];
+          return item
+            ? [{ end: pos + 1, fields: [item], captures: new Map() }]
+            : [];
         },
       };
     if (["Expression", "Form", "Body", "Arms"].includes(name))
@@ -628,7 +645,9 @@ export class Grammar {
   }
 
   clone(): Grammar {
-    const grammar = new Grammar("");
+    const grammar = new Grammar("", {
+      opaqueExpressions: this.opaqueExpressions,
+    });
     grammar.deferBlocks = this.deferBlocks;
     grammar.ruleSyntax = new Map(this.ruleSyntax);
     grammar.structuralNames = new Set(this.structuralNames);
