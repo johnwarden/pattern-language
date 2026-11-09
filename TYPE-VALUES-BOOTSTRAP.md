@@ -28,7 +28,9 @@ Other bare names resolve their lexical bindings. A bare unbound Foo is an error,
 not a literal symbol. A quoted :Foo is a symbol. Constructor applications such as
 Foo(1) use a tag head without requiring quotation. Defined functions, including
 native Type/Facet constructors and named type factories, still dispatch normally.
-True and False are self-evaluating language constants. NaN is not implemented.
+True and False are self-evaluating Bool constants, the same type as comparison
+results: `True == (1 == 1)` is `True`. They are not ReservedSymbol values.
+NaN is not implemented.
 
 ```text
 def Rect type Rect(Float,Float)
@@ -292,8 +294,8 @@ category types remain subject to the general refinement serialization gap.
 ## Intrinsic symbols and disjoint type unions
 
 LowerCamelSymbol, UpperCamelSymbol, UpperSnakeSymbol and PunctuationSymbol are
-intrinsic classes. Symbol is their prelude union; ReservedSymbol is disjoint from
-those classes. A bare ordinary symbol receives its natural class;
+intrinsic classes. Symbol is their prelude union; ReservedSymbol and Bool are
+disjoint from those classes and from each other. A bare ordinary symbol receives its natural class;
 its immediate context can interpret it, while a stored typed variable cannot be
 silently converted to a different space. unionType A | B normalizes to UnionType(A,B).
 Union members must be provably disjoint in the supported structural subset. Shared

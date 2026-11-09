@@ -30,6 +30,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | L8 | Author instruction on 8 November: parse directly into Expression; Expression number literals are exact Rationals; get rid of the lasting syntax-tree layer. This supersedes any pending public `NumberLiteral(Float)` redesign. Distinct postfix punctuation application is a separate smaller item, not blocked on full parser migration. |
 | W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
 | L9 | Author rulings on 9 November 2026 for PR #31 (settled 14:17 Madrid, refined 14:34): Strings are intrinsic primitives. Every symbol prints bare in value text, including `None`; `:` is needed only in code where a bare name would bind. Value text is read with the expected type's own grammar, with no layout-keyword quoting. Primitive names are `ReservedSymbol` values, not symbols, and type descriptions use them directly. Evaluating a quoted primitive name such as `:Int` in program source is an error; parsing Code and decoding value text have no special check for it. `Number` is removed for now. |
+| L10 | Author ruling on 9 November 2026 (15:02 Madrid): master's Boolean behavior is correct. Literal `True`/`False` are `Bool` values, the same type as computed comparison results, not `ReservedSymbol` values. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -55,9 +56,9 @@ boundaries. **Source:** W9.
 Values stay distinct from the expressions that evaluate to them. Distinct source
 expressions may compute the same value; source quotation/printing and value
 inspection keep those roles separate. Primitive values have intrinsic concrete
-interpretations: ordinary strings are String, numeric literals are Rational,
-ordinary quoted symbols have their intrinsic symbol classes, and primitive names
-are `ReservedSymbol` values (D20).
+interpretations: ordinary strings are String, booleans are Bool, numeric literals
+are Rational, ordinary quoted symbols have their intrinsic symbol classes, and
+primitive names are `ReservedSymbol` values (D20).
 
 P proposes self-evaluating `PrimitiveType`, including `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`, with `Type` no longer a reserved primitive atom. This vocabulary is recorded as the proposed primitive representation, not a completed metatype specification. Int/Float families are intended to be definable fixed-precision types rather than primitive numeric atoms.
 
@@ -208,7 +209,7 @@ types are not installed in shared setup merely to allow an assertion to be recor
 ### C01 — intrinsic primitive values
 
 Confirmed direction; the PrimitiveType spelling/self-description is P's proposed vocabulary.
-Live: `"hello" :: String`, `True :: ReservedSymbol`, `5 :: Rational`,
+Live: `"hello" :: String`, `True :: Bool`, `Int :: ReservedSymbol`, `5 :: Rational`,
 `:Widget :: UpperCamelSymbol`. Legacy still treats `type Bool` as Type. Todo:
 `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`.
 
@@ -427,11 +428,21 @@ assert (Int .matches UpperCamelSymbol) == False
 The type description of `type Int` is the reserved symbol itself, not `:Int`.
 `Symbol` is not reserved; the prelude defines it as the union of the four ordinary classes.
 
+`True` and `False` are reserved names but not `ReservedSymbol` values. They are
+`Bool` values, the same type as computed comparison results (L10):
+
+```text
+expect True result True :: Bool
+expect (1 == 2) == False result True :: Bool
+expect True .matches ReservedSymbol result False :: Bool
+```
+
 Evaluating a quoted primitive name in program source is an error. Parsing Code
 and decoding value text have no special check for it:
 
 ```text
 expect :Int error "E_QUOTED_PRIMITIVE"
+expect :True error "E_QUOTED_PRIMITIVE"
 expect Int == :Int error "E_QUOTED_PRIMITIVE"
 expect :(Int) result Int :: Expression
 expect parse(Code)(":Int") result :Int :: Code
@@ -440,7 +451,7 @@ expect parse(Code)(":Int") result :Int :: Code
 Once the Code grammar defines `QuotedSymbol` (Symbols only),
 `parse(Code)(":Foo")` is `:Foo :: QuotedSymbol` and `parse(Code)(":Int")` is
 rejected. These are todo checks today. `Number` is removed for now.
-**Sources:** L9.
+**Sources:** L9, L10.
 
 ## Remaining and deferred items
 

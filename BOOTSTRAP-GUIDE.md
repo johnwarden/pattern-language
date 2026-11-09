@@ -843,6 +843,14 @@ matchers are caches and do not participate in comparison. Canonical uncached typ
 trees work in annotations, generic calls, and matching, and have the same global
 text as their cached form. Invalid/noncanonical type-shaped trees remain data.
 
+`True` and `False` are `Bool` values, not `ReservedSymbol` values, so literal and
+computed Booleans compare directly:
+
+```text
+(1 == 2) == False
+# True :: Bool
+```
+
 Closures and unsupported predicate/default environments cannot currently be compared
 because they lack structural representations; E_VALUE_REPRESENTATION reports this
 general limitation. Host object identity is not a language equality rule.

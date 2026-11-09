@@ -41,6 +41,8 @@ must test composition and state role differences explicitly.
 - All numeric literals denote exact Rationals. 0f selects a Float64-rounded Rational;
   it is not a Float64-typed value. Exact designation never silently rounds. Explicit
   converters return fixed-precision values with their own operations.
+- Primitive names such as `Int` are `ReservedSymbol` values. `True` and `False` are
+  `Bool` values, the type of computed comparisons: `(1 == 2) == False` is `True`.
 - General abstract unions may have overlapping spellings. A separate unambiguous
   grammar requirement supports annotation-free DSL text. Typed general text retains
   sufficient member reconstruction information; no branch priority is introduced.
