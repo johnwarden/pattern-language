@@ -12,14 +12,12 @@ end
 test "Declarations cannot rewrite symbolic construction"
   def Plain type Rect(Int, Int)
 
-  legacy expect Rect(2, 3) result Rect(2, 3) :: Expression
-  todo expect Rect(2, 3) error "no concrete interpretation established"
+  expect Rect(2, 3) result Rect(2, 3) :: Expression
   assert Rect(2, 3) .matches (type Plain)
 
   def Rectangle type Rect(w :: Int, h :: Int, color: String)
 
-  legacy expect Rectangle(2, 3) result Rectangle(2, 3) :: Expression
-  todo expect Rectangle(2, 3) error "no concrete interpretation established"
+  expect Rectangle(2, 3) result Rectangle(2, 3) :: Expression
 
   assert False == Rect(2, 3) .matches (type Rectangle)
 end

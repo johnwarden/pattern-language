@@ -1,4 +1,11 @@
-test "C04 structured values need a concrete interpretation"
+test "C04 raw expressions are allowed and explicit types establish an interpretation"
+  x = Rect(2, 2)
+  Rect(w, h) = x
+
+  expect x result Rect(2, 2) :: Expression
+  expect w result 2 :: Rational
+  expect h result 2 :: Rational
+
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
     r = (Rect(2, 2) :: Rectangle)
@@ -12,13 +19,6 @@ test "C04 structured values need a concrete interpretation"
       Rectangle
     )
   end
-
-  todo expect
-    type Rectangle concrete Rect(w :: Float32, h :: Float32)
-    r = (Rect(2, 2) :: Rectangle)
-    x = Rect(2, 2)
-    x
-  error "no concrete interpretation established for Rect(2,2)"
 end
 
 test "C05 types are structural values"

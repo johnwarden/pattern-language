@@ -13,6 +13,14 @@ test "A direct union arm takes precedence over inward designation"
   assert parse(Float??)(toString(Float??)(inner)) == inner
 end
 
+test "Nested String options print relative to the requested grammar"
+  (inner :: String??) = :None :: String?
+
+  expect toString(String??)(inner) result "None :: Type(:None | String)" :: String
+  assert parse(String??)(toString(String??)(inner)) == inner
+  assert parse(Any)(toString(Any)(inner)) == inner
+end
+
 test "An explicit concrete member identifies an otherwise ambiguous branch"
   def MyType type String? | Float?
   (x :: MyType) = :None :: String?

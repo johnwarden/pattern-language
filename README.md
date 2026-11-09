@@ -21,7 +21,7 @@ build, host tests and the source suite.
 | Numeric literals denote exact Rational values; `0f` is a Float64-rounded Rational | Exact Rational values and syntax payloads; explicit Float32/Float64 conversion and canonical numeric text |
 | General abstract unions; unambiguous grammars are a separate requirement | Overlapping `UnionType` members are allowed; `unambiguous` is unimplemented |
 | Named type declarations register accessors; plain type construction is capture-free | `def ... type ...` and existing type-expression accessor products |
-| Structured values need an established concrete interpretation | Raw Expression compatibility values are still allowed |
+| Raw runtime Expressions are allowed for now; expected types can establish concrete interpretations | Raw construction, designation and one-boundary explicit matching work; ordinary constructor-binding rejection remains todo |
 | Refinement requirements use evidence; projection crosses one explicit boundary | One-boundary match projection and direct-member designation; proof checking remains future work |
 | Test DSL supports whole-test todo and assertion-level todo/legacy contracts | Implemented source-defined steps, grouped .test files, executed expected-failure assertions, shared CLI/CI/browser corpus |
 

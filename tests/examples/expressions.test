@@ -44,8 +44,7 @@ test "Definitions evaluate their bodies"
   def r :Rect(Float)
   def R type :Rect(Float)
 
-  legacy expect :Rect(Float) result Rect(Float) :: Expression
-  todo expect :Rect(Float) error "no concrete interpretation established"
+  expect :Rect(Float) result Rect(Float) :: Expression
   observed = type R
   expect observed result Type(Rect(Float)) :: Type
   (r, (type R))

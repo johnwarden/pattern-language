@@ -62,7 +62,9 @@ must test composition and state role differences explicitly.
   captures only; type defaults and implicit normalization remain excluded.
 - Refinement-qualified functions are legal. Missing evidence is a checking failure;
   overlapping base/refinement overloads do not gain priority by evaluating predicates.
-- Structured runtime values require an established concrete interpretation. Distinct
+- Raw runtime Expressions are allowed for now; an expected type can establish a
+  concrete interpretation. [C04 and the raw-expression cases](specs/implemented/raw-expression-values.md)
+  cover the distinction and explicit projection. Distinct
   source syntax evaluating to the same primitive is not a type-equality exception.
   The parser destination is Expression, not a lasting parallel syntax tree:
   number literals in Expressions are exact Rationals. Host `Syntax`, public
@@ -78,6 +80,10 @@ must test composition and state role differences explicitly.
   where needed; concrete paths need not universally retain it.
 - Code-producing functions do not automatically register macros. Explicit registration,
   phase availability and hygiene remain separate from runtime Code-valued functions.
+- A named function resolves to a self-contained function value, without free user
+  variables. Binding, argument, return and predicate uses have
+  [source todos](tests/specification/named-function-values.test); the complete
+  portable representation remains [approved work](specs/approved/named-function-values.md).
 
 ### Deliberately deferred or provisional
 
@@ -97,9 +103,10 @@ provisional/unresolved. Equivalent local declarations and accessor collisions
 remain errors for now; their replacement alias/import policy is deferred by the
 author. First-class overload sets are
 not accepted. Specialization is only a deferred optimization of already defined
-abstract-call semantics, never a source-visible overload generator. Whether
-ordinary programs expose a first-class runtime Expression *value* remains
-optional; that is separate from the parser destination, which is Expression.
+abstract-call semantics, never a source-visible overload generator. The rule for
+multiple definitions when resolving a name to a function value remains open.
+Permitting raw runtime Expressions does not settle public descriptor decoding
+or require the parser's Expression migration to be completed first.
 
 ## What is implemented now
 

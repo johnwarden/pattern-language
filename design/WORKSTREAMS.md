@@ -93,7 +93,8 @@ The earlier authorization for #27/#28 does not authorize these new PRs.
   replacement policy is deferred; it does not block separating ordinary type
   construction from declaration effects.
 - Intrinsic String behavior is accepted. It does not choose the PrimitiveType
-  metatype, raw Expression exposure, descriptor equality/decoding or new syntax.
+  metatype, descriptor equality/decoding or new syntax. Raw runtime Expressions
+  are separately allowed for now; see [their contracts](../specs/implemented/raw-expression-values.md).
 - The public inspection/decoding examples belong to the author. If a workstream
   genuinely depends on that decision, report the smallest concrete example and
   continue independent work; do not invent the boundary.

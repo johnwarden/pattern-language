@@ -55,7 +55,7 @@ subset, not completion of the revised design.
 - [ ] Duplicate equivalent declarations and accessor collisions remain errors while the replacement policy is deferred. Do not infer an alias/import policy from functional equality.
 - [ ] Resolve generic-family membership/parameter recovery, MemberOf and singleton policies.
 - [ ] Choose exact type/generic/rest/unambiguous spellings before treating tentative cases as parser contracts.
-- [ ] Decide optional runtime Expression and descriptor decoding explicitly.
+- [ ] Define public descriptor decoding; preserve the approved raw runtime Expression behavior for now.
 - [ ] Keep constructedBy tabled until refinement decoding is solved.
 - [ ] Leave IEEE special identities and numeric edge/canonical spellings provisional until decided.
 - [ ] Do not add first-class overload sets, unchecked insist, type defaults or implicit normalization under another feature's name.

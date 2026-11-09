@@ -1,6 +1,12 @@
 # Closed definitions as function values
 
-## Current decision boundary — 7 November 2026
+## Current decision boundary — 9 November 2026
+
+A named function now resolves to a function value: it can be bound, passed,
+returned or supplied to `where` without an anonymous wrapper. That value contains
+the complete implementation with no free user variables. The
+[approved record](../specs/approved/named-function-values.md) links the current
+callable-use todos and identifies the still-missing portable representation tests.
 
 Specialization is only a later compiler optimization. First-class OverloadedFunction
 values remain an unaccepted separate proposal; generating private specializations
@@ -28,13 +34,16 @@ the principle that their public representations stand on their own.
 - Preserve recursive/mutually recursive helpers as a finite declaration group.
   Recursion must never require infinite inlining.
 - Without static dispatch selection, include the reachable overload set required
-  by a call, preserving its ambiguity/error behavior. A defined-function name
-  still cannot be returned or passed as a value merely because it is callable.
+  by a call, preserving its ambiguity/error behavior. Named functions are values;
+  the representation/selection rule for an overloaded name remains unspecified.
 - Retain default expressions and their closed dependencies. Closing a function
   must not evaluate a default early or change when it is selected.
 
 Self-contained means no hidden lexical environment is needed to reconstruct the
-callable. It does not mean the function is pure. A portable primitive vocabulary,
+callable. Symbolic primitive callable references are the baseline; which prelude
+or standard-library names may remain external is not yet enumerated. User helpers
+must be part of the closed implementation. This does not mean the function is
+pure. A portable primitive vocabulary,
 capability values and unsupported captures need explicit policies; opaque host
 handles cannot become public syntax merely by assigning them an ID.
 
