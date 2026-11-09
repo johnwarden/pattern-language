@@ -2549,13 +2549,23 @@ export class Interpreter {
         allowDefaults: !typeMode,
         defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
+        optionType: (operand) => {
+          const inner = this.typeFromSyntax(operand, env);
+          return {
+            kind: "union",
+            choices: [
+              this.typePattern(inner),
+              literalPattern(valSymbol("None")),
+            ],
+          };
+        },
         head: (n, depth = 0) => {
           if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
           // Application heads are structural patterns, not unary type-factory
           // calls: the head of (a :* b) is the partial tree *(a).
           if (
             (n.kind === "apply" && !binary(n, "::") && !binary(n, "|")) ||
-            n.kind === "postfix"
+            (n.kind === "postfix" && !(typeMode && n.operator === "?"))
           ) {
             if (n.kind === "postfix")
               return {

@@ -186,8 +186,8 @@ Defaults are valid only in binding patterns, including parameters and match arms
 They populate captures without modifying input values. Type expressions reject them
 with E_TYPE_DEFAULT. An ordinary factory function can accept defaulted parameters
 and explicitly return a complete value; type annotations never complete fields.
-Option types are written `T?` by convention (the postfix tree), with no
-field-specific interpretation. Prefix `?(T)` is not Option. Defaults must match
+Type `T?` is `concrete T | :None`, with no field-specific interpretation. Prefix
+`?(T)` is not Option. A present optional value needs no postfix. Defaults must match
 the annotated type. A label in a binding pattern may be absent because it has a
 default, not because its type is `T?`. Type fields remain required.
 

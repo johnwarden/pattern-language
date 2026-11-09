@@ -19,26 +19,32 @@ end
 
 test "Postfix star question caret bang are distinct from prefix application"
   def PostfixStar type (Int)*
-  def PostfixOpt type (String)?
   def PrefixOpt type (?(String))
   def PostfixCaret type (Int)^
   def PostfixBang type (Int)!
   (star :: PostfixStar) = 1*
-  (opt :: PostfixOpt) = "hi"?
   (preOpt :: PrefixOpt) = ?("bar")
   (caret :: PostfixCaret) = 2^
   (bang :: PostfixBang) = 3!
   expect (*(2)(3)) result 6 :: Rational
   expect (^(2)(3)) result 8 :: Rational
+  present = "hi" :: String?
+  absent = :None :: String?
+  expect present result "hi" :: (type String?)
+  expect absent result :None :: (type String?)
   expect
-    opt == preOpt
+    "hi"? :: String?
+  error "expected String"
+  end
+  expect
+    present == preOpt
   error "Can't compare types"
   end
   n = match star
     (captured :: Int)* -> captured
   end
   expect n result 1 :: Int
-  q = match opt
+  q = match "hi"?
     (captured :: String)? -> captured
   end
   expect q result "hi" :: String
@@ -50,6 +56,19 @@ test "Postfix star question caret bang are distinct from prefix application"
     (captured :: Int)! -> captured
   end
   expect b result 3 :: Int
+end
+
+test "Postfix question constructs T | :None"
+  expect ("x" :: String?) result "x" :: (type String?)
+  expect (:None :: String?) result :None :: (type String?)
+  expect toString(Type)(type String?) result "Type(:None | String)" :: Expression
+  expect toString(Type)(type String??) result "Type(:None | Type(:None | String))" :: Expression
+  expect ("x"? .matches (type String?)) result False :: Bool
+  expect (Some("x") .matches (type String?)) result False :: Bool
+  t = parse(Type)(toString(Type)(type String?))
+  expect ("x" .matches t) result True :: Bool
+  expect (:None .matches t) result True :: Bool
+  expect ("x"? .matches t) result False :: Bool
 end
 
 test "Spaced infix star is not postfix"

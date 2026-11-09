@@ -130,9 +130,11 @@ explicit layout termination, including shared string/if terminator ownership.
   each: T** is (T*)*, and String?*^! wraps from the nearest suffix outward.
   Postfix punctuation is not prefix/infix `Apply`. Public `SyntaxNode` includes
   `Postfix(String, SyntaxNode)` so type-grammar transport can carry postfix
-  trees. Option, List, and error types are written `T?` / `T*` / `T^`
-  by convention (the postfix trees themselves, not factories). Prefix `?(T)` /
-  `*(T)` / `^(T)` are ordinary prefix application, not those types. Prefix `$`
+  trees. Type `T?` is `concrete T | :None`: postfix `?` is only that type
+  constructor, present values need no postfix (`"x" :: String?`), and `"x"?` is a
+  generic postfix tree, not an inhabitant. List `T*` and error `T^` remain postfix
+  trees. Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those
+  types. Prefix `$`
   remains unquote; interpolating quotes stay lexer prefixes.
   Full parser migration is not a prerequisite and is not done.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker

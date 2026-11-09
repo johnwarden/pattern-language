@@ -109,8 +109,8 @@ export const postfix = (
   span: span ?? operand.span,
 });
 /** Rest/vertical list layers are postfix `*` / `**` (T* / T**).
- * Option/List/error types are written T? / T* / T^ by convention (the postfix
- * tree itself, not a prefix factory). */
+ * Type T? is concrete T | :None. Postfix ? is that type constructor; present
+ * values are unwrapped. List T* and error T^ remain postfix trees. */
 export function listLayer(
   n: Syntax,
 ): { operand: Syntax } | undefined {

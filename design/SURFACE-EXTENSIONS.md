@@ -42,11 +42,12 @@ transport can carry `T?` / `T*` / `T^` rest and type annotations.
 
 The current suffix inventory is parser `POSTFIX_SUFFIX`:
 `* ? ! ^ @ $ & ~`. Each is a distinct postfix construction, not prefix/infix
-`Apply`. Option, List, and error types are written `T?` / `T*` / `T^` by
-convention: those spellings *are* the postfix trees, not mappings onto named
-factories. Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not
-those types. Postfix `Int*` / `Int?` / `Int^` / `Int!` / `Int$` / `Int&` / `Int~`
-are incomparable with the corresponding prefix applications. `T+` nonempty-list
+`Apply`. Type `T?` is `concrete T | :None`: postfix `?` is only that type
+constructor, present values need no postfix, and `"x"?` is a generic postfix tree,
+not an inhabitant of `String?`. List `T*` and error `T^` remain postfix trees.
+Prefix `?(T)` / `*(T)` / `^(T)` are ordinary prefix application, not those types.
+Postfix `Int*` / `Int?` / `Int^` / `Int!` / `Int$` / `Int&` / `Int~` are
+incomparable with the corresponding prefix applications. `T+` nonempty-list
 meaning remains later work; `+` is not in the current suffix set and stays
 prefix/infix. Actual `[]` lists still use rest form `[_... :: T*]` (or
 `xs... :: T*`); the postfix tree `T*` is the list-type convention, not the `[]`
@@ -64,20 +65,20 @@ notes.
 Other punctuation (`= / +` and similar) stays prefix/infix until listed as a
 suffix.
 
-The Question/`String?` sketch is the option-type convention: `T?` *is* the
-postfix tree, inhabited by postfix values, the same generic distinction as `@`:
+The Question/`String?` sketch is the option type `concrete T | :None`. Postfix
+`?` is only the type constructor; a present value is unwrapped:
 
 ```text
 type Question String?
-q = "Does this actually work"? :: Question
-expect q result "Does this actually work"? :: Question
-match q (s :: String)?
-expect s result "Does this actually work" :: String
+q = "Does this actually work" :: Question
+expect q result "Does this actually work" :: Question
+absent = :None :: Question
+expect ("Does this actually work"? .matches Question) result False :: Bool
 ```
 
 Tight postfix punctuation is one symbol per character. Each suffix wraps the
 expression immediately to its left: String?*^! is (((String?)*)^)!, postfix
-wrapping of the option-type tree, not prefix `*(String?)` / `^(…)`. T** is (T*)* and not a
+wrapping of those suffixes, not prefix `*(String?)` / `^(…)`. T** is (T*)* and not a
 new two-character postfix operator. Prefix punctuation still forms maximal symbols.
 The surface reader recognizes ... and bare ** markers; their repetition/openness
 meaning belongs to interpretation. Keyword remainder capture/spread is prefix

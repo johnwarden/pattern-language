@@ -33,6 +33,7 @@ export interface PatternDomain<T> {
   defaultValue?: (node: Syntax) => T;
   defaultIdentity?: (node: Syntax) => string;
   validateTypedCapture?: (name: string, annotation: Syntax) => void;
+  optionType?: (operand: Syntax) => Pattern<T>;
 }
 export class PatternCompiler<T> {
   domain: PatternDomain<T>;
@@ -201,12 +202,19 @@ export class PatternCompiler<T> {
         head: this.domain.head(n.head, this.dimensions),
         body: this.fields(n.body, false, n.head),
       };
-    if (n.kind === "postfix")
+    if (n.kind === "postfix") {
+      if (
+        n.operator === "?" &&
+        this.domain.optionType &&
+        (this.domain.requireCaptureTypes || isTypeSpecification(n.operand))
+      )
+        return this.domain.optionType(n.operand);
       return {
         kind: "postfix",
         operator: this.domain.head(symbol(n.operator), this.dimensions),
         operand: this.compile(n.operand),
       };
+    }
     return this.domain.atom(n);
   }
   fields(xs: Field<Syntax>[], openLabels = true, head?: Syntax): Pattern<T> {

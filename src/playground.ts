@@ -28,8 +28,8 @@ value .matches pattern  → matches(value)(pattern)
 
 # Subsets keep their base type's concrete space
 Number .where (n -> isInt64(n))
-# Option, List, and error types are written T? / T* / T^ by convention
-Int?
+# Type T? is T | :None; T* and T^ remain postfix trees
+1 :: Int?
 Int*
 Int^
 

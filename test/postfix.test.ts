@@ -131,9 +131,20 @@ amp == pre
   assert.equal(run("3 ~ 4"), "3 ~ 4");
   assert.equal(run("?(1)"), "?(1)");
   assert.notEqual(run("1?"), run("?(1)"));
+  assert.equal(run("1 :: Int?"), "1");
+  assert.equal(run(":None :: Int?"), ":None");
+  assert.throws(
+    () => run("1? :: Int?"),
+    (e: unknown) => e instanceof LanguageError,
+  );
   assert.throws(
     () => run("Some(1) :: Int?"),
     (e: unknown) => e instanceof LanguageError,
+  );
+  assert.equal(run('toString(Type)(type String?)'), '"Type(:None | String)"');
+  assert.equal(
+    run("toString(Type)(type String??)"),
+    '"Type(:None | Type(:None | String))"',
   );
 });
 
