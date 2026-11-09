@@ -99,7 +99,7 @@ export const apply = (head: Syntax, body: Field<Syntax>[]): Syntax => ({
   body,
 });
 /** Tight one-character suffixes. Transported as SyntaxNode Postfix(String, SyntaxNode). */
-export const POSTFIX_SUFFIX = /^[~!@#$%^&*?]+$/;
+export const POSTFIX_SUFFIX = /^[~!@$%^&*?]+$/;
 /** Prefix and postfix callables occupy distinct structural namespaces. */
 export const postfixMethodName = (operator: string): string =>
   "\0postfix:" + operator;

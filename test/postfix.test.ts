@@ -152,10 +152,17 @@ amp == pre
 test("keyword rest is prefix ** and postfix rest** is two stars", () => {
   assert.equal(parseExpression("**rest").kind, "apply");
   assert.equal(normal(parseExpression("**rest")), "**(rest)");
-  assert.equal(normal(parseExpression("** rest")), "**(rest)");
-  assert.equal(
-    syntaxKey(parseExpression("**x")),
-    syntaxKey(parseExpression("** x")),
+  assert.throws(
+    () => parseExpression("** rest"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /must touch their operand/.test(e.message),
+  );
+  assert.throws(
+    () => parseExpression("** x"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /must touch their operand/.test(e.message),
   );
   assert.equal(parseExpression("**(x)").kind, "apply");
   assert.equal(normal(parseExpression("**(x)")), "**(x)");
@@ -193,13 +200,34 @@ test("postfix T* / T** and prefix **x do not share a spaced tree", () => {
   );
   assert.equal(parseExpression("**x").kind, "apply");
   assert.equal(normal(parseExpression("**x")), "**(x)");
-  assert.equal(normal(parseExpression("* *x")), "*(*(x))");
-  assert.notEqual(
-    syntaxKey(parseExpression("T**")),
-    syntaxKey(parseExpression("T * *")),
+  assert.throws(
+    () => parseExpression("* *x"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /must touch their operand/.test(e.message),
   );
-  assert.notEqual(
-    syntaxKey(parseExpression("**x")),
-    syntaxKey(parseExpression("* *x")),
+  assert.throws(
+    () => parseExpression("T * *"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /must touch their operand/.test(e.message),
   );
+  assert.equal(normal(parseExpression("1 * *x")), "1 * *(x)");
+  assert.equal(normal(parseExpression("1 * x*")), "1 * x*");
+  assert.equal(normal(parseExpression("x* * 1")), "x* * 1");
+  assert.throws(
+    () => parseExpression("- (x)"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /must touch their operand/.test(e.message),
+  );
+  assert.throws(
+    () => parseExpression("* (x)"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      /must touch their operand/.test(e.message),
+  );
+  assert.equal(normal(parseExpression("-(x)")), "-(x)");
+  assert.equal(normal(parseExpression("-x")), "-(x)");
+  assert.equal(normal(parseExpression("1 - (x)")), "1 - x");
 });

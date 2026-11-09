@@ -70,7 +70,7 @@ expression    = postfix, [spacedOperator, expression] ;
 postfix       = atom, {arguments | tightDot | typeSuffix | spread} ;
 arguments     = "(", [fields], ")" ;
 tightDot      = ".", identifier ;
-typeSuffix    = "~" | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" | "?" ;
+typeSuffix    = "~" | "!" | "@" | "$" | "%" | "^" | "&" | "*" | "?" ;
 spread        = "…" | "..." ;
 atom          = symbol | literal | grouped | outfix | prefixApplication ;
 grouped       = "(", macroOrExpression, ")" | "(", newline, block, ")" ;
@@ -103,12 +103,14 @@ inference is implemented, type definitions require explicit capture types,
 including rest captures. Binding, parameter, and match captures may remain
 unannotated without boxing their inputs. `_` cannot define a type field.
 
-Tight postfix punctuation `~ ! @ # $ % ^ & * ?` wraps left to right:
-`Int?*` is `(Int?)*`, and `T**` is `(T*)*`. Postfix nodes are distinct from prefix
-application throughout syntax, matching and portable descriptions. Definitions
-supply meaning; the source prelude defines optional `?` as `T | :None`.
-Separated `#` starts a comment; tight `#` is punctuation. See
-[POSTFIX.md](design/POSTFIX.md).
+Tight postfix punctuation `~ ! @ $ % ^ & * ?` wraps left to right:
+`Int?*` is `(Int?)*`, and `T**` is `(T*)*`. `#` always starts a comment.
+Postfix nodes are distinct from prefix application throughout syntax, matching
+and portable descriptions. Definitions supply meaning; the source prelude defines
+optional `?` as `T | :None`. Prefix and postfix operators must touch their
+operand: `T * *`, `* *x`, and `- (x)` are errors; `-(x)`, `-x`, `1 - (x)`,
+`1 * *x`, `1 * x*`, and `x* * 1` parse. Prefix `-(a)` negates; infix `-(a)(b)`
+subtracts. See [POSTFIX.md](design/POSTFIX.md).
 
 Prefix `+Int` and `+(Int)` are the same application tree. Tight `Int+` is not a
 typeSuffix here. Angle brackets have no application role; spaced `<` and `>`

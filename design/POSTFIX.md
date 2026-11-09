@@ -5,8 +5,8 @@ Author clarification, 9 November 2026. This supersedes descriptions of postfix
 
 ## Syntax
 
-The shifted top-row punctuation `~ ! @ # $ % ^ & *`, and `?`, can be tight
-postfix operators. A postfix node has an operand and one punctuation character.
+The shifted top-row punctuation `~ ! @ $ % ^ & *`, and `?`, can be tight
+postfix operators. `#` is not a postfix operator. A postfix node has an operand and one punctuation character.
 It is distinct from prefix/infix application. Consecutive suffixes wrap outward:
 `T**` is `(T*)*`; `String?*^!` is `(((String?)*)^)!`. This decision does not add
 `+` as a suffix; the separate nonempty-list proposal remains future work.
@@ -36,9 +36,12 @@ that would be mistaken for infix syntax can be placed in an indented type body.
 The runnable equivalents and transport checks live in
 `tests/specification/postfix.test`.
 
-Tight `#` is postfix punctuation; a separated `#` starts a line comment. Strings
-keep their own lexical rules. Explicit interpolating quote prefixes such as
-``Code$` ``, `$"..."` and `$'...'` retain their quotation meaning.
+`#` always starts a line comment, whether or not it touches the previous token:
+`x#` and `x #` are both `x`. Whitespace does not select between a postfix tree
+and a comment. Strings keep their own lexical rules. Explicit interpolating quote
+prefixes such as ``Code$` ``, `$"..."` and `$'...'` retain their quotation meaning.
+Prefix and postfix operators must touch their operand. Prefix `-(a)` negates;
+infix `-(a)(b)` subtracts.
 
 ## Definitions supply meaning
 

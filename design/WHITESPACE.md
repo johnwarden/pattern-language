@@ -1,5 +1,70 @@
 # Significant whitespace and explicit delimiters
 
+## Formatting safety
+
+**Formatting and whitespace errors may produce syntax errors, never logic errors.**
+
+This guarantee is relative to the grammar being applied. When that grammar fixes
+a construct's form, formatting must preserve its grammatical structure, apart
+from source locations, or be rejected as a syntax error. A whitespace mistake
+must not silently change scope, clause ownership, operator fixity, argument packs,
+or whether code is treated as a comment. A later type error or runtime failure is
+not a substitute for rejecting malformed syntax.
+
+This is why whitespace can be significant without being allowed to introduce
+logic errors. A reader must not guess a different interpretation to make a
+formatting mistake valid. The rule applies to indentation and line reflow as
+well as horizontal spacing, including Code, quotations, custom grammars and the
+Test DSL. Whitespace inside string literals and raw reader payloads is data;
+editing that content is not code formatting.
+
+| Boundary | Required outcome |
+| --- | --- |
+| Indented blocks | Missing or misaligned `end` rejects; indentation cannot silently move a statement into another body. |
+| Calls | `f(x)` is application; `f (x)` rejects instead of becoming a different valid call or sidefix form. |
+| Infix operators | `a + b` is infix; `a+b` rejects instead of acquiring another meaning. |
+| Prefix and postfix operators | `-x`, `-(x)` and `T**` are valid; `- (x)`, standalone `* *x` and `T * *` reject. |
+| Comments | `#` starts a comment with or without a preceding space; `x# note` and `x # note` have the same code. |
+| Postfix percent | `x%` is postfix; `x %` rejects as incomplete infix syntax. Adding a space cannot produce another valid interpretation. |
+
+These are consequences of the principle, not independent formatting preferences.
+They do not establish complete parser conformance; remaining gaps are recorded
+under [Bootstrap boundary](#bootstrap-boundary).
+
+### Raw layout and explicit grammar alternatives
+
+The rule does not require all whitespace variants of raw expressions to have
+one tree. For example:
+
+```text
+a b
+  c
+end
+```
+
+```text
+a
+  b
+  c
+end
+```
+
+Without an applied grammar, these may be different expression/layout trees: the
+first has an inline `b` followed by a body containing `c`; the second has a body
+containing both `b` and `c`. Raw parsing alone cannot decide which form `a` needs.
+The fixed micro-syntax rules, such as operator adjacency, still apply.
+
+A grammar may also explicitly admit both forms of the `a` keyword. Both can
+then be valid with different meanings. That is a declared grammar alternative,
+not a reader silently repairing malformed use of a single form. If the applied
+grammar admits only one form, the other must fail grammar validation. Merely
+observing that the bootstrap accepts two trees does not establish this exception;
+the absence of an applied grammar or the keyword's alternatives must justify it.
+These examples state the contract; they do not claim that the bootstrap already
+supports declaring every such grammar alternative.
+
+## Layout and explicit closure
+
 **Ratified layout contract.** Block and clause completeness come from the active
 surface grammar’s quoted keyword chains, not a hardcoded `assert`/`expect`/`else`
 list. Indentation is not a semantic delimiter. Parse failures of malformed inner
@@ -97,22 +162,22 @@ width.
 | Whitespace boundary | Meaning / required validation |
 | --- | --- |
 | Indentation outside explicit delimiters | Describes block membership via the same tab/space prefix relation as block quotes; missing or misaligned end must reject rather than accept another scope. |
-| Newlines outside balanced delimiters | Separate rows / statements; joining or splitting rows can intentionally change a program. |
-| Newlines inside collection delimiters | Can distinguish vertical rows from comma continuation; row boundaries can change collection rank. |
+| Newlines outside balanced delimiters | Raw layout may retain different rows. An applied keyword grammar must validate its declared forms rather than silently reinterpret one form as another. |
+| Newlines inside collection delimiters | Comma continuations and vertical rows need validation against the applicable grammar. Their complete formatting-safety coverage remains unverified. |
 | Spaces around infix operators | Both sides are required; a+b is invalid, not a different addition expression. |
-| Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Suffixes wrap in source order. Prefix `+Int` and `+(Int)` are the same application tree; tight `Int+` is not that wrap. |
-| Tight function calls versus sidefix operands | `f(x)` is application. A non-keyword term then spaced `(` is an error (`f (x)`, `f(x) (y)`). A keyword operand may begin with a grouping only if the operand continues (`assert (1 + 2) == 3`); a wholly parenthesized operand (`assert (x)`, `if (x)`) is an error. Infix/prefix operators may still be followed by a grouped operand (`a - (b)`, `- (x)`). |
+| Tight postfix punctuation | T* is a suffix application; T * U is spaced infix syntax. Prefix and postfix operators must touch their operand: `T * *` is an error (write `T**`); standalone `* *x` is an error; `1 * *x`, `1 * x*`, and `x* * 1` parse. `#` always starts a comment (`x#` and `x #` are both `x`). Suffixes wrap in source order. Prefix `+Int` and `+(Int)` are the same application tree; tight `Int+` is not that wrap. |
+| Tight function calls versus sidefix operands | `f(x)` is application. A non-keyword term then spaced `(` is an error (`f (x)`, `f(x) (y)`). A keyword operand may begin with a grouping only if the operand continues (`assert (1 + 2) == 3`); a wholly parenthesized operand (`assert (x)`, `if (x)`) is an error. Infix operators may be followed by a grouped operand (`a - (b)`, `1 - (x)`). Prefix operators must touch (`-(x)`, `-x`); standalone `- (x)` is an error. |
 | Dot notation | a.b and a .b c follow the stated call/pack rules; arbitrary spacing around dot is not permitted. |
-| Label colon | Must touch its label. Separating it is not an alternative label spelling and may only have meaning in another explicitly selected grammar. |
-| Quotation / reader prefixes | Tight T` and reader quote prefixes select syntax; adding spaces does not preserve that interpretation automatically. |
+| Label colon | Must touch its label. Separating it must not reinterpret a label as different valid code. |
+| Quotation / reader prefixes | Tight T` and reader quote prefixes select syntax. Spacing changes must preserve the interpretation or reject, including in custom grammars. |
 | String indentation | Strip the common required prefix; insufficiently indented nonempty content rejects. Deeper indentation is string data. |
 | Blank string lines | Empty physical lines are retained; whitespace-only lines must satisfy the indentation prefix. Framing lines alone are stripped. |
 | String spaces / newlines | Remain data. No claim is made that whitespace edits inside strings are semantics-preserving. |
 | Source CRLF / initial BOM | Normalize CRLF to LF and strip one leading BOM; other string characters remain data. |
 
-The goal is not to make every whitespace edit harmless. It is to reject accidental
-block-scope changes that lack explicit closure, while keeping intentional row,
-fixity and literal-content distinctions visible in the grammar.
+Significant whitespace constrains valid spelling within a grammar-selected form.
+Raw layout and explicitly declared keyword alternatives are the exceptions above;
+they do not authorize arbitrary fallback between calls, operators or scopes.
 
 ## Call spacing
 
@@ -140,15 +205,19 @@ type(Point)             # application of type
 type (Point)            # error
 todo()                  # tight empty call
 todo ()                 # error, including todo ( / newline / )
-a - (b)                 # valid: operator then group
-- (x)                   # valid: prefix operator, same tree as -(x)
+a - (b)                 # valid: infix operator then group
+-(x)                    # valid: prefix operator touches the group
+-x                      # valid: prefix operator touches the operand
+- (x)                   # error: prefix operator must touch its operand
 x = (1, 2)              # valid: pack after =
 expect e result (1 + 1) :: Expression   # valid: result operand continues
 ```
 
 `def f() (x, y)` is the term error (`f()` then spaced `(`); indent the pack.
-Same-indent `f` then `(x)` on the next line are two rows. Postfix suffixes stay
-tight (`T?`, `T*`, `T^`).
+The bootstrap currently reads same-indent `f` then `(x)` on the next line as two
+rows. The treatment of this ordinary-expression boundary under the formatting
+principle still needs review; see below. Postfix suffixes stay tight (`T?`, `T*`,
+`T^`).
 
 The REPL treats a buffer as ready when the active grammar can parse it as a
 finished entry. It must not wait for an extra blank line after `end` or after a
@@ -163,6 +232,15 @@ quoted keyword chains, not a hardcoded `else`/`assert`/`expect` list. A missing
 closure is `E_BLOCK_END`. Indented typed quotes still use `E_QUOTE_END`. A string
 inside a sidefix form stops at that form's clause keyword and may share the
 form's final `end`. Dedentation alone is not a semantic delimiter.
+
+The formatting principle is a design requirement, not a claim that every
+whitespace boundary is already checked. Ordinary expression-row boundaries need
+classification against the raw-layout exception: the bootstrap evaluates
+`f = x -> x + 1` followed by `f(2)` to 3, but splitting that call into `f` and
+`(2)` on separate rows returns 2. This behavior is observed; whether that boundary
+should require stronger syntax is unresolved here. Collection rows, quotation
+boundaries and custom-grammar reflow also need systematic review. No new rejection
+rule or general proof of conformance is selected by this document.
 
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
 indentation changes, an expectation borrowing its test's end, an error clause
@@ -182,5 +260,6 @@ test/indent-prefix.test.ts keeps the prefix-relation unit checks.
 tests/specification/postfix-suffixes.test covers suffix wrap order (`T**` is
 `(T*)*`), spaced infix trees, that a pack field `**` is not a suffix on the
 previous field, and that prefix `+Int` / `+(Int)` are the same tree while tight
-`Int+` is not rewritten to prefix `+`. Distinct postfix application, including
-tight `Int+` as a postfix tree, remains later work.
+`Int+` is not rewritten to prefix `+`. tests/specification/postfix.test covers
+the touching rule and that `#` is a comment. tests/specification/minus.test
+covers prefix negation versus infix subtraction.

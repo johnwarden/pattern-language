@@ -24,6 +24,10 @@ must test composition and state role differences explicitly.
   and f are distinct. Dot/infix/outfix are sugar; infix has equal precedence and
   right associativity. Labels are lowercase, unique and canonically sorted after
   positional fields. () is an empty pack, not an implicit unit value.
+- Formatting and whitespace mistakes must produce syntax errors, never logic
+  errors, within a form fixed by the applied grammar. Raw layout and explicitly
+  declared keyword alternatives are exceptions; see
+  [WHITESPACE.md](design/WHITESPACE.md) for examples and remaining review boundaries.
 - Patterns share structural recognition/capture rules. Packs tolerate extra labels;
   constructed shapes are exact unless open. Positional rests never collect labels.
   Each repeated dimension adds one list layer; horizontal-plus-vertical has T**.
@@ -127,12 +131,18 @@ explicit layout termination, including shared string/if terminator ownership.
   preserve the disambiguation table, defer Unicode casing and UpperSnake binding roles.
 - Implemented grammar diagnostics with found input, active expected form and locations.
   Contextual type-inference diagnostics still depend on milestones 6/7.
+- Audit remaining newline and collection-row behavior against formatting safety.
+  Distinguish raw layout and declared keyword alternatives from accidental
+  reinterpretation; ordinary expression-row boundaries remain under review.
 - Implemented distinct postfix expressions across the shared
   tree/value/pattern/serialization adapters. Suffixes are one character each: T** is (T*)*, and String?*^! wraps
   from the nearest suffix outward. Type-name/head rules apply to every suffix.
-  Optional T? (`T | :None`) is defined in source; the bootstrap retains list T*
+  The suffix inventory is `~ ! @ $ % ^ & * ?`; `#` is a comment, not a postfix
+  operator. Optional T? (`T | :None`) is defined in source; the bootstrap retains list T*
   and result T^ type constructors. Prefix `+Int` and `+(Int)`
   are the same application tree; tight `Int+` is not rewritten to prefix `+`.
+  Prefix and postfix operators must touch their operand. Prefix `-(a)` negates;
+  infix `-(a)(b)` subtracts.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.
 - Implement explicit layout end ownership and migrate source/host fixtures together.

@@ -56,15 +56,37 @@ test "Postfix values can be type factory arguments"
   expect :Box(Postfix(:@, 1)) .matches t result False :: Bool
 end
 
-test "Postfix hash and percent are punctuation"
-  def Hash type String#
+test "Postfix percent remains punctuation; hash is a comment"
   def Percent type String%
-  (h :: Hash) = "data"#
   (p :: Percent) = "data"%
-  expect h result "data"# :: Hash
   expect p result "data"% :: Percent
-  assert parse(Hash)(toString(Hash)(h)) == h
   assert parse(Percent)(toString(Percent)(p)) == p
+  x = 1# trailing comment
+  y = 1 # separated comment
+  assert x == y
+  assert parse(Code)("x#") == parse(Code)("x")
+  assert parse(Code)("x # comment") == parse(Code)("x")
+end
+
+test "Prefix and postfix operators must touch their operand"
+  expect parse(Code)("T * *") error "must touch their operand"
+  expect parse(Code)("* *x") error "must touch their operand"
+  expect parse(Code)("T ? ?") error "must touch their operand"
+  expect parse(Code)("? ?x") error "must touch their operand"
+  expect parse(Code)("- (x)") error "must touch their operand"
+  expect parse(Code)("* (x)") error "must touch their operand"
+  parse(Code)("1 * *x")
+  parse(Code)("1 * x*")
+  parse(Code)("x* * 1")
+  parse(Code)("1 ? ?x")
+  parse(Code)("x? ? 1")
+  parse(Code)("-(x)")
+  parse(Code)("-x")
+  parse(Code)("1 - (x)")
+  assert parse(Code)("1 * *x") == parse(Code)("*(1)(*(x))")
+  assert parse(Code)("1 * x*") == parse(Code)("*(1)(x*)")
+  assert parse(Code)("x* * 1") == parse(Code)("*(x*)(1)")
+  assert parse(Code)("T**") == parse(Code)("(T*)*")
 end
 
 test "Lifting remains a future source convention"

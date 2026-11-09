@@ -4,6 +4,7 @@ import {
   Interpreter,
   displayResults,
   parseExpression,
+  normal,
   encodeSyntax,
   decodeSyntax,
 } from "../src/index.ts";
@@ -28,7 +29,7 @@ test("postfix question mark has no optional meaning without a source definition"
 });
 
 test("every accepted suffix survives syntax and typed value transport", () => {
-  for (const op of "~!@#$%^&*?") {
+  for (const op of "~!@$%^&*?") {
     const tree = parseExpression(`"x"${op}`);
     assert.equal(tree.kind, "postfix", op);
     assert.equal(
@@ -57,8 +58,11 @@ test("bootstrap list and result conventions remain usable", () => {
   );
 });
 
-test("a tight hash and separated comments share the interpolation lexer", () => {
+test("hash always starts a comment, tight or separated", () => {
   const i = new Interpreter();
-  assert.equal(displayResults(i.run('x = "x"# # comment\nx')), '"x"#');
-  assert.equal(displayResults(i.run('$"$("x"#)"')), '"\\\"x\\\"#"');
+  assert.equal(displayResults(i.run('x = "x"# comment\nx')), '"x"');
+  assert.equal(displayResults(i.run('x = "x" # comment\nx')), '"x"');
+  assert.equal(normal(parseExpression("x#")), "x");
+  assert.equal(normal(parseExpression("x #")), "x");
+  assert.equal(displayResults(i.run('$"$("x"%)"')), '"\\\"x\\\"%"');
 });
