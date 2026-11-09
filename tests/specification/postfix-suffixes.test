@@ -5,13 +5,13 @@ end
 
 test "Prefix plus forms are the same tree; tight Int+ is not"
   assert parse(Code)("+Int") == parse(Code)("+(Int)")
-  expect parse "Int+" error "infix operators require spaces"
-  expect parse "Int*+" error "infix operators require spaces"
-  expect parse "a+" error "infix operators require spaces"
+  expect parse(Code)("Int+") error "infix operators require spaces"
+  expect parse(Code)("Int*+") error "infix operators require spaces"
+  expect parse(Code)("a+") error "infix operators require spaces"
 end
 
 test "Spaced plus and star remain infix"
-  expect parse "a+b" error "infix operators require spaces"
+  expect parse(Code)("a+b") error "infix operators require spaces"
   assert parse(Code)("a + b") == parse(Code)("+(a)(b)")
   assert parse(Code)("T * U") == parse(Code)("*(T)(U)")
   expect 2 * 3 result 6 :: Rational

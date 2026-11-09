@@ -174,10 +174,12 @@ after a complete inline clause, incomplete infix, and `expect parse` of quoted
 malformed source.
 tests/layout/indent-prefixes.test covers pure tabs, pure spaces, mixed prefixes,
 and quote-indent stripping. tests/layout/custom-grammar.test covers a session
-`macro` plus `expect parse` for `hold` without `end`. Required infix spacing
-remains an ordinary check. Host test/layout-ends.test.ts keeps Grammar-object
-`parseSurface` (including `:otherwise` vs `:else`) and sequential session macros
-for probe/then success. test/repl.test.ts covers grammar-driven REPL completeness.
+`macro` plus live `hold` with `end` and `parse(Code)` for default-grammar
+`hold` without `end`. Required infix spacing remains an ordinary check. Host
+test/layout-ends.test.ts keeps Grammar-object `parseSurface` (including
+`:otherwise` vs `:else`) and sequential session macros for probe/then success,
+extra `end` after `then`, `hold` without `end`, and a wholly parenthesized
+`hold` operand. test/repl.test.ts covers grammar-driven REPL completeness.
 test/indent-prefix.test.ts keeps the prefix-relation unit checks.
 tests/specification/postfix-suffixes.test covers suffix wrap order (`T**` is
 `(T*)*`), spaced infix trees, that a pack field `**` is not a suffix on the

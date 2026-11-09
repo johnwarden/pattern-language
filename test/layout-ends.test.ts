@@ -166,3 +166,17 @@ end`,
     isUnexpectedEnd,
   );
 });
+
+test("session hold rejects a wholly parenthesized operand and accepts a continuing group", () => {
+  const i = new Interpreter();
+  i.run("macro :hold x :: Expression Code$` $(x)", "repl");
+  assert.throws(
+    () => i.parse("hold (1)", "repl"),
+    (error: unknown) =>
+      error instanceof LanguageError &&
+      error.message.includes(
+        "a keyword operand cannot be a single parenthesized group",
+      ),
+  );
+  assert.equal(displayResults(i.run("hold (1) + 2", "repl")), "3");
+});
