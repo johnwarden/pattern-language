@@ -112,6 +112,46 @@ locations, expansion limits, canonical-tree round trips, complete packs and Code
 display observations. The mixed host blocks were renamed to describe the failures
 they still check. No expected-failure or legacy marker was added or changed.
 
+## Language evaluation migration
+
+The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) marked `test/language.test.ts`
+as the next mixed batch. Ordinary call, block, label, rest, type and namespace
+observations now run as source cases under `tests/language/`. Expected results are
+authored data. Empty packs use destructuring assertions because a result check
+requires one positional value. Parse failures of malformed text use
+`expect parse(Code)(…) error "…"`.
+
+The former shared `cases` table both evaluated programs and drove canonical
+round trips. Evaluation now lives in the `.test` files. Host round trips parse
+each executable `program: true` source case (skipping error-only cases),
+canonicalize its extracted program, and re-run it. Printer and empty-pack display
+programs that cannot be expressed as result data stay next to their host assertions
+and are round-tripped from that same list, so there is still one inventory per
+program.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| cases: function value | — | `<function>` printer output remains in TypeScript; closures have no structural result data |
+| cases: empty results / empty lambda | language/blocks#empty-results; language/blocks#empty-lambda | Empty-pack display `()` remains in TypeScript as a complete-pack observation |
+| cases: multiple results, named binding capture/ignore, extra names | language/calls#multiple-results; language/calls#ignore-named-binding-result; language/calls#capture-named-binding-result; language/calls#ignore-preceding-extra-name | Original programs and Rational/String results |
+| cases: lowercase captures, empty outfix, vectors, tuples, recursive values | language/types#lowercase-captures-only; language/types#empty-outfix; language/types#repeated-type; language/types#nested-vector; language/types#tuple-type-args; language/types#empty-tuple-type-args; language/types#recursive-type | Uninterpreted `[]` keeps `:: Expression`; Vector/Tuple/List results keep their constructed types |
+| cases: lazy names | — | `Type(Recursive(…))` printer spelling remains in TypeScript; expected Type data cannot name `List(Int)` and still match the observed value |
+| cases: field accessor/function/capture, rest accessor, interpretation equality, ordering, quoted symbol, pattern union | language/types#field-accessor; language/types#field-function; language/types#field-name-versus-capture; language/types#rest-accessor-returns-list; language/types#interpretation-equality; language/types#structural-ordering; language/types#quoted-symbol; language/types#pattern-union | Positive evaluation moved; no structural-accessor discovery and equal named interpretations stay as source errors |
+| cases: blocks, nested def, anonymous block, if, match, macro in head | language/blocks#block-result-pack; language/blocks#block-def; language/blocks#nested-definition; language/blocks#anonymous-block; language/blocks#if-clauses; language/blocks#match; language/calls#macro-in-head | Original programs |
+| cases: anonymous type macro, option, list of options, result | language/types#anonymous-type-macro; language/types#option; language/types#list-of-options; language/types#result | The anonymous type-macro program is included in canonical round trips |
+| failures: arity, packs, captures, numeric mixing, Number, recursion, program/block endings | language/calls and language/types error cases; language/blocks#program-final-binding; language/blocks#block-final-binding; language/blocks#program-final-definition | Message substrings preserved; program-ending checks are live subjects, not `parse(Code)` |
+| failures: infix spaces, named-before-positional, duplicate labels | language/namespaces#infix-needs-spaces; language/namespaces#named-precedes-positional; language/namespaces#duplicate-labels | `parse(Code)` of quoted payloads |
+| nested bindings / ignored labels, constructor shape, shared type references, complete fields | language/calls#nested-bindings-require-explicit-label-openness; language/calls#nested-function-patterns-permit-explicitly-ignored-labels; language/types#constructor-shape-independent-of-interpretation-names; language/types#parameter-annotations-and-destructuring-share-type-references; language/types#type-annotation-checks-all-declared-fields | Original programs |
+| opaque function/partial equality | language/types#opaque-functions-require-a-structural-representation-for-equality; language/types#opaque-partial-applications-cannot-use-host-identity-as-equality | Language error; not a host-identity check |
+| labels, defaults, option `?` fields, named matching/order | language/labels/* | `parseExpression` canonical field order and duplicate-label trees remain in TypeScript |
+| rest captures at every length and binding boundary | language/rest/* | Each length/boundary is an explicit case |
+| extra names, wrappers, partial applications | language/calls#all-calls-ignore-extra-names; language/calls#accessors-ignore-extra-names; language/calls#calls-require-positional-and-named-pattern-fields; language/calls#anonymous-wrappers-remain-values; language/calls#pack-partial-applications-remain-values | Original programs |
+| built-in exact labels, local named captures, grouped layout, ambiguous patterns | language/types#built-in-concrete-types-require-exact-labels; language/types#named-type-captures-stay-local-to-each-interpreted-instance; language/blocks#grouped-layout-must-consume-every-source-line; language/namespaces#ambiguous-patterns-do-not-silently-fall-through-match-arms; language/namespaces#ambiguous-patterns-do-not-silently-dispatch | Layout uses `parse(Code)` |
+| namespaces, defined functions not values, direct calls | language/namespaces/* | Exact `E_AMBIGUOUS_CALL` and `<function>` display remain in TypeScript |
+| equals-in-block, actions absent, reserved `!` | language/blocks#equals-*; language/namespaces#actions-are-absent; language/namespaces#prefix-exclamation-stays-reserved | `parseExpression("()!").kind` and `normal("Int!")` remain in TypeScript |
+
+Retained language host coverage is printer/pack display, `parseExpression` structure and ASCII spelling, Grammar-object parse/rejection, REPL commit/rollback, and the exact `E_AMBIGUOUS_CALL` code on competing callable/accessor names. No expected-failure or legacy marker was added or changed. `#48` (concrete/abstract declaration spelling) and `#52` (application-head specification queue) were not edited; bootstrap `def … type` setup and existing head-evaluation examples stay on current syntax.
+
 ## Existing source cases
 
 | Former source | Current `.test` case ID |

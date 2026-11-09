@@ -1,0 +1,382 @@
+test "Labels supply default captures in bindings"
+  (width: Int) = (width: 3)
+
+  expect width result 3 :: Int
+end
+
+test "Labels supply default captures in function parameters"
+  def f(width: Int) width
+
+  expect f(width: 3) result 3 :: Int
+end
+
+test "Labels supply default captures for rest types"
+  def f(rest: type [_... :: Int*]) rest
+
+  expect f(rest: [2, 3]) result [2, 3] :: (type [_... :: Int*])
+end
+
+test "A labeled literal pattern does not bind the label"
+  expect
+    (tag: :Red) = (tag: :Red)
+    tag
+  error "unbound name"
+end
+
+test "Implicit named type captures define accessors"
+  def R type :Rect(width: Int, height: Int)
+  r = Rect(width: 3, height: 4) :: R
+
+  expect r.width * height(r) result 12 :: Int
+end
+
+test "Implicit named rest captures define accessors"
+  def R type :Rect(rest: type [_... :: Int*])
+  r = Rect(rest: [2, 3]) :: R
+
+  expect r.rest result [2, 3] :: (type [_... :: Int*])
+end
+
+test "Explicit capture overrides the default label capture"
+  def f(width: w :: Int) w
+
+  expect f(width: 3) result 3 :: Int
+end
+
+test "Explicit capture unbinds the label name"
+  expect
+    def f(width: w :: Int) width
+    f(width: 3)
+  error "unbound"
+end
+
+test "Wildcard overrides the default label capture"
+  expect
+    (width: _) = (width: 3)
+    width
+  error "unbound"
+end
+
+test "Explicit type capture unbinds the label accessor"
+  expect
+    def R type :Rect(width: w :: Int)
+    r = Rect(width: 3) :: R
+    r.width
+  error "unbound"
+end
+
+test "CamelCase labels are lowercase"
+  def f(firstName: String) firstName
+
+  expect f(firstName: "Ada") result "Ada" :: String
+end
+
+test "Labels must start lowercase in values and patterns"
+  expect parse(Code)("Rect(Width: 3)") error "labels must be lowercase"
+  expect parse(Code)("def f(Width: Int) 1\nf(Width: 3)") error "labels must be lowercase"
+  expect parse(Code)("(Width: x) = (width: 3)\nx") error "labels must be lowercase"
+  expect parse(Code)("Rect(_1: 3)") error "labels must be lowercase"
+end
+
+test "Canonical named fields sort after positional fields"
+  expect R(9, z: 2, a: 1) result R(9, a: 1, z: 2) :: Expression
+end
+
+test "Named matching ignores declaration and argument order"
+  def f(x, a: Int, z: Int)
+    (x, a, z)
+  end
+  (x, a, z) = f(9, a: 1, z: 2)
+
+  expect x result 9 :: Rational
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named matching ignores swapped declaration order"
+  def f(x, z: Int, a: Int)
+    (x, a, z)
+  end
+  (x, a, z) = f(9, z: 2, a: 1)
+
+  expect x result 9 :: Rational
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named matching ignores swapped argument order"
+  def f(x, a: Int, z: Int)
+    (x, a, z)
+  end
+  (x, a, z) = f(9, z: 2, a: 1)
+
+  expect x result 9 :: Rational
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named matching ignores swapped declaration with aligned arguments"
+  def f(x, z: Int, a: Int)
+    (x, a, z)
+  end
+  (x, a, z) = f(9, a: 1, z: 2)
+
+  expect x result 9 :: Rational
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named matching binds swapped labels in a pattern"
+  (z: Int, a: Int) = (a: 1, z: 2)
+
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named matching binds swapped labels from swapped arguments"
+  (a: Int, z: Int) = (z: 2, a: 1)
+
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named matching binds aligned labels from aligned arguments"
+  (a: Int, z: Int) = (a: 1, z: 2)
+
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named matching binds swapped labels from aligned arguments"
+  (z: Int, a: Int) = (z: 2, a: 1)
+
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named type accessors ignore field order"
+  def R type :R(a: Int, z: Int)
+  r = R(z: 2, a: 1) :: R
+
+  expect r.a result 1 :: Int
+  expect r.z result 2 :: Int
+end
+
+test "Named type accessors ignore aligned field order"
+  def R type :R(a: Int, z: Int)
+  r = R(a: 1, z: 2) :: R
+
+  expect r.a result 1 :: Int
+  expect r.z result 2 :: Int
+end
+
+test "Named type accessors ignore swapped declaration order"
+  def R type :R(z: Int, a: Int)
+  r = R(a: 1, z: 2) :: R
+
+  expect r.a result 1 :: Int
+  expect r.z result 2 :: Int
+end
+
+test "Named type accessors ignore swapped declaration and argument order"
+  def R type :R(z: Int, a: Int)
+  r = R(z: 2, a: 1) :: R
+
+  expect r.a result 1 :: Int
+  expect r.z result 2 :: Int
+end
+
+test "Named function patterns ignore constructor field order"
+  def f(R(z: Int, a: Int)) a + z
+
+  expect f(R(a: 1, z: 2)) result 3 :: Int
+end
+
+test "Named matching ignores extra labels when the pattern is open"
+  (z: Int, a: Int) = (a: 1, extra: 9, z: 2)
+
+  expect a result 1 :: Int
+  expect z result 2 :: Int
+end
+
+test "Named parameters ignore extra labels"
+  def f(z: Int, a: Int) a
+
+  expect f(a: 1, extra: 9, z: 2) result 1 :: Int
+end
+
+test "Named order does not change equality or ordering"
+  assert R(z: 2, a: 1) == R(a: 1, z: 2)
+  assert False == (R(z: 2, a: 1) < R(a: 1, z: 2))
+  assert R(z: 9, a: 1) < R(a: 2, z: 0)
+end
+
+test "Named order does not change equality of bound values"
+  Pair(x, y) = Pair(R(z: 2, a: 1), R(a: 1, z: 2))
+
+  assert x == y
+end
+
+test "Duplicate named labels are surface errors"
+  expect parse(Code)("R(a: 1, a: 2)") error "duplicate"
+  expect parse(Code)("(a: 1, a: 2)") error "duplicate"
+  expect parse(Code)("f(a: Int, a: Int)") error "duplicate"
+  expect parse(Code)("def f(a: Int, a: Int) 1\n0") error "duplicate"
+  expect parse(Code)("(a: x, a: y)") error "duplicate"
+  expect parse(Code)("(a: x, a: y) = (a: 1)\n0") error "duplicate"
+end
+
+test "Labeled defaults bind missing Color"
+  def Color type :Black | :White
+  (size: s :: Int, color: c :: Color = :Black) = (size: 3)
+
+  expect c result Black :: Color
+end
+
+test "Labeled defaults bind missing Color in a function"
+  def Color type :Black | :White
+  def f(size: s :: Int, color: c :: Color = :Black) c
+
+  expect f(size: 3, extra: 9) result Black :: Color
+end
+
+test "Labeled defaults can be overridden"
+  def Color type :Black | :White
+  def f(size: s :: Int, color: c :: Color = :Black) c
+
+  expect f(color: :White, size: 3) result White :: Color
+end
+
+test "Labeled defaults bind from an empty pack"
+  (size: Int = 3) = ()
+
+  expect size result 3 :: Int
+end
+
+test "Labeled defaults bind a defaulted function parameter"
+  def f(size: s :: Int = 3) s
+
+  expect f() result 3 :: Int
+end
+
+test "Labeled defaults bind an explicit capture from an empty pack"
+  (size: s = 3) = ()
+
+  expect s result 3 :: Rational
+end
+
+test "Supplied labeled values skip a failing default"
+  def f(size: Int = (1 / 0)) size
+
+  expect f(size: 4) result 4 :: Int
+end
+
+test "Labeled defaults retain a lexical fallback"
+  fallback = 3
+  def f(size: Int = fallback) size
+
+  expect f() result 3 :: Int
+end
+
+test "Supplied labeled values are validated"
+  expect
+    def Color type :Black | :White
+    def f(color: c :: Color = :Black) c
+    f(color: :Red)
+  error "no applicable"
+end
+
+test "Invalid labeled defaults are rejected"
+  expect
+    def f(size: Int = "bad") size
+    f()
+  error "default for size does not match"
+end
+
+test "Pack labeled defaults are rejected"
+  expect
+    def f(size: Int = (1, 2)) size
+    f()
+  error "default value requires 1"
+end
+
+test "Missing required labeled arguments are rejected"
+  expect
+    (size: Int) = ()
+    size
+  error "missing required labeled argument"
+end
+
+test "Nested labeled defaults bind in a function pattern"
+  def f(R(size: Int = 3, **)) size
+
+  expect f(R(extra: 9)) result 3 :: Int
+end
+
+test "Match defaults bind missing labels"
+  expect
+    match R()
+      R(size: Int = 3) -> size
+    end
+  result 3 :: Int
+end
+
+test "Binding defaults preserve the scrutinee"
+  r = R(extra: 9)
+  R(size: s :: Int = 3, **) = r
+
+  expect r result R(extra: 9) :: Expression
+  expect s result 3 :: Int
+end
+
+test "Type definitions reject defaults"
+  expect
+    def R type :R(size: Int = 3)
+    0
+  error "defaults are only allowed in binding patterns"
+end
+
+test "Question mark preserves option type semantics in defaulted fields"
+  def Color type :Black | :White
+  (color: c :: Color? = :Black) = ()
+
+  expect c result Black :: Color?
+end
+
+test "Question mark option defaults bind in a function"
+  def Color type :Black | :White
+  def f(color: c :: Color? = :Black) c
+
+  expect f() result Black :: Color?
+end
+
+test "Question mark option defaults can be overridden"
+  def Color type :Black | :White
+  def f(color: c :: Color? = :Black) c
+
+  expect f(color: :White) result White :: Color?
+end
+
+test "A tagged Some is not a valid option default"
+  expect
+    def Color type :Black | :White
+    (color: c :: Color? = Some(:Black)) = ()
+    c
+  error "expected"
+end
+
+test "A tagged Some is not a valid option argument"
+  expect
+    def Color type :Black | :White
+    def f(color: c :: Color? = :Black) c
+    f(color: Some(:White))
+  error "no applicable"
+end
+
+test "An option field without a default is still required"
+  expect
+    def Color type :Black | :White
+    (color: c :: Color?) = ()
+    c
+  error "missing required labeled argument"
+end

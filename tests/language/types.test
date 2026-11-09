@@ -1,0 +1,262 @@
+test "Lowercase captures only"
+  :None = :None
+
+  expect :None result None :: UpperCamelSymbol
+end
+
+test "Empty outfix"
+  expect [] result [] :: Expression
+end
+
+test "Repeated type"
+  def Vector(t :: Type) type [values... :: t*]
+
+  expect [1, 2] :: Vector(Int) result [1, 2] :: Vector(Int)
+end
+
+test "Nested vector"
+  def Vector(t :: Type) type [values... :: t*]
+
+  expect [[1, 2], []] :: Vector(Vector(Int)) result [[1, 2], []] :: Vector(Vector(Int))
+end
+
+test "Tuple type args"
+  def Tuple(ts... :: Type*) type {ts…}
+
+  expect {1, "a"} :: Tuple(Int, String) result {1, "a"} :: Tuple(Int, String)
+end
+
+test "Empty tuple type args"
+  def Tuple(ts... :: Type*) type {ts…}
+
+  expect {} :: Tuple() result {} :: Tuple()
+end
+
+test "Recursive type"
+  def List(t :: Type) type :Nil | :Cons(t, List(t))
+
+  expect Cons(1, Cons(2, :Nil)) :: List(Int) result Cons(1, Cons(2, Nil)) :: List(Int)
+end
+
+test "Field accessor"
+  def Rectangle type :Rect(w :: Float, h :: Float)
+  r = Rect(3, 4) :: Rectangle
+
+  expect r.w result 3 :: Float
+end
+
+test "Field function"
+  def Rectangle type :Rect(w :: Float, h :: Float)
+  r = Rect(3, 4) :: Rectangle
+
+  expect w(r) result 3 :: Float
+end
+
+test "Field name versus capture"
+  def R type :Rect(width: w :: Int)
+  r = Rect(width: 3) :: R
+
+  expect r.w result 3 :: Int
+end
+
+test "Rest accessor returns list"
+  def Vector(t :: Type) type [values... :: t*]
+  v = [1, 2] :: Vector(Int)
+  [a, b] = v.values
+
+  expect a + b result 3 :: Int
+end
+
+test "Interpretation equality"
+  def R type :Rect(w :: Int)
+  r = Rect(3) :: R
+
+  assert r == (Rect(3) :: R)
+end
+
+test "Structural ordering"
+  assert Rect(1, 2) < Rect(1, 3)
+end
+
+test "Quoted symbol"
+  v = :f
+
+  expect v result f :: LowerCamelSymbol
+end
+
+test "Pattern union"
+  def S type :Rect(Int, Int) | :Circle(Int)
+
+  expect Circle(2) :: S result Circle(2) :: S
+end
+
+test "Anonymous type macro"
+  t = t -> type :Some(t)
+
+  expect t(type Int) result Type(Some(Int)) :: Type
+end
+
+test "Option"
+  expect 1 :: Int? result 1 :: Int?
+end
+
+test "List of options"
+  expect [1, :None] :: [_... :: Int?*] result [1, None] :: (type [_... :: Int?*])
+end
+
+test "Result"
+  expect Ok(1) :: Int^ result Ok(1) :: Int^
+end
+
+test "Constructor shape independent of interpretation names"
+  def produce()
+    def R type :Rect(w :: Int)
+    Rect(2) :: R
+  end
+  a = produce()
+  def S type :Rect(width :: Int)
+  b = Rect(2) :: S
+
+  assert a == b
+end
+
+test "Parameter annotations and destructuring share type references"
+  Pair(Int, Int) = Pair(1, 2)
+
+  assert True
+end
+
+test "Type annotation checks all declared fields"
+  def R type :Rect(w :: Int, extra: Int)
+  (r :: R) = Rect(1, extra: 2)
+
+  expect r result Rect(1, extra: 2) :: R
+end
+
+test "Uppercase is literal"
+  expect
+    :None = Some(1)
+    :None
+  error "expected None"
+end
+
+test "Repeat binding differs"
+  expect
+    Pair(x, x) = Pair(1, 2)
+    x
+  error "duplicate capture"
+end
+
+test "Repeat type differs"
+  expect
+    def Same type :Pair(x :: Int, x :: Int)
+    Pair(1, 2) :: Same
+  error "duplicate capture"
+end
+
+test "Bad vector element"
+  expect
+    def Vector(t :: Type) type [values... :: t*]
+    [1, "bad"] :: Vector(Int)
+  error "expected Vector(Int)"
+end
+
+test "No structural accessor discovery"
+  expect
+    def R type :Rect(w :: Int)
+    Rect(3).w
+  error "no applicable"
+end
+
+test "Function accessor collision"
+  expect
+    def R type :Rect(w :: Int)
+    def w(x) 7
+    r = Rect(3) :: R
+    r.w
+  error "ambiguous call"
+end
+
+test "Equal named interpretations are rejected"
+  expect
+    def R type :Rect(w :: Int)
+    def S type :Rect(w :: Int)
+    r = (Rect(3) :: R) :: S
+    r.w
+  error "same structural identity"
+end
+
+test "Interpretation equality original Int versus Rational"
+  expect
+    def R type :Rect(w :: Int)
+    r = Rect(3) :: R
+    r == Rect(3)
+  error "different concrete types cannot be compared"
+end
+
+test "Mixed Int plus unannotated Rational"
+  expect (3 :: Int) + 1 error "same concrete numeric type"
+end
+
+test "Inexact Float designation"
+  expect 0.1 :: Float error "not exactly representable as Float"
+end
+
+test "No Number type"
+  expect 0.1 :: Number error "unbound"
+end
+
+test "Mixed Float32 plus unannotated Rational"
+  expect float32(0.5) + 0.5 error "same concrete numeric type"
+end
+
+test "Mixed Float32 equals unannotated Rational"
+  expect float32(0.5) == 0.5 error "different concrete types cannot be compared"
+end
+
+test "Nonproductive recursion"
+  expect
+    def Loop type Loop
+    1 :: Loop
+  error "nonproductive"
+end
+
+test "Cross-kind ordering"
+  expect 1 < "a" error "different concrete types"
+end
+
+test "Built-in concrete types require exact labels"
+  expect Some(1, meta: 2) :: (type :Some(Int)) error "unexpected labeled field"
+  expect Ok(1, meta: 2) :: (type :Ok(Int)) error "unexpected labeled field"
+  expect [1, 2, meta: 3] :: [_... :: Int*] error "unexpected labeled field"
+  expect Some(meta: 2) :: (type :Some(Int)) error "expected"
+end
+
+test "Named type captures stay local to each interpreted instance"
+  def R type :R(x :: Int)
+  def sum(a :: R, b :: R) a.x + b.x
+
+  expect sum(R(1), R(2)) result 3 :: Int
+
+  (a :: R, b :: R) = (R(1), R(2))
+  expect a.x + b.x result 3 :: Int
+
+  def Pair type :Pair(R, R)
+  expect Pair(R(1), R(2)) :: Pair result Pair(R(1), R(2)) :: Pair
+end
+
+test "Opaque functions require a structural representation for equality"
+  expect
+    f = x -> x
+    f == f
+  error "value has no structural representation"
+end
+
+test "Opaque partial applications cannot use host identity as equality"
+  expect
+    def f(x)(y) x + y
+    g = f(1)
+    h = f(2)
+    g == h
+  error "value has no structural representation"
+end

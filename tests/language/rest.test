@@ -1,0 +1,159 @@
+test "Rest captures only remaining positional fields from one argument"
+  def f(first, rest...) [rest...]
+
+  expect f(1) result [] :: Expression
+end
+
+test "Rest captures only remaining positional fields from two arguments"
+  def f(first, rest...) [rest...]
+
+  expect f(1, 2) result [2] :: Expression
+end
+
+test "Rest captures only remaining positional fields from three arguments"
+  def f(first, rest...) [rest...]
+
+  expect f(1, 2, 3) result [2, 3] :: Expression
+end
+
+test "Rest captures ignore extra names"
+  def f(first, rest...) [rest...]
+
+  expect f(1, foo: 2) result [] :: Expression
+end
+
+test "Rest captures remaining positional fields in a binding"
+  (first, rest...) = (1, 2, 3)
+
+  expect [rest...] result [2, 3] :: Expression
+end
+
+test "Rest captures remaining positional fields from one value"
+  (first, rest...) = (1)
+
+  expect [rest...] result [] :: Expression
+end
+
+test "Rest captures remaining positional fields from two values"
+  (first, rest...) = (1, 2)
+
+  expect [rest...] result [2] :: Expression
+end
+
+test "Rest captures ignore extra names in a binding"
+  (first, rest...) = (1, foo: 2)
+
+  expect [rest...] result [] :: Expression
+end
+
+test "List rest captures remaining elements"
+  [first, rest...] = [1, 2, 3]
+
+  expect [rest...] result [2, 3] :: Expression
+end
+
+test "Rest captures are empty list values at the empty tail"
+  [y, rest...] = [1]
+
+  expect rest result [] :: Expression
+end
+
+test "Rest captures are list values at a singleton tail"
+  [y, rest...] = [1, 2]
+
+  expect rest result [2] :: Expression
+end
+
+test "Rest captures are list values at a longer tail"
+  [y, rest...] = [1, 2, 3]
+
+  expect rest result [2, 3] :: Expression
+end
+
+test "Rest captures are empty list values in a pack binding"
+  (y, rest...) = (1)
+
+  expect rest result [] :: Expression
+end
+
+test "Rest captures are list values in a pack binding"
+  (y, rest...) = (1, 2)
+
+  expect rest result [2] :: Expression
+end
+
+test "Rest captures are longer list values in a pack binding"
+  (y, rest...) = (1, 2, 3)
+
+  expect rest result [2, 3] :: Expression
+end
+
+test "Rest captures are empty list values in a function"
+  def f(y, rest...) rest
+
+  expect f(1) result [] :: Expression
+end
+
+test "Rest captures are singleton list values in a function"
+  def f(y, rest...) rest
+
+  expect f(1, 2) result [2] :: Expression
+end
+
+test "Rest captures are list values in a function"
+  def f(y, rest...) rest
+
+  expect f(1, 2, 3) result [2, 3] :: Expression
+end
+
+test "Rest captures are empty list values in a type accessor"
+  def V type [y :: Int, rest... :: Int*]
+  v = [1] :: V
+
+  expect v.rest result [] :: (type [_... :: Int*])
+end
+
+test "Rest captures are singleton list values in a type accessor"
+  def V type [y :: Int, rest... :: Int*]
+  v = [1, 2] :: V
+
+  expect v.rest result [2] :: (type [_... :: Int*])
+end
+
+test "Rest captures are list values in a type accessor"
+  def V type [y :: Int, rest... :: Int*]
+  v = [1, 2, 3] :: V
+
+  expect v.rest result [2, 3] :: (type [_... :: Int*])
+end
+
+test "Empty rest list values compare equal"
+  [y, rest...] = [1]
+
+  assert rest == []
+end
+
+test "Singleton rest list values compare equal"
+  [y, rest...] = [1, 2]
+
+  assert rest == [2]
+end
+
+test "Rest list values compare equal at every length"
+  [y, rest...] = [1, 2, 3]
+
+  assert rest == [2, 3]
+end
+
+test "Rest list values can be spread"
+  [y, rest...] = [1, 2]
+
+  expect [0, rest...] result [0, 2] :: Expression
+end
+
+test "Rest list values match a list parameter"
+  def one(x :: [_... :: Int*]) x
+  [y, rest...] = [1, 2]
+
+  expect one(rest) result [2] :: (type [_... :: Int*])
+end

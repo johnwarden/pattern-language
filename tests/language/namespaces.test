@@ -1,0 +1,181 @@
+test "A type accessor name does not occupy the variable namespace"
+  def R type :R(x :: Int)
+  x = 5
+
+  expect x result 5 :: Rational
+end
+
+test "A defined function uses its own parameter names"
+  def R type :R(x :: Int)
+  def inc(x) x + 1
+
+  expect inc(2) result 3 :: Rational
+end
+
+test "A variable and a defined function can share a name"
+  def f(x) x + 1
+  f = 9
+  (value, applied) = (f, f(2))
+
+  expect value result 9 :: Rational
+  expect applied result 3 :: Rational
+end
+
+test "A callable variable is invoked by a call"
+  f = x -> x + 1
+
+  expect f(2) result 3 :: Rational
+end
+
+test "Defined functions can be overloaded on disjoint constructors"
+  def f(:Red) 1
+  def f(:Blue) 2
+  (red, blue) = (f(:Red), f(:Blue))
+
+  expect red result 1 :: Rational
+  expect blue result 2 :: Rational
+end
+
+test "An overlapping defined function is ambiguous"
+  expect
+    def f(x) 1
+    def f(:Red) 2
+    f(:Red)
+  error "ambiguous call"
+end
+
+test "Variables, functions and accessors keep separate uses of the same name"
+  def R type :R(x :: Int)
+  x = 5
+  r = R(2) :: R
+  (bound, accessed, dotted) = (x, x(r), r.x)
+
+  expect bound result 5 :: Rational
+  expect accessed result 2 :: Int
+  expect dotted result 2 :: Int
+end
+
+test "Defined functions are not values"
+  expect
+    def f(x) x
+    f
+  error "cannot be used as a value"
+end
+
+test "Defined functions cannot be passed as values"
+  expect
+    def f(x) x
+    def use(x) x
+    use(f)
+  error "cannot be used as a value"
+end
+
+test "Defined functions cannot be returned as values"
+  expect
+    def f(x) x
+    def make() f
+    make()
+  error "cannot be used as a value"
+end
+
+test "Accessors are not values"
+  expect
+    def Rectangle type :Rect(w :: Float, h :: Float)
+    w
+  error "cannot be used as a value"
+end
+
+test "toString is not a value"
+  expect toString error "cannot be used as a value"
+end
+
+test "A callable variable can be passed after being bound"
+  def Rectangle type :Rect(w :: Float, h :: Float)
+  r = Rect(3, 4) :: Rectangle
+  w = (r :: Rectangle) -> r.h
+  local = w
+
+  expect local(r) result 4 :: Float
+end
+
+test "A callable variable competes with an accessor"
+  expect
+    def Rectangle type :Rect(w :: Float, h :: Float)
+    r = Rect(3, 4) :: Rectangle
+    w = (r :: Rectangle) -> r.h
+    w(r)
+  error "ambiguous call"
+end
+
+test "A dotted accessor competes with a callable variable"
+  expect
+    def Rectangle type :Rect(w :: Float, h :: Float)
+    r = Rect(3, 4) :: Rectangle
+    w = (r :: Rectangle) -> r.h
+    r.w
+  error "ambiguous call"
+end
+
+test "Direct calls select the only matching callable across namespaces"
+  def f(x :: Float) x + (1 :: Float)
+  f = (x :: String) -> x
+  (n, s) = (f(2), f("hi"))
+
+  expect n result 3 :: Float
+  expect s result "hi" :: String
+end
+
+test "A non-callable variable does not hide a defined function"
+  def f(x) x + 1
+  f = 99
+  (value, applied) = (f, f(2))
+
+  expect value result 99 :: Rational
+  expect applied result 3 :: Rational
+end
+
+test "A callable variable is ambiguous with a defined function of the same domain"
+  expect
+    def f(x) x
+    f = x -> x + 1
+    f(2)
+  error "ambiguous"
+end
+
+test "Actions are absent"
+  expect action(() -> ()) error "unbound name"
+end
+
+test "Prefix exclamation stays reserved"
+  expect
+    !(1)
+  error "reserved"
+end
+
+test "Ambiguous patterns do not silently fall through match arms"
+  expect
+    match 1
+      (x | x) -> 10
+      _ -> 20
+    end
+  error "ambiguous pattern"
+end
+
+test "Ambiguous patterns do not silently dispatch"
+  expect
+    def f(x | x) 1
+    f(1)
+  error "ambiguous pattern"
+end
+
+test "Infix needs spaces"
+  expect parse(Code)("1+2") error "spaces"
+end
+
+test "Named precedes positional"
+  expect parse(Code)("Rect(w: 1, 2)") error "positional"
+end
+
+test "Duplicate labels"
+  expect parse(Code)("Rect(w: 1, w: 2)") error "duplicate"
+end

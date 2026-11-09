@@ -5,15 +5,19 @@ Owner: `/root/test_migration_audit`, coordinated through PR #40.
 This is an inventory of migration opportunities and host boundaries, not a claim
 that the source suite replaces the TypeScript suite. The reference census covers
 57 `test/*.test.ts` files after the LSP, indentation and minus/type-capture
-migrations. All 57 have a file-level classification below; only the selected
-macro/registration observations are claimed as an assertion-level migration.
+migrations. All 57 have a file-level classification below; assertion-level
+migrations are claimed only for the mapped macro/registration and language
+observations.
 The method is file-level inspection and targeted assertion review, supported by a
 search for parser, representation, diagnostic, state, process and UI observations.
-A file classified as mixed still needs an assertion-level pass before migration.
+A file classified as mixed still needs an assertion-level pass before
+further migration, except language, which now has that mapping.
 
 The completed coverage map remains [TEST-MIGRATION.md](TEST-MIGRATION.md). Only
 implemented, passing source checks belong in that map. This document also records
-work that remains available or deliberately deferred.
+work that remains available or deliberately deferred. Macro/registration and
+language evaluation now have assertion-level mappings there; other mixed files
+still need that pass.
 
 ## First bounded batch
 
@@ -49,7 +53,7 @@ that every individual assertion in those files has already been mapped.
 | Area / TypeScript files                                                                                                          | Classification                                               | Migration opportunity or retained boundary                                                                                                                                                                                                                                            |
 | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | macros, registration                                                                                                             | Selected first batch; mixed files                            | Portable scalar expansion/hygiene examples move first. Exact failures, canonical Code/source and session behavior stay.                                                                                                                                                               |
-| language                                                                                                                         | High-value next batch; mixed                                 | Many ordinary calls, blocks, labels and rest examples can become source cases. Its shared `cases` table also drives canonical round trips; split those roles without dropping the latter or creating two unsynchronized program inventories. Exact pack observations remain explicit. |
+| language                                                                                                                         | Implemented assertion-level pass; mixed remainder            | Ordinary calls, blocks, labels, rest, types and namespace examples live in `tests/language/`. Canonical round trips read executable programs from those `.test` files plus the retained display programs in `test/language.test.ts`. Pack/printer display, `parseExpression` trees, Grammar objects, REPL and exact `E_AMBIGUOUS_CALL` stay. |
 | consistency, pattern-bindings, milestone-two-review                                                                              | Mixed; later assertion-level pass                            | Portable cross-context matching and availability examples are candidates. Retain compiler capture metadata, direct Grammar objects, exact diagnostic codes and binder/AST observations. Avoid declaration-product changes while #32 is active.                                        |
 | staging                                                                                                                          | Mixed; later assertion-level pass                            | Generated grammar and definition-time grammar have scalar examples. Keep parse-only no-execution, repeated submissions, successful reuse after failure, and transactional rollback on the host.                                                                                       |
 | quotes, postfix, postfix-conventions                                                                                             | Mixed; later assertion-level pass                            | Some literal evaluation examples can move. Keep exact syntax kind/key/encode-decode, independently configured preludes/readers and diagnostics. Raw quotation/value-text cases wait for #31's alignment.                                                                              |
