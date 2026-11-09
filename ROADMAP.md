@@ -41,6 +41,7 @@ must test composition and state role differences explicitly.
 - All numeric literals denote exact Rationals. 0f selects a Float64-rounded Rational;
   it is not a Float64-typed value. Exact designation never silently rounds. Explicit
   converters return fixed-precision values with their own operations.
+  `Number` will later be an abstract union of fixed-width number types.
 - Primitive names such as `Int` are `ReservedSymbol` values. `True` and `False` are
   `Bool` values, the type of computed comparisons: `(1 == 2) == False` is `True`.
 - General abstract unions may have overlapping spellings. A separate unambiguous
@@ -76,8 +77,6 @@ selected. Ordinary where refinements remain in scope.
 
 IEEE signed zero, NaN identity/payloads and infinities remain deferred. Numeric
 family aliases, edge rounding/overflow and canonical spelling remain provisional.
-
-`Number` will later be an abstract union of fixed-width number types.
 
 The concrete/abstract declaration forms and simple parameterized forms already
 written in `tests/specification/` are current implementation targets. Their
