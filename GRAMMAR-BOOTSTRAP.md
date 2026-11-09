@@ -112,6 +112,8 @@ Prefix `+Int` and `+(Int)` are the same application tree. Tight `Int+` is not a
 typeSuffix here. Angle brackets have no application role; spaced `<` and `>`
 remain ordinary infix operators.
 Prefix punctuation is maximal; each postfix modifier is interpreted separately.
+Prefix and postfix operators must touch their operand: `T * *` and `* *x` are
+errors; `1 * *x`, `1 * x*`, and `x* * 1` parse.
 
 Normalized syntax prints punctuation applied to two successive argument packs
 infix: `->(n)(<(n)(5))` becomes `n -> n < 5`. Parentheses preserve a nested left

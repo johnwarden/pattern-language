@@ -134,6 +134,9 @@ explicit layout termination, including shared string/if terminator ownership.
   constructors from #18 (`[1, 2] :: Int*`). Prefix `?(T)` / `*(T)` / `^(T)` are
   ordinary prefix application, not those types. Prefix `$`
   remains unquote; interpolating quotes stay lexer prefixes.
+  Prefix and postfix operators must touch their operand: `T * *` and standalone
+  `* *x` are errors; `1 * *x`, `1 * x*`, and `x* * 1` parse. The touching rule
+  is generic for prefix/postfix punctuation, not special-cased to `*`.
   Full parser migration is not a prerequisite and is not done.
 - Add T+ as a nonempty-list refinement of T*. Retain the explicit vertical ... marker
   and replace TestFileContent's first/tail workaround once common repetition supports it.

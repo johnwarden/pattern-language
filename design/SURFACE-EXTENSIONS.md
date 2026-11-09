@@ -80,7 +80,11 @@ expression immediately to its left: String?*^! is (((String?)*)^)!, postfix
 wrapping of those suffixes, not prefix `*(String?)` / `^(…)`. T** is (T*)* and not a
 new two-character postfix operator. Prefix punctuation still forms maximal symbols.
 The surface reader recognizes ... and bare ** markers; their repetition/openness
-meaning belongs to interpretation. Keyword remainder capture/spread is prefix
+meaning belongs to interpretation. Prefix and postfix operators must touch their
+operand. `T * *` is an error (write `T**`); standalone `* *x` is an error.
+Infix `*` may take a touching prefix or postfix operand: `1 * *x`, `1 * x*`,
+and `x* * 1` parse. The same touching rule applies to every prefix/postfix
+punctuation symbol, not only `*`. Keyword remainder capture/spread is prefix
 `**rest` / `**(x)` / `**rest: pattern` and remains later work; it cannot silently
 change the suffix rule that T** is (T*)*. Effects are still deferred.
 

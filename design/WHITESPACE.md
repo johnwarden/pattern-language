@@ -102,7 +102,7 @@ width.
 | Newlines outside balanced delimiters | Separate rows / statements; joining or splitting rows can intentionally change a program. |
 | Newlines inside collection delimiters | Can distinguish vertical rows from comma continuation; row boundaries can change collection rank. |
 | Spaces around infix operators | Both sides are required; a+b is invalid, not a different addition expression. |
-| Tight postfix punctuation | T* is a suffix; T * U is spaced infix. The suffix inventory is `* ? ! ^ @ $ & ~`. Suffixes wrap in source order. Prefix `+Int` and `+(Int)` are the same application tree; tight `Int+` is not that wrap. |
+| Tight postfix punctuation | T* is a suffix; T * U is spaced infix. Prefix and postfix operators must touch their operand: `T * *` is an error (write `T**`); standalone `* *x` is an error; `1 * *x`, `1 * x*`, and `x* * 1` parse. The suffix inventory is `* ? ! ^ @ $ & ~`. Suffixes wrap in source order. Prefix `+Int` and `+(Int)` are the same application tree; tight `Int+` is not that wrap. |
 | Tight function calls versus sidefix operands | `f(x)` is application. A non-keyword term then spaced `(` is an error (`f (x)`, `f(x) (y)`). A keyword operand may begin with a grouping only if the operand continues (`assert (1 + 2) == 3`); a wholly parenthesized operand (`assert (x)`, `if (x)`) is an error. Infix/prefix operators may still be followed by a grouped operand (`a - (b)`, `- (x)`). |
 | Dot notation | a.b and a .b c follow the stated call/pack rules; arbitrary spacing around dot is not permitted. |
 | Label colon | Must touch its label. Separating it is not an alternative label spelling and may only have meaning in another explicitly selected grammar. |
@@ -150,7 +150,9 @@ expect e result (1 + 1) :: Expression   # valid: result operand continues
 
 `def f() (x, y)` is the term error (`f()` then spaced `(`); indent the pack.
 Same-indent `f` then `(x)` on the next line are two rows. Postfix suffixes stay
-tight (`T?`, `T*`, `T^`).
+tight (`T?`, `T*`, `T^`). Prefix and postfix punctuation must touch the operand:
+`T**` and `*x` are valid; `T * *` and `* *x` are not. Infix `*` can still sit
+between a touching prefix or postfix operand (`1 * *x`, `1 * x*`, `x* * 1`).
 
 The REPL treats a buffer as ready when the active grammar can parse it as a
 finished entry. It must not wait for an extra blank line after `end` or after a
@@ -188,3 +190,6 @@ previous field, and that prefix `+Int` / `+(Int)` are the same tree while tight
 `Int+` is not rewritten to prefix `+`. Distinct postfix application for the
 current suffix inventory is implemented; `+` is not in that inventory, so tight
 `Int+` remains an infix-spacing error rather than a postfix tree.
+tests/specification/postfix.test covers that prefix and postfix operators must
+touch their operand (`T * *` and `* *x` error; `1 * *x`, `1 * x*`, `x* * 1`
+parse).

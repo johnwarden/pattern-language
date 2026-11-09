@@ -88,6 +88,22 @@ test "Spaced infix star is not postfix"
   expect parse(Code)("2*3") error "infix operators require spaces"
 end
 
+test "Prefix and postfix operators must touch their operand"
+  expect parse(Code)("T * *") error "must touch their operand"
+  expect parse(Code)("* *x") error "must touch their operand"
+  expect parse(Code)("T ? ?") error "must touch their operand"
+  expect parse(Code)("? ?x") error "must touch their operand"
+  parse(Code)("1 * *x")
+  parse(Code)("1 * x*")
+  parse(Code)("x* * 1")
+  parse(Code)("1 ? ?x")
+  parse(Code)("x? ? 1")
+  assert parse(Code)("1 * *x") == parse(Code)("*(1)(*(x))")
+  assert parse(Code)("1 * x*") == parse(Code)("*(1)(x*)")
+  assert parse(Code)("x* * 1") == parse(Code)("*(x*)(1)")
+  assert parse(Code)("T**") == parse(Code)("(T*)*")
+end
+
 test "Postfix type descriptions round trip inhabitants"
   def T type
     (Int)@
