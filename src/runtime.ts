@@ -536,10 +536,17 @@ export class Interpreter {
         addFrom(body);
         return;
       }
-      if (p.kind === "row" || p.kind === "repeat" || p.kind === "fields") {
-        if (p.kind === "fields") {
-          for (const part of p.parts) addFrom(part);
-        } else addFrom(p.pattern);
+      if (p.kind === "row" || p.kind === "repeat" || p.kind === "label") {
+        addFrom(p.pattern);
+        return;
+      }
+      if (p.kind === "postfix") {
+        addFrom(p.operator);
+        addFrom(p.operand);
+        return;
+      }
+      if (p.kind === "fields") {
+        for (const part of p.parts) addFrom(part);
         return;
       }
       if (p.kind === "sequence") {
@@ -547,6 +554,7 @@ export class Interpreter {
         for (const part of p.parts) {
           const name = literalName(part);
           if (name) chain.push(name);
+          addFrom(part);
         }
         addLayoutKeywords(forms, chain);
       }

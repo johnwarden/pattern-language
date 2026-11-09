@@ -564,27 +564,18 @@ export function parseValueText(
         return fail("type description uses " + n.name + ", not :" + n.name, n);
       return sym(n.name);
     }
-    if (n.kind === "block" && n.lines.length === 1) {
-      const line = n.lines[0];
-      if (line.kind === "sequence" && line.items.length === 1)
-        return decode(line.items[0], pattern);
-      if (line.kind !== "sequence" && line.kind !== "form")
-        return decode(line, pattern);
-      if (!pattern && structural) return syntaxData(n);
-    }
+    if (n.kind === "block" && !pattern && structural) return syntaxData(n);
+    if (n.kind === "block" && n.lines.length === 1)
+      return decode(n.lines[0], pattern);
     if (n.kind === "sequence" && n.items.length === 1)
       return decode(n.items[0], pattern);
+    if ((n.kind === "sequence" || n.kind === "form") && !pattern && structural)
+      return syntaxData(n);
     if (n.kind === "pack")
       return {
         kind: "pack",
         body: n.body.map((f) => ({ ...f, value: decode(f.value, pattern) })),
       };
-    if (
-      (n.kind === "block" || n.kind === "sequence" || n.kind === "form") &&
-      !pattern &&
-      structural
-    )
-      return syntaxData(n);
     if (n.kind === "postfix")
       return {
         kind: "postfix",
@@ -750,10 +741,7 @@ export function parseValueText(
         n.head.kind === "symbol" ? sym(n.head.name) : decode(n.head, pattern),
       body: n.body.map((f) => ({
         ...f,
-        value:
-          !pattern && f.value.kind === "block"
-            ? syntaxData(f.value)
-            : decode(f.value, pattern),
+        value: decode(f.value, pattern),
       })),
     };
   }
