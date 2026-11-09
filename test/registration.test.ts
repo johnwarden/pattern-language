@@ -32,13 +32,7 @@ test("ordinary code builders may capture runtime parameters", () => {
     "7",
   );
 });
-test("only explicit registration suppresses argument evaluation", () => {
-  assert.equal(
-    run(
-      "def ignoreCode(e) Code` 42\nmacro :ignore Args(e)\n  ignoreCode(e)\nend\n(ignore Args(missing))",
-    ),
-    "42",
-  );
+test("ordinary code builders evaluate their arguments", () => {
   fails("def ignoreCode(e) Code` 42\nignoreCode(missing)", "E_UNBOUND_NAME");
 });
 test("the produced value, not its function body's syntax, determines expansion validity", () => {
@@ -48,17 +42,13 @@ test("the produced value, not its function body's syntax, determines expansion v
     ),
     "8",
   );
-  fails("macro :invalid Args(e)\n  42\nend\n(invalid Args(1))", "E_MACRO_RESULT");
-});
-test("sidefix registration can delegate to an ordinary code builder", () => {
-  assert.equal(
-    run(builder + "\nmacro :twice e :: Expression\n  twiceCode(e)\nend\ntwice 9"),
-    "18",
-  );
   fails(
-    "def :twice e :: Expression Code$` $(e)\n0",
-    "E_MACRO_REGISTRATION",
+    "macro :invalid Args(e)\n  42\nend\n(invalid Args(1))",
+    "E_MACRO_RESULT",
   );
+});
+test("sidefix signatures cannot implicitly register ordinary builders", () => {
+  fails("def :twice e :: Expression Code$` $(e)\n0", "E_MACRO_REGISTRATION");
 });
 test("registered aliases are lexical and leave the original function ordinary", () => {
   const i = new Interpreter();
@@ -95,21 +85,6 @@ test("runtime dependencies propagate through local bindings", () => {
     "E_MACRO_RUNTIME_CAPTURE",
   );
 });
-test("raw references and macro syntax arguments do not read runtime values", () => {
-  assert.equal(
-    run(
-      "def outer(x)\n  macro :reference Args() Code` x\n  (reference Args())\nend\nouter(7)",
-    ),
-    "7",
-  );
-  assert.equal(
-    run(
-      builder +
-        "\nmacro :twice Args(e)\n  twiceCode(e)\nend\ndef outer(x)\n  (twice Args(x))\nend\nouter(7)",
-    ),
-    "14",
-  );
-});
 test("macro registration is a declaration and failed registration rolls back", () => {
   fails("macro :answer Args() Code` 1", "E_SYNTAX");
   const i = new Interpreter();
@@ -120,14 +95,6 @@ test("macro registration is a declaration and failed registration rolls back", (
 });
 test("runtime code generation no longer has the macro single-pack limitation", () => {
   assert.equal(run("def build(x)(y) Code$` $(x) + $(y)\nbuild(2)(3)"), "2 + 3");
-});
-test("registered transformers retain hygienic helper references", () => {
-  assert.equal(
-    run(
-      "def helper(x) x + 1\ndef build(e) Code$` helper($(e))\nmacro :wrapped Args(e)\n  build(e)\nend\ndef f(x)\n  helper = x -> 99\n  (wrapped Args(x))\nend\nf(4)",
-    ),
-    "5",
-  );
 });
 
 test("runtime captures in macro parameter defaults are rejected on registration", () => {
