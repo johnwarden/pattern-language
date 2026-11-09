@@ -835,9 +835,9 @@ See [TYPE-VALUES.md](TYPE-VALUES.md) for examples and explicit limits.
 
 Primitive names are `ReservedSymbol` values: `Int` inspects as
 `Int :: ReservedSymbol`, and the Int type `type Int` compares equal to it. `ReservedSymbol` is disjoint from `UpperCamelSymbol`.
-Quoting a primitive name has no special rule: `:Int` and `:(Int)` evaluate to
-the uninterpreted `Int :: Expression`, and `parse(Code)(":(Int)")` is
-`:(Int) :: Code`. Type(Int) has
+Evaluating `:Int` is `E_QUOTED_PRIMITIVE`, so `Int == :Int` is an error.
+`:(Int)` evaluates to the uninterpreted `Int :: Expression`, and
+`parse(Code)(":Int")` parses as ordinary Code. Type(Int) has
 a distinct wrapped tree. Their compiled
 matchers are caches and do not participate in comparison. Canonical uncached type
 trees work in annotations, generic calls, and matching, and have the same global

@@ -205,7 +205,7 @@ a type value is the factory call; print a type with toString(Type)(t). The domai
 are deliberately disjoint, rather than choosing a different overload implicitly.
 
 Playground Run and REPL inspection use local names for the result's type annotation, while a type
-value itself is displayed structurally. Boolean constants and built-in predicates produce interpreted Bool values without inference. Quoted `:True` stays uninterpreted Expression data. Raw uninterpreted values show Expression;
+value itself is displayed structurally. Boolean constants and built-in predicates produce interpreted Bool values without inference. Evaluating quoted `:True` is `E_QUOTED_PRIMITIVE`. Raw uninterpreted values show Expression;
 there is still no general inference or implicit constructor-interpretation pass.
 Use r = Rect(2,2) :: Rect or (r :: Rect) = Rect(2,2) for a concrete interpretation.
 

@@ -29,7 +29,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | L7 | Author instruction on 7 November: integrate this record into the project docs and plan a small DSL-suite milestone covering these cases and cogent TypeScript migrations |
 | L8 | Author instruction on 8 November: parse directly into Expression; Expression number literals are exact Rationals; get rid of the lasting syntax-tree layer. This supersedes any pending public `NumberLiteral(Float)` redesign. Distinct postfix punctuation application is a separate smaller item, not blocked on full parser migration. |
 | W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
-| L9 | Author rulings on 9 November 2026 for PR #31 (settled 14:17 Madrid): Strings are intrinsic primitives. Every symbol prints bare in value text, including `None`; `:` is needed only in code where a bare name would bind. Value text is read with the expected type's own grammar, with no layout-keyword quoting. Primitive names are `ReservedSymbol` values, not symbols, and type descriptions use them directly. Code has no special logic for quoted primitive names. `Number` is removed for now. |
+| L9 | Author rulings on 9 November 2026 for PR #31 (settled 14:17 Madrid, refined 14:34): Strings are intrinsic primitives. Every symbol prints bare in value text, including `None`; `:` is needed only in code where a bare name would bind. Value text is read with the expected type's own grammar, with no layout-keyword quoting. Primitive names are `ReservedSymbol` values, not symbols, and type descriptions use them directly. Evaluating a quoted primitive name such as `:Int` in program source is an error; parsing Code and decoding value text have no special check for it. `Number` is removed for now. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 
@@ -427,12 +427,14 @@ assert (Int .matches UpperCamelSymbol) == False
 The type description of `type Int` is the reserved symbol itself, not `:Int`.
 `Symbol` is not reserved; the prelude defines it as the union of the four ordinary classes.
 
-Code has no special logic for quoted primitive names; `:Int` is quoted like
-`:Foo`:
+Evaluating a quoted primitive name in program source is an error. Parsing Code
+and decoding value text have no special check for it:
 
 ```text
+expect :Int error "E_QUOTED_PRIMITIVE"
+expect Int == :Int error "E_QUOTED_PRIMITIVE"
 expect :(Int) result Int :: Expression
-expect parse(Code)(":(Int)") result :(Int) :: Code
+expect parse(Code)(":Int") result :Int :: Code
 ```
 
 Once the Code grammar defines `QuotedSymbol` (Symbols only),
