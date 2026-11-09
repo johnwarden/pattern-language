@@ -1,0 +1,198 @@
+[
+  {
+    "name": "hash comments touch punctuation and identifiers",
+    "source": "x# this is a comment\nx@# also a comment\n\"# stays in text\"",
+    "checks": [
+      { "line": 0, "text": "x", "scope": "variable.other", "not": ["comment"] },
+      { "line": 0, "text": "# this", "scope": "comment.line" },
+      { "line": 1, "text": "@", "scope": "keyword.operator" },
+      { "line": 1, "text": "# also", "scope": "comment.line" },
+      { "line": 2, "text": "# stays", "scope": "string.quoted.double", "not": ["comment"] }
+    ]
+  },
+  {
+    "name": "source numeric spellings remain exact Rational spellings",
+    "source": "1_024 0.1 12e-3 0f0.1 0F1_000e-2 0x1.4p3 0X1_F.8P-2 0b1.01p+2 0B10_01\n-2 1//3 0xFFjunk 0b102 0fInfinity",
+    "checks": [
+      { "line": 0, "text": "1_024", "scope": "constant.numeric" },
+      { "line": 0, "text": "0.1", "scope": "constant.numeric" },
+      { "line": 0, "text": "12e-3", "scope": "constant.numeric" },
+      { "line": 0, "text": "0f0.1", "scope": "constant.numeric" },
+      { "line": 0, "text": "0F1_000e-2", "scope": "constant.numeric" },
+      { "line": 0, "text": "0x1.4p3", "scope": "constant.numeric" },
+      { "line": 0, "text": "0X1_F.8P-2", "scope": "constant.numeric" },
+      { "line": 0, "text": "0b1.01p+2", "scope": "constant.numeric" },
+      { "line": 0, "text": "0B10_01", "scope": "constant.numeric" },
+      { "line": 1, "text": "-", "scope": "keyword.operator", "not": ["constant.numeric"] },
+      { "line": 1, "text": "//", "scope": "keyword.operator", "not": ["constant.numeric"] },
+      { "line": 1, "text": "0xFFjunk", "not": ["constant.numeric"] },
+      { "line": 1, "text": "0b102", "not": ["constant.numeric"] },
+      { "line": 1, "text": "0fInfinity", "not": ["constant.numeric"] }
+    ]
+  },
+  {
+    "name": "ASCII symbol classes include short UpperSnake trailing underscores",
+    "source": "foo UpperCamel ABC ABC1 A_ AB_ A_B _ _12 :None :A_ :[] :{} :+ :(x)\nABC_bad lower_snake αname",
+    "checks": [
+      { "line": 0, "text": "foo", "scope": "variable.other" },
+      { "line": 0, "text": "UpperCamel", "scope": "entity.name.type" },
+      { "line": 0, "text": "ABC", "scope": "constant.other.symbol.upper-snake" },
+      { "line": 0, "text": "A_", "scope": "constant.other.symbol.upper-snake" },
+      { "line": 0, "text": "AB_", "scope": "constant.other.symbol.upper-snake" },
+      { "line": 0, "text": "A_B", "scope": "constant.other.symbol.upper-snake" },
+      { "line": 0, "text": "_12", "scope": "variable.language.wildcard" },
+      { "line": 0, "text": ":None", "offset": 1, "scope": "constant.other.symbol" },
+      { "line": 0, "text": ":A_", "offset": 1, "scope": "constant.other.symbol" },
+      { "line": 0, "text": ":[]", "offset": 1, "scope": "constant.other.symbol" },
+      { "line": 0, "text": ":{}", "offset": 1, "scope": "constant.other.symbol" },
+      { "line": 0, "text": ":+", "offset": 1, "scope": "constant.other.symbol" },
+      { "line": 0, "text": ":(x)", "length": 1, "scope": "punctuation.definition.quotation" },
+      { "line": 1, "text": "ABC_bad", "not": ["constant.other.symbol", "variable.other"] },
+      { "line": 1, "text": "lower_snake", "not": ["variable.other"] }
+    ]
+  },
+  {
+    "name": "patterns bindings macros and test DSL use ordinary lexical scopes",
+    "source": "todo test \"captures\"\n  def Vector(T, Ns...) type [T...]\n  macro accessor(x) x.width\n  match x (s :: String)@\n  expect [s, tail…] result {name: s, rest: tail} :: Vector(String)\n  assert True error \"mismatch\"\n  legacy expect False result False :: Bool\nend\nconcrete refinement FutureKeyword",
+    "checks": [
+      { "line": 0, "text": "todo", "scope": "keyword.other.test" },
+      { "line": 0, "text": "test", "scope": "keyword.other.test" },
+      { "line": 1, "text": "def", "scope": "storage.type" },
+      { "line": 1, "text": "...", "scope": "keyword.operator.rest" },
+      { "line": 2, "text": "macro", "scope": "storage.type" },
+      { "line": 2, "text": ".", "scope": "punctuation.separator" },
+      { "line": 3, "text": "match", "scope": "keyword.control" },
+      { "line": 3, "text": "::", "scope": "keyword.operator.type" },
+      { "line": 3, "text": "String", "scope": "support.type" },
+      { "line": 4, "text": "expect", "scope": "keyword.other.test" },
+      { "line": 4, "text": "…", "scope": "keyword.operator.rest" },
+      { "line": 4, "text": "name", "scope": "entity.name.tag" },
+      { "line": 5, "text": "True", "scope": "constant.language" },
+      { "line": 6, "text": "legacy", "scope": "keyword.other.test" },
+      { "line": 7, "text": "end", "scope": "keyword.control" },
+      { "line": 8, "text": "concrete", "scope": "variable.other", "not": ["keyword", "storage"] }
+    ]
+  },
+  {
+    "name": "prefix postfix and infix punctuation do not bake in optional semantics",
+    "source": "x~ x! x@ x$ x% x^ x& x* x? @(String) (s :: String)@ a + b\ndef T? type T | :None\n(x :: Float??) = (:None :: Float?)",
+    "checks": [
+      { "line": 0, "text": "~", "scope": "keyword.operator" },
+      { "line": 0, "text": "!", "scope": "keyword.operator" },
+      { "line": 0, "text": "@", "scope": "keyword.operator" },
+      { "line": 0, "text": "$", "scope": "keyword.operator" },
+      { "line": 0, "text": "%", "scope": "keyword.operator" },
+      { "line": 0, "text": "^", "scope": "keyword.operator" },
+      { "line": 0, "text": "&", "scope": "keyword.operator" },
+      { "line": 0, "text": "*", "scope": "keyword.operator" },
+      { "line": 0, "text": "?", "scope": "keyword.operator", "not": ["support.type", "keyword.control"] },
+      { "line": 0, "text": "+", "scope": "keyword.operator" },
+      { "line": 1, "text": ":None", "offset": 1, "scope": "constant.other.symbol" },
+      { "line": 2, "text": "??", "scope": "keyword.operator" }
+    ]
+  },
+  {
+    "name": "raw strings are literal while double quotes decode escapes",
+    "source": "raw = 'literal \\n $name # text'\nescaped = \"line\\n\\x41\\u0041\\U0001F680 $name # text\"",
+    "checks": [
+      { "line": 0, "text": "\\n", "scope": "string.quoted.single", "not": ["constant.character.escape"] },
+      { "line": 0, "text": "$name", "scope": "string.quoted.single", "not": ["variable.other.interpolation", "punctuation.definition.interpolation", "comment"] },
+      { "line": 0, "text": "# text", "scope": "string.quoted.single", "not": ["comment"] },
+      { "line": 1, "text": "\\n", "scope": "constant.character.escape" },
+      { "line": 1, "text": "\\x41", "scope": "constant.character.escape" },
+      { "line": 1, "text": "\\u0041", "scope": "constant.character.escape" },
+      { "line": 1, "text": "\\U0001F680", "scope": "constant.character.escape" },
+      { "line": 1, "text": "$name", "scope": "string.quoted.double", "not": ["variable.other.interpolation"] }
+    ]
+  },
+  {
+    "name": "explicit holes contain nested code and quotes",
+    "source": "value = $\"Hello $name $(f(2, \"#\")) $$ $$(g(3))\"\nraw = $'Hello $(f(\"nested\")) and $name'",
+    "checks": [
+      { "line": 0, "text": "$name", "offset": 1, "scope": "variable.other.interpolation" },
+      { "line": 0, "text": "f", "scope": "variable.other" },
+      { "line": 0, "text": "2", "scope": "constant.numeric" },
+      { "line": 0, "text": "#", "scope": "string.quoted.double", "not": ["comment"] },
+      { "line": 0, "text": "$$", "scope": "constant.character.escape.dollar" },
+      { "line": 0, "text": "3", "scope": "constant.numeric" },
+      { "line": 1, "text": "nested", "scope": "string.quoted.double" },
+      { "line": 1, "text": "$name", "offset": 1, "scope": "variable.other.interpolation" }
+    ]
+  },
+  {
+    "name": "raw reader apostrophe opens rest of line and keeps hash inert",
+    "source": "html' apostrophe's \\n $name # reader payload\nhtml$' hello $name $(f(1)) # also payload\nhtml$\"<p>$name</p>\"",
+    "checks": [
+      { "line": 0, "text": "html", "scope": "entity.name.function.reader" },
+      { "line": 0, "text": "apostrophe's", "scope": "string.unquoted.reader.raw" },
+      { "line": 0, "text": "$name", "scope": "string.unquoted.reader.raw", "not": ["variable.other.interpolation"] },
+      { "line": 0, "text": "# reader", "scope": "string.unquoted.reader.raw", "not": ["comment"] },
+      { "line": 1, "text": "$name", "offset": 1, "scope": "variable.other.interpolation" },
+      { "line": 1, "text": "1", "scope": "constant.numeric" },
+      { "line": 1, "text": "# also", "scope": "string.unquoted.reader.raw", "not": ["comment"] },
+      { "line": 2, "text": "html", "scope": "entity.name.function.reader" },
+      { "line": 2, "text": "$name", "offset": 1, "scope": "variable.other.interpolation" }
+    ]
+  },
+  {
+    "name": "typed quotes contain inert syntax trees with opt-in interpolation",
+    "source": "raw = Code` hello($name, 1) # a code comment\nexpanded = Code$` hello($name, $(f(2)))\nnext = 3",
+    "checks": [
+      { "line": 0, "text": "Code", "scope": "entity.name.type.quotation", "not": ["string"] },
+      { "line": 0, "text": "hello", "scope": "variable.other", "not": ["string"] },
+      { "line": 0, "text": "$name", "length": 1, "scope": "keyword.operator", "not": ["punctuation.definition.interpolation"] },
+      { "line": 0, "text": "# a", "scope": "comment.line" },
+      { "line": 1, "text": "$name", "offset": 1, "scope": "variable.other.interpolation" },
+      { "line": 1, "text": "2", "scope": "constant.numeric" },
+      { "line": 2, "text": "next", "scope": "variable.other", "not": ["meta.quotation"] }
+    ]
+  },
+  {
+    "name": "indented raw block ends at precisely aligned end",
+    "source": "  raw = '\n    end\n    # text $name \\n\n  end # closes block\nnext = 1",
+    "checks": [
+      { "line": 0, "text": "raw", "scope": "variable.other", "not": ["string"] },
+      { "line": 1, "text": "end", "scope": "string.quoted.single", "not": ["keyword.control"] },
+      { "line": 2, "text": "# text", "scope": "string.quoted.single", "not": ["comment"] },
+      { "line": 2, "text": "$name", "scope": "string.quoted.single", "not": ["variable.other.interpolation"] },
+      { "line": 2, "text": "\\n", "scope": "string.quoted.single", "not": ["constant.character.escape"] },
+      { "line": 3, "text": "end", "scope": "keyword.control", "not": ["string"] },
+      { "line": 4, "text": "next", "scope": "variable.other", "not": ["string"] }
+    ]
+  },
+  {
+    "name": "interpolated double block retains nested holes and escapes",
+    "source": "  text = $\"\n    Hello $name $(f(2, \"#\")) \\n\n  end\nnext = 1",
+    "checks": [
+      { "line": 1, "text": "Hello", "scope": "string.quoted.double" },
+      { "line": 1, "text": "$name", "offset": 1, "scope": "variable.other.interpolation" },
+      { "line": 1, "text": "2", "scope": "constant.numeric" },
+      { "line": 1, "text": "#", "scope": "string.quoted.double", "not": ["comment"] },
+      { "line": 1, "text": "\\n", "scope": "constant.character.escape" },
+      { "line": 2, "text": "end", "scope": "keyword.control", "not": ["string"] },
+      { "line": 3, "text": "next", "scope": "variable.other", "not": ["string"] }
+    ]
+  },
+  {
+    "name": "indented raw reader uses aligned end rather than closing apostrophe",
+    "source": "  html'\n    <p>reader's # text</p>\n  end\nnext = 1",
+    "checks": [
+      { "line": 0, "text": "html", "scope": "entity.name.function.reader" },
+      { "line": 1, "text": "reader's # text", "scope": "string.quoted.single", "not": ["comment"] },
+      { "line": 2, "text": "end", "scope": "keyword.control", "not": ["string"] },
+      { "line": 3, "text": "next", "scope": "variable.other", "not": ["string"] }
+    ]
+  },
+  {
+    "name": "indented typed quote preserves code and nested block structure",
+    "source": "  value = Code`\n    if True\n      f(1)\n    end\n  end\nnext = 2",
+    "checks": [
+      { "line": 0, "text": "Code", "scope": "entity.name.type.quotation", "not": ["string"] },
+      { "line": 1, "text": "if", "scope": "keyword.control", "not": ["string"] },
+      { "line": 2, "text": "1", "scope": "constant.numeric", "not": ["string"] },
+      { "line": 3, "text": "end", "scope": "keyword.control" },
+      { "line": 4, "text": "end", "scope": "keyword.control" },
+      { "line": 5, "text": "next", "scope": "variable.other", "not": ["meta.quotation"] }
+    ]
+  }
+]
