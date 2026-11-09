@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { TEST_SCHEMA } from "../src/test-schema.ts";
-import { loadTests, runTest } from "../src/test-suite.ts";
+import { loadTests } from "../src/test-suite.ts";
 import { sourceFiles } from "./source-files.ts";
 
 test("the published Test schema is the source used by the harness", () => {
@@ -14,18 +14,14 @@ test("the published Test schema is the source used by the harness", () => {
     TEST_SCHEMA,
   );
 });
-for (const value of loadTests(
-  sourceFiles(new URL("../tests/", import.meta.url)),
-)) {
-  test("source conformance: " + value.id, () => {
-    const result = runTest(value);
-    assert.equal(result.passed, true, result.phase + ": " + result.message);
-  });
-}
 
-// These source cases retain the former host canonical-source checks.
+// Source-language execution lives in `just test-language`. This file keeps the
+// host-only inventory and canonical-source checks that the CLI does not cover.
 import { Interpreter } from "../src/runtime.ts";
 import { normal } from "../src/syntax.ts";
+const allSourceTests = loadTests(
+  sourceFiles(new URL("../tests/", import.meta.url)),
+);
 test("every legacy assertion has a same-subject todo or an explicit unresolved decision", () => {
   const inventory = readFileSync(
     new URL("../design/LEGACY-ASSERTIONS.md", import.meta.url),
@@ -35,9 +31,7 @@ test("every legacy assertion has a same-subject todo or an explicit unresolved d
     .map((m) => m[1] + " :: " + m[2])
     .sort();
   const unresolved: string[] = [];
-  for (const value of loadTests(
-    sourceFiles(new URL("../tests/", import.meta.url)),
-  )) {
+  for (const value of allSourceTests) {
     for (const legacy of value.steps.filter(
       (s) => s.mode === "legacy" && s.kind !== "setup",
     )) {

@@ -82,17 +82,33 @@ printf '%s\n' "$ready_out" | grep -q '1 :: Rational' ||
 command -v timeout >/dev/null || fail "timeout is required for watch smoke tests"
 command -v entr >/dev/null || fail "entr is required for watch smoke tests"
 
+stop_tree() {
+	local pid="$1" child
+	for child in $(ps -o pid= --ppid "$pid" 2>/dev/null); do
+		stop_tree "$child"
+	done
+	kill "$pid" 2>/dev/null || true
+}
+
+watch_log="$tmp/watch.out"
+: >"$watch_log"
 set +e
-watch_out="$(timeout -k 2 12s just watch demo.pattern 2>&1)"
-watch_status=$?
+just watch demo.pattern >"$watch_log" 2>&1 &
+watch_pid=$!
+deadline=$((SECONDS + 8))
+while ((SECONDS < deadline)); do
+	if grep -q '12 :: Float' "$watch_log" 2>/dev/null; then
+		break
+	fi
+	sleep 0.1
+done
+stop_tree "$watch_pid"
+sleep 0.1
+stop_tree "$watch_pid"
+kill -9 "$watch_pid" 2>/dev/null || true
+wait "$watch_pid" 2>/dev/null
 set -e
-printf '%s\n' "$watch_out" | grep -q '12 :: Float' ||
-	fail "just watch did not run FILE (status $watch_status): $watch_out"
-case "$watch_status" in
-124 | 137 | 143 | 0) ;;
-*)
-	fail "just watch exited $watch_status: $watch_out"
-	;;
-esac
+grep -q '12 :: Float' "$watch_log" ||
+	fail "just watch did not run FILE: $(cat "$watch_log")"
 
 printf 'just run/repl/watch smoke tests passed\n'

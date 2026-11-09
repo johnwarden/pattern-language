@@ -98,7 +98,9 @@ Commands are `just` recipes. Run `just check` before claiming done (on a laptop,
 
 This repository has no application secrets. Do not add Bitwarden wiring or invent credentials. Ignore `.env`. Do not source secrets from `setup`, `test`, or `check`.
 
-`just check` is every CI gate, in order: lint, typecheck, build, host tests, source-language tests. Build before host tests because playground checks exercise the generated browser bundle. Checks use `America/Denver`.
+`just check` is every CI gate: lint, typecheck, then build, then host tests and
+source-language tests together. Build before host tests because playground checks
+exercise the generated browser bundle. Checks use `America/Denver`.
 
 | Recipe | Purpose |
 |---|---|
@@ -111,7 +113,7 @@ This repository has no application secrets. Do not add Bitwarden wiring or inven
 | `just typecheck` | `tsc --noEmit`. |
 | `just build` | Generate the browser bundles. |
 | `just lint` | ShellCheck on repo shell scripts. |
-| `just check` | All of the above, in the order CI requires. |
+| `just check` | All of the above. Build precedes host tests; host tests and the source suite then run together. |
 
 On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
