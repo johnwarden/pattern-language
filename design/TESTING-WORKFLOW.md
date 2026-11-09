@@ -4,6 +4,37 @@ The executable language specification drives implementation. Existing accepted
 todo contracts under `tests/specification/` take priority over unrelated roadmap
 foundations. The roadmap records what remains to make those contracts pass; it
 must include their actual surface syntax, not describe only internal machinery.
+The `.test` files are the language specification. Prose explains and indexes the
+cases; it must not define a competing contract that can drift independently.
+
+## Specification queue and PR boundaries
+
+Keep one active specification-queue PR for new or revised `.test` contracts and
+their necessary explanations. Commit the tests there before opening a new
+implementation PR. Land accepted test-only batches ahead of implementation where
+possible; if an implementation depends on an unmerged specification commit,
+record that dependency explicitly instead of copying or silently changing it.
+Continue the queue in a new PR when a batch is merged and more contracts arrive.
+
+A specification change may update existing tests, make mass edits, or illustrate
+a new syntax/rule without adding a new case. There is no required one-to-one
+mapping between a spec example, a test case and an implementation PR. Each
+implementation chooses how to apply and validate the relevant contract, and names
+the affected `.test` files or specification commits.
+
+When possible, every implementation PR names the `.test` file and case titles it
+implements. An existing case on master is already an executable specification;
+do not add a duplicate just to create a new todo. For missing behavior, write the
+todo contract first, then make it an ordinary check when implemented. Tooling,
+host/protocol or build work should state why a meaningful language test cannot
+express its observation and use the appropriate host check.
+
+Put additional explanations beside the relevant `.test` file when needed, such as
+[application-heads.md](../tests/specification/application-heads.md). Keep notes and
+contracts in the same change. Roadmap, grammar and decision documents link to
+those cases, summarize status and preserve rationale; avoid separate copies of
+the normative examples. A new author ruling may correct a stale test, but the
+contract and its explanation must be updated before implementation proceeds.
 
 ## From a specification to implementation
 

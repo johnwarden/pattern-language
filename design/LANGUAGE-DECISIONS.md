@@ -1,10 +1,16 @@
-# Language decisions and conformance specification
+# Language decisions and conformance notes
 
-**Integrated 7 November 2026. This specifies design direction, not implementation status.**
+**Decision rationale and case index. Executable language contracts live in `.test` files.**
 
 This is the integrated decision record authorized by the author. Confirmed and retained rules are the intended contract; passages explicitly marked proposed or deferred keep that status. Named cases C01–C27 live in [tests/specification](../tests/specification) and execute through the test DSL, with assertion-level todo and legacy modifiers. Those `.test` files are the executable specs; this document explains the decisions with focused examples and does not have to match them byte-for-byte. Expected failures record future contracts; supported assertions already pass normally. This does not claim conformance with all of the future language semantics. [TEST-SUITE.md](TEST-SUITE.md) defines the runner contract; the [roadmap](../ROADMAP.md) tracks the language work separately.
 
 ## Status and sources
+
+The `.test` files are the language specification. This record preserves rationale
+and links to cases; it must not evolve into a competing prose contract. New rules
+receive executable todo tests before their implementation PR is opened, with
+adjacent explanations where needed. See
+[the specification index](../tests/specification/README.md).
 
 - **Confirmed:** an explicit author decision or subsequent clarification.
 - **Retained:** an existing contract not withdrawn by the new decisions.
@@ -31,6 +37,7 @@ This is the integrated decision record authorized by the author. Confirmed and r
 | W9 | Author clarification on 9 November, alongside #28: formatting and whitespace errors may produce syntax errors, never logic errors; raw expression/layout parsing and explicitly supported alternatives for a keyword are exceptions. |
 | L9 | Author rulings on 9 November 2026 for PR #31 (settled 14:17 Madrid, refined 14:34 and 14:59): Strings are intrinsic primitives. Every symbol prints bare in value text, including `None`; `:` is needed only in code where a bare name would bind. Value text is read with the expected type's own grammar, with no layout-keyword quoting. Primitive names are `ReservedSymbol` values, not symbols, and type descriptions use them directly. A quoted primitive name such as `:Int` in program source is an error, including application heads and type declarations; parsing Code and decoding value text have no special check for it. `Number` is removed for now. |
 | L10 | Author ruling on 9 November 2026 (15:02 Madrid): master's Boolean behavior is correct. Literal `True`/`False` are `Bool` values, the same type as computed comparison results, not `ReservedSymbol` values. Refined 15:11: match arms use bare `True`/`False`; a quoted primitive in any pattern stays `E_QUOTED_PRIMITIVE`. |
+| L11 | Author's subsequent clarification on 9 November: `True(1)`, `1(1)` and similar applications remain valid parsed Code. A head must be a Symbol constructor head or evaluate to a function; invalid head values fail during evaluation, not grammar recognition. The executable contract is application-heads.test and its adjacent note. The grammar-rejection proposal in #49 is superseded. |
 
 The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
 

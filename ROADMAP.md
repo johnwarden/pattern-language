@@ -1,10 +1,15 @@
-# Roadmap and current specification
+# Roadmap and conformance status
 
 Updated 9 November 2026. This is the current design, implementation boundary and
 milestone sequence, not a development history. The integrated
 [decision/conformance record](design/LANGUAGE-DECISIONS.md) supplies reasons, status
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
 [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
+
+The executable [`.test` specification](tests/specification/README.md) is the
+language contract. This roadmap and the linked prose explain its decisions and
+track implementation, rather than maintain an independent specification. Write
+missing todo tests in the specification queue before opening implementation PRs.
 
 ## Vision and accepted direction
 
@@ -24,6 +29,9 @@ must test composition and state role differences explicitly.
   and f are distinct. Dot/infix/outfix are sugar; infix has equal precedence and
   right associativity. Labels are lowercase, unique and canonically sorted after
   positional fields. () is an empty pack, not an implicit unit value.
+- Callability is checked when Code is evaluated, not by restricting application
+  syntax. See [application-head contracts](tests/specification/application-heads.test)
+  and their [phase explanation](tests/specification/application-heads.md).
 - Formatting and whitespace mistakes must produce syntax errors, never logic
   errors, within a form fixed by the applied grammar. Raw layout and explicitly
   declared keyword alternatives are exceptions; see

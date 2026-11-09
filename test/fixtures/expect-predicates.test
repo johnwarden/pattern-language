@@ -1,0 +1,14 @@
+# Target syntax for the coordinated Test DSL migration, not current-runner input.
+# The adjacent note records the migration window and unresolved predicate details.
+
+todo test "Equality expectation uses is"
+  expect 1 is 1 :: Rational
+end
+
+todo test "Failure expectation uses fails"
+  expect 1(1) fails "E_NOT_CALLABLE"
+end
+
+# Confirmed vocabulary, with semantics still awaiting a concrete author example:
+# expect actual contains expected
+# Future predicates such as isApprox are extension points, not implemented here.

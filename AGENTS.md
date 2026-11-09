@@ -142,6 +142,16 @@ implementation. Existing accepted todos in `tests/specification/` take priority
 over new roadmap foundations. Name the target cases in each implementation PR;
 remove todo only when the intended behavior passes, not an unrelated setup failure.
 
+When possible, every implementation PR implements named cases in a `.test` file.
+Write and commit missing todo contracts before opening that implementation PR;
+use one active specification-queue PR for new contracts. Existing cases already
+on master satisfy this requirement. Tooling/host-only work should explain briefly
+why its observation needs a host test rather than inventing a language example.
+
+The `.test` files are the language specification. Keep necessary explanations
+adjacent to the tests and link them from roadmap/grammar/decision prose. Update
+tests and explanations together; do not maintain a competing prose specification.
+
 Triage `tests/inbox/` into bug regressions/fixes, accepted specification todo tests,
 or supported runnable examples. Record the destination and PR; leave unclear
 semantics explicitly pending with the missing decision. Comments and placeholder

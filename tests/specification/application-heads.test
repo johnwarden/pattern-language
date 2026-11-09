@@ -1,0 +1,66 @@
+test "Code preserves applications with non-callable heads"
+  expect parse(Code)("True(1)") result True(1) :: Code
+  expect parse(Code)("False(1)") result False(1) :: Code
+  expect parse(Code)("1(1)") result 1(1) :: Code
+  expect parse(Code)("\"x\"(1)") result "x"(1) :: Code
+  expect parse(Code)("f(True(1))") result f(True(1)) :: Code
+  expect parse(Code)("True(missing())") result True(missing()) :: Code
+
+  expect
+    Code` True(1)
+  result
+    True(1) :: Code
+  end
+  expect Code(:(1(1))) result 1(1) :: Code
+  assert :(True(1)) .matches Code
+end
+
+test "Evaluating a numeric or String head reports not callable"
+  expect 1(1) error "E_NOT_CALLABLE"
+  expect "x"(1) error "E_NOT_CALLABLE"
+  expect (1 + 1)(1) error "E_NOT_CALLABLE"
+
+  def one() 1
+  expect one()(1) error "E_NOT_CALLABLE"
+end
+
+test "Evaluating a Bool head must not reinterpret its payload as a Symbol"
+  todo expect True(1) error "E_NOT_CALLABLE"
+  todo expect False(1) error "E_NOT_CALLABLE"
+
+  head = True
+  todo expect head(1) error "E_NOT_CALLABLE"
+
+  def truth() 1 == 1
+  todo expect truth()(1) error "E_NOT_CALLABLE"
+end
+
+test "Symbol heads construct values in their established concrete context"
+  def Tagged type :Tag(Rational)
+  expect Tag(1) :: Tagged result Tag(1) :: Tagged
+
+  head = :Tag
+  expect head(2) :: Tagged result Tag(2) :: Tagged
+end
+
+test "A head expression may evaluate to a function"
+  f = n -> n + 1
+  expect f(2) result 3 :: Rational
+
+  def make()
+    n -> n
+  end
+  expect make()(7) result 7 :: Rational
+
+  def add(x)(y) x + y
+  expect add(2)(3) result 5 :: Rational
+end
+
+test "A constructed value is not implicitly a callable head"
+  def Tagged type :Tag(Rational)
+  value = Tag(1) :: Tagged
+  todo expect value(2) error "E_NOT_CALLABLE"
+
+  def data() Tag(1) :: Tagged
+  todo expect data()(2) error "E_NOT_CALLABLE"
+end

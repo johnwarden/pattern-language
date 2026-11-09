@@ -4,6 +4,11 @@ Updated 7 November 2026. This describes the intended model and explicitly marked
 open choices. [TYPE-VALUES-BOOTSTRAP.md](TYPE-VALUES-BOOTSTRAP.md) documents the
 unchanged implementation's concrete descriptor encoding and syntax.
 
+The authoritative contracts are the [executable specification](tests/specification/README.md).
+This guide explains the type-value and declaration cases. Update their `.test`
+contracts and adjacent notes before implementation; this prose is not a separate
+specification.
+
 ## Identity is structural
 
 Types are ordinary values with finite structural representations. A compiled matcher,

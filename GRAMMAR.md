@@ -25,6 +25,13 @@ exceptions and the bootstrap boundaries that still need review.
 
 An application has an arbitrary expression head and one argument pack. Successive
 packs are separate applications: f(a)(b) is not f(a,b). Bare f differs from f().
+
+The [application-head tests](tests/specification/application-heads.test) separate
+syntax from evaluation: Code may contain `True(1)` or `1(1)`. A head's callability
+is checked when that Code is evaluated, not by the grammar. See the
+[adjacent explanation](tests/specification/application-heads.md). These executable
+contracts are authoritative; grammar prose explains their rules and must be kept
+in sync with them.
 Parentheses group expressions or delimit packs; (x,) and (x) have the same single
 positional content in pack position. () is an empty pack, not a standalone unit.
 Outfix brackets/braces put their closing delimiter after the pack; they have heads

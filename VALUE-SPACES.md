@@ -1,5 +1,9 @@
 # Value spaces and interpretation
 
+The [executable `.test` contracts](tests/specification/README.md) are the language
+specification. This guide explains their model and rationale. Missing rules need
+tests before implementation; change the tests and their explanations together.
+
 Updated 7 November 2026. This is the intended semantic contract integrated from
 [the decision record](design/LANGUAGE-DECISIONS.md). Confirmed rules are distinct
 from explicitly provisional choices. The TypeScript bootstrap has not yet been

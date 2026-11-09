@@ -46,6 +46,8 @@ configuration. Analysis never executes open programs or tests.
 - [Test-suite milestone](design/TEST-SUITE.md): revised DSL, todo and selective migration.
 - [Development workflow](design/TESTING-WORKFLOW.md): specification-first changes,
   todo promotion and inbox triage.
+- [Executable specification](tests/specification/README.md): authoritative `.test`
+  contracts and adjacent explanatory notes.
 - [Vision](VISION.md) and [engineering checklist](TODO.md).
 
 Working prototype syntax is documented separately in the
