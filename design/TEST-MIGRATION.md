@@ -265,6 +265,32 @@ nested-Body examples were reused rather than duplicated.
 
 Host remainder is schema/decoder identity, Grammar objects, encode/decode, exact dimension/duplicate/type-description codes, Float32 serialization, ambiguous row partitions and fresh-interpreter transport. No expected-failure or legacy marker was added or changed. Keyword-rest grammar was not selected.
 
+## Nested-option and concrete-union migration
+
+The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) grouped
+`test/nested-option-designation.test.ts` and `test/concrete-unions.test.ts` as
+already having source counterparts. Shared positives stay in
+`tests/bindings/nested-option-designation.test` and
+`tests/specification/concrete-unions.test`. Unique remaining evaluations now run
+under `tests/unions/concrete.test`. `#31` has landed; `#48` was not edited.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| nested-option: unwrapped Nested / String?? designate a unique String | bindings/nested-option-designation#unwrapped-nested-option-designates-a-unique-string; bindings/nested-option-designation#nested-postfix-string-designates-a-unique-string | Existing counterparts |
+| nested-option: match projects one option boundary | bindings/nested-option-designation#match-projects-one-unwrapped-option-boundary; bindings/nested-option-designation#match-projects-one-postfix-option-boundary | Existing counterparts |
+| nested-option: ordinary binding/dispatch and match-arm defaults/predicates | bindings/nested-option-designation ordinary-binding and match-arm cases | Exact `E_PATTERN_MISMATCH` / `E_NO_METHOD` stay |
+| nested-option: source optional convention | bindings/nested-option-designation#the-source-optional-convention-is-unwrapped-t-none | Exact tagged-`Some` `E_PATTERN_MISMATCH` stays |
+| nested-option: nested postfix absence, including `:None :: String??` | bindings/nested-option-designation#nested-postfix-absence-preserves-explicit-member-evidence | Added the missing `same` ascription equality |
+| concrete-unions: binding and expression annotations choose the same outer arm | specification/concrete-unions#a-direct-union-arm-takes-precedence-over-inward-designation | Existing counterpart |
+| concrete-unions: explicit inner absence projects once | unions/concrete#an-explicit-inner-absence-projects-once-without-becoming-outer-absence | Exact outer-absence `E_PATTERN_MISMATCH` stays |
+| concrete-unions: explicit members survive fresh-interpreter transport | — | Host typed-text transfer stays |
+| concrete-unions: peer ambiguity does not depend on source order | unions/concrete#peer-optional-absence-is-ambiguous-regardless-of-branch-order; specification/concrete-unions already covers String? or Float? order | Exact `E_AMBIGUOUS_PATTERN` for both orders stays |
+| concrete-unions: direct constructor arm vs inward path | unions/concrete#a-direct-constructor-arm-wins-over-an-inward-path; unions/concrete#a-direct-constructor-arm-wins-regardless-of-branch-order | Both branch orders |
+| concrete-unions: already typed payloads designated inward | unions/concrete#already-typed-payloads-can-be-designated-inward-without-binding-projection | Original program |
+| concrete-unions: nested annotation payloads remain data in the test DSL | — | Harness `expect` expected-data stays unevaluated |
+
+Host remainder is exact diagnostic codes, fresh-interpreter typed-text transport and test-harness expected-data. No expected-failure or legacy marker was added or changed.
+
 ## Existing source cases
 
 | Former source | Current `.test` case ID |

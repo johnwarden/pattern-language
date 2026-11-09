@@ -8,19 +8,21 @@ that the source suite replaces the TypeScript suite. The reference census covers
 migrations. All 57 have a file-level classification below; assertion-level
 migrations are claimed only for the mapped macro/registration, language,
 cross-context matching/availability, generated-grammar staging,
-quotes/postfix, and spreading/schema-evaluation observations.
+quotes/postfix, spreading/schema-evaluation, and nested-option/concrete-union
+observations.
 The method is file-level inspection and targeted assertion review, supported by a
 search for parser, representation, diagnostic, state, process and UI observations.
 A file classified as mixed still needs an assertion-level pass before
 further migration, except language, matching/availability, staging,
-quotes/postfix and spreading/schema-evaluation, which now have that mapping.
+quotes/postfix, spreading/schema-evaluation and nested-option/concrete-union,
+which now have that mapping.
 
 The completed coverage map remains [TEST-MIGRATION.md](TEST-MIGRATION.md). Only
 implemented, passing source checks belong in that map. This document also records
 work that remains available or deliberately deferred. Macro/registration and
-language, matching, availability, staging, quotes/postfix and
-spreading/schema-evaluation now have assertion-level mappings there;
-other mixed files still need that pass.
+language, matching, availability, staging, quotes/postfix,
+spreading/schema-evaluation and nested-option/concrete-union now have
+assertion-level mappings there; other mixed files still need that pass.
 
 ## First bounded batch
 
@@ -61,7 +63,7 @@ that every individual assertion in those files has already been mapped.
 | staging                                                                                                                          | Implemented assertion-level pass; mixed remainder            | Scalar generated sidefix, nested generated macros, generated function hygiene, definition-time grammar, generated types and final-definition errors live in `tests/macros/staging.test`. Parse-only no-execution, repeated REPL submissions, successful reuse after failure and transactional rollback stay. |
 | quotes, postfix, postfix-conventions                                                                                             | Implemented assertion-level pass; mixed remainder            | Portable quotation interpolation, typed-quote expansion, reader-block text, postfix payload matching, prefix `*`/`^`, infix `&`/`~`, optional type printing and custom `?` coexistence live in `tests/quotes/` and `tests/postfix/`. Syntax kind/key/encode-decode, empty-prelude readers, exact `E_UNQUOTE_CONTEXT` / `E_RESERVED_OPERATOR` / `E_KEYWORD_REST_UNSUPPORTED` and hole/name locations stay. |
 | pattern-schema, milestone-two, vertical-spread                                                                                   | Implemented assertion-level pass; mixed remainder            | Quoted operator heads, open-label/rest matching, type-description evaluation, dispatch defaults, empty/evaluated matrix rows, application-row capture and Body final-row rules live in `tests/matching/`, `tests/types/descriptions.test` and `tests/spreading/`. Schema/decoder, Grammar objects, exact dimension/duplicate/type-description codes, Float32 serialization, fresh-interpreter transport and ambiguous row partitions stay. Keyword-rest `{**rest}` was not selected. |
-| nested-option-designation, concrete-unions                                                                                       | Existing source counterparts plus host boundaries            | Compare positive source counterparts before adding duplicate examples. Exact failure codes, fresh-interpreter typed-text transport and test-harness expected-data checks remain. String text/model changes belong to #31.                                                             |
+| nested-option-designation, concrete-unions                                                                                       | Implemented assertion-level pass; mixed remainder            | Existing `tests/bindings/nested-option-designation.test` and `tests/specification/concrete-unions.test` cover the shared positives. Unique inner-absence projection, constructor-vs-inward arms, already-typed inward designation and reverse-order peer ambiguity live in `tests/unions/concrete.test`. Exact `E_PATTERN_MISMATCH` / `E_NO_METHOD` / `E_AMBIGUOUS_PATTERN`, fresh-interpreter typed-text transport and test-harness expected-data stay. |
 | abstract-values, disjoint-unions, structural-slots, type-atoms, value-representation, value-spaces                               | Defer active value/inspection work                           | Many assertions are language-shaped, but intrinsic values, reserved symbols, raw Expression compatibility, concrete identity and descriptor printing are changing. Do not freeze old behavior through a migration or invent replacements.                                             |
 | declaration-boundaries, type-definition-evaluation, description-scope, milestone-four, type-operations, type-unions, type-values | Defer active declaration/transport work                      | Separate portable semantics from declaration/accessor products and representation/transport checks after #31/#32 stabilize. Equivalent declarations and accessor collisions remain errors.                                                                                            |
 | rational-primitives                                                                                                              | Mixed numeric boundaries                                     | Membership examples may move in a later numeric batch. Keep direct Rational/binary64 helper edge cases, public syntax payloads and exact serialization failures. IEEE/family/edge policy is not chosen by migration.                                                                  |

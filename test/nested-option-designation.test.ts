@@ -10,28 +10,10 @@ const rejects = (source: string, code: string) =>
       error instanceof LanguageError && error.diagnostic.code === code,
   );
 
-const nested = `def Inner type String | :None
-def Nested type Inner | :None
+const nested = `type Inner concrete String | :None
+type Nested concrete Inner | :None
 (outer :: Nested) = "Hello"
 `;
-
-test("unwrapped nested option designates a unique String", () => {
-  assert.equal(run(nested + "outer"), '"Hello"');
-  assert.equal(run(nested + '"Hello" .matches Nested'), "True");
-  assert.equal(run(nested + "(type Nested) == (type Inner)"), "False");
-});
-
-test("match projects one unwrapped option boundary", () => {
-  assert.equal(
-    run(
-      nested +
-        `match outer
-  (inner :: Inner) -> inner
-end`,
-    ),
-    '"Hello"',
-  );
-});
 
 test("ordinary binding and dispatch keep the Nested boundary", () => {
   rejects(nested + "(inner :: Inner) = outer\ninner", "E_PATTERN_MISMATCH");
@@ -58,44 +40,13 @@ end`,
   );
 });
 
-test("the source optional convention is unwrapped T | :None", () => {
-  assert.equal(run('(present :: String?) = "Hello"\npresent'), '"Hello"');
-  assert.equal(run("(absent :: String?) = :None\nabsent"), "None");
+test("the source optional convention rejects a tagged Some payload", () => {
   rejects('(tagged :: String?) = Some("Hello")\ntagged', "E_PATTERN_MISMATCH");
 });
 
-test("nested postfix String?? designates a unique String", () => {
-  assert.equal(run('(outer :: String??) = "Hello"\nouter'), '"Hello"');
-  assert.equal(run('"Hello" .matches (type String??)'), "True");
-  assert.equal(run("(type String??) == (type String?)"), "False");
-});
-
-test("nested absence selects outer None unless an inner member is explicit", () => {
-  assert.equal(
-    run(`(outer :: String??) = :None
-(inner :: String??) = :None :: String?
-(same :: String??) = :None :: String??
-(outer == same, outer == inner)`),
-    "(True, False)",
-  );
-});
-
-test("match projects one postfix option boundary", () => {
-  const outer = '(outer :: String??) = "Hello"\n';
-  assert.equal(
-    run(
-      outer +
-        `match outer
-  (inner :: String?) -> inner
-end`,
-    ),
-    '"Hello"',
-  );
+test("match does not skip two postfix option boundaries", () => {
   rejects(
-    outer +
-      `match outer
-  (s :: String) -> s
-end`,
+    '(outer :: String??) = "Hello"\nmatch outer\n  (s :: String) -> s\nend',
     "E_PATTERN_MISMATCH",
   );
 });
