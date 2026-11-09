@@ -8,21 +8,22 @@ that the source suite replaces the TypeScript suite. The reference census covers
 migrations. All 57 have a file-level classification below; assertion-level
 migrations are claimed only for the mapped macro/registration, language,
 cross-context matching/availability, generated-grammar staging,
-quotes/postfix, spreading/schema-evaluation, and nested-option/concrete-union
-observations.
+quotes/postfix, spreading/schema-evaluation, nested-option/concrete-union,
+and rational-primitive membership observations.
 The method is file-level inspection and targeted assertion review, supported by a
 search for parser, representation, diagnostic, state, process and UI observations.
 A file classified as mixed still needs an assertion-level pass before
 further migration, except language, matching/availability, staging,
-quotes/postfix, spreading/schema-evaluation and nested-option/concrete-union,
-which now have that mapping.
+quotes/postfix, spreading/schema-evaluation, nested-option/concrete-union
+and rational-primitives, which now have that mapping.
 
 The completed coverage map remains [TEST-MIGRATION.md](TEST-MIGRATION.md). Only
 implemented, passing source checks belong in that map. This document also records
 work that remains available or deliberately deferred. Macro/registration and
 language, matching, availability, staging, quotes/postfix,
-spreading/schema-evaluation and nested-option/concrete-union now have
-assertion-level mappings there; other mixed files still need that pass.
+spreading/schema-evaluation, nested-option/concrete-union and
+rational-primitives now have assertion-level mappings there; other mixed
+files still need that pass.
 
 ## First bounded batch
 
@@ -66,7 +67,7 @@ that every individual assertion in those files has already been mapped.
 | nested-option-designation, concrete-unions                                                                                       | Implemented assertion-level pass; mixed remainder            | Existing `tests/bindings/nested-option-designation.test` and `tests/specification/concrete-unions.test` cover the shared positives. Unique inner-absence projection, constructor-vs-inward arms, already-typed inward designation and reverse-order peer ambiguity live in `tests/unions/concrete.test`. Exact `E_PATTERN_MISMATCH` / `E_NO_METHOD` / `E_AMBIGUOUS_PATTERN`, fresh-interpreter typed-text transport and test-harness expected-data stay. |
 | abstract-values, disjoint-unions, structural-slots, type-atoms, value-representation, value-spaces                               | Defer active value/inspection work                           | Many assertions are language-shaped, but intrinsic values, reserved symbols, raw Expression compatibility, concrete identity and descriptor printing are changing. Do not freeze old behavior through a migration or invent replacements.                                             |
 | declaration-boundaries, type-definition-evaluation, description-scope, milestone-four, type-operations, type-unions, type-values | Defer active declaration/transport work                      | Separate portable semantics from declaration/accessor products and representation/transport checks after #31/#32 stabilize. Equivalent declarations and accessor collisions remain errors.                                                                                            |
-| rational-primitives                                                                                                              | Mixed numeric boundaries                                     | Membership examples may move in a later numeric batch. Keep direct Rational/binary64 helper edge cases, public syntax payloads and exact serialization failures. IEEE/family/edge policy is not chosen by migration.                                                                  |
+| rational-primitives                                                                                                              | Implemented assertion-level pass; mixed remainder            | Unique Float membership/designation and `((1 / 3) * 3) == 1` live in `tests/specification/primitives.test` C03 and `tests/numeric/syntax-tree.test`. Direct Rational/binary64 helpers, `syntaxTree(0f0.1)` display, exact `E_VALUE_SERIALIZATION` and `0.5 :: Int` until D07 stay. IEEE/family/edge policy is not chosen by migration. |
 | binding-defaults, minus, titlecase-captures                                                                                      | Prior migrations; retain remainder                           | Remaining host invocation/default evaluation, parser forms, Interpreter.evaluateCode, exact diagnostics and hygiene checks were deliberately retained by earlier batches. Do not treat these files as unreviewed easy deletions.                                                      |
 | cli, repl, playground                                                                                                            | Retain host boundary                                         | Process behavior, state across submissions, DOM interactions and storage restoration require host access. Their examples are not evidence that the host tests are redundant.                                                                                                          |
 | diagnostics, grammar-diagnostics, source-normalization, indent-prefix, layout-ends, formatting                                   | Retain host boundary; mixed semantic extras may be separable | Exact codes, coordinates, normalized byte/text boundaries, parser entry points and canonical source formatting need host assertions. End-ownership semantics also have source cases; preserve the independent reader/session checks.                                                  |

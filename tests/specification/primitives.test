@@ -146,6 +146,10 @@ test "C03 exact designation differs from rounding"
   error "not exactly representable as Float32"
   expect 0.5 .matches Float32 result True :: Bool
   expect 0.1 .matches Float32 result False :: Bool
+  expect 0.5 .matches Float result True :: Bool
+  expect 0.1 .matches Float result False :: Bool
+  expect 0f0.1 .matches Float result True :: Bool
+  expect 0.5 :: Float result 0.5 :: Float
 
   todo expect
     (0.5 :: Int16)

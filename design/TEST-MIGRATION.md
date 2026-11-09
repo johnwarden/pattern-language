@@ -291,6 +291,26 @@ under `tests/unions/concrete.test`. `#31` has landed; `#48` was not edited.
 
 Host remainder is exact diagnostic codes, fresh-interpreter typed-text transport and test-harness expected-data. No expected-failure or legacy marker was added or changed.
 
+## Rational-primitive membership migration
+
+The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) marked
+`test/rational-primitives.test.ts` as mixed numeric. Float32 membership already
+lived in `tests/specification/primitives.test` C03. Unique remaining evaluations
+now run there and in `tests/numeric/syntax-tree.test`. Expected results are
+authored data. IEEE/family/edge policy and D07 integer designation were not
+chosen by this migration.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| Float32 membership is exact representability, not finite-after-fround | specification/primitives#c03-exact-designation-differs-from-rounding already covered `0.5` / `0.1` `.matches Float32` | — |
+| Float membership and `0.5 :: Float` designation | specification/primitives#c03-exact-designation-differs-from-rounding | Unique `Float` lines; host display of the same programs removed |
+| Rational-to-binary64 conversion keeps the smallest subnormal and small normals | — | Direct `float64ToRational` / `rationalToNumber` helpers stay |
+| hex Rational syntax encoding keeps the exact Float64-rounded Rational | numeric/syntax-tree#syntaxtree-distinguishes-01-from-0f01-and-round-trips already covers the hex payload | Host `syntaxTree(0f0.1)` display string stays |
+| non-dyadic Rationals stay exact internally without a ratified spelling | numeric/syntax-tree#unspellable-13-stays-exact-as-a-numberliteral-payload | Exact `E_VALUE_SERIALIZATION` on bare `1 / 3` stays |
+| `0.5 :: Int` remains a generic mismatch until D07 integer designation | — | Exact `E_PATTERN_MISMATCH` stays until D07 |
+
+Host remainder is TS Rational/binary64 helpers, public syntax-tree display, exact serialization and D07 mismatch codes. No expected-failure or legacy marker was added or changed.
+
 ## Existing source cases
 
 | Former source | Current `.test` case ID |
