@@ -6,7 +6,7 @@ import { LanguageError } from "./diagnostics.ts";
 import type { Captures } from "./pattern.ts";
 import type { SourceDocument } from "./diagnostics.ts";
 import type { Rational } from "./rational.ts";
-import { isRational, formatRational } from "./rational.ts";
+import { isRational, formatRational, float64ToRational } from "./rational.ts";
 export { LanguageError } from "./diagnostics.ts";
 /** Lossless structural distinctions; packs occur at call/result boundaries. */
 export interface Span {
@@ -285,9 +285,10 @@ export function normal(n: Syntax, indent = 0): string {
       return (n.quoted ? ":" : "") + n.name;
     case "literal": {
       if (typeof n.value === "string") return stringSource(n.value, indent);
-      if (n.spelling) return n.spelling;
-      if (typeof n.value === "number") return String(n.value);
-      if (isRational(n.value)) return formatRational(n.value);
+      if (typeof n.value === "number" || isRational(n.value))
+        return formatRational(
+          isRational(n.value) ? n.value : float64ToRational(n.value),
+        );
       return stringSource(String(n.value), indent);
     }
     case "pack":

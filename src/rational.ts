@@ -49,8 +49,66 @@ export function float64ToRational(x: number): Rational {
 }
 export const float32ToRational = (x: number): Rational =>
   float64ToRational(Math.fround(x));
-export const rationalToNumber = (r: Rational): number =>
-  Number(r.n) / Number(r.d);
+const bitLength = (n: bigint): number => (n === 0n ? 0 : n.toString(2).length);
+/** Round n/d to nearest integer, ties to even. n and d must be non-negative. */
+const roundQuotient = (n: bigint, d: bigint): bigint => {
+  const q = n / d,
+    rem = n % d;
+  if (rem === 0n) return q;
+  const twice = rem * 2n;
+  if (twice > d || (twice === d && (q & 1n) === 1n)) return q + 1n;
+  return q;
+};
+const float64FromBits = (sign: number, biasedExp: bigint, frac: bigint) => {
+  const view = new DataView(new ArrayBuffer(8));
+  view.setBigUint64(
+    0,
+    (sign < 0 ? 1n << 63n : 0n) | (biasedExp << 52n) | frac,
+  );
+  return view.getFloat64(0);
+};
+/** Correctly rounded binary64 conversion. */
+export function rationalToNumber(r: Rational): number {
+  if (r.n === 0n) return 0;
+  const sign = r.n < 0n ? -1 : 1,
+    n = r.n < 0n ? -r.n : r.n,
+    d = r.d;
+  let e = bitLength(n) - bitLength(d);
+  const cmp =
+    e >= 0
+      ? n === d << BigInt(e)
+        ? 0
+        : n < d << BigInt(e)
+          ? -1
+          : 1
+      : n << BigInt(-e) === d
+        ? 0
+        : n << BigInt(-e) < d
+          ? -1
+          : 1;
+  if (cmp < 0) e -= 1;
+  if (e > 1023) return sign * Infinity;
+  if (e < -1022) {
+    const q = roundQuotient(n << 1074n, d);
+    if (q === 0n) return 0;
+    if (q >= 1n << 52n) return float64FromBits(sign, 1n, 0n);
+    return float64FromBits(sign, 0n, q);
+  }
+  const scale = 52n - BigInt(e);
+  let mantissa =
+    scale >= 0n ? roundQuotient(n << scale, d) : roundQuotient(n, d << -scale);
+  let exp = e;
+  if (mantissa === 1n << 53n) {
+    mantissa >>= 1n;
+    exp += 1;
+  }
+  if (exp > 1023) return sign * Infinity;
+  return float64FromBits(
+    sign,
+    BigInt(exp + 1023),
+    mantissa & ((1n << 52n) - 1n),
+  );
+}
 export function isExactFloat32(r: Rational): boolean {
   const x = Math.fround(rationalToNumber(r));
   if (!Number.isFinite(x)) return false;

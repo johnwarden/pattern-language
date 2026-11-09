@@ -1,0 +1,20 @@
+test "equal Code values serialize as equal text"
+  a = Code` 0.1
+  b = Code` 0.10
+  assert a == b
+  assert toString(Code)(a) == toString(Code)(b)
+  assert parse(Code)(toString(Code)(a)) == a
+  one = Code` 1
+  oneDot = Code` 1.0
+  oneHex = Code` 0x1p0
+  assert one == oneDot
+  assert one == oneHex
+  assert toString(Code)(one) == toString(Code)(oneDot)
+  assert toString(Code)(one) == toString(Code)(oneHex)
+  assert parse(Code)(toString(Code)(one)) == one
+end
+
+test "Code round-trips the 0 - 0.1 tree"
+  c = Code` (0 - 0.1)
+  assert parse(Code)(toString(Code)(c)) == c
+end
