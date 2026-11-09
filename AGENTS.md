@@ -160,6 +160,14 @@ That records conversion into tests, not runtime completion: tests may remain tod
 Existing cases on master satisfy the contract requirement. Tooling/host-only work
 should explain why its observation needs a host test rather than a language example.
 
+Source `.test` contracts describe the destination language, not bootstrap
+implementation encodings. Keep native syntax/schema adapters, internal AST shapes,
+transport encodings and undecided implicit descriptor decoding in host tests.
+Preserve semantic coverage when moving such checks; `legacy` and `todo` do not
+make a prototype representation a language requirement. Do not ban ordinary
+constructor names or invent the pending public inspection boundary. Follow
+[the source-contract audit](design/TEST-CONTRACT-AUDIT.md) for cleanup and migration.
+
 The `.test` files are the executable language specification. Approved records guide
 changes not yet captured in tests; implemented records preserve decisions and link
 to the resulting cases. Keep necessary explanations adjacent to tests and update

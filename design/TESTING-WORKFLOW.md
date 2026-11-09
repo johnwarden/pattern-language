@@ -87,6 +87,14 @@ host APIs, precise diagnostic metadata, counters, transport/process boundaries
 and other observations the language suite cannot express. Expected results are
 inert authored data, not expressions evaluated to manufacture the answer.
 
+Source contracts must describe the destination language. Do not migrate native
+syntax/schema adapters, exact bootstrap AST/descriptor encodings or undecided
+implicit decoding merely because the prototype accepts them. Retain those
+implementation regressions on host and express the approved semantic observation
+through destination syntax. Legacy/todo markers do not authorize a prototype
+contract. See [the source-contract audit and cleanup queue](TEST-CONTRACT-AUDIT.md);
+record the retained source/host coverage before deleting a migrated assertion.
+
 The concrete/abstract declaration and type-value cases C05/C06/C13/C15/C16 are
 current targets; C05/C12/C18 also specify parameterized forms. Refinement evidence,
 public inspection/decoding and other genuinely unresolved boundaries do not get

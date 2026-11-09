@@ -26,6 +26,17 @@ spreading/schema-evaluation, nested-option/concrete-union,
 rational-primitives and type-identity/value-trees now have
 assertion-level mappings there; other mixed files still need that pass.
 
+## Destination-contract correction after #60
+
+[The source-contract audit](TEST-CONTRACT-AUDIT.md), at master `2b4292d`, found
+native adapters in source examples and numeric/layout cases, plus compiled/quoted
+type-tree equality and implicit descriptor decoding migrated by #60. Those are
+implementation observations or pending public decisions, rather than approved
+destination-language contracts. The existing inventory below records what was
+migrated; its classification is not approval of those encodings. The cleanup
+queue maps them back to host coverage while preserving semantic source checks.
+No source assertions or runtime APIs have been removed by this audit.
+
 ## First bounded batch
 
 The first batch moves 17 scalar macro/registration observations from `test/macros.test.ts` and
@@ -78,8 +89,11 @@ that every individual assertion in those files has already been mapped.
 
 ## Safe migration procedure
 
-1. Name each original host observation and its proposed source case. Distinguish
-   value semantics from exact printing, full packs, state and representation.
+1. Name each original host observation and its proposed source case. Confirm it
+   is an approved destination-language contract, rather than a bootstrap adapter
+   or undecided descriptor/decoding rule. Distinguish value semantics from exact
+   printing, full packs, state and representation; keep implementation observations
+   on host and map the retained coverage explicitly.
 2. Write explicit expected data and keep definitions close to use, with blank
    separation between tests and logical sections. Avoid numbered observation
    captures. Destructure only actual multi-result programs.
