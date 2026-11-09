@@ -16,7 +16,7 @@ test("documented schema is the exact runtime bootstrap source", () => {
 test("language schema gates descriptor shapes without consulting the user scope", () => {
   // These shapes previously fell through the host decoder as ordinary nodes,
   // despite using heads reserved by the descriptor grammar.
-  for (const source of ["Type(:String(:A))", "Type(:|(:A,:B))"])
+  for (const source of ["Type(:(String(:A)))", "Type(:|(:A,:B))"])
     assert.throws(() => run(source), /invalid type-description shape/);
   assert.equal(
     run(
@@ -30,7 +30,7 @@ test("language schema gates descriptor shapes without consulting the user scope"
   );
   // Explicit Apply describes a literal reserved head without ambiguity.
   assert.equal(
-    run("Type(Apply(Literal(String),Fields(:A))) == (type :String(:A))"),
+    run("Type(Apply(Literal(String),Fields(:A))) == (type String(:A))"),
     "True",
   );
 });
@@ -57,7 +57,7 @@ test("recursive pattern schema covers portable descriptors without Expression pl
     "type :Some(Int) | :None",
     "type :Pair(x :: Int,y :: Int)",
     "type [rest... :: Int*]",
-    "type :String([65])",
+    "type String([65])",
     "UnionType(Int,String)",
   ]) {
     assert.equal(
@@ -122,7 +122,7 @@ test("alternative branch captures erase without shared slots", () => {
 });
 
 test("String constructor patterns round trip without becoming string literals", () => {
-  for (const pattern of [":String([65])", ":String(Int)", ":String()"])
+  for (const pattern of ["String([65])", "String(Int)", "String()"])
     assert.equal(
       run("t = type " + pattern + "\nparse(Type)(toString(Type)(t)) == t"),
       "True",
@@ -183,7 +183,7 @@ test("schema and decoder agree on generated single-value and argument-pack posit
     assert.equal(
       displayResults(
         interpreter.run(
-          "(:" + descriptor + ") .matches (type TypeDescription)",
+          ":(" + descriptor + ") .matches (type TypeDescription)",
         ),
       ),
       accepted ? "True" : "False",

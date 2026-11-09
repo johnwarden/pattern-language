@@ -249,7 +249,7 @@ test("duplicate capture diagnostics agree across every applicable pattern contex
 });
 test("schema recognition rejects malformed constructor arities before interpretation", () => {
   for (const source of [
-    "Type(:Type())",
+    "Type(:(Type()))",
     "Type(:Literal())",
     "Type(:Apply(:A))",
     "Type(:Recur())",

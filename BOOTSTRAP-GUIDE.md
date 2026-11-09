@@ -835,7 +835,9 @@ See [TYPE-VALUES.md](TYPE-VALUES.md) for examples and explicit limits.
 
 Primitive names are `ReservedSymbol` values: `Int` inspects as
 `Int :: ReservedSymbol`, and the Int type `type Int` compares equal to it. `ReservedSymbol` is disjoint from `UpperCamelSymbol`.
-Evaluating `:Int` is `E_QUOTED_PRIMITIVE`, so `Int == :Int` is an error.
+A quoted primitive name is `E_QUOTED_PRIMITIVE` in program source, including
+application heads and type declarations, so `Int == :Int` and `type :String(:A)`
+are errors; write `type String(:A)`.
 `:(Int)` evaluates to the uninterpreted `Int :: Expression`, and
 `parse(Code)(":Int")` parses as ordinary Code. Type(Int) has
 a distinct wrapped tree. Their compiled
