@@ -29,7 +29,6 @@ test("Boolean constants and native predicates have a known Bool result type", ()
     ),
     "(True :: ReservedSymbol, False :: ReservedSymbol, False :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool, True :: Bool)",
   );
-  rejects(":True", "E_QUOTED_PRIMITIVE");
 });
 
 test("primitive names evaluate as ReservedSymbol values in ordinary expressions", () => {
@@ -273,5 +272,4 @@ test("equal compiled and raw type trees have equal canonical strings", () => {
       "(True, True)",
     );
   }
-  rejects(":Int", "E_QUOTED_PRIMITIVE");
 });

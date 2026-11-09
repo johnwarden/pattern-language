@@ -24,6 +24,7 @@ end
 
 test "ReservedSymbol is disjoint from ordinary symbol classes"
   expect :Symbol result Symbol :: UpperCamelSymbol
+  expect :Number result Number :: UpperCamelSymbol
   expect Int .matches UpperCamelSymbol result False :: Bool
   expect Int .matches ReservedSymbol result True :: Bool
   expect True .matches UpperCamelSymbol result False :: Bool

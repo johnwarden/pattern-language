@@ -248,12 +248,8 @@ test("duplicate capture diagnostics agree across every applicable pattern contex
   );
 });
 test("schema recognition rejects malformed constructor arities before interpretation", () => {
-  assert.throws(
-    () => run("Type(:Type())"),
-    (e: unknown) =>
-      e instanceof LanguageError && e.diagnostic.code === "E_QUOTED_PRIMITIVE",
-  );
   for (const source of [
+    "Type(:Type())",
     "Type(:Literal())",
     "Type(:Apply(:A))",
     "Type(:Recur())",

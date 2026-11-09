@@ -5,7 +5,6 @@ import {
   primitiveNames,
   constantNames,
   bootstrapTypeNames,
-  isReservedPrimitiveSpelling,
   isSelfEvaluating,
   ordinarySymbolCategory,
 } from "./primitive-names.ts";
@@ -599,23 +598,16 @@ export class Interpreter {
   ): Field<Value>[] {
     this.parsingDataDepth++;
     try {
-      if (type.treeGrammar || type.baseType?.treeGrammar) {
-        const tree = readCode(text);
-        if (
-          this.codeType &&
-          typeIdentity(type) === typeIdentity(this.codeType)
-        )
-          this.rejectQuotedPrimitiveCode(tree);
-        return this.check(type, syntaxData(tree));
-      }
       return this.check(
         type,
-        parseValueText(
-          text,
-          this.textDomain(env),
-          typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
-          this.layoutFormsFromPattern(type.pattern()),
-        ),
+        type.treeGrammar || type.baseType?.treeGrammar
+          ? syntaxData(readCode(text))
+          : parseValueText(
+              text,
+              this.textDomain(env),
+              typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
+              this.layoutFormsFromPattern(type.pattern()),
+            ),
       );
     } finally {
       this.parsingDataDepth--;
@@ -790,9 +782,8 @@ export class Interpreter {
       symbol.name = "Symbol";
       scope.bindings.set("Symbol", symbol);
     }
-    // Canonical primitive atoms have fixed language meanings. Number/Num are
-    // withdrawn until a numeric-family definition is decided (ROADMAP).
-    for (const alias of ["Num", "Number", "Int64"])
+    // Canonical primitive atoms have fixed language meanings.
+    for (const alias of ["Num", "Int64"])
       scope.bindings.delete(alias);
     for (const name of constantNames)
       scope.bindings.set(name, single(this.reserved(name)));
@@ -1545,24 +1536,6 @@ export class Interpreter {
         (x) => single(this.evaluate(this.grammar.resolve(x), env), "unquote"),
         this.expansionDepth > 0,
       );
-      if (value.kind === "symbol" && isReservedPrimitiveSpelling(value.name)) {
-        if (this.codeType)
-          return singleton({
-            kind: "code",
-            type: this.codeType,
-            tree:
-              n.value.kind === "symbol"
-                ? {
-                    kind: "symbol" as const,
-                    name: n.value.name,
-                    quoted: false,
-                    span: n.value.span,
-                  }
-                : dataSyntax(value),
-            portable: true,
-          });
-        return singleton(value);
-      }
       return singleton(
         value.kind === "symbol" ? this.symbolValue(value.name) : value,
       );
@@ -1617,11 +1590,7 @@ export class Interpreter {
       return this.ascribeRational(valRational(r.n, r.d));
     }
     if (n.kind === "symbol") {
-      if (n.quoted) {
-        if (isReservedPrimitiveSpelling(n.name))
-          throw this.quotedPrimitive(n.name, n.span);
-        return singleton(this.symbolValue(n.name));
-      }
+      if (n.quoted) return singleton(this.symbolValue(n.name));
       const primitive = primitiveNames.get(n.name);
       if (
         primitive &&
@@ -1886,8 +1855,6 @@ export class Interpreter {
         body: this.evaluateFields(n.body, env),
       });
     if (n.head.kind === "symbol" && n.head.quoted) {
-      if (isReservedPrimitiveSpelling(n.head.name))
-        throw this.quotedPrimitive(n.head.name, n.head.span);
       if (n.head.name === "NumericSource") {
         const args = this.evaluateFields(n.body, env);
         const spelling = unwrap(args[0]?.value);
@@ -2815,13 +2782,6 @@ export class Interpreter {
             }
             if (
               typeMode &&
-              n.head.kind === "symbol" &&
-              !n.head.quoted &&
-              isReservedPrimitiveSpelling(n.head.name)
-            )
-              return undefined;
-            if (
-              typeMode &&
               this.isTypeCall(n, lookup(n)) &&
               (n.head.kind !== "symbol" ||
                 isCapture(n.head.name) ||
@@ -2837,11 +2797,7 @@ export class Interpreter {
         defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {
-          if (n.kind === "symbol") {
-            if (n.quoted && isReservedPrimitiveSpelling(n.name))
-              throw this.quotedPrimitive(n.name, n.span, "declaration");
-            return literalPattern(valSymbol(n.name));
-          }
+          if (n.kind === "symbol") return literalPattern(valSymbol(n.name));
           // Application heads are structural patterns, not unary type-factory
           // calls: the head of (a :* b) is the partial tree *(a).
           if (
@@ -2917,8 +2873,6 @@ export class Interpreter {
         },
         atom: (n) => {
           if (n.kind === "symbol") {
-            if (n.quoted && isReservedPrimitiveSpelling(n.name))
-              throw this.quotedPrimitive(n.name, n.span, "declaration");
             const binding = lookup(n).get(n.name);
             if (!n.quoted && primitiveNames.has(n.name)) return reference(n);
             if (!n.quoted && constantNames.has(n.name))
@@ -3795,62 +3749,6 @@ export class Interpreter {
         };
       },
     };
-  }
-  private rejectQuotedPrimitiveCode(n: Syntax): void {
-    if (n.kind === "symbol") {
-      if (n.quoted && isReservedPrimitiveSpelling(n.name))
-        throw this.quotedPrimitive(n.name, n.span, "parse");
-      return;
-    }
-    if (n.kind === "literal") return;
-    if (n.kind === "quote") return this.rejectQuotedPrimitiveCode(n.value);
-    if (n.kind === "typedQuote") {
-      this.rejectQuotedPrimitiveCode(n.grammar);
-      this.rejectQuotedPrimitiveCode(n.value);
-      return;
-    }
-    if (n.kind === "template") {
-      if (n.reader) this.rejectQuotedPrimitiveCode(n.reader);
-      for (const part of n.parts)
-        if (part.kind === "hole") this.rejectQuotedPrimitiveCode(part.value);
-      return;
-    }
-    if (n.kind === "apply") {
-      this.rejectQuotedPrimitiveCode(n.head);
-      for (const field of n.body)
-        this.rejectQuotedPrimitiveCode(field.value);
-      return;
-    }
-    if (n.kind === "postfix")
-      return this.rejectQuotedPrimitiveCode(n.operand);
-    if (n.kind === "pack") {
-      for (const field of n.body)
-        this.rejectQuotedPrimitiveCode(field.value);
-      return;
-    }
-    if (n.kind === "sequence") {
-      for (const item of n.items) this.rejectQuotedPrimitiveCode(item);
-      return;
-    }
-    if (n.kind === "block") {
-      for (const line of n.lines) this.rejectQuotedPrimitiveCode(line);
-      return;
-    }
-    for (const item of n.items) this.rejectQuotedPrimitiveCode(item);
-    for (const capture of n.captures.values())
-      for (const field of capture.fields)
-        this.rejectQuotedPrimitiveCode(field.value);
-  }
-  private quotedPrimitive(
-    name: string,
-    span?: Syntax["span"],
-    phase: "evaluate" | "parse" | "declaration" = "evaluate",
-  ): LanguageError {
-    return new LanguageError(
-      "quoted " + name + " is not a symbol; " + name + " is a primitive",
-      span,
-      { code: "E_QUOTED_PRIMITIVE", phase },
-    );
   }
   private reserved(name: string): Field<Value>[] {
     const fields = this.check(

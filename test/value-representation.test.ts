@@ -10,7 +10,6 @@ test("compiled types compare as their ordinary value trees, including nested val
     ),
     "(True, True, False)",
   );
-  assert.throws(() => run("Int == :Int"), /E_QUOTED_PRIMITIVE|quoted Int/);
   assert.equal(
     run("UnionType(Int,String) == :(UnionType(Int,String))"),
     "True",
@@ -34,9 +33,9 @@ test("equal trees have equal global text regardless of compiled caches", () => {
       "(True, True, True)",
     );
   }
-  assert.throws(
-    () => run("b = :Int\nparse(Expression)(toString(Expression)(b)) == b"),
-    /E_QUOTED_PRIMITIVE|quoted Int/,
+  assert.equal(
+    run("b = :Int\nparse(Expression)(toString(Expression)(b)) == b"),
+    "True",
   );
 });
 

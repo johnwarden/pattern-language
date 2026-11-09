@@ -136,18 +136,6 @@ test "Option factory with ()"
   (toString(Option(Int))(a), b, Option(Int))
 end
 
-test "Quoted primitive names are not symbols"
-  expect
-    :True
-  error "E_QUOTED_PRIMITIVE"
-  expect
-    :Rational
-  error "E_QUOTED_PRIMITIVE"
-  expect
-    :Number
-  error "E_QUOTED_PRIMITIVE"
-end
-
 test "All symbols print bare in value text"
   def Choice type :yes | :None | :Widget
   x = :yes :: Choice
@@ -175,7 +163,7 @@ test "Type arguments use ordinary packs"
 end
 
 test "Types use ordinary value equality"
-  cached = Int
+  cached = type Int
   tree = Int
   value = 3 :: tree
 

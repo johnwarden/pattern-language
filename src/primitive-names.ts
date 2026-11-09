@@ -20,20 +20,15 @@ export const primitiveNames = new Map([
   ["ReservedSymbol", "ReservedSymbol"],
 ]);
 export const constantNames = new Set(["True", "False"]);
-/** Withdrawn spellings that must not become ordinary symbols either. */
-export const withdrawnPrimitiveNames = new Set(["Number", "Num"]);
 export const isSelfEvaluating = (name: string): boolean =>
   primitiveNames.has(name) || constantNames.has(name);
 export const isCanonicalAtom = (name: string): boolean =>
   constantNames.has(name) || primitiveNames.get(name) === name;
-/** Quoted `:True` / `:Int` / `:Number` are not ordinary symbols. */
-export const isReservedPrimitiveSpelling = (name: string): boolean =>
-  isSelfEvaluating(name) || withdrawnPrimitiveNames.has(name);
-/** Spelling class of an ordinary (non-reserved) symbol, if it has one. */
+/** Reserved names belong to ReservedSymbol, not to an ordinary symbol class. */
 export const ordinarySymbolCategory = (
   name: string,
 ): ReturnType<typeof symbolCategory> =>
-  isReservedPrimitiveSpelling(name) ? undefined : symbolCategory(name);
+  isSelfEvaluating(name) ? undefined : symbolCategory(name);
 
 /** Bootstrap syntax domains are defaults that source grammars may replace lexically. */
 export const bootstrapTypeNames = new Set(["Expression", "Body"]);

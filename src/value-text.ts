@@ -2,7 +2,6 @@ import {
   primitiveNames,
   isSelfEvaluating,
   isCanonicalAtom,
-  isReservedPrimitiveSpelling,
 } from "./primitive-names.ts";
 import {
   emptyLayoutForms,
@@ -559,11 +558,7 @@ export function parseValueText(
       return valRational(parsed.n, parsed.d);
     }
     if (n.kind === "quote") return decode(n.value, pattern);
-    if (n.kind === "symbol") {
-      if (n.quoted && isReservedPrimitiveSpelling(n.name) && typeExpected)
-        return fail("type description uses " + n.name + ", not :" + n.name, n);
-      return sym(n.name);
-    }
+    if (n.kind === "symbol") return sym(n.name);
     if (n.kind === "block" && !pattern && structural) return syntaxData(n);
     if (n.kind === "block" && n.lines.length === 1)
       return decode(n.lines[0], pattern);
@@ -585,16 +580,6 @@ export function parseValueText(
     if (n.kind !== "apply")
       return fail(
         "expected data; blocks, definitions, quotations, and generic calls are not evaluated by parse",
-        n,
-      );
-    if (
-      typeExpected &&
-      n.head.kind === "symbol" &&
-      n.head.quoted &&
-      isReservedPrimitiveSpelling(n.head.name)
-    )
-      return fail(
-        "type description uses " + n.head.name + "(...), not :" + n.head.name + "(...)",
         n,
       );
     if (n.head.kind === "symbol" && n.head.name.startsWith("\0"))

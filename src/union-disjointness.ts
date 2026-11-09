@@ -31,7 +31,6 @@ const numeric = new Set([
   "Float",
   "Float32",
   "Float64",
-  "Number",
   "Num",
   "Rational",
 ]);
