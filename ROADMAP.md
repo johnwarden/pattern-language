@@ -213,6 +213,11 @@ Implement independently reviewable slices against future assertions:
 - General abstract unions with member tags, separating unambiguous DSL certification.
 - Exact Rational literal representation and typed numeric converters, without choosing
   deferred IEEE details or implicit rounding. Retain explicit unsupported boundaries.
+- Fixed-width numeric types are carveouts of the exact numeric space, not a precision
+  lattice: `type Float32 concrete NaN | Inf | Rational .where fitsFloat32`, Float64
+  with `fitsFloat64`, integer widths `Int .where` the range fits. Current primitive
+  atoms are interim. Existing "fixed-precision" wording is to be revised to this
+  model. IEEE identity/payload details remain deferred.
 - One-boundary projection and unique contextual designation for the supported
   non-predicate subset. Checker-dependent cases remain pending for milestone 7.
 - Approved mirrored spreading/keyword remainder rules after their grammar is settled.

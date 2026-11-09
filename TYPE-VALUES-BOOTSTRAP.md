@@ -228,7 +228,9 @@ round-trip coverage. Ordinary concrete pattern alternatives still reject ambigui
 ## Implementation limits
 
 No general static checker, source modules, compile-time specialization, or compiler
-exists yet. Int is not full-width signed Int64; Float rejects nonfinite values.
+exists yet. Int, Float and Float32 remain primitive atoms as an interim
+implementation; the target is carveouts of the exact numeric space. Int is not
+full-width signed Int64; Float rejects nonfinite values.
 General function/closure and refinement-predicate descriptions are not portable;
 unsupported equality/serialization fails explicitly instead of using host IDs.
 Refinement evaluation is still the earlier interpreter prototype, not the future

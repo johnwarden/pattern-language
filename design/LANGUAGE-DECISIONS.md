@@ -132,7 +132,7 @@ The author has now tabled the feature until decoding values of constructedBy ref
 
 ### D17. IEEE special-value details are deferred
 
-AR proposes a concrete union of NaN/infinities and finite Rational carveouts when Rational itself is not their superset. This is a possible representation, not a settled specification. Signed zero, NaN equality/payloads, exact special-value vocabulary and finite-only versus IEEE-complete scope may remain unsettled for now. Do not ratify the reviewer's finite-only or reflexive-NaN recommendations. **Sources:** P, N, AR; L.
+The target type shape is a concrete union of NaN/infinities with a Rational `.where` carveout, e.g. `type Float32 concrete NaN | Inf | Rational .where fitsFloat32` (Float64 with `fitsFloat64`; integer widths `Int .where` the range). Signed zero, NaN equality/payloads, exact special-value vocabulary and finite-only versus IEEE-complete scope remain deferred. Do not ratify the reviewer's finite-only or reflexive-NaN recommendations. **Sources:** P, N, AR; L; 9 November 2026.
 
 ## D18. Test assertions and migration contracts
 
@@ -363,7 +363,7 @@ computation, which may be omitted entirely.
 | Item | Precise status |
 | --- | --- |
 | constructedBy, its evidence semantics and decoding | **Tabled entirely.** Preserve motivation; do not select a replay/image/provenance model or add conformance results now. |
-| IEEE NaN/infinities, signed zero and special equality | **Deferred.** AR's union recipe is a possibility, not a chosen representation. |
+| IEEE NaN/infinities, signed zero and special equality | **Deferred.** Target type shape is the NaN/Inf plus Rational `.where` carveout; identity/payload policy is not chosen. |
 | Designation/projection | **Settled.** Only faithful wording/checking and eventual tests remain; no renewed policy debate is requested. |
 | Bare generic-family facets, MemberOf and parameter recovery | **Proposed.** Constraint vocabulary, structural matching and non-injective cases remain unresolved. |
 | Duplicate local type names, accessor bundles/imports and preferred display names | **Unresolved policy.** Functional equality is not a sufficient reason for a blanket ban; no alternative has been ratified. |
