@@ -6,19 +6,19 @@ This is an inventory of migration opportunities and host boundaries, not a claim
 that the source suite replaces the TypeScript suite. The reference census covers
 57 `test/*.test.ts` files after the LSP, indentation and minus/type-capture
 migrations. All 57 have a file-level classification below; assertion-level
-migrations are claimed only for the mapped macro/registration, language, and
-cross-context matching/availability observations.
+migrations are claimed only for the mapped macro/registration, language,
+cross-context matching/availability, and generated-grammar staging observations.
 The method is file-level inspection and targeted assertion review, supported by a
 search for parser, representation, diagnostic, state, process and UI observations.
 A file classified as mixed still needs an assertion-level pass before
-further migration, except language and the matching/availability batch,
+further migration, except language, matching/availability and staging,
 which now have that mapping.
 
 The completed coverage map remains [TEST-MIGRATION.md](TEST-MIGRATION.md). Only
 implemented, passing source checks belong in that map. This document also records
 work that remains available or deliberately deferred. Macro/registration and
-language, matching and availability now have assertion-level mappings there;
-other mixed files still need that pass.
+language, matching, availability and staging now have assertion-level mappings
+there; other mixed files still need that pass.
 
 ## First bounded batch
 
@@ -56,7 +56,7 @@ that every individual assertion in those files has already been mapped.
 | macros, registration                                                                                                             | Selected first batch; mixed files                            | Portable scalar expansion/hygiene examples move first. Exact failures, canonical Code/source and session behavior stay.                                                                                                                                                               |
 | language                                                                                                                         | Implemented assertion-level pass; mixed remainder            | Ordinary calls, blocks, labels, rest, types and namespace examples live in `tests/language/`. Canonical round trips read executable programs from those `.test` files plus the retained display programs in `test/language.test.ts`. Pack/printer display, `parseExpression` trees, Grammar objects, REPL and exact `E_AMBIGUOUS_CALL` stay. |
 | consistency, pattern-bindings, milestone-two-review                                                                              | Implemented assertion-level pass; mixed remainder            | Portable cross-context matching, sidefix pack rest, pattern hygiene and available constant defaults live in `tests/matching/` and `tests/macros/availability.test`. Compiler capture metadata, Grammar objects, REPL rollback, exact `E_SIDEFIX_SPREAD` / `E_MACRO_RUNTIME_CAPTURE` and binder/AST checks stay. |
-| staging                                                                                                                          | Mixed; later assertion-level pass                            | Generated grammar and definition-time grammar have scalar examples. Keep parse-only no-execution, repeated submissions, successful reuse after failure, and transactional rollback on the host.                                                                                       |
+| staging                                                                                                                          | Implemented assertion-level pass; mixed remainder            | Scalar generated sidefix, nested generated macros, generated function hygiene, definition-time grammar, generated types and final-definition errors live in `tests/macros/staging.test`. Parse-only no-execution, repeated REPL submissions, successful reuse after failure and transactional rollback stay. |
 | quotes, postfix, postfix-conventions                                                                                             | Mixed; later assertion-level pass                            | Some literal evaluation examples can move. Keep exact syntax kind/key/encode-decode, independently configured preludes/readers and diagnostics. Raw quotation/value-text cases wait for #31's alignment.                                                                              |
 | pattern-schema, milestone-two, vertical-spread                                                                                   | Mixed; later assertion-level pass                            | Ordinary spreading/grammar examples are candidates. Direct matcher/compiler schema checks, dimensions, representation, fresh-interpreter transport and ambiguous row partition checks remain host boundaries. Do not select pending keyword-rest grammar.                             |
 | nested-option-designation, concrete-unions                                                                                       | Existing source counterparts plus host boundaries            | Compare positive source counterparts before adding duplicate examples. Exact failure codes, fresh-interpreter typed-text transport and test-harness expected-data checks remain. String text/model changes belong to #31.                                                             |

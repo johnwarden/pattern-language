@@ -1,0 +1,76 @@
+test "A generated sidefix definition recognizes the following source line"
+  macro :install Args() Code` macro :answer x :: Expression Code$` $(x)
+  (install Args())
+
+  expect
+    answer 7
+  result 7 :: Rational
+end
+
+test "Generated grammar is reusable on separate function invocations"
+  macro :install Args() Code` macro :answer x :: Expression Code$` $(x)
+  def f(x)
+    (install Args())
+    answer x
+  end
+  (a, b) = (f(8), f(9))
+
+  expect a result 8 :: Rational
+  expect b result 9 :: Rational
+end
+
+test "Generated grammar does not escape a function body"
+  macro :install Args() Code` macro :answer x :: Expression Code$` $(x)
+  def f(x)
+    (install Args())
+    answer x
+  end
+  (a, b) = (f(8), f(9))
+
+  expect
+    answer 1
+  error "registered sidefix grammar"
+end
+
+test "Generated function parameters cannot capture inserted caller expressions"
+  macro :install Args(value) Code$` def add(x) x + $(value)
+  x = 10
+  (install Args(x))
+
+  expect add(2) result 12 :: Rational
+end
+
+test "A generated macro retains its own interpolation stage and parameter scope"
+  macro :install Args() Code` macro :twice Args(x) Code$` $(x) + $(x)
+  (install Args())
+
+  expect
+    (twice Args(6))
+  result 12 :: Rational
+end
+
+test "Ordinary functions retain their definition-time grammar"
+  def f()
+    if True 1 else 2
+  end
+  macro :if x :: Expression y :: Expression :else z :: Expression Code` 99
+
+  expect f() result 1 :: Rational
+end
+
+test "A generated final definition is still invalid as a program result"
+  expect
+    macro :install Args() Code` macro :answer x :: Expression Code$` $(x)
+    (install Args())
+  error "must end with a result"
+end
+
+test "A generated structural type participates in subsequent sidefix patterns"
+  macro :install Args() Code` def Point type :Point(x :: Int)
+  (install Args())
+  macro :use p :: Point Code` 7
+
+  expect
+    use Point(1)
+  result 7 :: Rational
+end

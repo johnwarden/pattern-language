@@ -55,7 +55,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Test schema round trips, execution/isolation traps, fixtures and error phases | test/test-suite.test.ts; checks the harness rather than language examples |
 | Recursive discovery, CLI process status and expected-failure reporting | test/test-cli.test.ts; needs filesystem/process observations |
 | Actual controls, sorting and old/new storage restoration | test/playground.test.ts; every executable example exercised through DOM controls |
-| Resource limits, staging rollback, build/schema synchronization | existing host tests; preserve their boundary observations |
+| Resource limits, staging rollback, build/schema synchronization | test/staging.test.ts plus tests/macros/staging.test; host keeps parse-only, REPL reuse after failure and transactional rollback |
 | Revised primitives, value spaces, proof evidence, projections, facets and spreads | tests/specification/*.test; C01–C27 execute assertion-level todos, C27 explicitly exploratory |
 | PR9 layout behavior (EOF/`end`/quoted clauses/mixed indent/incomplete infix/extra `end`) | tests/layout/*.test via live eval and `expect parse(Code)(text) error`; host keeps Grammar-object `parseSurface`, session-macro probe/then success and extra-`end` parse failure, REPL completeness, and indent-prefix unit checks |
 | Parse-failure harness (`parse(Code)` of quoted payload, ordinary `expect … error`) | test/test-suite.test.ts plus tests/layout/explicit-ends.test `infix` |
@@ -180,6 +180,27 @@ declaration-product change.
 | milestone-two-review: quoted annotation operators are literal heads | macros/availability#quoted-annotation-operators-are-literal-heads-not-pattern-computations | Positive match moved; the runtime-capture default failure stays |
 
 Host remainder is compiler capture metadata, Grammar objects, REPL rollback, exact diagnostic codes, constructed-literal formatting and `parseExpression` kind. No expected-failure or legacy marker was added or changed. `#48` and `#52` were not edited.
+
+## Staging migration
+
+The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) grouped `test/staging.test.ts`
+as the next mixed batch. Scalar generated-grammar and definition-time-grammar
+examples now run under `tests/macros/staging.test`. Expected results are authored
+data. `#48` was not edited; bootstrap `def … type` remains setup.
+
+| Former host block | Current source case(s) | Coverage retained |
+| --- | --- | --- |
+| staging: a generated sidefix definition recognizes the following source line | macros/staging#a-generated-sidefix-definition-recognizes-the-following-source-line | Install then use `answer` in the same program |
+| staging: generated grammar is local and reusable on separate function invocations | macros/staging#generated-grammar-is-reusable-on-separate-function-invocations; macros/staging#generated-grammar-does-not-escape-a-function-body | One-program reuse and post-call locality; REPL define/invoke/leak stays |
+| staging: failed submissions roll back generated grammar and generated methods together | — | Transactional rollback and successful reuse after failure stay |
+| staging: generated function parameters cannot capture inserted caller expressions | macros/staging#generated-function-parameters-cannot-capture-inserted-caller-expressions | Inserted `x` stays in the caller; generated `add` parameter remains distinct |
+| staging: generated macro retains its own interpolation stage and parameter scope | macros/staging#a-generated-macro-retains-its-own-interpolation-stage-and-parameter-scope | Nested generated `twice` expands after install |
+| staging: parse-only never runs an installer or commits its declaration | — | `Interpreter.parse` no-execution stays |
+| staging: ordinary functions retain their definition-time grammar | macros/staging#ordinary-functions-retain-their-definition-time-grammar | Later `if` redefinition does not change `f` |
+| staging: a generated final definition is still invalid as a program result | macros/staging#a-generated-final-definition-is-still-invalid-as-a-program-result | Message substring; same rule as ordinary final definitions |
+| staging: a generated structural type participates in subsequent sidefix patterns | macros/staging#a-generated-structural-type-participates-in-subsequent-sidefix-patterns | Generated `Point` used as a later sidefix parameter |
+
+Host remainder is parse-only no-execution, repeated REPL submissions, successful reuse after failure and transactional rollback. No expected-failure or legacy marker was added or changed.
 
 ## Existing source cases
 
