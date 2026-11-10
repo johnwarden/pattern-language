@@ -251,11 +251,7 @@ export function literalSyntax(value: Value): Syntax {
   } else if (raw.kind === "term") {
     const body = raw.body.map((field) => ({
       ...field,
-      value: {
-        kind: "apply" as const,
-        head: { kind: "symbol" as const, name: "$", quoted: false },
-        body: pack(literalSyntax(field.value)),
-      },
+      value: literalSyntax(field.value),
     }));
     const head = unwrap(raw.head);
     expression =
@@ -274,7 +270,14 @@ export function literalSyntax(value: Value): Syntax {
                       head: { kind: "symbol", name: "$", quoted: false },
                       body: pack(literalSyntax(raw.head)),
                     },
-              body,
+              body: body.map((field) => ({
+                ...field,
+                value: {
+                  kind: "apply",
+                  head: { kind: "symbol", name: "$", quoted: false },
+                  body: pack(field.value),
+                },
+              })),
             },
           }
         : {

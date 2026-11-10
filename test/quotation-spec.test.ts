@@ -230,6 +230,16 @@ test("outer reader interpolation preserves the fragment/value boundary", () => {
     ),
     "True",
   );
+  assert.equal(
+    execute('def html(fragments,values) values\nx = :(1(2))\nCode$` html$"$x"'),
+    "[1(2)]",
+  );
+  assert.equal(
+    execute(
+      'def html(fragments,values)\n  [value] = values\n  value == :(1(2)(3))\nend\nx = :(1(2)(3))\nCode$` html$"$x"',
+    ),
+    "True",
+  );
 });
 test("holes run left to right once, while parse-only leaves them inert", () => {
   const interpreter = new Interpreter();
