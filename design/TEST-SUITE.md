@@ -48,7 +48,7 @@ def ContainsExpectation type :expect subject :: Expression :contains needle :: E
 `is`, `fails` and `contains` are the expectation predicates; each exists in plain,
 `legacy` and `todo` forms, and a later predicate such as `isApprox` is another
 clause beside them. `contains` accepts only a String subject and an authored String
-needle; see [expect-contains](../specs/approved/expect-contains.md). The `is` delimiter is required. There are no value/type keyword clauses or results
+needle; see [expect-contains](../specs/implemented/expect-contains.md). The `is` delimiter is required. There are no value/type keyword clauses or results
 pack expectations. Multiple expect lines describe distinct scalar observations.
 Malformed inner source stays inside a string passed to `parse(Code)`; see Parse
 failures of quoted source below.

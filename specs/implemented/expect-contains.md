@@ -20,16 +20,17 @@ text, literal punctuation, and rejection of non-String subjects/needles. Their
 [expected outcomes](../../test/fixtures/expect-contains.md) distinguish passing
 checks, failed substring comparisons and operand type errors.
 
-These are pending parser-input fixtures outside default `tests/` discovery. The
-current runner does not recognize `contains`, so they are not passing executable
-coverage yet. The intentionally failing fixtures test the assertion runner; do
-not turn them into language-feature todos or count their failure as implementation.
+## Captured as tests
 
-Convert these examples into actual harness checks of the expected reports during
-the coordinated [expectation migration](expect-predicates.md), preserving the
-String-only contract. Exact diagnostic codes/text are not selected here. Empty
-needle and special Unicode edge cases are not illustrated by this initial batch.
-Keep this record approved until real tests exercise the predicate and its failure
-reports, then move it to `../implemented/` with links.
+Implemented with the [coordinated migration](expect-predicates.md) in
+[#70](https://github.com/johnwarden/pattern-language/pull/70), squash commit
+`40645dd`. The [fixtures](../../test/fixtures/expect-contains.test) are consumed by
+[expect-predicates.test.ts](../../test/expect-predicates.test.ts), which asserts
+every authored outcome (passing checks, failed substring comparisons and operand
+type errors, the latter as `E_TEST_OPERAND_TYPE`) and the todo/legacy modes. Passing
+language examples are in [expectations.test](../../tests/language/expectations.test).
+The String-only contract is preserved: no regular expressions, membership or
+structural matching. Empty needle and special Unicode edge cases remain
+unillustrated.
 
 Origin: `specs/inbox/contains-predicate.md`, now superseded by this decision.

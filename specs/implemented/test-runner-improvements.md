@@ -102,8 +102,8 @@ cannot succeed by evaluating the expected expression. Preserve canonical,
 inert expected-data rules, one-positional-result checks, explicit-annotation
 behavior, and ordinary/todo/legacy modes. Cover both inline and indented forms.
 
-Implement this together with the approved [expectation predicates](../approved/expect-predicates.md)
-and [String-substring contains](../approved/expect-contains.md). Successful language cases
+Implement this together with the [expectation predicates](expect-predicates.md)
+and [String-substring contains](expect-contains.md). Successful language cases
 belong in `tests/`; malformed or deliberately failing runner inputs may remain
 in `test/fixtures` when host tests consume them.
 
@@ -124,7 +124,7 @@ squash commit `92791e4`, on the current `result`/`error` spelling:
 - Direct `assert not(a == b)` forms were rewritten as `assert a != b`; the `not`
   prelude test is deliberately unchanged.
 
-Remaining: the `is` spelling used in the examples above arrives with the
-coordinated [expectation-predicates](../approved/expect-predicates.md) migration
-(#70), which also converts these tests. Implemented here means captured as
+Remaining: none for the `is` spelling; the coordinated
+[expectation-predicates](expect-predicates.md) migration landed in
+[#70](https://github.com/johnwarden/pattern-language/pull/70) and converted these tests. Implemented here means captured as
 tests, not a statement about unrelated runtime work.
