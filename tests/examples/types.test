@@ -8,7 +8,10 @@ test "Canonical type alternatives"
 
   assert parse(Type)(toString(Type)(a)) == b
 
-  ((a == b), toString(Type)(a), (parse(Type)(toString(Type)(a)) == b))
+  mixed = type Some(Int) | 10 | :None | 2
+  expect mixed is Type(:None | 2 | 10 | Some(Int)) :: Type
+
+  ((a == b), toString(Type)(a), (parse(Type)(toString(Type)(a)) == b), mixed)
 end
 
 test "Typed Code and recursive splicing"
@@ -156,6 +159,8 @@ test "Type arguments use ordinary packs"
 
   assert not(nonZero(Int)(0))
   assert nonZero(Float)(0.5)
+  f = nonZero(Int)
+  assert f(5)
   (nonZero(Int)(5), nonZero(Int)(0), nonZero(Float)(0.5))
 end
 
@@ -243,12 +248,14 @@ end
 test "Types are ordinary values"
   def Rect type Rect(Float, Float)
   r = Rect
+  value = Rect(2, 2) :: Rect
 
   expect r is Type(Rect(Float, Float)) :: Type
+  expect value is Rect(2, 2) :: Rect
   expect Int is Int :: ReservedSymbol
   expect Float is Float :: ReservedSymbol
   expect Type(Int) is Type(Int) :: Type
-  (r, Int, Float, Type(Int))
+  (r, value, Int, Float, Type(Int))
 end
 
 test "Type factory · ordinary calls"
@@ -263,12 +270,18 @@ test "Type normalization and wrappers"
 
   observedInt = type Int
   observedTypeInt = type type Int
+  observedTypeTypeInt = type type type Int
+  observedRect = type Rect
   observedTypeRect = type type Rect
   expect observedInt is Int :: Type
   expect observedTypeInt is Int :: Type
+  expect observedTypeTypeInt is Int :: Type
   expect Type(Int) is Type(Int) :: Type
+  expect observedRect is Type(Rect(Float, Float)) :: Type
   expect observedTypeRect is Type(Rect(Float, Float)) :: Type
-  ((type Int), (type type Int), Type(Int), (type type Rect))
+  expect Type(Rect) is Type(Rect(Float, Float)) :: Type
+  expect Type(Type(Rect)) is Type(Rect(Float, Float)) :: Type
+  (observedInt, observedTypeInt, observedTypeTypeInt, Type(Int), observedRect, observedTypeRect, Type(Rect), Type(Type(Rect)))
 end
 
 test "Types as ordinary values"

@@ -18,6 +18,9 @@ test "C01 intrinsic primitive values"
   assert :Widget .matches Symbol
   assert :foo .matches Symbol
   assert (type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)
+  assert Int == (type Int)
+  assert Float == (type Float)
+  assert Bool == (type Bool)
   legacy expect
     type Bool
   is Bool :: Type
@@ -40,6 +43,14 @@ test "Literal and computed Booleans share one Bool type"
   assert not(False != (1 == 2))
   assert (1 == 2) == False
   assert not((1 == 2) != False)
+  assert 1 == 1
+  assert not(1 != 1)
+  assert 1 < 2
+  assert 2 > 1
+  assert 1 <= 2
+  assert 2 >= 1
+  assert isInt64(3)
+  assert 2 .matches Int
   expect
     True == Int
   fails "E_INCOMPARABLE_TYPES"

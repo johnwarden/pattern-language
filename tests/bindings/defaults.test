@@ -34,6 +34,11 @@ test "Destructuring defaults bind captures without adding fields"
 
   expect size is 3 :: Int
   expect color is "black" :: String
+
+  (x, color: c :: Symbol = :Red) = (1)
+
+  assert x == 1
+  assert c == :Red
 end
 
 test "Named and anonymous parameter defaults share binding semantics"
