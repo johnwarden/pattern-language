@@ -40,9 +40,11 @@ test "An ambiguous absence between peer options is an ambiguous value"
   fails "E_AMBIGUOUS_VALUE"
 end
 
-# A Rational literal is accepted anywhere an Int is expected: as the matched value and,
-# in an operator whose other operand is an Int, inside a predicate (n -> n > 0 reads 0
-# as an Int). A non-integral literal such as 0.5 is not an Int.
+# A literal that denotes an integer designates an Int, because a concrete value can be
+# designated by any value in its base value space. So 0 and 2 are accepted where an Int
+# is expected: as the matched value, and as the other operand of an operator with an Int,
+# e.g. n > 0 reads 0 as an Int when n is an Int. The four todos below fail today because
+# the operator operand is not designated; 0.5 does not denote an integer, so it is not an Int.
 test "A Rational literal is accepted where an Int is expected"
   r = Int .where (n -> n > 0)
   todo assert not(0 .matches r)
