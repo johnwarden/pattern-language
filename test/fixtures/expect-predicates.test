@@ -1,14 +1,19 @@
 # Acceptance input for specs/approved/expect-predicates.md.
-# Host checks consume this file; supported passing cases belong in tests/.
+# test/expect-predicates.test.ts runs this file and checks every report.
 
-todo test "Equality expectation uses is"
+test "Equality expectation uses is"
   expect 1 is 1 :: Rational
 end
 
-todo test "Failure expectation uses fails"
+test "Equality expectation without a type uses the subject type"
+  expect 1 is 1
+  expect "hello" is "hello"
+end
+
+test "Failure expectation uses fails"
   expect 1(1) fails "E_NOT_CALLABLE"
 end
 
-# String-only substring checks and their expected failures are drafted separately
-# in expect-contains.test, with the authored outcomes in expect-contains.md.
+# String-only substring checks and their expected failures are in
+# expect-contains.test, with the authored outcomes in expect-contains.md.
 # Future predicates such as isApprox are extension points, not implemented here.

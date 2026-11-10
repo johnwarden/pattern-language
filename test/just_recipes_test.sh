@@ -124,7 +124,7 @@ host_test_out="$(just test test/indent-prefix.test.ts)"
 grep -q 'fail 0' <<<"$host_test_out" ||
 	fail "just test no longer runs a host TypeScript test: $host_test_out"
 
-printf 'test "Failing"\n  expect 1 result 2 :: Rational\nend\n' >"$tmp/failing.test"
+printf 'test "Failing"\n  expect 1 is 2 :: Rational\nend\n' >"$tmp/failing.test"
 if just test "$tmp/failing.test" >"$tmp/failing.out" 2>&1; then
 	fail "just test must fail when a source assertion fails"
 fi

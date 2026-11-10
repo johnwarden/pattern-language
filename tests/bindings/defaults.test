@@ -2,9 +2,9 @@ test "Explicit factories supply defaults and complete typed values"
   def Rectangle type Rect(w :: Int, h :: Int, color: String)
   def rectangle(w :: Int, h :: Int, color: String = "black") Rect(w, h, color: color) :: Rectangle
 
-  expect rectangle(2, 3) result Rect(2, 3, color: "black") :: Rectangle
-  expect rectangle(2, 3, color: "white") result Rect(2, 3, color: "white") :: Rectangle
-  expect rectangle(2, 3).color result "black" :: String
+  expect rectangle(2, 3) is Rect(2, 3, color: "black") :: Rectangle
+  expect rectangle(2, 3, color: "white") is Rect(2, 3, color: "white") :: Rectangle
+  expect rectangle(2, 3).color is "black" :: String
 
   assert rectangle(2, 3) == (Rect(2, 3, color: "black") :: Rectangle)
 end
@@ -12,12 +12,12 @@ end
 test "Declarations cannot rewrite symbolic construction"
   def Plain type Rect(Int, Int)
 
-  expect Rect(2, 3) result Rect(2, 3) :: Expression
+  expect Rect(2, 3) is Rect(2, 3) :: Expression
   assert Rect(2, 3) .matches (type Plain)
 
   def Rectangle type Rect(w :: Int, h :: Int, color: String)
 
-  expect Rectangle(2, 3) result Rectangle(2, 3) :: Expression
+  expect Rectangle(2, 3) is Rectangle(2, 3) :: Expression
 
   assert not(Rect(2, 3) .matches (type Rectangle))
 end
@@ -27,13 +27,13 @@ test "Destructuring defaults bind captures without adding fields"
   raw = Rect(2, 3) :: Plain
   Rect(w, h, color: c :: String = "black") = raw
 
-  expect raw result Rect(2, 3) :: Plain
-  expect c result "black" :: String
+  expect raw is Rect(2, 3) :: Plain
+  expect c is "black" :: String
 
   (size: Int, color: String = "black") = (size: 3)
 
-  expect size result 3 :: Int
-  expect color result "black" :: String
+  expect size is 3 :: Int
+  expect color is "black" :: String
 end
 
 test "Named and anonymous parameter defaults share binding semantics"
@@ -41,12 +41,12 @@ test "Named and anonymous parameter defaults share binding semantics"
   def f(R(color: String = "black")) color
   raw = R()
 
-  expect f(raw) result "black" :: String
-  expect raw result R() :: Expression
+  expect f(raw) is "black" :: String
+  expect raw is R() :: Expression
 
   g = (color: c :: String = "black") -> c
 
-  expect g() result "black" :: String
+  expect g() is "black" :: String
 end
 
 test "Match defaults preserve the scrutinee"
@@ -58,36 +58,36 @@ test "Match defaults preserve the scrutinee"
     end
   end
 
-  expect raw result R() :: Plain
-  expect color result "black" :: String
+  expect raw is R() :: Plain
+  expect color is "black" :: String
 end
 
 test "Supplied values are validated and never replaced by defaults"
   expect
     def f(x: Int = (1 / 0)) x
     f(x: 8)
-  result 8 :: Int
+  is 8 :: Int
 
   expect
     def f(x: Int = 3) x
     f(x: "bad")
-  error "no applicable function"
+  fails "no applicable function"
 
   expect
     def f(x: Int = "bad") x
     f()
-  error "default for x"
+  fails "default for x"
 end
 
 test "Supplied fields select an overload before binding defaults"
   def f(x: Int = (1 / 0)) x
   def f(x: String = "fallback") x
 
-  expect f(x: "hello") result "hello" :: String
-  expect f(x: 4) result 4 :: Int
+  expect f(x: "hello") is "hello" :: String
+  expect f(x: 4) is 4 :: Int
   expect
     f()
-  error "ambiguous call"
+  fails "ambiguous call"
 end
 
 test "Defaults retain lexical bindings and successive packs"
@@ -95,7 +95,7 @@ test "Defaults retain lexical bindings and successive packs"
   def f(x: Int = n)(y :: Int) x + y
   g = f()
 
-  expect g(4) result 7 :: Int
+  expect g(4) is 7 :: Int
 end
 
 test "Binding defaults preserve option semantics"
@@ -103,8 +103,8 @@ test "Binding defaults preserve option semantics"
   def f(color: Color? = :Black) color
   def g(color: Color? = Some(:Black)) color
 
-  expect f() result Black :: Color?
+  expect f() is Black :: Color?
   expect
     g()
-  error "default for color"
+  fails "default for color"
 end

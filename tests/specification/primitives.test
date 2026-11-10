@@ -1,12 +1,12 @@
 test "C01 intrinsic primitive values"
-  expect True result True :: Bool
-  expect False result False :: Bool
-  expect Int result Int :: ReservedSymbol
-  expect "hello" result "hello" :: String
-  expect 5 result 5 :: Rational
-  expect :Widget result Widget :: UpperCamelSymbol
-  expect :foo result foo :: LowerCamelSymbol
-  expect :Symbol result Symbol :: UpperCamelSymbol
+  expect True is True :: Bool
+  expect False is False :: Bool
+  expect Int is Int :: ReservedSymbol
+  expect "hello" is "hello" :: String
+  expect 5 is 5 :: Rational
+  expect :Widget is Widget :: UpperCamelSymbol
+  expect :foo is foo :: LowerCamelSymbol
+  expect :Symbol is Symbol :: UpperCamelSymbol
   assert Int .matches ReservedSymbol
   assert not(Int .matches UpperCamelSymbol)
   assert not(Int .matches Symbol)
@@ -20,11 +20,11 @@ test "C01 intrinsic primitive values"
   assert (type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)
   legacy expect
     type Bool
-  result Bool :: Type
+  is Bool :: Type
   todo expect
     type Bool
-  result Bool :: PrimitiveType
-  todo expect PrimitiveType result PrimitiveType :: PrimitiveType
+  is Bool :: PrimitiveType
+  todo expect PrimitiveType is PrimitiveType :: PrimitiveType
 end
 
 test "Literal and computed Booleans share one Bool type"
@@ -42,7 +42,7 @@ test "Literal and computed Booleans share one Bool type"
   assert not((1 == 2) != False)
   expect
     True == Int
-  error "E_INCOMPARABLE_TYPES"
+  fails "E_INCOMPARABLE_TYPES"
   t = type True | False
   assert parse(Type)(toString(Type)(t)) == t
 end
@@ -53,99 +53,99 @@ test "Match arms use bare True and False"
       True -> "yes"
       False -> "no"
     end
-  result "yes" :: String
+  is "yes" :: String
   expect
     match True
       True -> "yes"
       False -> "no"
     end
-  result "yes" :: String
+  is "yes" :: String
   expect
     match 1 == 2
       True -> "yes"
       False -> "no"
     end
-  result "no" :: String
+  is "no" :: String
   expect
     match 1 == 1
       :True -> "yes"
       _ -> "no"
     end
-  error "E_QUOTED_PRIMITIVE"
+  fails "E_QUOTED_PRIMITIVE"
   expect
     match False
       :False -> "yes"
       _ -> "no"
     end
-  error "E_QUOTED_PRIMITIVE"
+  fails "E_QUOTED_PRIMITIVE"
 end
 
 test "Quoted primitive names in Code"
-  expect :Int error "E_QUOTED_PRIMITIVE"
-  expect :True error "E_QUOTED_PRIMITIVE"
-  expect Int == :Int error "E_QUOTED_PRIMITIVE"
-  expect :String(:A) error "E_QUOTED_PRIMITIVE"
+  expect :Int fails "E_QUOTED_PRIMITIVE"
+  expect :True fails "E_QUOTED_PRIMITIVE"
+  expect Int == :Int fails "E_QUOTED_PRIMITIVE"
+  expect :String(:A) fails "E_QUOTED_PRIMITIVE"
   expect
     type :Int
-  error "E_QUOTED_PRIMITIVE"
+  fails "E_QUOTED_PRIMITIVE"
   expect
     type :String(:A)
-  error "E_QUOTED_PRIMITIVE"
+  fails "E_QUOTED_PRIMITIVE"
   assert (type String(:A)) == Type(Apply(Literal(String), Fields(:A)))
-  expect :(Int) result Int :: Expression
-  expect parse(Code)(":Int") result :Int :: Code
-  expect parse(Code)(":(Int)") result :(Int) :: Code
-  todo expect parse(Code)(":Foo") result :Foo :: QuotedSymbol
-  todo expect parse(Code)(":(Int)") result :(Int) :: QuotedSymbol
-  todo expect parse(Code)(":Int") error "a quoted primitive is not a Symbol"
+  expect :(Int) is Int :: Expression
+  expect parse(Code)(":Int") is :Int :: Code
+  expect parse(Code)(":(Int)") is :(Int) :: Code
+  todo expect parse(Code)(":Foo") is :Foo :: QuotedSymbol
+  todo expect parse(Code)(":(Int)") is :(Int) :: QuotedSymbol
+  todo expect parse(Code)(":Int") fails "a quoted primitive is not a Symbol"
 end
 
 test "String operations keep intrinsic String identity"
-  expect "a" + "b" result "ab" :: String
-  expect toString(Rational)(0.1) result "0.1" :: String
+  expect "a" + "b" is "ab" :: String
+  expect toString(Rational)(0.1) is "0.1" :: String
   s = "x"
-  expect s result "x" :: String
+  expect s is "x" :: String
   def echo(t) t
-  expect echo("hi") result "hi" :: String
+  expect echo("hi") is "hi" :: String
   (first, second) = ("a", "b")
-  expect first result "a" :: String
-  expect second result "b" :: String
+  expect first is "a" :: String
+  expect second is "b" :: String
   assert ["hello"] .matches (type [_... :: String*])
   assert "hello" .matches String
   expect
     "hello" :: Int
-  error "expected Int"
+  fails "expected Int"
   expect
     1 < "a"
-  error "E_INCOMPARABLE_TYPES"
-  expect parse(String)(toString(String)("hi")) result "hi" :: String
+  fails "E_INCOMPARABLE_TYPES"
+  expect parse(String)(toString(String)("hi")) is "hi" :: String
 end
 
 test "C02 exact Rational literal meanings"
-  expect 0.1 result 0.1 :: Rational
-  expect 0f0.5 result 0.5 :: Rational
-  expect 0f0.1 result 0x1.999999999999Ap-4 :: Rational
+  expect 0.1 is 0.1 :: Rational
+  expect 0f0.5 is 0.5 :: Rational
+  expect 0f0.1 is 0x1.999999999999Ap-4 :: Rational
   assert 0f0.1 != 0.1
   assert 0xFp8 == 0b1111p8
 end
 
 test "C03 exact designation differs from rounding"
-  expect 0.5 :: Float32 result 0.5 :: Float32
-  expect float32(0.5) result 0.5 :: Float32
-  todo expect 0f0.5 :: Decimal32 result 0.5 :: Decimal32
-  expect 0f0.1 :: Float64 result 0x1.999999999999Ap-4 :: Float64
-  expect 0.1 :: Float64 error "not exactly representable as Float64"
+  expect 0.5 :: Float32 is 0.5 :: Float32
+  expect float32(0.5) is 0.5 :: Float32
+  todo expect 0f0.5 :: Decimal32 is 0.5 :: Decimal32
+  expect 0f0.1 :: Float64 is 0x1.999999999999Ap-4 :: Float64
+  expect 0.1 :: Float64 fails "not exactly representable as Float64"
   expect
     (0.1 :: Float32)
-  error "not exactly representable as Float32"
+  fails "not exactly representable as Float32"
   assert 0.5 .matches Float32
   assert not(0.1 .matches Float32)
   assert 0.5 .matches Float
   assert not(0.1 .matches Float)
   assert 0f0.1 .matches Float
-  expect 0.5 :: Float result 0.5 :: Float
+  expect 0.5 :: Float is 0.5 :: Float
 
   todo expect
     (0.5 :: Int16)
-  error "not an integer"
+  fails "not an integer"
 end

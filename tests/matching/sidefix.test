@@ -3,13 +3,13 @@ test "Argument-pack rest is valid in a Pair constructor"
 
   expect
     all Pair()
-  result [] :: Expression
+  is [] :: Expression
   expect
     all Pair(1)
-  result [1] :: Expression
+  is [1] :: Expression
   expect
     all Pair(1, 2)
-  result [1, 2] :: Expression
+  is [1, 2] :: Expression
 end
 
 test "Argument-pack rest is valid in Args"
@@ -17,13 +17,13 @@ test "Argument-pack rest is valid in Args"
 
   expect
     all Args()
-  result [] :: Expression
+  is [] :: Expression
   expect
     all Args(1)
-  result [1] :: Expression
+  is [1] :: Expression
   expect
     all Args(1, 2)
-  result [1, 2] :: Expression
+  is [1, 2] :: Expression
 end
 
 test "A list annotation means a list in a constructor-shaped sidefix parameter"
@@ -31,7 +31,7 @@ test "A list annotation means a list in a constructor-shaped sidefix parameter"
 
   expect
     (show Args([1, 2]))
-  result [1, 2] :: Expression
+  is [1, 2] :: Expression
 end
 
 test "A list annotation means a list in a direct sidefix parameter"
@@ -39,12 +39,12 @@ test "A list annotation means a list in a direct sidefix parameter"
 
   expect
     show [1, 2]
-  result [1, 2] :: Expression
+  is [1, 2] :: Expression
 end
 
 test "A list annotation does not accept adjacent operands as a list"
   expect
     macro :show x :: [_... :: Int*] Code` 0
     show 1 2
-  error "expected grammar"
+  fails "expected grammar"
 end

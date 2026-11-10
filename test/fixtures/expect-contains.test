@@ -1,5 +1,6 @@
-# Future Test DSL input. Expected PASS/FAIL outcomes are in expect-contains.md.
-# Deliberately failing cases exercise the assertion runner, not missing features.
+# Runner input for test/expect-predicates.test.ts; expected PASS/FAIL outcomes are
+# in expect-contains.md. Deliberately failing cases exercise the assertion runner
+# and are outside default `tests/` discovery.
 
 test "contains finds exact contiguous text"
   expect "hello world" contains "hello"

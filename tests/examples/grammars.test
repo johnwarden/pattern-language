@@ -15,7 +15,7 @@ test "DSL: Infix syntax and distinct argument packs"
   assert infix == prefix
 
   assert packed != successive
-  expect text result "a + b" :: String
+  expect text is "a + b" :: String
 
   assert parse(ValueExpr)(text) == infix
 
@@ -35,9 +35,9 @@ test "Sidefix data DSL"
     end
   end
 
-  expect t.name result "Stored test data" :: String
-  legacy expect t.check.expected.e result 3 :: Expression
-  legacy expect t.check.expected.type result :MissingType :: Expression
+  expect t.name is "Stored test data" :: String
+  legacy expect t.check.expected.e is 3 :: Expression
+  legacy expect t.check.expected.type is :MissingType :: Expression
   (t.name, t.check.expected.e, t.check.expected.type)
 end
 
@@ -54,13 +54,13 @@ test "DSL: Recursive expression grammar"
   (head :: ValueExpr)(args... :: ValueExpr*) = expression
   (operator :: ValueExpr)(left... :: ValueExpr*) = head
 
-  expect expression result
+  expect expression is
     (a + b) :: Application
   end
-  expect toString(ValueExpr)(head) result "+(a)" :: String
-  expect toString(type [_... :: ValueExpr*])(args) result "[b]" :: String
-  expect toString(ValueExpr)(operator) result "+" :: String
-  expect toString(type [_... :: ValueExpr*])(left) result "[a]" :: String
+  expect toString(ValueExpr)(head) is "+(a)" :: String
+  expect toString(type [_... :: ValueExpr*])(args) is "[b]" :: String
+  expect toString(ValueExpr)(operator) is "+" :: String
+  expect toString(type [_... :: ValueExpr*])(left) is "[a]" :: String
   (expression, toString(ValueExpr)(head), toString(type [_... :: ValueExpr*])(args), toString(ValueExpr)(operator), toString(type [_... :: ValueExpr*])(left))
 end
 
@@ -81,13 +81,13 @@ test "DSL: Tests with explicit value and type"
   end
 
   # Inspect the parts; the quoted calculation is never evaluated here.
-  expect t.name result "An unevaluated calculation" :: String
-  expect toString(Code)(t.code) result "(\n  (1 / 0)\n)" :: String
-  legacy expect t.actual result :result :: Expression
-  legacy expect t.expected.e result
+  expect t.name is "An unevaluated calculation" :: String
+  expect toString(Code)(t.code) is "(\n  (1 / 0)\n)" :: String
+  legacy expect t.actual is :result :: Expression
+  legacy expect t.expected.e is
     (:a + :b) :: Expression
   end
-  legacy expect t.expected.type result :MissingType :: Expression
+  legacy expect t.expected.type is :MissingType :: Expression
   (t.name, toString(Code)(t.code), t.actual, t.expected.e, t.expected.type)
 end
 
@@ -107,9 +107,9 @@ test "Test DSL with typed Code"
     end
   end
 
-  expect t.name result "Typed code body" :: String
-  legacy expect t.check.expected.e result 4 :: Expression
-  legacy expect t.check.expected.type result Int :: Expression
+  expect t.name is "Typed code body" :: String
+  legacy expect t.check.expected.e is 4 :: Expression
+  legacy expect t.check.expected.type is Int :: Expression
   (t.name, t.check.expected.e, t.check.expected.type)
 end
 
@@ -118,8 +118,8 @@ test "DSL: Symbols and unannotated unions"
   (a :: MathExp) = :a
   text = toString(MathExp)(a)
 
-  expect a result a :: LowerCamelSymbol
-  expect text result "a" :: String
+  expect a is a :: LowerCamelSymbol
+  expect text is "a" :: String
 
   assert parse(MathExp)(text) == a
 
@@ -162,11 +162,11 @@ test "Vertical spreading: Inspect a nested Body"
   end
   ((first :: LowerCamelSymbol, second :: LowerCamelSymbol) := (body :: Body)) = binding
 
-  expect first result a :: LowerCamelSymbol
-  expect second result b :: LowerCamelSymbol
+  expect first is a :: LowerCamelSymbol
+  expect second is b :: LowerCamelSymbol
 
-  expect toString(type [_... :: Binding*])(body.bindings) result "[y = 2, z = 3]" :: String
-  expect toString(type [_... :: ValueExpression*])(body.resultExpression) result "[y * z, y]" :: String
+  expect toString(type [_... :: Binding*])(body.bindings) is "[y = 2, z = 3]" :: String
+  expect toString(type [_... :: ValueExpression*])(body.resultExpression) is "[y * z, y]" :: String
 
   assert parse(Body)(toString(Body)(body)) == body
 
@@ -183,7 +183,7 @@ test "Vertical spreading: Two-dimensional lists"
     3, 4
   ]
 
-  expect m.values result [[1, 2], [3, 4]] :: (type [_... :: Float**])
+  expect m.values is [[1, 2], [3, 4]] :: (type [_... :: Float**])
 
   assert parse(Matrix)(toString(Matrix)(m)) == m
 
@@ -202,7 +202,7 @@ test "Vertical spreading: TodoList"
     end
   end
 
-  expect list.todos result ["item 1", "item 2"] :: (type [_... :: String*])
+  expect list.todos is ["item 1", "item 2"] :: (type [_... :: String*])
 
   assert parse(TodoList)(toString(TodoList)(list)) == list
 

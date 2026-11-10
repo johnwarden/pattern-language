@@ -27,8 +27,8 @@ test "Body admits an empty result pack as its final row"
     ()
   end
 
-  expect b.bindings result [] :: (type [_... :: Binding*])
-  expect b.resultExpression result [] :: (type [_... :: ValueExpression*])
+  expect b.bindings is [] :: (type [_... :: Binding*])
+  expect b.resultExpression is [] :: (type [_... :: ValueExpression*])
 end
 
 test "Body requires a final result row"
@@ -61,18 +61,18 @@ test "Body requires a final result row"
     Body`
       x = 2
     end
-  error "E_PATTERN_MISMATCH"
+  fails "E_PATTERN_MISMATCH"
   expect
     Body`
       2
       x = 3
     end
-  error "E_PATTERN_MISMATCH"
+  fails "E_PATTERN_MISMATCH"
   expect
     Body`
       def f(x) x * 2
     end
-  error "E_PATTERN_MISMATCH"
+  fails "E_PATTERN_MISMATCH"
 end
 
 test "Body round-trips definitions and nested RHS bodies without evaluating them"

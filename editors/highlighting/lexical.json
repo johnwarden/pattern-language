@@ -5,7 +5,7 @@
   "extensions": ["pattern", "test"],
   "declarations": ["def", "type", "macro"],
   "control": ["if", "else", "match", "end"],
-  "testDsl": ["test", "expect", "result", "error", "assert", "todo", "legacy"],
+  "testDsl": ["test", "expect", "is", "fails", "contains", "assert", "todo", "legacy"],
   "constants": ["True", "False"],
   "intrinsicTypes": ["Any", "Body", "Bool", "Expression", "Float", "Float32", "Float64", "Int", "LowerCamelSymbol", "PunctuationSymbol", "Rational", "String", "Symbol", "Type", "UpperCamelSymbol", "UpperSnakeSymbol"],
   "patterns": {

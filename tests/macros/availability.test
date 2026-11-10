@@ -5,7 +5,7 @@ test "Constant defaults remain available to a generated macro"
     (good Args())
   end
 
-  expect outer(7) result 3 :: Rational
+  expect outer(7) is 3 :: Rational
 end
 
 test "Quoted annotation operators are literal heads, not pattern computations"
@@ -18,5 +18,5 @@ test "Quoted annotation operators are literal heads, not pattern computations"
     end
   end
 
-  expect outer(7) result 1 :: Rational
+  expect outer(7) is 1 :: Rational
 end

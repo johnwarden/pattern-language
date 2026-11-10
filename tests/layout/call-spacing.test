@@ -1,11 +1,11 @@
 test "Tight application is a call"
   def f(x) x
 
-  expect f(1) result 1 :: Rational
+  expect f(1) is 1 :: Rational
 end
 
 test "A space before a call parenthesis is a syntax error"
-  expect parse(Code)("f (1)") error "a term cannot be followed by a spaced '('"
+  expect parse(Code)("f (1)") fails "a term cannot be followed by a spaced '('"
 end
 
 test "Tight successive packs remain calls"
@@ -13,8 +13,8 @@ test "Tight successive packs remain calls"
     x + y
   end
 
-  expect f(1)(2) result 3 :: Rational
-  expect parse(Code)("f(1) (2)") error "a term cannot be followed by a spaced '('"
+  expect f(1)(2) is 3 :: Rational
+  expect parse(Code)("f(1) (2)") fails "a term cannot be followed by a spaced '('"
 end
 
 test "Sidefix uses a spaced operand without parentheses"
@@ -23,31 +23,31 @@ end
 
 test "A keyword operand may begin with a grouping if it continues"
   assert (1 + 2) == 3
-  expect 1 + 2 result (3) :: Rational
+  expect 1 + 2 is (3) :: Rational
 end
 
 test "A wholly parenthesized keyword operand is a syntax error"
-  expect parse(Code)("if (x)") error "a keyword operand cannot be a single parenthesized group"
-  expect parse(Code)("if ((1 + 2) == 3)") error "a keyword operand cannot be a single parenthesized group"
-  expect parse(Code)("assert (x)") error "a term cannot be followed by a spaced '('"
-  expect parse(Code)("assert ((1 + 2) == 3)") error "a term cannot be followed by a spaced '('"
+  expect parse(Code)("if (x)") fails "a keyword operand cannot be a single parenthesized group"
+  expect parse(Code)("if ((1 + 2) == 3)") fails "a keyword operand cannot be a single parenthesized group"
+  expect parse(Code)("assert (x)") fails "a term cannot be followed by a spaced '('"
+  expect parse(Code)("assert ((1 + 2) == 3)") fails "a term cannot be followed by a spaced '('"
 end
 
 test "type form versus type call"
   observed = type Int
 
-  expect observed result Int :: Type
-  expect parse(Code)("type (Int)") error "a keyword operand cannot be a single parenthesized group"
+  expect observed is Int :: Type
+  expect parse(Code)("type (Int)") fails "a keyword operand cannot be a single parenthesized group"
 end
 
 test "Infix operator then grouped operand stays valid"
-  expect 5 - (2) result 3 :: Rational
+  expect 5 - (2) is 3 :: Rational
   assert 1 == (1)
 end
 
 test "Prefix operator then spaced parenthesis is a syntax error"
-  expect parse(Code)("- (x)") error "must touch their operand"
-  expect parse(Code)("* (x)") error "must touch their operand"
+  expect parse(Code)("- (x)") fails "must touch their operand"
+  expect parse(Code)("* (x)") fails "must touch their operand"
   assert parse(Code)("-(x)") == parse(Code)("-x")
   parse(Code)("1 - (x)")
 end
@@ -58,17 +58,17 @@ test "Pack after assignment, arrow, colon, or comma stays valid"
   (c, d) = f(5)
   (e, nested) = (1, (2))
 
-  expect a + b result 3 :: Rational
-  expect c + d result 10 :: Rational
-  expect e + nested result 3 :: Rational
+  expect a + b is 3 :: Rational
+  expect c + d is 10 :: Rational
+  expect e + nested is 3 :: Rational
 end
 
 test "Quoted spaced application is a syntax error"
-  expect parse(Code)(":(f (1))") error "a term cannot be followed by a spaced '('"
+  expect parse(Code)(":(f (1))") fails "a term cannot be followed by a spaced '('"
 end
 
 test "Spaced application inside Code quotation is a syntax error"
-  expect parse(Code)("Code` f (1)") error "a term cannot be followed by a spaced '('"
+  expect parse(Code)("Code` f (1)") fails "a term cannot be followed by a spaced '('"
 end
 
 test "A pack body after a micro signature is indented, not spaced"
@@ -77,15 +77,15 @@ test "A pack body after a micro signature is indented, not spaced"
   end
   (a, b) = pair()
 
-  expect a + b result 3 :: Rational
-  expect parse(Code)("def pair() (1, 2)") error "a term cannot be followed by a spaced '('"
+  expect a + b is 3 :: Rational
+  expect parse(Code)("def pair() (1, 2)") fails "a term cannot be followed by a spaced '('"
 end
 
 test "Same-indent following parenthesis is another row"
   a = 1
   (2)
 
-  expect a result 1 :: Rational
+  expect a is 1 :: Rational
 end
 
 test "Infix .matches then grouped type stays valid"
@@ -95,13 +95,13 @@ test "Infix .matches then grouped type stays valid"
 end
 
 test "A grouped expected result may be indented after result"
-  expect 1 + 2 result
+  expect 1 + 2 is
     (3) :: Rational
   end
 end
 
 test "Tight todo() is the empty call; a spaced empty group is an error"
-  expect parse(Code)("todo ()") error "a term cannot be followed by a spaced '('"
+  expect parse(Code)("todo ()") fails "a term cannot be followed by a spaced '('"
 end
 
 test "Line breaks inside a value-text argument do not change the decoded tree"
@@ -111,14 +111,14 @@ test "Line breaks inside a value-text argument do not change the decoded tree"
 end
 
 test "Malformed value text is a syntax error"
-  expect parse(Int)("(") error "unclosed delimiter"
-  expect parse(Int)("1 +") error "Missing second argument to infix operation"
-  expect parse(Int)("f (1)") error "a term cannot be followed by a spaced '('"
+  expect parse(Int)("(") fails "unclosed delimiter"
+  expect parse(Int)("1 +") fails "Missing second argument to infix operation"
+  expect parse(Int)("f (1)") fails "a term cannot be followed by a spaced '('"
 end
 
 test "Removing the space from a spaced call is a different tree, not a second valid parse"
   def f(x) x
 
-  expect f(1) result 1 :: Rational
-  expect parse(Code)("f (1)") error "a term cannot be followed by a spaced '('"
+  expect f(1) is 1 :: Rational
+  expect parse(Code)("f (1)") fails "a term cannot be followed by a spaced '('"
 end

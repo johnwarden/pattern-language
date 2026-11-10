@@ -130,7 +130,7 @@ test("checked-in grammars and native assertions are reproducible", async () => {
 test("Markdown fence callback renders the TextMate grammar and escapes source", async () => {
   const renderer = await createPatternFenceHighlighter();
   try {
-    const html = renderer.highlight('expect "<script>alert(1)</script>" result :None :: Float?', "pattern");
+    const html = renderer.highlight('expect "<script>alert(1)</script>" is :None :: Float?', "pattern");
     assert.ok(html.startsWith('<pre class="shiki'));
     assert.ok(html.includes("<span"));
     assert.match(html, /(?:&lt;|&#x0*3c;|&#0*60;)script/iu);

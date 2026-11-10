@@ -3,8 +3,8 @@ test "Interpolation and literal dollars"
   raw = "Hello, $name"
   expanded = $"Hello, $(name); $(2 + 3)"
 
-  expect raw result "Hello, $name" :: String
-  expect expanded result "Hello, Jo; 5" :: String
+  expect raw is "Hello, $name" :: String
+  expect expanded is "Hello, Jo; 5" :: String
   (raw, expanded)
 end
 
@@ -12,13 +12,13 @@ test "Quoted expression values"
   def f(x) 2 * x
   c = :(f(1))
 
-  expect c result f(1) :: Expression
+  expect c is f(1) :: Expression
 
   (c, c == :(f(1)))
 end
 
 test "A quoted head is not a data constructor"
-  expect :f(1) error "E_NOT_CALLABLE"
+  expect :f(1) fails "E_NOT_CALLABLE"
 end
 
 test "Raw and interpolated typed Code"
@@ -27,8 +27,8 @@ test "Raw and interpolated typed Code"
   quoted = Code` hello($name)
   interpolated = Code$` hello($name)
 
-  expect quoted result hello($(name)) :: Code
-  expect interpolated result hello("Jo") :: Code
+  expect quoted is hello($(name)) :: Code
+  expect interpolated is hello("Jo") :: Code
   assert parse(Code)(toString(Code)(interpolated)) == interpolated
   (quoted, interpolated)
 end
@@ -38,17 +38,17 @@ test "Reader interpolation"
   def html(fragments :: [_... :: String*], values :: [_... :: String*]) {fragments: fragments, values: values} :: Html
   name = "<strong>Jo</strong>"
 
-  expect html$"<p>Hello, $(name)</p>" result {fragments: ["<p>Hello, ", "</p>"], values: ["<strong>Jo</strong>"]} :: Html
+  expect html$"<p>Hello, $(name)</p>" is {fragments: ["<p>Hello, ", "</p>"], values: ["<strong>Jo</strong>"]} :: Html
 end
 
 test "Raw, escaped and explicitly interpolated strings"
   name = 'Jo'
 
-  expect 'Hello, $name' result "Hello, $name" :: String
-  expect "Hello, $name" result "Hello, $name" :: String
-  expect $'Hello, $name' result "Hello, Jo" :: String
-  expect "one\ntwo" result "one\ntwo" :: String
-  expect $'Hello, $$name' result "Hello, $name" :: String
+  expect 'Hello, $name' is "Hello, $name" :: String
+  expect "Hello, $name" is "Hello, $name" :: String
+  expect $'Hello, $name' is "Hello, Jo" :: String
+  expect "one\ntwo" is "one\ntwo" :: String
+  expect $'Hello, $$name' is "Hello, $name" :: String
   ('Hello, $name', "Hello, $name", $'Hello, $name', "one\ntwo", $'Hello, $$name')
 end
 
@@ -57,10 +57,10 @@ test "Typed expression quotes"
   raw = Code` x ^ 2
   expanded = Code$` $x ^ 2
 
-  expect raw result
+  expect raw is
     (x ^ 2) :: Code
   end
-  expect expanded result
+  expect expanded is
     (2 ^ 2) :: Code
   end
   (raw, expanded)
@@ -71,7 +71,7 @@ test "Typed parse / toString round-trip"
   value = Rect(3, 4) :: Rectangle
   text = toString(Rectangle)(value)
 
-  expect text result "Rect(3, 4)" :: String
+  expect text is "Rect(3, 4)" :: String
 
   assert parse(Rectangle)(text) == value
 

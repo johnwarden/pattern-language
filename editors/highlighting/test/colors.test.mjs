@@ -28,7 +28,7 @@ const schemes = await Promise.all(
 const source = [
   "42 0.1 0f0.1 0x1.4p3 0b1.1p1",
   "UpperCamel Float String Code",
-  "if else match end test expect result todo",
+  "if else match end test expect is fails contains todo",
   ":None :UpperCamel :String :if",
   'value = $"$(42) $(UpperCamel) $(:None)"',
   '"42 UpperCamel if :None" # 42 UpperCamel if :None',
@@ -160,7 +160,9 @@ for (const scheme of schemes) {
         "end",
         "test",
         "expect",
-        "result",
+        "is",
+        "fails",
+        "contains",
         "todo",
       ])
         assert.equal(colorAt(2, spelling), expected.keyword, spelling);

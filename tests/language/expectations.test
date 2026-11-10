@@ -1,0 +1,17 @@
+test "contains finds exact contiguous text in a String"
+  expect "hello world" contains "hello"
+  expect "hello world" contains "lo wo"
+  expect "hello world" contains "world"
+  expect "hello world" contains "hello world"
+end
+
+test "contains accepts a computed String subject"
+  def greeting(name :: String) "hello " + name
+
+  expect greeting("world") contains "lo wo"
+end
+
+test "contains treats punctuation literally"
+  expect "a.c" contains "."
+  expect "a*c" contains "*"
+end

@@ -3,10 +3,10 @@ test "A direct union arm takes precedence over inward designation"
   (sameOuter :: Float??) = :None :: Float??
   (inner :: Float??) = :None :: Float?
 
-  expect outer result None :: Float??
-  expect inner result (None :: Float?) :: Float??
-  expect toString(Float??)(outer) result "None" :: String
-  expect toString(Float??)(inner) result "None :: Type(Float | :None)" :: String
+  expect outer is None :: Float??
+  expect inner is (None :: Float?) :: Float??
+  expect toString(Float??)(outer) is "None" :: String
+  expect toString(Float??)(inner) is "None :: Type(Float | :None)" :: String
   assert outer == sameOuter
   assert outer != inner
   assert parse(Float??)(toString(Float??)(outer)) == outer
@@ -16,7 +16,7 @@ end
 test "Nested String options print relative to the requested grammar"
   (inner :: String??) = :None :: String?
 
-  expect toString(String??)(inner) result "None :: Type(:None | String)" :: String
+  expect toString(String??)(inner) is "None :: Type(:None | String)" :: String
   assert parse(String??)(toString(String??)(inner)) == inner
   assert parse(Any)(toString(Any)(inner)) == inner
 end
@@ -26,15 +26,15 @@ test "An explicit concrete member identifies an otherwise ambiguous branch"
   (x :: MyType) = :None :: String?
   (y :: MyType) = :None :: Float?
 
-  expect x result (None :: String?) :: MyType
-  expect y result (None :: Float?) :: MyType
-  expect toString(MyType)(x) result "None :: Type(:None | String)" :: String
-  expect toString(MyType)(y) result "None :: Type(Float | :None)" :: String
+  expect x is (None :: String?) :: MyType
+  expect y is (None :: Float?) :: MyType
+  expect toString(MyType)(x) is "None :: Type(:None | String)" :: String
+  expect toString(MyType)(y) is "None :: Type(Float | :None)" :: String
   assert x != y
   assert parse(MyType)(toString(MyType)(x)) == x
   assert parse(MyType)(toString(MyType)(y)) == y
   expect
     (ambiguous :: MyType) = :None
     ambiguous
-  error "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_PATTERN"
 end

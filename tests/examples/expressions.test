@@ -6,8 +6,8 @@ test "Abstract slots preserve identity"
   (y :: Int) = x
   assert x == y
 
-  expect toString(Any)(x) result "3 :: Int" :: String
-  expect toString(Int)(x) result "3" :: String
+  expect toString(Any)(x) is "3 :: Int" :: String
+  expect toString(Int)(x) is "3" :: String
 
   ((n == x), (x == y), toString(Any)(x), toString(Int)(x))
 end
@@ -18,7 +18,7 @@ test "Accessor ambiguity"
     def w(x) 99
     r = Rect(3, 4) :: Rectangle
     r.w
-  error "E_AMBIGUOUS_CALL"
+  fails "E_AMBIGUOUS_CALL"
 end
 
 test "Result arity error"
@@ -28,7 +28,7 @@ test "Result arity error"
       (y, y)
     end
     x
-  error "E_PATTERN_MISMATCH"
+  fails "E_PATTERN_MISMATCH"
 end
 
 test "Function block"
@@ -37,16 +37,16 @@ test "Function block"
     y + (1 :: Int)
   end
 
-  expect f(3) result 10 :: Int
+  expect f(3) is 10 :: Int
 end
 
 test "Definitions evaluate their bodies"
   def r :(Rect(Float))
   def R type :Rect(Float)
 
-  expect :(Rect(Float)) result Rect(Float) :: Expression
+  expect :(Rect(Float)) is Rect(Float) :: Expression
   observed = type R
-  expect observed result Type(Rect(Float)) :: Type
+  expect observed is Type(Rect(Float)) :: Type
   (r, (type R))
 end
 
@@ -68,27 +68,27 @@ test "Deferred expected output"
     (e :: Expression) ::: (type :: Expression)
   end
   expected = ExpectedOutput` (1 / 0) :: MissingType
-  legacy expect expected.e result
+  legacy expect expected.e is
     (1 / 0) :: Expression
   end
-  legacy expect expected.type result :MissingType :: Expression
-  todo expect expected.type result MissingType :: UpperCamelSymbol
+  legacy expect expected.type is :MissingType :: Expression
+  todo expect expected.type is MissingType :: UpperCamelSymbol
   (expected.e, expected.type)
 end
 
 test "Ignore named results"
   x = (1, foo: "bar")
 
-  expect x result 1 :: Rational
+  expect x is 1 :: Rational
 end
 
 test "Narrow an abstract slot"
   (x :: Any) = (3 :: Int)
   (value :: Int) = x
 
-  expect value result 3 :: Int
+  expect value is 3 :: Int
   observed = type Int
-  expect observed result Int :: Type
+  expect observed is Int :: Type
 
   assert value == x
 
@@ -104,10 +104,10 @@ test "Language as data"
   assert r == l
 
   Language(rules: rules, **) = l
-  legacy expect rules.len result 10 :: Expression
+  legacy expect rules.len is 10 :: Expression
 
   Block(nodes) = parseSyntax(r)("if True 1 else 2")
-  legacy expect nodes.len result 1 :: Expression
+  legacy expect nodes.len is 1 :: Expression
 
   (l .matches languageSchema(), (r == l), rules.len, nodes.len)
 end
@@ -120,15 +120,15 @@ test "Match"
       :Some(v) -> v.toString
       :None -> ""
     end
-  result "3" :: String
+  is "3" :: String
 end
 
 test "Explicit primitive values"
   t = Float
 
-  expect t result Float :: ReservedSymbol
-  expect Int result Int :: ReservedSymbol
-  expect Bool result Bool :: ReservedSymbol
+  expect t is Float :: ReservedSymbol
+  expect Int is Int :: ReservedSymbol
+  expect Bool is Bool :: ReservedSymbol
 
   assert t == (type Float)
 
@@ -143,7 +143,7 @@ test "Raw block preserves blank lines and dollars"
       Backslashes: \n
 
     end
-  result "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: String
+  is "Quotes: \" ' `\nDollars: $name $(anything)\nBackslashes: \\n\n" :: String
 end
 
 test "Mutually recursive function definitions"
@@ -163,13 +163,13 @@ test "Multiple results"
   end
   (a, b) = pair(3 :: Int)
 
-  expect a + b result 6 :: Int
+  expect a + b is 6 :: Int
 end
 
 test "Extra named arguments"
   def f(x) x
 
-  expect f(1, foo: "bar") result 1 :: Rational
+  expect f(1, foo: "bar") is 1 :: Rational
 end
 
 test "Open structural facet"
@@ -178,13 +178,13 @@ test "Open structural facet"
   r = Rect(2, 3, color: "black") :: Colored
   (p :: Rectangular) = r
 
-  expect p result Rect(2, 3, color: "black") :: Colored
-  expect p.w result 2 :: Float
-  expect p.h result 3 :: Float
+  expect p is Rect(2, 3, color: "black") :: Colored
+  expect p.w is 2 :: Float
+  expect p.h is 3 :: Float
 
   assert p == r
   # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
-  legacy expect toString(Rectangular)(p) result "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: String
+  legacy expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: String
 
   assert parse(Rectangular)(toString(Rectangular)(p)) == r
 
@@ -196,7 +196,7 @@ test "Inspect and rebuild syntax"
   Apply(function, arguments) = tree
   changed = Apply(function, [Field("_1", NumberLiteral(3)), Field("color", Name("Red", True))])
 
-  legacy expect syntaxExpression(changed) result
+  legacy expect syntaxExpression(changed) is
     (factory(1)(3, color: :Red)) :: Expression
   end
 end
@@ -206,10 +206,10 @@ test "Abstract slots and ordering"
   (a :: U) = (99 :: Int)
   (b :: U) = ("0" :: String)
 
-  expect a result 99 :: Int
-  expect b result "0" :: String
+  expect a is 99 :: Int
+  expect b is "0" :: String
   assert a < b
-  expect toString(U)(a) result "99" :: String
+  expect toString(U)(a) is "99" :: String
 
   assert parse(U)(toString(U)(a)) == a
 
@@ -228,12 +228,12 @@ test "User-defined if"
 
   expect
     if True 42 else 1 / 0
-  result 42 :: Rational
+  is 42 :: Rational
 end
 
 test "Vector"
   def Vector(t :: Type) type [values... :: t*]
   (v :: Vector(Float)) = [1, 2]
 
-  expect v result [1, 2] :: Vector(Float)
+  expect v is [1, 2] :: Vector(Float)
 end

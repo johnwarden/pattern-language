@@ -24,7 +24,7 @@ type PrefixAt @(String)
 (x :: PostfixAt) = "foo"@
 (y :: PrefixAt) = @"bar"
 
-expect x == y error "E_INCOMPARABLE_TYPES"
+expect x == y fails "E_INCOMPARABLE_TYPES"
 ```
 
 Matching `(s :: String)@` against `x` extracts `"foo"`; matching `@(t :: String)`
@@ -117,8 +117,8 @@ target examples, not implemented lifting behavior:
 (present :: Float?) = 4
 (absent :: Float?) = :None
 
-expect sqrt?(present) result 2 :: Float?
-expect sqrt?(absent) result :None :: Float?
+expect sqrt?(present) is 2 :: Float?
+expect sqrt?(absent) is :None :: Float?
 ```
 
 The examples use separate inputs. They do not require the same deterministic

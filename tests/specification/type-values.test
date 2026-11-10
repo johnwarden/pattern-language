@@ -2,15 +2,15 @@ test "C04 raw expressions are allowed and explicit types establish an interpreta
   x = Rect(2, 2)
   Rect(w, h) = x
 
-  expect x result Rect(2, 2) :: Expression
-  expect w result 2 :: Rational
-  expect h result 2 :: Rational
+  expect x is Rect(2, 2) :: Expression
+  expect w is 2 :: Rational
+  expect h is 2 :: Rational
 
   expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
     r = (Rect(2, 2) :: Rectangle)
     r
-  result
+  is
     (
       Rect(2, 2)
     ) :: (
@@ -40,7 +40,7 @@ test "C05 types are structural values"
     match b
       Box(text) -> text
     end
-  result
+  is
     "hello" :: String
   end
 end
@@ -52,5 +52,5 @@ test "C06 equal spellings can belong to different concrete spaces"
     red = (:Red :: PrimaryColor)
     stopped = (:Red :: TicketStatus)
     (red == stopped)
-  error "E_INCOMPARABLE_TYPES"
+  fails "E_INCOMPARABLE_TYPES"
 end

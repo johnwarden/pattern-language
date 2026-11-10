@@ -205,7 +205,7 @@ AR proposes a concrete union of NaN/infinities and finite Rational carveouts whe
 ## D18. Test assertions and migration contracts
 
 Files contain ordinary test blocks with shared setup. Assertions may use expect,
-assert, expected-error and single-result forms. Todo can also modify a whole test,
+assert, `fails` and single-value `is` forms. Todo can also modify a whole test,
 and a file may contain a single todo test. Legacy modifies assertions/setup, not
 whole tests. Plain and legacy assertions must pass. Legacy identifies a current
 compatibility contract to be explicitly retired as the roadmap advances. Todo
@@ -457,7 +457,7 @@ Primitive names are values of the primitive type `ReservedSymbol`, which is
 disjoint from the ordinary symbol classes:
 
 ```text
-expect Int result Int :: ReservedSymbol
+expect Int is Int :: ReservedSymbol
 assert (type Int) == Int
 assert (Int .matches UpperCamelSymbol) == False
 ```
@@ -470,9 +470,9 @@ Prelude `not : Bool -> Bool` is the ordinary function `def not(x :: Bool) x == F
 `Bool` values, the same type as computed comparison results (L10):
 
 ```text
-expect True result True :: Bool
-expect (1 == 2) == False result True :: Bool
-expect True .matches ReservedSymbol result False :: Bool
+expect True is True :: Bool
+expect (1 == 2) == False is True :: Bool
+expect True .matches ReservedSymbol is False :: Bool
 ```
 
 Match arms use the bare names; `:True ->` is `E_QUOTED_PRIMITIVE`:
@@ -490,13 +490,13 @@ heads and type declarations, which write the bare reserved name instead. Parsing
 Code and decoding value text have no special check for it:
 
 ```text
-expect :Int error "E_QUOTED_PRIMITIVE"
-expect :True error "E_QUOTED_PRIMITIVE"
-expect Int == :Int error "E_QUOTED_PRIMITIVE"
-expect type :String(:A) error "E_QUOTED_PRIMITIVE"
+expect :Int fails "E_QUOTED_PRIMITIVE"
+expect :True fails "E_QUOTED_PRIMITIVE"
+expect Int == :Int fails "E_QUOTED_PRIMITIVE"
+expect type :String(:A) fails "E_QUOTED_PRIMITIVE"
 assert (type String(:A)) == Type(Apply(Literal(String), Fields(:A)))
-expect :(Int) result Int :: Expression
-expect parse(Code)(":Int") result :Int :: Code
+expect :(Int) is Int :: Expression
+expect parse(Code)(":Int") is :Int :: Code
 ```
 
 Once the Code grammar defines `QuotedSymbol` (Symbols only),

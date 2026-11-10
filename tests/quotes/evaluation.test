@@ -3,9 +3,9 @@ test "Whole-expression quotation is inert; typed interpolation supplies values"
   whole = :(Box(x))
   expanded = Expression$` Box($x)
 
-  expect :Box(x) error "E_NOT_CALLABLE"
-  expect expanded result Box(3) :: Expression
-  expect whole result Box(:x) :: Expression
+  expect :Box(x) fails "E_NOT_CALLABLE"
+  expect expanded is Box(3) :: Expression
+  expect whole is Box(:x) :: Expression
   (whole, expanded)
 end
 
@@ -19,7 +19,7 @@ test "Typed quote blocks expand macro templates with explicit interpolation"
 
   expect
     (addOne Args(4))
-  result 5 :: Rational
+  is 5 :: Rational
 end
 
 test "Reader blocks preserve raw punctuation and indented end content"
@@ -31,11 +31,11 @@ test "Reader blocks preserve raw punctuation and indented end content"
         end
       tail
     end # close
-  result ["\" ' \\ $x\n  end\ntail"] :: Expression
+  is ["\" ' \\ $x\n  end\ntail"] :: Expression
 end
 
 test "Interpolating a postfix percent preserves its spelling"
   expect
     $"$("x"%)"
-  result '"x"%' :: String
+  is '"x"%' :: String
 end

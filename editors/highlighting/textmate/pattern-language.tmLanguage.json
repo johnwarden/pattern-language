@@ -99,7 +99,7 @@
           "name": "keyword.control.pattern-language"
         },
         {
-          "match": "(?<![\\p{L}\\p{N}_])(?:test|expect|result|error|assert|todo|legacy)(?![\\p{L}\\p{N}_])",
+          "match": "(?<![\\p{L}\\p{N}_])(?:test|expect|is|fails|contains|assert|todo|legacy)(?![\\p{L}\\p{N}_])",
           "name": "keyword.other.test.pattern-language"
         },
         {

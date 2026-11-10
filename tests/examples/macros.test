@@ -5,7 +5,7 @@ test "Macro-generated local grammar"
     answer 42
   end
 
-  expect demo() result 42 :: Rational
+  expect demo() is 42 :: Rational
 end
 
 test "Sidefix macro: choose"
@@ -13,7 +13,7 @@ test "Sidefix macro: choose"
 
   expect
     choose True 42 1 / 0
-  result 42 :: Rational
+  is 42 :: Rational
 end
 
 test "Code function versus registered macro"
@@ -22,12 +22,12 @@ test "Code function versus registered macro"
     twiceCode(e)
   end
 
-  expect twiceCode(2 + 3) result
+  expect twiceCode(2 + 3) is
     (5 + 5) :: Code
   end
   expect
     twice 2 + 3
-  result 10 :: Rational
+  is 10 :: Rational
   (twiceCode(2 + 3), (twice 2 + 3))
 end
 
@@ -41,7 +41,7 @@ test "Sidefix macro: unless"
       x = 3 :: Int
       x + (1 :: Int)
     end
-  result 4 :: Int
+  is 4 :: Int
 end
 
 test "Typed Code: recursive for each macro"
@@ -72,9 +72,9 @@ test "Typed Code: recursive for each macro"
   code = expandFor([parse(Binding)("x .in [1, 2, 3]"), parse(Binding)("y .in [4, 5, 6]")], :(x * y))
   value = for each(x .in [1, 2, 3], y .in [4, 5, 6]) x * y
 
-  expect code result
+  expect code is
     (each([1, 2, 3])(x -> each([4, 5, 6])(y -> x * y))) :: Code
   end
-  legacy expect value result [[4, 5, 6], [8, 10, 12], [12, 15, 18]] :: Expression
+  legacy expect value is [[4, 5, 6], [8, 10, 12], [12, 15, 18]] :: Expression
   (code, value)
 end

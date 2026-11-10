@@ -33,10 +33,10 @@ test "Type is a prelude union, not a reserved symbol"
 end
 
 test "A primitive is already a type value"
-  expect Int result Int :: PrimitiveType
+  expect Int is Int :: PrimitiveType
   assert Int .matches Type
   assert (type Int) == Int
-  expect :Int error "E_QUOTED_PRIMITIVE"
+  expect :Int fails "E_QUOTED_PRIMITIVE"
 end
 
 test "Type value constructors differ from applying a type to data"
@@ -44,9 +44,9 @@ test "Type value constructors differ from applying a type to data"
   t = ConcreteType(Rect(Rational, Rational))
   assert t == Rectangle
   assert Rect(2, 3) .matches t
-  expect Rect(2, 3) :: t result Rect(2, 3) :: Rectangle
-  expect t(2, 3) error "E_NOT_CALLABLE"
-  expect Type(Rect(Rational, Rational)) error "E_NOT_CALLABLE"
+  expect Rect(2, 3) :: t is Rect(2, 3) :: Rectangle
+  expect t(2, 3) fails "E_NOT_CALLABLE"
+  expect Type(Rect(Rational, Rational)) fails "E_NOT_CALLABLE"
 end
 ```
 
@@ -139,20 +139,20 @@ equality, environment replay, or public predicate-field extraction is implied.
 test "A declaration registers its accessors"
   type Rectangle concrete Rect(w :: Rational, h :: Rational)
   value = Rect(2, 3) :: Rectangle
-  expect value.w result 2 :: Rational
+  expect value.w is 2 :: Rational
   assert Rectangle == ConcreteType(Rect(Rational, Rational))
 end
 
 test "A plain descriptor does not install an accessor"
   t = ConcreteType(Rect(width: Rational, height: Rational))
   value = Rect(width: 2, height: 3) :: t
-  expect value.width error "unbound name"
+  expect value.width fails "unbound name"
 end
 
 test "A type constructor cannot declare captures"
   expect
     ConcreteType(Rect(w :: Rational, h :: Rational))
-  error "ordinary type construction cannot declare captures/accessors"
+  fails "ordinary type construction cannot declare captures/accessors"
 end
 
 test "A bound default supplies a capture but cannot change a type"
@@ -160,10 +160,10 @@ test "A bound default supplies a capture but cannot change a type"
   def rectangle(w :: Rational, h :: Rational = 3)
     Rect(w, h) :: Rectangle
   end
-  expect rectangle(2).h result 3 :: Rational
+  expect rectangle(2).h is 3 :: Rational
   expect
     ConcreteType(Rect(Rational, color: String = "black"))
-  error "defaults are forbidden in type descriptions"
+  fails "defaults are forbidden in type descriptions"
 end
 
 test "Equivalent declarations and accessor collisions still fail"
@@ -171,13 +171,13 @@ test "Equivalent declarations and accessor collisions still fail"
     type First concrete Rect(w :: Rational)
     type Second concrete Rect(w :: Rational)
     Second
-  error "E_DUPLICATE_TYPE"
+  fails "E_DUPLICATE_TYPE"
   expect
     type First concrete Rect(w :: Rational)
     def w(x) 99
     value = Rect(2) :: First
     value.w
-  error "E_AMBIGUOUS_CALL"
+  fails "E_AMBIGUOUS_CALL"
 end
 
 test "A stored type flows through ordinary calls and returns"
@@ -185,14 +185,14 @@ test "A stored type flows through ordinary calls and returns"
   def use(T :: Type)(x :: T) x
   saved = make(String)
   assert saved == ConcreteType(Box(String))
-  expect use(saved)(Box("hi") :: saved) result Box("hi") :: saved
-  expect use(saved, Box("hi")) error "E_NO_METHOD"
+  expect use(saved)(Box("hi") :: saved) is Box("hi") :: saved
+  expect use(saved, Box("hi")) fails "E_NO_METHOD"
 end
 
 test "A type value is not a function that constructs its members"
   t = ConcreteType(Box(String))
-  expect t("hi") error "E_NOT_CALLABLE"
-  expect Box("hi") :: t result Box("hi") :: t
+  expect t("hi") fails "E_NOT_CALLABLE"
+  expect Box("hi") :: t is Box("hi") :: t
 end
 ```
 

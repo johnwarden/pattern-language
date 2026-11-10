@@ -22,7 +22,7 @@ initial = 3
 expect
 \tanswer = add(initial)
 \tanswer
-result 4 :: Rational`);
+is 4 :: Rational`);
     assert.equal(value.steps[0].source, "def add(x :: Rational)\n\tx + 1\nend");
     assert.equal(value.steps[1].source, "initial = 3\n");
     assert.equal(value.steps[2].source, "answer = add(initial)\nanswer");
@@ -36,7 +36,7 @@ result 4 :: Rational`);
 \t  second
 \t  
 end
-expect text == "first\\n  second\\n  " result True :: Bool`);
+expect text == "first\\n  second\\n  " is True :: Bool`);
     assert.equal(
       value.steps[0].source,
       "text = '\n\tfirst\n\t  second\n\t  \nend",
@@ -48,7 +48,7 @@ expect text == "first\\n  second\\n  " result True :: Bool`);
   test(`todo/legacy setup replay uses the exact ${JSON.stringify(prefix)} prefix`, () => {
     const value = read(`legacy initial = 3
 todo initial = missing
-expect initial result 3 :: Rational`);
+expect initial is 3 :: Rational`);
     const report = runTest(value);
     assert.equal(report.passed, true, report.message);
     assert.deepEqual(

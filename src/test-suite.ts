@@ -31,7 +31,7 @@ import {
 
 export type AssertionMode = "check" | "legacy" | "todo";
 export interface TestStep {
-  kind: "setup" | "output" | "result" | "error" | "assert";
+  kind: "setup" | "output" | "is" | "fails" | "contains" | "assert";
   mode: AssertionMode;
   subject: Syntax;
   expected?: Syntax;
@@ -315,9 +315,11 @@ class TestReader {
         const role = scalarString(kind.value) as TestStep["kind"];
         const subject = dataSyntax(parts[0].value);
         const [expected, expectedType] =
-          role === "result"
+          role === "is"
             ? splitExpected(dataSyntax(parts[1].value))
-            : [undefined, undefined];
+            : role === "contains"
+              ? [dataSyntax(parts[1].value), undefined]
+              : [undefined, undefined];
         result.push({
           kind: role,
           mode: scalarString(mode.value) as AssertionMode,
@@ -325,7 +327,7 @@ class TestReader {
           source: testSourceText(subject),
           expected,
           expectedType,
-          reason: role === "error" ? scalarString(parts[1].value) : undefined,
+          reason: role === "fails" ? scalarString(parts[1].value) : undefined,
           location: stepLocation(tokens[pos], tokens[match.end - 1]),
         });
         pos = match.end;
@@ -343,7 +345,7 @@ class TestReader {
             operand.kind === "symbol" &&
             !operand.quoted &&
             (this.starts.has(operand.name) ||
-              ["test", "value", "result", "results", "error"].includes(
+              ["test", "value", "is", "results", "fails", "contains"].includes(
                 operand.name,
               ))
           );
@@ -352,7 +354,9 @@ class TestReader {
           n.kind === "symbol" &&
           !n.quoted &&
           (this.starts.has(n.name) ||
-            ["test", "value", "results", "result"].includes(n.name))
+            ["test", "value", "results", "is", "fails", "contains"].includes(
+              n.name,
+            ))
         )
           throw problem(
             "incomplete assert/expect/todo/legacy form; group compound operands or use indented blocks",
@@ -643,18 +647,29 @@ function matchesExpectedError(error: LanguageError, reason: string): boolean {
     : error.message.includes(reason);
 }
 
+function expectedNeedle(step: TestStep): string {
+  const needle = one(step.expected!);
+  if (needle.kind !== "literal" || typeof needle.value !== "string")
+    throw problem(
+      "contains needle is not a String; write an authored String literal",
+      step.expected,
+      "E_TEST_OPERAND_TYPE",
+    );
+  return needle.value;
+}
+
 function compareResult(
   actual: Field<Value>[],
   expected: ExpectedResult,
   interpreter: Interpreter,
 ): string | undefined {
   if (actual.length !== 1 || actual[0].label !== "_1")
-    return "result requires exactly one positional value; destructure multiple returns before checking them";
+    return "is requires exactly one positional value; destructure multiple returns before checking them";
   if (!expected.type) return;
   const type = resultType(actual[0].value, interpreter);
   if (!equal(type, expected.type))
     return (
-      "result type mismatch: expected " +
+      "is type mismatch: expected " +
       expected.type.name +
       "; received " +
       type.name
@@ -860,9 +875,13 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         operands: OperandReport | undefined;
       try {
         let expected: ExpectedResult | undefined;
-        if (step.kind === "result") {
+        let needle: string | undefined;
+        if (step.kind === "is") {
           phase = "expectation";
           expected = expectedResult(step, interpreter);
+        } else if (step.kind === "contains") {
+          phase = "expectation";
+          needle = expectedNeedle(step);
         }
         phase = "body";
         let subjectFailed = false;
@@ -875,7 +894,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
           actualOutput = interpreter.inspect(results);
         } catch (error) {
           if (
-            step.kind === "error" &&
+            step.kind === "fails" &&
             error instanceof LanguageError &&
             matchesExpectedError(error, step.reason!)
           ) {
@@ -884,9 +903,30 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
           } else throw error;
         }
         phase = "comparison";
-        if (step.kind === "error") {
+        if (step.kind === "fails") {
           if (!subjectFailed)
             mismatch = "expected " + step.reason + "; the subject succeeded";
+        } else if (step.kind === "contains") {
+          const subject = results!;
+          if (
+            subject.length !== 1 ||
+            subject[0].label !== "_1" ||
+            !equal(
+              resultType(subject[0].value, interpreter),
+              asType(single(interpreter.run("String")), interpreter),
+            )
+          )
+            throw problem(
+              "contains subject is not a String",
+              step.subject,
+              "E_TEST_OPERAND_TYPE",
+            );
+          const text = scalarString(subject[0].value);
+          expectedOutput = JSON.stringify(needle!);
+          actualOutput = JSON.stringify(text);
+          if (!text.includes(needle!))
+            mismatch =
+              "expected " + actualOutput + " to contain " + expectedOutput;
         } else if (step.kind === "assert") {
           const value = unwrap(single(results!, "assertion"));
           const bool = asType(single(interpreter.run("Bool")), interpreter);

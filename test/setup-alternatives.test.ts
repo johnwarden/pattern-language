@@ -17,13 +17,13 @@ test("a todo result pack remains a trial instead of becoming playground output",
 test("future generic setup uses its source schema and keeps the current definition", () => {
   const value = read(`  legacy def Color type :Black | :White
   todo type Color<T> concrete :Black | :White
-  expect Color result Type(:Black | :White) :: Type`);
+  expect Color is Type(:Black | :White) :: Type`);
   assert.deepEqual(
     value.steps.map((s) => [s.kind, s.mode]),
     [
       ["setup", "legacy"],
       ["setup", "todo"],
-      ["result", "check"],
+      ["is", "check"],
     ],
   );
   const report = runTest(value);
@@ -37,7 +37,7 @@ test("future generic setup uses its source schema and keeps the current definiti
 
 test("ordinary type declarations are setup rather than obsolete assertion clauses", () => {
   const value = read(`  type Color concrete :Black | :White
-  expect :Black :: Color result Black :: Color`);
+  expect :Black :: Color is Black :: Color`);
   assert.equal(value.steps[0].kind, "setup");
   assert.equal(value.steps[0].mode, "check");
   const report = runTest(value);
@@ -47,7 +47,7 @@ test("an implemented replacement is not hidden by the legacy type's duplicate na
   const report = runTest(
     read(`  legacy def Color type :Black | :White
   todo def Color type :Black | :White
-  expect Color result Type(:Black | :White) :: Type`),
+  expect Color is Type(:Black | :White) :: Type`),
   );
   assert.equal(report.passed, false);
   assert.match(report.message, /setup now succeeds; remove todo/);
@@ -58,8 +58,8 @@ test("failed setup groups do not leak partial bindings", () => {
     read(`  legacy n = 1 :: Int
   todo n = 99 :: Int
   todo future = missing()
-  expect n result 1 :: Int
-  expect future error "E_UNBOUND_NAME"`),
+  expect n is 1 :: Int
+  expect future fails "E_UNBOUND_NAME"`),
   );
   assert.equal(report.passed, true, report.message);
   assert.equal(report.checks[0].status, "expected-failure");
@@ -69,7 +69,7 @@ test("alternatives retain incoming setup and fixture bindings", () => {
     read(`  base = fixtureValue
   legacy n = base :: Int
   todo n = base :: Int
-  expect n result 2 :: Int`),
+  expect n is 2 :: Int`),
     "fixtureValue = 2 :: Int",
   );
   assert.equal(report.passed, false);

@@ -5,17 +5,17 @@ end
 
 test "Prefix plus forms are the same tree; tight Int+ is not"
   assert parse(Code)("+Int") == parse(Code)("+(Int)")
-  expect parse(Code)("Int+") error "infix operators require spaces"
-  expect parse(Code)("Int*+") error "infix operators require spaces"
-  expect parse(Code)("a+") error "infix operators require spaces"
+  expect parse(Code)("Int+") fails "infix operators require spaces"
+  expect parse(Code)("Int*+") fails "infix operators require spaces"
+  expect parse(Code)("a+") fails "infix operators require spaces"
 end
 
 test "Spaced plus and star remain infix"
-  expect parse(Code)("a+b") error "infix operators require spaces"
+  expect parse(Code)("a+b") fails "infix operators require spaces"
   assert parse(Code)("a + b") == parse(Code)("+(a)(b)")
   assert parse(Code)("T * U") == parse(Code)("*(T)(U)")
-  expect 2 * 3 result 6 :: Rational
-  expect 2 + 3 result 5 :: Rational
+  expect 2 * 3 is 6 :: Rational
+  expect 2 + 3 is 5 :: Rational
 end
 
 test "A pack field ** is not a suffix wrap on the previous field"
@@ -23,9 +23,9 @@ test "A pack field ** is not a suffix wrap on the previous field"
 end
 
 test "Tight bang is a postfix construction"
-  expect 1! result 1! :: Expression
+  expect 1! is 1! :: Expression
 end
 
 test "The bootstrap list convention retains list matching"
-  expect [1, 2] :: Int* result [1, 2] :: Int*
+  expect [1, 2] :: Int* is [1, 2] :: Int*
 end

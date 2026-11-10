@@ -971,9 +971,9 @@ rules (`end` ownership, mixed tab/space prefixes, quoted branches) are in
 
 ```text
 test "Current and future primitives"
-  expect :Widget result Widget :: UpperCamelSymbol
-  legacy expect 5 result 5 :: Expression
-  todo expect 5 result 5 :: Rational
+  expect :Widget is Widget :: UpperCamelSymbol
+  legacy expect 5 is 5 :: Expression
+  todo expect 5 is 5 :: Rational
 end
 ```
 
@@ -1002,13 +1002,13 @@ rather than silently reinterpreted. Bootstrap Expression values keep their exist
 printing rules and are explicitly legacy where their behavior is expected to change.
 
 Result expectations require exactly one positional value, its exact observed type,
-and canonical expected data: expect r.w result 2 :: Float. An expected symbolic
-binary tree must be grouped: expect e result (1 + 1) :: Expression. It is data,
+and canonical expected data: expect r.w is 2 :: Float. An expected symbolic
+binary tree must be grouped: expect e is (1 + 1) :: Expression. It is data,
 not a calculation producing 2. Predicate checks use assert rather than boolean
 expectations. Destructure multiple returns once, then check each capture separately.
 An empty-return assertion can bind () to the call, then return True. Ordinary pack
 shape and label rules remain covered by host tests. There is no results expectation
-or separate value/type keyword pair. Errors still use expect subject error "reason".
+or separate value/type keyword pair. Errors still use expect subject fails "reason".
 
 `just test-language` reports the current suite, including legacy checks and
 expected todo failures. Playground examples remain standalone programs, with setup and optional final return packs included in their

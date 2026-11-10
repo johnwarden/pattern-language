@@ -57,8 +57,8 @@ No failing placeholder is substituted for an unspecified target result.
 | Actual controls, sorting and old/new storage restoration | test/playground.test.ts; every executable example exercised through DOM controls |
 | Resource limits, staging rollback, build/schema synchronization | test/staging.test.ts plus tests/macros/staging.test; host keeps parse-only, REPL reuse after failure and transactional rollback |
 | Revised primitives, value spaces, proof evidence, projections, facets and spreads | tests/specification/*.test; C01–C27 execute assertion-level todos, C27 explicitly exploratory |
-| PR9 layout behavior (EOF/`end`/quoted clauses/mixed indent/incomplete infix/extra `end`) | tests/layout/*.test via live eval and `expect parse(Code)(text) error`; host keeps Grammar-object `parseSurface`, session-macro probe/then success and extra-`end` parse failure, REPL completeness, and indent-prefix unit checks |
-| Parse-failure harness (`parse(Code)` of quoted payload, ordinary `expect … error`) | test/test-suite.test.ts plus tests/layout/explicit-ends.test `infix` |
+| PR9 layout behavior (EOF/`end`/quoted clauses/mixed indent/incomplete infix/extra `end`) | tests/layout/*.test via live eval and `expect parse(Code)(text) fails`; host keeps Grammar-object `parseSurface`, session-macro probe/then success and extra-`end` parse failure, REPL completeness, and indent-prefix unit checks |
+| Parse-failure harness (`parse(Code)` of quoted payload, ordinary `expect … fails`) | test/test-suite.test.ts plus tests/layout/explicit-ends.test `infix` |
 | Suffix wrap order, prefix `+Int`/`+(Int)` identity, tight `Int+` not prefix `+` | tests/specification/postfix-suffixes.test |
 | Print→parse and fresh-Interpreter transport | test/round-trip-parsing.test.ts; the `.test` DSL cannot observe a second Interpreter or host `env.bindings` |
 
@@ -118,9 +118,9 @@ they still check. No expected-failure or legacy marker was added or changed.
 The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) marked `test/language.test.ts`
 as the next mixed batch. Ordinary call, block, label, rest, type and namespace
 observations now run as source cases under `tests/language/`. Expected results are
-authored data. Empty packs use destructuring assertions because a result check
+authored data. Empty packs use destructuring assertions because an `is` check
 requires one positional value. Parse failures of malformed text use
-`expect parse(Code)(…) error "…"`.
+`expect parse(Code)(…) fails "…"`.
 
 The former shared `cases` table both evaluated programs and drove canonical
 round trips. Evaluation now lives in the `.test` files. Host round trips parse
@@ -484,9 +484,9 @@ The assertions and canonical expected payloads are unchanged. Legacy inventory
 subjects were rewritten in place; C01–C27 remain in `tests/specification`. Playground
 programs still use the same source cases and direct final result packs.
 
-The suite uses expect subject result value :: Type. Separate value/type clauses
+The suite uses expect subject is value [:: Type]; an omitted type is the subject value's type and an explicit one is asserted exactly. Separate value/type clauses
 and the results pack form were removed. Pack expectations were split:
-each call is destructured once, then each capture has its own result check or
+each call is destructured once, then each capture has its own `is` check or
 predicate assertion. Empty returns use an explicit destructuring assertion. Host
 coverage retains exact complete-pack label/arity observations rather than assuming
 separate checks prove every pack property.

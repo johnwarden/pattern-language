@@ -16,9 +16,9 @@ native results; do not infer an expected type from observed output.
 Target source checks include:
 
 ```text
-expect "hello" result "hello" :: String
-expect "a" + "b" result "ab" :: String
-expect toString(Rational)(0.1) result "0.1" :: String
+expect "hello" is "hello" :: String
+expect "a" + "b" is "ab" :: String
+expect toString(Rational)(0.1) is "0.1" :: String
 ```
 
 These checks are live in `tests/specification/primitives.test`.

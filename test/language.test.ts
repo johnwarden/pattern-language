@@ -47,7 +47,7 @@ for (const [name, source, expected] of displayPrograms) {
 }
 
 for (const value of languageCases) {
-  if (!value.program || value.steps.some((step) => step.kind === "error"))
+  if (!value.program || value.steps.some((step) => step.kind === "fails"))
     continue;
   canonicalRoundTrip(value.id, value.source);
 }

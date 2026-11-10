@@ -43,7 +43,7 @@ records retained host adapter payloads, text round trips and display goldens.
 
 The first batch moves 17 scalar macro/registration observations from `test/macros.test.ts` and
 `test/registration.test.ts` into `tests/macros/evaluation.test` and
-`tests/macros/hygiene.test`. The 12 new cases use ordinary `expect ... result ... :: Rational`
+`tests/macros/hygiene.test`. The 12 new cases use ordinary `expect ... is ... :: Rational`
 assertions with authored values; the defaulted `size: Int` lambda retains its
 Int result type. Nine complete host blocks and the two migrated positive
 assertions in mixed blocks are removed only after the source cases pass. Preserve the original programs and their meaning;

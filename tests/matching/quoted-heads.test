@@ -4,15 +4,15 @@ test "A quoted operator head matches as a function parameter"
   end
   (left, right) = split(:(X | Y))
 
-  expect left result :X :: Expression
-  expect right result :Y :: Expression
+  expect left is :X :: Expression
+  expect right is :Y :: Expression
 end
 
 test "A quoted operator head matches in a binding"
   :|(a)(b) = :(X | Y)
 
-  expect a result :X :: Expression
-  expect b result :Y :: Expression
+  expect a is :X :: Expression
+  expect b is :Y :: Expression
 end
 
 test "A quoted operator head matches in a match arm"
@@ -22,8 +22,8 @@ test "A quoted operator head matches in a match arm"
     end
   end
 
-  expect left result :X :: Expression
-  expect right result :Y :: Expression
+  expect left is :X :: Expression
+  expect right is :Y :: Expression
 end
 
 test "A quoted operator head matches a type"

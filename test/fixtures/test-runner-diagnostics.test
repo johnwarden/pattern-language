@@ -24,16 +24,16 @@ test "Fulfilled todo"
 end
 
 test "A value mismatch is a comparison failure"
-  expect 1 result 2
+  expect 1 is 2
 end
 
 test "An explicit type mismatch remains a failure"
-  expect 3 :: Int result 3 :: Rational
+  expect 3 :: Int is 3 :: Rational
 end
 
 test "Expected data is never executed"
   expect 2
-  result
+  is
     (1 + 1)
   end
 end

@@ -33,7 +33,7 @@ test("LSP outlines concrete and abstract declarations through the shared grammar
 test("LSP diagnoses ordinary code outside a .test envelope without checking its operands", () => {
   for (const invalid of ["foo 1 2", "foo()", "1", "x = 1"]) {
     const result = read(
-      `test "First"\n  expect unknown() result Future<3> :: Missing\nend\n\n${invalid}\n`,
+      `test "First"\n  expect unknown() is Future<3> :: Missing\nend\n\n${invalid}\n`,
       "file:///changed.test",
     );
     assert.equal(result.diagnostics.length, 1, invalid);
@@ -50,7 +50,7 @@ test("LSP diagnoses ordinary code outside a .test envelope without checking its 
     assert.equal(result.symbols[0].name, "First");
   }
   const inside = read(
-    'todo test "Still future"\n  expect unknown() result Future<3> :: Missing\nend',
+    'todo test "Still future"\n  expect unknown() is Future<3> :: Missing\nend',
     "file:///changed.test",
   );
   assert.deepEqual(inside.diagnostics, []);
@@ -152,7 +152,7 @@ test("LSP uses authored full declaration and nested name ranges", () => {
 
 test("LSP recognizes a single whole-test todo under inbox without running its operands", () => {
   const result = read(
-    'todo test "Future 😀"\n  def bomb() 1 / 0\n  expect F<3> result None :: Float??\nend',
+    'todo test "Future 😀"\n  def bomb() 1 / 0\n  expect F<3> is None :: Float??\nend',
     "file:///workspace/tests/inbox/future.test",
   );
   assert.deepEqual(result.diagnostics, []);
@@ -231,7 +231,7 @@ test("LSP analysis has no runtime/bootstrap/test execution path", (t) => {
     [uri, "def Positive type Rational\n  missing(1 / 0)\nend\nmissing()"],
     [
       "file:///test.test",
-      'test "Execution canary"\n  missing(1 / 0)\n  expect missing() result None :: MissingType\nend',
+      'test "Execution canary"\n  missing(1 / 0)\n  expect missing() is None :: MissingType\nend',
     ],
   ])
     assert.deepEqual(read(source, file).diagnostics, []);

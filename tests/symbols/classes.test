@@ -1,30 +1,30 @@
 test "ASCII word symbol classes"
-  expect :a result a :: LowerCamelSymbol
-  expect :ab result ab :: LowerCamelSymbol
-  expect :aB result aB :: LowerCamelSymbol
-  expect :aBc result aBc :: LowerCamelSymbol
-  expect :abC result abC :: LowerCamelSymbol
-  expect :abCd result abCd :: LowerCamelSymbol
-  expect :A result A :: UpperCamelSymbol
-  expect :Ab result Ab :: UpperCamelSymbol
-  expect :AB result AB :: UpperCamelSymbol
-  expect :ABc result ABc :: UpperCamelSymbol
-  expect :AbC result AbC :: UpperCamelSymbol
-  expect :AbCd result AbCd :: UpperCamelSymbol
-  expect :A_ result A_ :: UpperSnakeSymbol
-  expect :AB_ result AB_ :: UpperSnakeSymbol
-  expect :A_B result A_B :: UpperSnakeSymbol
-  expect :A_BC result A_BC :: UpperSnakeSymbol
-  expect :AB_C result AB_C :: UpperSnakeSymbol
-  expect :AB_CD result AB_CD :: UpperSnakeSymbol
+  expect :a is a :: LowerCamelSymbol
+  expect :ab is ab :: LowerCamelSymbol
+  expect :aB is aB :: LowerCamelSymbol
+  expect :aBc is aBc :: LowerCamelSymbol
+  expect :abC is abC :: LowerCamelSymbol
+  expect :abCd is abCd :: LowerCamelSymbol
+  expect :A is A :: UpperCamelSymbol
+  expect :Ab is Ab :: UpperCamelSymbol
+  expect :AB is AB :: UpperCamelSymbol
+  expect :ABc is ABc :: UpperCamelSymbol
+  expect :AbC is AbC :: UpperCamelSymbol
+  expect :AbCd is AbCd :: UpperCamelSymbol
+  expect :A_ is A_ :: UpperSnakeSymbol
+  expect :AB_ is AB_ :: UpperSnakeSymbol
+  expect :A_B is A_B :: UpperSnakeSymbol
+  expect :A_BC is A_BC :: UpperSnakeSymbol
+  expect :AB_C is AB_C :: UpperSnakeSymbol
+  expect :AB_CD is AB_CD :: UpperSnakeSymbol
 
-  expect :PORT result PORT :: UpperSnakeSymbol
-  expect :ERR_FILE_NOT_FOUND result ERR_FILE_NOT_FOUND :: UpperSnakeSymbol
+  expect :PORT is PORT :: UpperSnakeSymbol
+  expect :ERR_FILE_NOT_FOUND is ERR_FILE_NOT_FOUND :: UpperSnakeSymbol
 end
 
 test "ReservedSymbol is disjoint from ordinary symbol classes"
-  expect :Symbol result Symbol :: UpperCamelSymbol
-  expect :Number result Number :: UpperCamelSymbol
+  expect :Symbol is Symbol :: UpperCamelSymbol
+  expect :Number is Number :: UpperCamelSymbol
   assert not(Int .matches UpperCamelSymbol)
   assert Int .matches ReservedSymbol
   assert not(True .matches UpperCamelSymbol)
