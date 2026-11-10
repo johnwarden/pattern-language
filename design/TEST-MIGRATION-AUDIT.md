@@ -28,14 +28,11 @@ assertion-level mappings there; other mixed files still need that pass.
 
 ## Destination-contract correction after #60
 
-[The source-contract audit](TEST-CONTRACT-AUDIT.md), at master `2b4292d`, found
-native adapters in source examples and numeric/layout cases, plus compiled/quoted
-type-tree equality and implicit descriptor decoding migrated by #60. Those are
-implementation observations or pending public decisions, rather than approved
-destination-language contracts. The existing inventory below records what was
-migrated; its classification is not approval of those encodings. The cleanup
-queue maps them back to host coverage while preserving semantic source checks.
-No source assertions or runtime APIs have been removed by this audit.
+#68 restores the five #60 representation/decoding cases to their original host
+blocks and removes their source counterparts. Identity and other semantic
+migrations remain. The [coverage map](TEST-MIGRATION.md#type-identity-and-value-tree-migration)
+records the restored checks; the [cleanup plan](TEST-CONTRACT-AUDIT.md) tracks
+remaining native-adapter batches. Public inspection/decoding stays pending.
 
 ## First bounded batch
 
@@ -77,7 +74,7 @@ that every individual assertion in those files has already been mapped.
 | quotes, postfix, postfix-conventions                                                                                             | Implemented assertion-level pass; mixed remainder            | Portable quotation interpolation, typed-quote expansion, reader-block text, postfix payload matching, prefix `*`/`^`, infix `&`/`~`, optional type printing and custom `?` coexistence live in `tests/quotes/` and `tests/postfix/`. Syntax kind/key/encode-decode, empty-prelude readers, exact `E_UNQUOTE_CONTEXT` / `E_RESERVED_OPERATOR` / `E_KEYWORD_REST_UNSUPPORTED` and hole/name locations stay. |
 | pattern-schema, milestone-two, vertical-spread                                                                                   | Implemented assertion-level pass; mixed remainder            | Quoted operator heads, open-label/rest matching, type-description evaluation, dispatch defaults, empty/evaluated matrix rows, application-row capture and Body final-row rules live in `tests/matching/`, `tests/types/descriptions.test` and `tests/spreading/`. Schema/decoder, Grammar objects, exact dimension/duplicate/type-description codes, Float32 serialization, fresh-interpreter transport and ambiguous row partitions stay. Keyword-rest `{**rest}` was not selected. |
 | nested-option-designation, concrete-unions                                                                                       | Implemented assertion-level pass; mixed remainder            | Existing `tests/bindings/nested-option-designation.test` and `tests/specification/concrete-unions.test` cover the shared positives. Unique inner-absence projection, constructor-vs-inward arms, already-typed inward designation and reverse-order peer ambiguity live in `tests/unions/concrete.test`. Exact `E_PATTERN_MISMATCH` / `E_NO_METHOD` / `E_AMBIGUOUS_PATTERN`, fresh-interpreter typed-text transport and test-harness expected-data stay. |
-| abstract-values, disjoint-unions, structural-slots, type-atoms, value-representation, value-spaces                               | Assertion-level pass started; mixed remainder                | Unique D05 identity, `unionType` normalization, type-argument packs, bound type matchers and compiled/quoted type trees live in `tests/types/identity.test` and `tests/types/value-trees.test`. `inspect`/`parseLocal`/REPL names, `env.bindings` surgery, `parseExpression` trees, optional/numeric concrete-identity incomparability, facet metadata and function-value printing stay. `True(1)`/`1(1)` heads were not frozen. |
+| abstract-values, disjoint-unions, structural-slots, type-atoms, value-representation, value-spaces                               | Assertion-level pass started; mixed remainder                | D05 identity, `unionType` normalization, type-argument packs and bound type matchers live in `tests/types/identity.test` and `tests/types/value-trees.test`; #68 restores representation/decoding blocks to host. `inspect`/`parseLocal`/REPL names, `env.bindings` surgery, `parseExpression` trees, optional/numeric concrete-identity incomparability, facet metadata and function-value printing stay. `True(1)`/`1(1)` heads were not frozen. |
 | declaration-boundaries, type-definition-evaluation, description-scope, milestone-four, type-operations, type-unions, type-values | Defer active declaration/transport work                      | Separate portable semantics from declaration/accessor products and representation/transport checks after #31/#32 stabilize. Equivalent declarations and accessor collisions remain errors.                                                                                            |
 | rational-primitives                                                                                                              | Implemented assertion-level pass; mixed remainder            | Unique Float membership/designation and `((1 / 3) * 3) == 1` live in `tests/specification/primitives.test` C03 and `tests/numeric/syntax-tree.test`. Direct Rational/binary64 helpers, `syntaxTree(0f0.1)` display, exact `E_VALUE_SERIALIZATION` and `0.5 :: Int` until D07 stay. IEEE/family/edge policy is not chosen by migration. |
 | binding-defaults, minus, titlecase-captures                                                                                      | Prior migrations; retain remainder                           | Remaining host invocation/default evaluation, parser forms, Interpreter.evaluateCode, exact diagnostics and hygiene checks were deliberately retained by earlier batches. Do not treat these files as unreviewed easy deletions.                                                      |
@@ -111,14 +108,7 @@ sets, declaration collisions, or a new language grammar.
 
 ## Validation of the first batch
 
-The targeted source cases pass: 12 cases and 17 ordinary assertions. All 25
-remaining macro/registration host tests pass. A source/code-pair comparison also
-confirms that all 23 exact diagnostic helper checks remain unchanged. No legacy
-or todo assertion was added or changed.
-
-On this batch revision, local typecheck, build, all 694 host tests, all 244 source
-cases and Dockerfile/devbox alignment passed. The source report has 577 ordinary
-assertions, with the existing 59 legacy and 96 expected todo failures unchanged.
-`just check` was attempted but `just`, ShellCheck and entr are unavailable in
-the local environment; the complete shell/recipe gate requires PR CI. CI is
-reported by exact head, not inferred from these local checks.
+The initial macro/registration batch passed its host/source checks, typecheck,
+build and Dockerfile/devbox alignment without changing exact diagnostic, legacy
+or todo expectations. Its full shell/recipe gate required PR CI. These are
+historical results; current validation is reported by exact PR head.

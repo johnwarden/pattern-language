@@ -37,44 +37,6 @@ test "Bound values substitute in type patterns"
   expect Box(3) :: u result Box(3) :: u
 end
 
-test "Type construction sees Int through abstract storage"
-  (t :: Any) = Int
-
-  assert Type(t) == Type(Int)
-end
-
-test "Canonical alternatives put symbols before literals and applications"
-  expect
-    type Some(Int) | 10 | :None | 2
-  result Type(:None | 2 | 10 | Some(Int)) :: Type
-end
-
-test "Compiled type trees equal quoted trees"
-  a = Type(Rect(Float, Float))
-  b = :(Type(Rect(Float, Float)))
-
-  assert a == b
-  assert toString(Expression)(a) == toString(Expression)(b)
-  assert UnionType(Int, String) == :(UnionType(Int, String))
-  assert not(Type(Int) == Int)
-  assert not(Type(10) < Type(2))
-end
-
-test "A quoted type tree can be installed as a named type"
-  def factory() :(Type(Rect(Int)))
-  def R factory()
-
-  expect Rect(3) :: R result Rect(3) :: R
-end
-
-test "Invalid type-shaped data is not a Type"
-  assert not(:(Primitive(Bogus)) .matches (type Type))
-  assert Int .matches (type Type)
-
-  x = :(UnionType(1, 2))
-  assert parse(Expression)(toString(Expression)(x)) == x
-end
-
 test "A bound type value is a matcher"
   t = Int
   (x :: t) = 3
@@ -94,7 +56,7 @@ test "Postfix type descriptions are not prefix quotation"
     :*(Int)
   end
 
-  assert not(Suffix == Prefix)
+  assert Suffix != Prefix
 end
 
 test "Reserved primitive names cannot be redeclared"

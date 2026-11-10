@@ -110,6 +110,10 @@ test("recursive factories retain finite descriptors and fresh-context round trip
   );
 });
 
+test("type construction sees the same value through abstract storage", () => {
+  assert.equal(run("(t :: Any) = Int\nType(t) == Type(Int)"), "True");
+});
+
 test("canonical enum type text can also be evaluated as an ordinary type value", () => {
   const i = new Interpreter();
   const encoded = unwrap(i.run("toString(Type)(type :Red | :Black)")[0].value);
@@ -133,7 +137,10 @@ test("type is idempotent and does not add a wrapper to primitive atoms", () => {
 });
 
 test("explicit Type(Int) preserves its distinct ordinary value tree", () => {
-  assert.equal(run("Type(Type(Int)) == Type(Int)"), "True");
+  assert.equal(
+    run("(Type(Int),Type(Int) == Int,Type(Type(Int)) == Type(Int))"),
+    "(Type(Int), False, True)",
+  );
   assert.equal(
     run("t = Type(Int)\nparse(Type)(toString(Type)(t)) == t"),
     "True",
@@ -142,6 +149,14 @@ test("explicit Type(Int) preserves its distinct ordinary value tree", () => {
     run("t = Type(Box(Type(Int)))\nparse(Type)(toString(Type)(t)) == t"),
     "True",
   );
+});
+
+test("canonical alternatives put symbols before literals and applications", () => {
+  assert.equal(
+    run("type Some(Int) | 10 | :None | 2"),
+    "Type(:None | 2 | 10 | Some(Int))",
+  );
+  assert.equal(run("(type :Red | :Black) == (type :Black | :Red)"), "True");
 });
 
 test("local names abbreviate REPL type annotations, not structural type values", () => {
@@ -219,3 +234,21 @@ test("language constants self-evaluate independently of lexical storage", () => 
   rejects("def True type Box(Int)\n0", "E_RESERVED_CONSTANT");
 });
 
+test("equal compiled and raw type trees have equal canonical strings", () => {
+  for (const expression of [
+    "Type(Rect(Float,Float))",
+    "Type(Int)",
+    "UnionType(Int,String)",
+  ]) {
+    assert.equal(
+      run(
+        "a = " +
+          expression +
+          "\nb = :(" +
+          expression +
+          ")\n(a == b,toString(Expression)(a) == toString(Expression)(b))",
+      ),
+      "(True, True)",
+    );
+  }
+});
