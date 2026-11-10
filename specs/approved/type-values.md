@@ -1,11 +1,15 @@
 # Type values without a reserved `Type`
 
-Proposed source contracts. The constructor payloads below are candidate public
-shapes, not approved descriptor inspection or a wire format. Put accepted cases in
-`tests/specification/` before implementation. `Type` should be a prelude abstract
-union of `AbstractType | ConcreteType | RefinementType | PrimitiveType`; the first
-three kinds are defined with ordinary patterns. Primitive atoms retain their
-existing special status. `Type(...)` is retired as a native type-value wrapper.
+Approved by Jonathan in the project chat on 10 November 2026. Origin:
+`specs/inbox/type-values.md`, moved here with the agreed migration correction.
+
+The examples below are approved source contracts. Capture them in
+`tests/specification/` before implementation. They approve the constructor forms
+and behavior shown here, not general descriptor inspection, decoding from
+arbitrary Expressions, or a wire format. `Type` is a prelude abstract union of
+`AbstractType | ConcreteType | RefinementType | PrimitiveType`; the first three
+kinds are defined with ordinary patterns. Primitive atoms retain their existing
+special status. `Type(...)` is retired as a native type-value wrapper.
 
 ## Prelude and ordinary values
 
@@ -45,12 +49,16 @@ test "Type value constructors differ from applying a type to data"
   assert t == Rectangle
   assert Rect(2, 3) .matches t
   expect Rect(2, 3) :: t is Rect(2, 3) :: Rectangle
-  expect t(2, 3) error "E_NOT_CALLABLE"
+  expect t(2, 3) fails "E_NOT_CALLABLE"
   expect Type(Rect(Rational, Rational)) is Type(Rect(Rational, Rational)) :: Expression
 end
 ```
 
 ## Construction and identity
+
+Direct kind-constructor calls build ordinary structural values without automatic
+alternative reordering. The declaration examples produce canonical descriptor
+data; equality compares the resulting values, rather than normalizing them.
 
 ```pattern
 test "Concrete descriptors are capture-free and structural"
@@ -80,8 +88,7 @@ test "An independently declared descriptor interops"
   assert value .matches second
 end
 
-
-test "AbstractType and UnionType values don't automatically normalize"
+test "AbstractType values don't automatically normalize"
   type Either abstract String | Rational
   a = AbstractType(Rational | String)
   b = AbstractType(String | Rational)
@@ -175,7 +182,7 @@ end
 
 test "Equivalent declarations and accessor collisions still fail"
   type First concrete Rect(w :: Rational)
-  
+
   expect
     type First concrete Rect(w :: Rational)
     type Second concrete Rect(w :: Rational)
@@ -188,12 +195,13 @@ test "Equivalent declarations and accessor collisions still fail"
     value.w
   fails "E_AMBIGUOUS_CALL"
 
-  test "Typed overloaded function still works"
-    def w(x :: Int) 99
-    value = Rect(2) :: First
-    expect value.w is 2
-  end
+end
 
+test "Typed overloaded function still works"
+  type First concrete Rect(w :: Rational)
+  def w(x :: Int) 99
+  value = Rect(2) :: First
+  expect value.w is 2
 end
 
 test "A stored type flows through ordinary calls and returns"
@@ -237,28 +245,35 @@ arbitrary expression tree. Refinement round trips await portable predicate value
 
 ## Migration targets
 
-| Existing authored subject | Proposed replacement contract |
+The legacy `Type(...)` constructor always constructed a concrete type;
+`UnionType(...)` constructed abstract unions. Replace those constructors with
+`ConcreteType(...)` and `AbstractType(...)`, respectively. There is no per-member
+kind classification or additional normalization step. Primitive wrapper cases
+instead use the direct primitive atoms, as specified below.
+
+| Existing authored subject | Approved replacement contract |
 | --- | --- |
 | `Type(Rect(Float, Float))` for a declared concrete rectangle | `ConcreteType(Rect(Float, Float))` equal to the declaration's type value |
-| `Type(:None | Some(Int))` / `Type(:Black | :Red)` | Use `ConcreteType(...)` according to the declared member-space role; classify each legacy case before changing its golden |
+| `Type(:None | Some(Int))` / `Type(:Black | :Red)` | `ConcreteType(:None | Some(Int))` / `ConcreteType(:Black | :Red)` |
 | `Type(Int)` / `type type Int` | Retire the wrapper; assert `Int :: PrimitiveType`, `(type Int) == Int`, and ordinary `Type` membership |
-| `Type(pattern) = t` | Use the agreed ordinary kind pattern (candidate `ConcreteType(pattern) = t`); do not assume public descriptor-field extraction is approved |
+| `Type(pattern) = t` | Retire the old wrapper-specific destructuring; public descriptor-field extraction remains deferred |
 | `Type(t) == Type(Int)` with `t` stored as `Any` | Assert the directly stored primitive is still `Int` and accepted by `Type` |
 | `toString(Type)` / `parse(Type)` | Keep the prelude union as expected type; migrate exact old `Type(...)` text only after canonical format is chosen |
 | `:(Type(...))` equal to a compiled type | Preserve Code/Expression as source data; public type-value decoding remains a separate decision |
-| `UnionType(Type(X(...)), ...)` | Use AbstractType(ConcreteType(X(...)) | ...). Preserve member-space identity and normalize each member to its chosen kind; union construction does not install declarations |
+| `UnionType(Type(X(...)), ...)` | `AbstractType(ConcreteType(X(...)) | ...)`; union construction does not install declarations or accessors |
 
-## Decisions to settle
+## Implementation handoff and deferred decisions
 
-1. Specify the exact ordinary patterns and constructor payloads for each kind,
-   including nested abstract members, recursive descriptors and refinement
-   predicate values. The fences above use candidate one-argument concrete/abstract
-   and two-argument refinement shapes.
-2. Specify how `ConcreteType(...)` constructs a value while `ConcreteType` also
-   denotes its ordinary pattern/type in the prelude. Keep direct `:Symbol(...)`
-   construction distinct from calling a bound concrete value.
-3. Classify existing `Type(...)` cases by value-space role before replacing their
-   expected data. Preserve primitive atoms; settle whether an explicit primitive
-   descriptor quote exists at all.
-4. Keep public descriptor inspection/decoding and exact canonical text pending;
-   decide portable refinement predicate text before adding its round-trip test.
+1. Write or revise focused executable contracts for these examples before runtime
+   changes. This record remains approved until those tests capture the decision;
+   runtime completion is tracked by the tests, including their todo markers.
+2. Define the prelude kinds with ordinary patterns using the approved one-argument
+   concrete/abstract and two-argument refinement forms. Exact recursive and nested
+   descriptor cases need focused contracts before support is extended. Keep direct
+   `:Symbol(...)` construction distinct from calling a bound concrete value.
+3. Migrate legacy concrete and abstract constructors according to the table,
+   preserving primitive atoms. This approval does not add an explicit primitive
+   descriptor quote.
+4. Public descriptor inspection/decoding and exact canonical text remain deferred.
+   Portable refinement predicate values and their text follow the portable function
+   decision; specify them before adding a refinement round-trip test.
