@@ -1,3 +1,5 @@
+# Decision on whether head is callable must happen during *evaluation* or *type checking*, not parsing.
+
 test "Code preserves applications with non-callable heads"
   expect parse(Code)("True(1)") result True(1) :: Code
   expect parse(Code)("False(1)") result False(1) :: Code
@@ -5,6 +7,7 @@ test "Code preserves applications with non-callable heads"
   expect parse(Code)("\"x\"(1)") result "x"(1) :: Code
   expect parse(Code)("f(True(1))") result f(True(1)) :: Code
   expect parse(Code)("True(missing())") result True(missing()) :: Code
+  expect parse(Code)("Bool(1)") result Bool(1) :: Code
 
   expect
     Code` True(1)
@@ -24,6 +27,13 @@ test "Evaluating a numeric or String head reports not callable"
   expect one()(1) error "E_NOT_CALLABLE"
 end
 
+test "Evaluating ReservedSymbol heads reports not callable"
+  todo expect Bool(1) error "E_NOT_CALLABLE"
+
+  head = Bool
+  expect head(1) error "E_NOT_CALLABLE"
+end
+
 test "Evaluating a Bool head must not reinterpret its payload as a Symbol"
   expect True(1) error "E_NOT_CALLABLE"
   expect False(1) error "E_NOT_CALLABLE"
@@ -35,12 +45,18 @@ test "Evaluating a Bool head must not reinterpret its payload as a Symbol"
   expect truth()(1) error "E_NOT_CALLABLE"
 end
 
-test "Symbol heads construct values in their established concrete context"
+# The UpperCamelSymbol(...) form *looks* like a function call. 
+# But Symbols are not callable functions.
+test "A tag value is not implicitly a callable head"
   def Tagged type :Tag(Rational)
   expect Tag(1) :: Tagged result Tag(1) :: Tagged
+  todo expect (:Tag)(1) :: Tagged error "E_NOT_CALLABLE"
 
-  head = :Tag
-  expect head(2) :: Tagged result Tag(2) :: Tagged
+  head = :Tag :: UpperCamelSymbol
+  todo expect head(2) error "E_NOT_CALLABLE"
+
+  head2 = :foo :: LowerCamelSymbol
+  todo expect head2(2) error "E_NOT_CALLABLE"
 end
 
 test "A head expression may evaluate to a function"
@@ -63,4 +79,13 @@ test "A constructed value is not implicitly a callable head"
 
   def data() Tag(1) :: Tagged
   expect data()(2) error "E_NOT_CALLABLE"
+
+  v = Tag(1)
+  todo expect v(2) error "E_NOT_CALLABLE"
+
+  todo expect Tag(1)(2) error "E_NOT_CALLABLE"
+
 end
+
+
+
