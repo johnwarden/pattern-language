@@ -63,7 +63,6 @@ end
 test "A primitive is already a type value"
   todo expect Int is Int :: PrimitiveType
   assert Int .matches Type
-  assert (type Int) == Int
   expect :Int fails "E_QUOTED_PRIMITIVE"
 end
 
@@ -133,16 +132,11 @@ test "Typed overloaded function still works"
   expect value.w is 2
 end
 
-# specs/approved/type-values.md "A primitive is not wrapped". A primitive atom is
-# already a type value, so no pattern form or constructor wraps one. The spec does
-# not select a diagnostic. E_TYPE_DESCRIPTION (the existing invalid-type-description
-# code) is the chosen code for the four forms that currently succeed.
-# `concrete concrete Int` stays on E_LANGUAGE, its grammar-level rejection of a
-# nested type form, until it gets a semantic code.
+# specs/approved/type-values.md "A new type needs more than an existing type". A
+# primitive atom is already a type value and `type Int` is no longer in the grammar,
+# so no declaration, pattern form or constructor wraps one. E_TYPE_DESCRIPTION (the
+# invalid-type-description code) is the chosen code for every rejection below.
 test "A primitive is not wrapped"
-  expect
-    concrete concrete Int
-  fails "E_LANGUAGE"
   todo expect
     concrete Int
   fails "E_TYPE_DESCRIPTION"
@@ -150,10 +144,21 @@ test "A primitive is not wrapped"
     abstract Int
   fails "E_TYPE_DESCRIPTION"
   todo expect
+    concrete concrete Int
+  fails "E_TYPE_DESCRIPTION"
+  todo expect
     ConcreteType(Int)
   fails "E_TYPE_DESCRIPTION"
   todo expect
     AbstractType(Int)
+  fails "E_TYPE_DESCRIPTION"
+  todo expect
+    type X concrete Int
+    X
+  fails "E_TYPE_DESCRIPTION"
+  todo expect
+    type Y abstract Int
+    Y
   fails "E_TYPE_DESCRIPTION"
   assert (concrete Rect(Int, Int)) .matches Type
   assert (abstract Float32 | Float64) .matches Type

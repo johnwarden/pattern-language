@@ -1,8 +1,11 @@
-# Replaces the legacy examples/expressions "Open structural facet" test. A pattern
-# with `**` is an open structural facet, so it is declared `abstract`, never
-# `concrete`. Whole-case todo: today the `type ... abstract` open-facet declaration is
-# accepted but does not install the `w`/`h` accessors (first failure: unbound name w),
-# and the reconstruction text is still the legacy `Type(...)` spelling.
+# Replaces the legacy examples/expressions "Open structural facet" test, whose
+# `def ... type` setup is kept there unchanged for its legacy line. A pattern with
+# `**` is an open structural facet, so it is declared `abstract`, never `concrete`
+# (specs/approved/retire-legacy-type-definition-syntax.md, "Open patterns migrate to
+# abstract"). The facet fixes the Float fields, so their annotations are omitted; the
+# open color field keeps its String annotation.
+# Whole-case todo: today `p.w` is unbound, and toString(Rectangular)(p) prints
+# `Rect(2 :: Float, 3 :: Float, color: "black" :: String) :: Type(...)`.
 todo test "Open structural facet"
   type ColoredRect concrete Rect(Float, Float, color: String)
   type Rectangular abstract Rect(w :: Float, h :: Float, **)
@@ -14,7 +17,7 @@ todo test "Open structural facet"
   expect p.h is 3 :: Float
 
   assert p == r
-  expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: ConcreteType(Rect(Float, Float, color: String))" :: String
+  expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\" :: String)" :: String
 
   assert parse(Rectangular)(toString(Rectangular)(p)) == r
 end

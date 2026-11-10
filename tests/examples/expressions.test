@@ -46,8 +46,7 @@ test "Definitions evaluate their bodies"
 
   expect :(Rect(Float)) is Rect(Float) :: Expression
   observed = type R
-  legacy expect observed is Type(Rect(Float)) :: Type
-  todo expect observed is ConcreteType(Rect(Float)) :: Type
+  expect observed is Type(Rect(Float)) :: Type
   (r, (type R))
 end
 
@@ -184,7 +183,7 @@ test "Open structural facet"
   expect p.h is 3 :: Float
 
   assert p == r
-  # Legacy blocked: abstract facet reconstruction text is still provisional (C15). The replacement lives in specification/type-values/open-structural-facet.test.
+  # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
   legacy expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: String
 
   assert parse(Rectangular)(toString(Rectangular)(p)) == r

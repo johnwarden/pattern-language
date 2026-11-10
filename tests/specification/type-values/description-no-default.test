@@ -1,0 +1,7 @@
+# specs/approved/type-values.md "A type description cannot carry a default".
+# Whole-case todo: today the constructor call is accepted instead of rejected.
+todo test "A type description cannot carry a default"
+  expect
+    ConcreteType(Rect(Rational, color: String = "black"))
+  fails "defaults are forbidden in type descriptions"
+end
