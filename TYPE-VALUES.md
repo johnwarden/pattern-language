@@ -40,9 +40,12 @@ the abstract union `AbstractType | ConcreteType | RefinementType | PrimitiveType
 kinds of type values, built by `ConcreteType(pattern)`, `AbstractType(a | b)` and
 `RefinementType(base, predicate)` (see
 [the contracts](tests/specification/type-values.test)). The legacy `Type(...)` and
-`UnionType(...)` constructors remain until their deprecation. A direct `AbstractType`
-call keeps its member order; an order that differs from the declaration's canonical
-one is a different value. The complete metatype and redundant primitive-quote
+`UnionType(...)` constructors remain until their deprecation. Normalization happens when
+a `concrete`/`abstract` pattern is evaluated, not in the kind constructors: a direct
+`ConcreteType` or `AbstractType` call keeps its alternatives in the given order, so an
+order that differs from the declaration's canonical one is a different value. A
+primitive atom is already a type value, so `concrete Int`, `ConcreteType(Int)`,
+`abstract Int` and `AbstractType(Int)` are rejected (`E_TYPE_DESCRIPTION`). The complete metatype and redundant primitive-quote
 policy remain provisional. Nonprimitive numeric types should be definable carveouts.
 Primitive names are `ReservedSymbol` values, and the type description of
 `type Int` is the reserved symbol `Int` itself, not `:Int`. A quoted primitive
@@ -144,7 +147,8 @@ Unsupported closure/predicate transport must remain explicit.
 ## Implementation encoding and gaps
 
 The bootstrap currently exposes primitive atoms, Type, Facet, UnionType, AbstractType
-(a union description that keeps a non-canonical member order), Literal,
+and ConcreteType (descriptions that keep a non-canonical alternative order; the
+canonical order is still spelled Type/UnionType), Literal,
 Fields/OpenFields, Repeat, Apply, Recursive/Recur and Row/Collect/Sequence in an
 ordinary source-defined schema. These encodings are implementation contracts for
 that supported subset, not an instruction to treat every descriptor constructor as

@@ -231,3 +231,46 @@ test "A union or an existing type value can be made concrete"
   assert not((0 :: Int) .matches s)
   todo assert ConcreteType(r) .matches Type
 end
+
+test "Concrete descriptors keep their alternatives in the given order"
+  type Colors concrete :Black | :Red
+  assert Colors == ConcreteType(:Black | :Red)
+  assert Colors != ConcreteType(:Red | :Black)
+  assert ConcreteType(:Red | :Black) != ConcreteType(:Black | :Red)
+  assert ConcreteType(:Red | :Black) .matches Type
+  assert :Red .matches ConcreteType(:Red | :Black)
+end
+
+test "A non-canonical ConcreteType order survives a round trip"
+  c = ConcreteType(:Red | :Black)
+  assert parse(Type)(toString(Type)(c)) == c
+  assert parse(Type)(toString(Type)(c)) != ConcreteType(:Black | :Red)
+end
+
+test "A primitive is not wrapped by the kind constructors or pattern forms"
+  expect
+    concrete Int
+  fails "E_TYPE_DESCRIPTION"
+
+  expect
+    ConcreteType(Int)
+  fails "E_TYPE_DESCRIPTION"
+
+  expect
+    abstract Int
+  fails "E_TYPE_DESCRIPTION"
+
+  expect
+    AbstractType(Int)
+  fails "E_TYPE_DESCRIPTION"
+end
+
+test "A primitive remains usable inside a larger pattern or as a refinement base"
+  type Pair concrete Rect(Int, Int)
+  assert Pair == ConcreteType(Rect(Int, Int))
+  type Width abstract Float32 | Float64
+  assert Width == AbstractType(Float32 | Float64)
+  assert Rect(2, 3) .matches Pair
+  predicate = n -> n != 0
+  assert RefinementType(Rational, predicate) .matches RefinementType
+end

@@ -46,6 +46,7 @@ const reserved = new Set([
   "**",
   "UnionType",
   "AbstractType",
+  "ConcreteType",
   "Literal",
   "Apply",
   "Postfix",
@@ -241,7 +242,9 @@ export function typeDescription(
       }
       case "union": {
         const flatten = (branch: Pattern<Value>): Pattern<Value>[] =>
-          branch.kind === "union" && !branch.preserveSpace
+          branch.kind === "union" &&
+          !branch.preserveSpace &&
+          !branch.ordered === !p.ordered
             ? branch.choices.flatMap(flatten)
             : [branch];
         const choices = (
@@ -251,6 +254,13 @@ export function typeDescription(
           const values = choices.map((x) => x(bs));
           if (p.preserveSpace)
             return p.ordered ? orderedUnionData(values) : unionData(values);
+          // ConcreteType(...) keeps its alternatives as written: no reordering and
+          // no duplicate check. Whether that equals the canonical order is for
+          // the value comparison to say.
+          if (p.ordered)
+            return values.length < 2
+              ? term("Union", ...values)
+              : alternativeChain(values);
           const entries = values
             .map((value) => [descriptionKey(value), value] as const)
             .sort((a, b) => compare(a[1], b[1]));
@@ -263,14 +273,7 @@ export function typeDescription(
           const ordered = entries.map(([, value]) => value);
           return ordered.length < 2
             ? term("Union", ...ordered)
-            : ordered.slice(0, -1).reduceRight(
-                (right, left) => ({
-                  kind: "term",
-                  head: term("|", left),
-                  body: [{ label: "_1", value: right }],
-                }),
-                ordered.at(-1)!,
-              );
+            : alternativeChain(ordered);
         };
       }
       case "sequence": {
@@ -299,18 +302,63 @@ export function typeDescription(
     : result;
 }
 
+/** Alternatives as the right-nested `|` chain, in the given order. */
+const alternativeChain = (values: Value[]): Value =>
+  values.slice(0, -1).reduceRight(
+    (right, left) => ({
+      kind: "term",
+      head: term("|", left),
+      body: [{ label: "_1", value: right }],
+    }),
+    values.at(-1)!,
+  );
+const chainAlternatives = (v: Value): Value[] =>
+  v.kind === "term" &&
+  v.head.kind === "term" &&
+  v.head.head.kind === "symbol" &&
+  v.head.head.name === "|" &&
+  v.head.body.length === 1 &&
+  v.body.length === 1
+    ? [
+        ...chainAlternatives(v.head.body[0].value),
+        ...chainAlternatives(v.body[0].value),
+      ]
+    : [v];
+/**
+ * True when a description holds alternatives that a canonical (legacy Type)
+ * description could not: out of order or repeated, or already ConcreteType data.
+ */
+const hasNonCanonicalAlternatives = (v: Value): boolean => {
+  if (v.kind !== "term") return false;
+  if (hasHead(v, "ConcreteType")) return true;
+  const alternatives = chainAlternatives(v);
+  if (
+    alternatives.length > 1 &&
+    alternatives.some((a, i) => i > 0 && compare(alternatives[i - 1], a) >= 0)
+  )
+    return true;
+  return (
+    alternatives.length > 1
+      ? alternatives
+      : [v.head, ...v.body.map((f) => f.value)]
+  ).some(hasNonCanonicalAlternatives);
+};
+/** The head that wraps a concrete description: Type unless alternatives are non-canonical. */
+export const concreteHead = (description: Value): "Type" | "ConcreteType" =>
+  hasNonCanonicalAlternatives(description) ? "ConcreteType" : "Type";
 const hasHead = (v: Value, name: string): boolean =>
   v.kind === "term" && v.head.kind === "symbol" && v.head.name === name;
 const wrapType = (description: Value): Value =>
   hasHead(description, "Facet") ||
   hasHead(description, "Type") ||
+  hasHead(description, "ConcreteType") ||
   (description.kind === "symbol" && descriptionAtoms.has(description.name)) ||
   hasHead(description, "Recur") ||
   hasHead(description, "UnionType") ||
   hasHead(description, "AbstractType") ||
   hasHead(description, "TreeGrammar")
     ? description
-    : term("Type", description);
+    : term(concreteHead(description), description);
 
 export const typeData = (type: TypeValue): Value =>
   wrapType(typeDescription(type));
@@ -395,6 +443,8 @@ export function descriptionPattern(
   domain.validate(value);
   let work = 0;
   let facetBoundary = false;
+  // Inside ConcreteType(...) alternatives keep their order; Type(...) normalizes.
+  let orderedAlternatives = false;
   const scope = new DescriptionScope<TypeValue>();
   // Constructor arity, positional packs, flags and reference-index shape have
   // already been checked by the executable schema. This pass interprets them.
@@ -424,7 +474,11 @@ export function descriptionPattern(
     };
   }
   function alternatives(choices: Pattern<Value>[]): Pattern<Value> {
-    return { kind: "union", choices };
+    return {
+      kind: "union",
+      choices,
+      ordered: orderedAlternatives || undefined,
+    };
   }
   function decode(input: Value, path: string[] = []): Pattern<Value> {
     if (++work > 10000)
@@ -474,13 +528,27 @@ export function descriptionPattern(
             ),
           };
         case "Type":
+        case "ConcreteType":
         case "Facet": {
           const kind = v.head.name;
           const facet = kind === "Facet";
           const enclosingBoundary = facetBoundary;
+          const enclosingOrdered = orderedAlternatives;
           facetBoundary = facet;
+          orderedAlternatives = kind === "ConcreteType";
           let pattern: Pattern<Value>;
           let input = args(v)[0];
+          if (
+            kind === "ConcreteType" &&
+            descriptionAtoms.has(
+              bare(input).kind === "symbol"
+                ? (bare(input) as Extract<Value, { kind: "symbol" }>).name
+                : "",
+            )
+          )
+            failure(
+              "a primitive is already a type value; use it directly, not ConcreteType(...)",
+            );
           if (facet) {
             if (input.kind === "type") input = typeDescription(input);
             while (
@@ -494,6 +562,7 @@ export function descriptionPattern(
             pattern = scope.enter(() => child(input, kind));
           } finally {
             facetBoundary = enclosingBoundary;
+            orderedAlternatives = enclosingOrdered;
           }
           if (!facet && isOpenPattern(pattern))
             return failure(

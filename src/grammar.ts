@@ -1,6 +1,7 @@
 import { readBootstrap } from "./bootstrap.ts";
 import { elaborateBlock, validateLanguageBlock } from "./elaboration.ts";
 import { PatternCompiler } from "./pattern-compiler.ts";
+import { primitiveNames } from "./primitive-names.ts";
 import {
   addLayoutForm,
   emptyLayoutForms,
@@ -402,6 +403,33 @@ export class Grammar {
     n: Extract<Syntax, { kind: "form" }>,
     sourceItems: Syntax[],
   ): Syntax {
+    if (
+      [
+        "ConcreteTypeExpression",
+        "AbstractTypeExpression",
+        "ConcreteTypeDeclaration",
+        "AbstractTypeDeclaration",
+      ].includes(n.name)
+    ) {
+      // A primitive atom is already a type value: there is no pattern to make
+      // concrete or abstract, so a lone primitive operand is rejected, not wrapped.
+      const operand = n.captures.get("pattern")?.fields[0]?.value;
+      if (
+        operand?.kind === "symbol" &&
+        !operand.quoted &&
+        primitiveNames.has(operand.name)
+      )
+        throw new LanguageError(
+          operand.name +
+            " is already a type value; use " +
+            operand.name +
+            " itself, not " +
+            (n.name.startsWith("Concrete") ? "concrete " : "abstract ") +
+            operand.name,
+          operand.span ?? n.span,
+          { code: "E_TYPE_DESCRIPTION", phase: "declaration" },
+        );
+    }
     if (n.name === "ConcreteTypeExpression")
       return { ...n, name: "TypeExpression", items: sourceItems };
     if (n.name === "AbstractTypeExpression")

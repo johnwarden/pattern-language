@@ -32,6 +32,8 @@ export interface PatternDomain<T> {
   allowIgnoredCaptures?: boolean;
   requireCaptureTypes?: boolean;
   allowDefaults?: boolean;
+  /** Keep alternatives in written order (ConcreteType(...)) rather than normalizing them. */
+  orderedAlternatives?: boolean;
   defaultValue?: (node: Syntax) => T;
   defaultIdentity?: (node: Syntax) => string;
   validateTypedCapture?: (name: string, annotation: Syntax) => void;
@@ -57,7 +59,11 @@ export class PatternCompiler<T> {
     }
     const union = binary(n, "|");
     if (union)
-      return { kind: "union", choices: union.map((x) => this.compile(x)) };
+      return {
+        kind: "union",
+        ordered: this.domain.orderedAlternatives || undefined,
+        choices: union.map((x) => this.compile(x)),
+      };
     const annotation = binary(n, "::");
     if (annotation) {
       const anonymous = anonymousSpread(annotation[0]);

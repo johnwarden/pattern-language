@@ -318,6 +318,8 @@ export class Interpreter {
   private interpretingDepth = 0;
   private types = new Map<string, TypeValue>();
   private primitives = new Map<string, TypeValue>();
+  /** While compiling ConcreteType(...), alternatives keep their written order. */
+  private orderedAlternatives = false;
   private definitionProducts = new WeakMap<TypeValue, TypeDefinition>();
   private evaluatedDefinitions = new WeakMap<
     Scope,
@@ -2017,7 +2019,7 @@ export class Interpreter {
     )
       return singleton(
         n.head.name === "ConcreteType"
-          ? this.concreteOf(this.anonymousType(n.body[0].value, env))
+          ? this.concreteTypeFromSyntax(n.body[0].value, env)
           : this.abstractTypeFromSyntax(n.body[0].value, env),
       );
     if (!methods.length && n.head.kind === "symbol" && !n.head.quoted) {
@@ -2969,6 +2971,7 @@ export class Interpreter {
         allowIgnoredCaptures: !typeMode,
         requireCaptureTypes: typeMode,
         allowDefaults: !typeMode,
+        orderedAlternatives: this.orderedAlternatives,
         defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {
@@ -3305,11 +3308,26 @@ export class Interpreter {
     if (type.baseType) return "refinement";
     return type.unionMembers || type.facet ? "abstract" : "concrete";
   }
-  /** A ConcreteType value of a concrete type; a primitive keeps its own wrapper. */
+  /** A primitive atom is already a type value; the kind constructors do not wrap it. */
+  private rejectPrimitive(type: TypeValue, constructor: string): void {
+    if (this.typeKind(type) === "primitive")
+      throw new LanguageError(
+        type.name +
+          " is already a type value; use " +
+          type.name +
+          " itself, not " +
+          constructor +
+          "(" +
+          type.name +
+          ")",
+        undefined,
+        { code: "E_TYPE_DESCRIPTION", phase: "declaration" },
+      );
+  }
+  /** A ConcreteType value must be of a concrete type. */
   private concreteOf(type: TypeValue): TypeValue {
+    this.rejectPrimitive(type, "ConcreteType");
     switch (this.typeKind(type)) {
-      case "primitive":
-        return this.structuralType(term("Type", typeDescription(type)));
       case "concrete":
         return type;
       default:
@@ -3328,8 +3346,18 @@ export class Interpreter {
   private concreteType(description: Value): TypeValue {
     const type = this.materializeType(description);
     return this.concreteOf(
-      type ?? this.structuralType(term("Type", unwrap(description))),
+      type ?? this.structuralType(term("ConcreteType", unwrap(description))),
     );
+  }
+  /** Alternatives keep their written order; only declarations normalize. */
+  private concreteTypeFromSyntax(pattern: Syntax, env: Scope): TypeValue {
+    const enclosing = this.orderedAlternatives;
+    this.orderedAlternatives = true;
+    try {
+      return this.concreteOf(this.anonymousType(pattern, env));
+    } finally {
+      this.orderedAlternatives = enclosing;
+    }
   }
   private abstractTypeFromSyntax(pattern: Syntax, env: Scope): TypeValue {
     const alternatives = (p: Syntax): Syntax[] => {
@@ -3347,11 +3375,14 @@ export class Interpreter {
   }
   /**
    * A union of member types. Declarations and UnionType(...) normalize the
-   * member order; a direct AbstractType(...) keeps the order it was given, so a
-   * different order is a different value unless it is already the canonical one.
+   * members; a direct AbstractType(...) neither reorders, merges nor
+   * deduplicates them, so a different member list is a different value unless
+   * it is already the canonical one.
    */
   private abstractType(values: Value[]): TypeValue {
     const members = values.map((value) => this.unionMember(value));
+    if (members.length === 1) this.rejectPrimitive(members[0], "AbstractType");
+    // Validates the members (same-space conflicts) and gives the canonical form.
     const canonical = this.unionType(members);
     // A recursive group validates and orders its unions when it closes.
     if (this.buildingTypes) return canonical;
@@ -3362,13 +3393,14 @@ export class Interpreter {
           .map((t) => [typeIdentity(t), t]),
       ).values(),
     ];
-    const key = "type-union-ordered:" + JSON.stringify(flat.map(typeIdentity));
+    const key =
+      "type-union-ordered:" + JSON.stringify(members.map(typeIdentity));
     const cached = this.types.get(key);
     if (cached) return cached;
     const type: TypeValue = {
       kind: "type",
       key,
-      name: "AbstractType(" + flat.map((t) => t.name).join(" | ") + ")",
+      name: "AbstractType(" + members.map((t) => t.name).join(" | ") + ")",
       transparent: true,
       unionMembers: flat,
       packaged: flat.length > 1,
@@ -3376,7 +3408,7 @@ export class Interpreter {
         kind: "union",
         preserveSpace: true,
         ordered: true,
-        choices: flat.map((t) => this.typePattern(t)),
+        choices: members.map((t) => this.typePattern(t)),
       }),
     };
     if (typeIdentity(type) === typeIdentity(canonical)) return canonical;
@@ -3392,9 +3424,14 @@ export class Interpreter {
     if (
       value.kind !== "term" ||
       value.head.kind !== "symbol" ||
-      !["Type", "UnionType", "AbstractType", "Facet", "TreeGrammar"].includes(
-        value.head.name,
-      )
+      ![
+        "Type",
+        "ConcreteType",
+        "UnionType",
+        "AbstractType",
+        "Facet",
+        "TreeGrammar",
+      ].includes(value.head.name)
     )
       return undefined;
     try {
@@ -3562,7 +3599,9 @@ export class Interpreter {
     if (
       value.kind === "term" &&
       value.head.kind === "symbol" &&
-      ["Type", "UnionType", "AbstractType", "Facet"].includes(value.head.name)
+      ["Type", "ConcreteType", "UnionType", "AbstractType", "Facet"].includes(
+        value.head.name,
+      )
     )
       return this.structuralType(value);
     throw new LanguageError(

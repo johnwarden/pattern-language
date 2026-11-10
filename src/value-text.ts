@@ -29,7 +29,13 @@ import {
   rationalFromSyntax,
 } from "./values.ts";
 import { typeIdentity } from "./type-descriptor.ts";
-import { typeData, typeDescription, sym, lit } from "./type-data.ts";
+import {
+  typeData,
+  typeDescription,
+  concreteHead,
+  sym,
+  lit,
+} from "./type-data.ts";
 import { isInfixApplication } from "./application-format.ts";
 import { infixPunctuation } from "./lexical.ts";
 
@@ -42,6 +48,7 @@ function quoteValueSymbol(name: string, expected?: TypeValue): boolean {
 }
 const reserved = new Set([
   "Type",
+  "ConcreteType",
   "UnionType",
   "AbstractType",
   "Facet",
@@ -349,7 +356,9 @@ export function valueText(
       if (
         domain &&
         h.kind === "symbol" &&
-        ["Type", "UnionType", "AbstractType", "Facet"].includes(h.name)
+        ["Type", "ConcreteType", "UnionType", "AbstractType", "Facet"].includes(
+          h.name,
+        )
       ) {
         try {
           const decoded = domain.type(v);
@@ -454,6 +463,7 @@ export function valueText(
                 description.head.kind === "symbol" &&
                 [
                   "Type",
+                  "ConcreteType",
                   "UnionType",
                   "AbstractType",
                   "Facet",
@@ -462,7 +472,7 @@ export function valueText(
               ? description
               : {
                   kind: "term" as const,
-                  head: sym("Type"),
+                  head: sym(concreteHead(description)),
                   body: [{ label: "_1", value: description }],
                 };
           })()
@@ -684,11 +694,15 @@ export function parseValueText(
             })),
           });
         }
-        if (n.head.name === "Type" || n.head.name === "Facet")
-          return n.head.name === "Type"
+        if (
+          n.head.name === "Type" ||
+          n.head.name === "ConcreteType" ||
+          n.head.name === "Facet"
+        )
+          return n.head.name !== "Facet"
             ? domain.type({
                 kind: "term",
-                head: sym("Type"),
+                head: sym(n.head.name),
                 body: [
                   { label: "_1", value: decode(positional(n, 1)[0], true) },
                 ],
