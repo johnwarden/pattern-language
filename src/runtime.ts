@@ -3,6 +3,7 @@ import { postfixMethodName } from "./syntax.ts";
 import { punctuation } from "./lexical.ts";
 import {
   primitiveNames,
+  descriptionAtoms,
   constantNames,
   bootstrapTypeNames,
   isSelfEvaluating,
@@ -775,6 +776,26 @@ export class Interpreter {
       });
       this.primitives.set(name, scope.bindings.get(name) as TypeValue);
     }
+    // The other kinds of the Type union. They are ordinary names, not atoms:
+    // each matches the type values that its constructor builds.
+    for (const [name, kind] of [
+      ["ConcreteType", "concrete"],
+      ["AbstractType", "abstract"],
+      ["RefinementType", "refinement"],
+    ] as const)
+      scope.bindings.set(name, {
+        kind: "type",
+        name,
+        key: "kind:" + name,
+        transparent: true,
+        pattern: () => ({
+          ...test(name, (v: Value): boolean => {
+            const type = this.materializeType(v);
+            return !!type && this.typeKind(type) === kind;
+          }),
+          identity: ["kind", name],
+        }),
+      });
     if (schemaBootstrap) {
       // Schema evaluation skips the prelude, so install the same four-class
       // Symbol union the prelude defines. Do not treat the name as reserved.
@@ -802,6 +823,13 @@ export class Interpreter {
         accessors: [],
       });
     }
+    // PrimitiveType is the type of the primitive atoms, which is what the
+    // existing ReservedSymbol type already denotes: one type, two spellings.
+    // It resolves as a primitive atom; no second binding competes to name it.
+    this.primitives.set(
+      "PrimitiveType",
+      this.primitives.get("ReservedSymbol")!,
+    );
     scope.functions.set("language", [
       this.native("language", [0], () => this.grammar.description()),
     ]);
@@ -1106,6 +1134,36 @@ export class Interpreter {
     unionConstructor.test = (xs) =>
       xs.length > 0 && xs.every((e, i) => e.label === "_" + (i + 1));
     scope.functions.set("UnionType", [unionConstructor]);
+    // Syntax calls of ConcreteType/AbstractType are read as type patterns by
+    // evaluateApply; these natives take an already evaluated value tree.
+    scope.functions.set("ConcreteType", [
+      this.native("ConcreteType", [1], ([description]) =>
+        this.concreteType(description),
+      ),
+    ]);
+    scope.functions.set("AbstractType", [
+      this.native("AbstractType", [1], ([alternatives]) => {
+        const members = (value: Value): Value[] => {
+          value = unwrap(value);
+          return value.kind === "term" &&
+            value.head.kind === "term" &&
+            value.head.head.kind === "symbol" &&
+            value.head.head.name === "|" &&
+            value.body.length === 1
+            ? [
+                ...members(value.head.body[0].value),
+                ...members(value.body[0].value),
+              ]
+            : [value];
+        };
+        return this.abstractType(members(alternatives));
+      }),
+    ]);
+    scope.functions.set("RefinementType", [
+      this.native("RefinementType", [2], ([base, predicate], env) =>
+        this.refine(base, predicate, env),
+      ),
+    ]);
     scope.functions.set("String", [
       this.native("String", [1], ([codes]) => {
         const value = unwrap(codes);
@@ -1944,6 +2002,24 @@ export class Interpreter {
       )
         methods.push(local);
     }
+    // ConcreteType(pattern) and AbstractType(a | b) read their argument as a
+    // type pattern, exactly like `type pattern`, so they can neither declare
+    // captures nor evaluate it as an ordinary value tree.
+    if (
+      n.head.kind === "symbol" &&
+      !n.head.quoted &&
+      ["ConcreteType", "AbstractType"].includes(n.head.name) &&
+      methods.length === 1 &&
+      methods[0].kind === "native" &&
+      methods[0].name === n.head.name &&
+      n.body.length === 1 &&
+      positional(n.body[0].label)
+    )
+      return singleton(
+        n.head.name === "ConcreteType"
+          ? this.concreteOf(this.anonymousType(n.body[0].value, env))
+          : this.abstractTypeFromSyntax(n.body[0].value, env),
+      );
     if (!methods.length && n.head.kind === "symbol" && !n.head.quoted) {
       const binding = lookup.get(n.head.name);
       if (binding && !("kind" in binding) && binding.parameterized) {
@@ -2870,11 +2946,13 @@ export class Interpreter {
             }
             // Reserved names are never quoted, so a reserved head in a type
             // pattern names the constructor rather than calling the primitive.
+            // The legacy Type(...) wrapper is no longer a primitive atom but
+            // still names its description constructor in type patterns.
             if (
               typeMode &&
               n.head.kind === "symbol" &&
               !n.head.quoted &&
-              isSelfEvaluating(n.head.name)
+              (isSelfEvaluating(n.head.name) || n.head.name === "Type")
             )
               return undefined;
             if (
@@ -3218,6 +3296,93 @@ export class Interpreter {
     this.installAccessors(definition, decl.scope);
     this.installAccessors(definition, decl.env);
   }
+  /** The kind of a type value within the Type union. */
+  private typeKind(
+    type: TypeValue,
+  ): "primitive" | "abstract" | "concrete" | "refinement" {
+    if (type.key.startsWith("primitive:"))
+      return type === this.primitives.get("Type") ? "abstract" : "primitive";
+    if (type.baseType) return "refinement";
+    return type.unionMembers || type.facet ? "abstract" : "concrete";
+  }
+  /** A ConcreteType value of a concrete type; a primitive keeps its own wrapper. */
+  private concreteOf(type: TypeValue): TypeValue {
+    switch (this.typeKind(type)) {
+      case "primitive":
+        return this.structuralType(term("Type", typeDescription(type)));
+      case "concrete":
+        return type;
+      default:
+        throw new LanguageError(
+          "ConcreteType requires a concrete type pattern, not " + type.name,
+          undefined,
+          {
+            code: "E_EXPECTED_TYPE",
+            notes: [
+              "Use AbstractType(...) for unions of member types and RefinementType(base, predicate) for refinements.",
+            ],
+          },
+        );
+    }
+  }
+  private concreteType(description: Value): TypeValue {
+    const type = this.materializeType(description);
+    return this.concreteOf(
+      type ?? this.structuralType(term("Type", unwrap(description))),
+    );
+  }
+  private abstractTypeFromSyntax(pattern: Syntax, env: Scope): TypeValue {
+    const alternatives = (p: Syntax): Syntax[] => {
+      const parts = binary(
+        p.kind === "sequence" ? this.grammar.resolve(p) : p,
+        "|",
+      );
+      return parts
+        ? [...alternatives(parts[0]), ...alternatives(parts[1])]
+        : [p];
+    };
+    return this.abstractType(
+      alternatives(pattern).map((member) => this.typeFromSyntax(member, env)),
+    );
+  }
+  /**
+   * A union of member types. Declarations and UnionType(...) normalize the
+   * member order; a direct AbstractType(...) keeps the order it was given, so a
+   * different order is a different value unless it is already the canonical one.
+   */
+  private abstractType(values: Value[]): TypeValue {
+    const members = values.map((value) => this.unionMember(value));
+    const canonical = this.unionType(members);
+    // A recursive group validates and orders its unions when it closes.
+    if (this.buildingTypes) return canonical;
+    const flat = [
+      ...new Map(
+        members
+          .flatMap((t) => t.unionMembers ?? [t])
+          .map((t) => [typeIdentity(t), t]),
+      ).values(),
+    ];
+    const key = "type-union-ordered:" + JSON.stringify(flat.map(typeIdentity));
+    const cached = this.types.get(key);
+    if (cached) return cached;
+    const type: TypeValue = {
+      kind: "type",
+      key,
+      name: "AbstractType(" + flat.map((t) => t.name).join(" | ") + ")",
+      transparent: true,
+      unionMembers: flat,
+      packaged: flat.length > 1,
+      pattern: () => ({
+        kind: "union",
+        preserveSpace: true,
+        ordered: true,
+        choices: flat.map((t) => this.typePattern(t)),
+      }),
+    };
+    if (typeIdentity(type) === typeIdentity(canonical)) return canonical;
+    this.types.set(key, type);
+    return type;
+  }
   /** Compile an ordinary type-value tree on demand, without changing its value. */
   private materializeType(value: Value): TypeValue | undefined {
     value = unwrap(value);
@@ -3227,7 +3392,9 @@ export class Interpreter {
     if (
       value.kind !== "term" ||
       value.head.kind !== "symbol" ||
-      !["Type", "UnionType", "Facet", "TreeGrammar"].includes(value.head.name)
+      !["Type", "UnionType", "AbstractType", "Facet", "TreeGrammar"].includes(
+        value.head.name,
+      )
     )
       return undefined;
     try {
@@ -3293,8 +3460,8 @@ export class Interpreter {
   private structuralType(description: Value): TypeValue {
     description = unwrap(description);
     if (description.kind === "type") return description;
-    if (description.kind === "symbol" && primitiveNames.has(description.name))
-      return this.primitives.get(primitiveNames.get(description.name)!)!;
+    if (description.kind === "symbol" && descriptionAtoms.has(description.name))
+      return this.primitives.get(description.name)!;
     const pattern = descriptionPattern(description, {
       validate: validateDescription,
       primitive: (name) => this.primitives.get(name),
@@ -3363,8 +3530,14 @@ export class Interpreter {
       normalized.head.name === "UnionType"
     )
       return this.unionType(normalized.body.map((f) => f.value));
-    if (normalized.kind === "symbol" && primitiveNames.has(normalized.name))
-      return this.primitives.get(primitiveNames.get(normalized.name)!)!;
+    if (
+      normalized.kind === "term" &&
+      normalized.head.kind === "symbol" &&
+      normalized.head.name === "AbstractType"
+    )
+      return this.abstractType(normalized.body.map((f) => f.value));
+    if (normalized.kind === "symbol" && descriptionAtoms.has(normalized.name))
+      return this.primitives.get(normalized.name)!;
     if (
       normalized.kind === "term" &&
       normalized.head.kind === "symbol" &&
@@ -3383,6 +3556,21 @@ export class Interpreter {
     this.types.set(key, type);
     return type;
   }
+  private unionMember(value: Value): TypeValue {
+    value = this.materializeType(value) ?? unwrap(value);
+    if (value.kind === "type") return value;
+    if (
+      value.kind === "term" &&
+      value.head.kind === "symbol" &&
+      ["Type", "UnionType", "AbstractType", "Facet"].includes(value.head.name)
+    )
+      return this.structuralType(value);
+    throw new LanguageError(
+      "UnionType members must be type values; use a primitive type name or type Pattern",
+      undefined,
+      { code: "E_EXPECTED_TYPE" },
+    );
+  }
   private unionType(values: Value[]): TypeValue {
     if (!values.length)
       throw new LanguageError(
@@ -3390,21 +3578,7 @@ export class Interpreter {
         undefined,
         { code: "E_EXPECTED_TYPE" },
       );
-    const members = values.map((value) => {
-      value = this.materializeType(value) ?? unwrap(value);
-      if (value.kind === "type") return value;
-      if (
-        value.kind === "term" &&
-        value.head.kind === "symbol" &&
-        ["Type", "UnionType", "Facet"].includes(value.head.name)
-      )
-        return this.structuralType(value);
-      throw new LanguageError(
-        "UnionType members must be type values; use a primitive type name or type Pattern",
-        undefined,
-        { code: "E_EXPECTED_TYPE" },
-      );
-    });
+    const members = values.map((value) => this.unionMember(value));
     if (this.buildingTypes) {
       // Member identities may traverse unfinished siblings. Retain their finite
       // graph now and validate/sort only after the outer recursive group closes.
@@ -3790,16 +3964,29 @@ export class Interpreter {
           transform: (fields, captures) => {
             // Type is the public descriptor protocol: compiling an exact value
             // tree is a cache operation, not a new interpretation of its data.
+            // A primitive atom is already a type value in its own space.
             if (type === this.primitives.get("Type"))
-              return fields.map((e) => ({
-                ...e,
-                value: {
-                  kind: "view" as const,
-                  base: this.materializeType(e.value)!,
-                  space: type,
-                  views: new Map(),
-                },
-              }));
+              return fields.map((e) => {
+                const base = this.materializeType(e.value)!;
+                if (this.typeKind(base) === "primitive") {
+                  const atom = unwrap(e.value);
+                  return {
+                    ...e,
+                    value: this.reserved(
+                      atom.kind === "symbol" ? atom.name : base.name,
+                    )[0].value,
+                  };
+                }
+                return {
+                  ...e,
+                  value: {
+                    kind: "view" as const,
+                    base,
+                    space: type,
+                    views: new Map(),
+                  },
+                };
+              });
             if (type.treeGrammar)
               return fields.map((e) => {
                 const tree = dataSyntax(original ?? e.value);

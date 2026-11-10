@@ -3,15 +3,12 @@
 export const TYPE_SCHEMA = `# Executable recursive schema for the portable pattern-description vocabulary.
 # Recursive reference scope and semantic normalization remain decoder checks.
 def reservedHead(h)
-  match h == Type
-    True -> False
-    False -> h != String
-  end
+  h != String
 end
 def ordinaryHead(h)
   match h
     (r :: ReservedSymbol) -> reservedHead(r)
-    (:UnionType | :Facet | :Literal | :Apply | :Postfix | :Fields | :OpenFields | :Repeat | :Row | :Sequence | :Collect | :Recursive | :Recur | :Union | :TreeGrammar | (:|)) -> False
+    (:Type | :UnionType | :AbstractType | :Facet | :Literal | :Apply | :Postfix | :Fields | :OpenFields | :Repeat | :Row | :Sequence | :Collect | :Recursive | :Recur | :Union | :TreeGrammar | (:|)) -> False
     _ -> True
   end
 end
@@ -33,7 +30,7 @@ end
 def PatternSymbol
   (type Symbol) .where (s -> patternSymbol(s))
 end
-def Pattern(t :: Type) type Rational | String | Bool | PatternSymbol | ReservedSymbol | Type(Pattern(t)) | :Facet(Pattern(t)) | :TreeGrammar(t) | :UnionType(first :: t,rest... :: t*) | :Literal(Data) | :Row(FieldPack(Pattern(t))) | :Collect(Pattern(t)) | :Apply(Pattern(t),FieldPack(Pattern(t))) | :Postfix(Pattern(t),Pattern(t)) | :Recursive(Pattern(t)) | :Recur(Index) | :Union(patterns... :: Pattern(t)*) | :|(Pattern(t))(Pattern(t)) | (head :: OrdinaryHead)(fields... :: FieldPattern(Pattern(t))*,**)
-def TypeDescription Facet(type ReservedSymbol | :Recur(Index) | Type(Pattern(TypeDescription)) | :Facet(Pattern(TypeDescription)) | :TreeGrammar(TypeDescription) | :UnionType(first :: TypeDescription,rest... :: TypeDescription*))
+def Pattern(t :: Type) type Rational | String | Bool | PatternSymbol | ReservedSymbol | Type(Pattern(t)) | :Facet(Pattern(t)) | :TreeGrammar(t) | :UnionType(first :: t,rest... :: t*) | :AbstractType(first :: t,rest... :: t*) | :Literal(Data) | :Row(FieldPack(Pattern(t))) | :Collect(Pattern(t)) | :Apply(Pattern(t),FieldPack(Pattern(t))) | :Postfix(Pattern(t),Pattern(t)) | :Recursive(Pattern(t)) | :Recur(Index) | :Union(patterns... :: Pattern(t)*) | :|(Pattern(t))(Pattern(t)) | (head :: OrdinaryHead)(fields... :: FieldPattern(Pattern(t))*,**)
+def TypeDescription Facet(type ReservedSymbol | :Recur(Index) | Type(Pattern(TypeDescription)) | :Facet(Pattern(TypeDescription)) | :TreeGrammar(TypeDescription) | :UnionType(first :: TypeDescription,rest... :: TypeDescription*) | :AbstractType(first :: TypeDescription,rest... :: TypeDescription*))
 type TypeDescription
 `;

@@ -34,8 +34,15 @@ UpperCamelSymbol values because of their spelling. `Symbol` is a prelude union,
 not a reserved primitive. The prelude also defines `not : Bool -> Bool` as
 `def not(x :: Bool) x == False`.
 
-The proposed primitive vocabulary includes self-evaluating PrimitiveType, with Bool
-and PrimitiveType as its values. The complete metatype and redundant primitive-quote
+PrimitiveType is a self-evaluating primitive atom, with Bool and PrimitiveType as its
+values; it is currently the same type as `ReservedSymbol`. `Type` is not an atom: it is
+the abstract union `AbstractType | ConcreteType | RefinementType | PrimitiveType` of the
+kinds of type values, built by `ConcreteType(pattern)`, `AbstractType(a | b)` and
+`RefinementType(base, predicate)` (see
+[the contracts](tests/specification/type-values.test)). The legacy `Type(...)` and
+`UnionType(...)` constructors remain until their deprecation. A direct `AbstractType`
+call keeps its member order; an order that differs from the declaration's canonical
+one is a different value. The complete metatype and redundant primitive-quote
 policy remain provisional. Nonprimitive numeric types should be definable carveouts.
 Primitive names are `ReservedSymbol` values, and the type description of
 `type Int` is the reserved symbol `Int` itself, not `:Int`. A quoted primitive
@@ -136,7 +143,8 @@ Unsupported closure/predicate transport must remain explicit.
 
 ## Implementation encoding and gaps
 
-The bootstrap currently exposes primitive atoms, Type, Facet, UnionType, Literal,
+The bootstrap currently exposes primitive atoms, Type, Facet, UnionType, AbstractType
+(a union description that keeps a non-canonical member order), Literal,
 Fields/OpenFields, Repeat, Apply, Recursive/Recur and Row/Collect/Sequence in an
 ordinary source-defined schema. These encodings are implementation contracts for
 that supported subset, not an instruction to treat every descriptor constructor as

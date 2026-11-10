@@ -16,9 +16,16 @@ export const primitiveNames = new Map([
   ["Expression", "Expression"],
   ["Body", "Body"],
   ["Any", "Any"],
-  ["Type", "Type"],
+  ["PrimitiveType", "PrimitiveType"],
   ["ReservedSymbol", "ReservedSymbol"],
 ]);
+/**
+ * Bare atoms of the structural description alphabet: the primitive atoms plus
+ * `Type`. Outside descriptions `Type` is an ordinary name, not a reserved atom,
+ * but a bare `Type` symbol in a description still denotes the Type type, so a
+ * literal :Type pattern encodes as Literal(Type).
+ */
+export const descriptionAtoms = new Set([...primitiveNames.values(), "Type"]);
 export const constantNames = new Set(["True", "False"]);
 export const isSelfEvaluating = (name: string): boolean =>
   primitiveNames.has(name) || constantNames.has(name);

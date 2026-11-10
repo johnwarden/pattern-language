@@ -1,4 +1,4 @@
-import { primitiveNames as primitiveAtoms } from "./primitive-names.ts";
+import { descriptionAtoms } from "./primitive-names.ts";
 import { compare, isRational, integerValue } from "./values.ts";
 import { LanguageError, canonicalFields } from "./syntax.ts";
 import type { Pattern } from "./pattern.ts";
@@ -45,6 +45,7 @@ const reserved = new Set([
   "Facet",
   "**",
   "UnionType",
+  "AbstractType",
   "Literal",
   "Apply",
   "Postfix",
@@ -107,7 +108,7 @@ export function typeDescription(
   function literal(v: Value): Value {
     v = bare(v);
     if (v.kind === "literal") return v;
-    if (v.kind === "symbol" && v.name !== "_" && !primitiveAtoms.has(v.name))
+    if (v.kind === "symbol" && v.name !== "_" && !descriptionAtoms.has(v.name))
       return v;
     if (v.kind === "postfix")
       return term("Postfix", literal(v.operator), literal(v.operand));
@@ -144,7 +145,7 @@ export function typeDescription(
           if (
             p.wrappedPrimitive &&
             value.kind === "symbol" &&
-            primitiveAtoms.has(value.name)
+            descriptionAtoms.has(value.name)
           )
             value = term("Type", value);
           if (p.facet && !hasHead(value, "Facet") && !hasHead(value, "Recur"))
@@ -248,7 +249,8 @@ export function typeDescription(
         ).map((x) => encode(x));
         return (bs) => {
           const values = choices.map((x) => x(bs));
-          if (p.preserveSpace) return unionData(values);
+          if (p.preserveSpace)
+            return p.ordered ? orderedUnionData(values) : unionData(values);
           const entries = values
             .map((value) => [descriptionKey(value), value] as const)
             .sort((a, b) => compare(a[1], b[1]));
@@ -289,7 +291,7 @@ export function typeDescription(
   if (
     type.wrappedPrimitive &&
     result.kind === "symbol" &&
-    primitiveAtoms.has(result.name)
+    descriptionAtoms.has(result.name)
   )
     return term("Type", result);
   return type.facet && !hasHead(result, "Facet")
@@ -302,9 +304,10 @@ const hasHead = (v: Value, name: string): boolean =>
 const wrapType = (description: Value): Value =>
   hasHead(description, "Facet") ||
   hasHead(description, "Type") ||
-  (description.kind === "symbol" && primitiveAtoms.has(description.name)) ||
+  (description.kind === "symbol" && descriptionAtoms.has(description.name)) ||
   hasHead(description, "Recur") ||
   hasHead(description, "UnionType") ||
+  hasHead(description, "AbstractType") ||
   hasHead(description, "TreeGrammar")
     ? description
     : term("Type", description);
@@ -312,18 +315,38 @@ const wrapType = (description: Value): Value =>
 export const typeData = (type: TypeValue): Value =>
   wrapType(typeDescription(type));
 
+const unionMembersOf = (v: Value): Value[] =>
+  (hasHead(v, "UnionType") || hasHead(v, "AbstractType")) && v.kind === "term"
+    ? v.body.map((f) => f.value)
+    : [v];
+
 /** Type unions are sets of member descriptions, unlike ordered pattern alternatives. */
 export function unionData(members: Value[]): Value {
-  const flat = members.flatMap((v) =>
-    hasHead(v, "UnionType") && v.kind === "term"
-      ? v.body.map((f) => f.value)
-      : [v],
+  const unique = new Map(
+    members.flatMap(unionMembersOf).map((v) => [descriptionKey(v), v]),
   );
-  const unique = new Map(flat.map((v) => [descriptionKey(v), v]));
   return term(
     "UnionType",
     ...[...unique].sort((a, b) => compare(a[1], b[1])).map(([, v]) => v),
   );
+}
+
+/**
+ * An AbstractType keeps the member order it was built with. The canonical
+ * order is spelled UnionType(...); any other order is AbstractType(...), so the
+ * two spellings are different values unless the orders coincide.
+ */
+export function orderedUnionData(members: Value[]): Value {
+  const unique = [
+    ...new Map(
+      members.flatMap(unionMembersOf).map((v) => [descriptionKey(v), v]),
+    ).values(),
+  ];
+  const canonical = unionData(unique);
+  return canonical.kind === "term" &&
+    canonical.body.every((f, i) => f.value === unique[i])
+    ? canonical
+    : term("AbstractType", ...unique);
 }
 
 /** Stable keys for the public, capture-free description; no host object IDs. */
@@ -412,7 +435,7 @@ export function descriptionPattern(
     if (v.kind === "type") return domain.reference(v);
     if (v.kind === "literal") return domain.literal(v);
     if (v.kind === "symbol") {
-      const primitive = primitiveAtoms.has(v.name)
+      const primitive = descriptionAtoms.has(v.name)
         ? domain.primitive(v.name)
         : undefined;
       if (primitive) return domain.reference(primitive);
@@ -438,11 +461,14 @@ export function descriptionPattern(
         case "TreeGrammar":
           return domain.reference(domain.treeGrammar(args(v)[0]));
         case "UnionType":
+        case "AbstractType":
           // Decode members in this recursive scope. Re-entering the public type
           // constructor here would detach Recur references from their binder.
+          // UnionType data is a set; AbstractType data keeps its member order.
           return {
             kind: "union",
             preserveSpace: true,
+            ordered: v.head.name === "AbstractType" || undefined,
             choices: args(v).map((member, i) =>
               child(member, "member " + (i + 1)),
             ),
@@ -476,9 +502,9 @@ export function descriptionPattern(
           const atom = bare(input);
           const primitive =
             atom.kind === "symbol"
-              ? primitiveAtoms.has(atom.name)
+              ? descriptionAtoms.has(atom.name)
               : atom.kind === "type" &&
-                [...primitiveAtoms.values()].some(
+                [...descriptionAtoms].some(
                   (name) => domain.primitive(name) === atom,
                 );
           if (pattern.kind === "ref" && !facet && !primitive) return pattern;

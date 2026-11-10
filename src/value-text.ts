@@ -1,5 +1,6 @@
 import {
   primitiveNames,
+  descriptionAtoms,
   isSelfEvaluating,
   isCanonicalAtom,
 } from "./primitive-names.ts";
@@ -42,6 +43,7 @@ function quoteValueSymbol(name: string, expected?: TypeValue): boolean {
 const reserved = new Set([
   "Type",
   "UnionType",
+  "AbstractType",
   "Facet",
   "**",
   "String",
@@ -347,7 +349,7 @@ export function valueText(
       if (
         domain &&
         h.kind === "symbol" &&
-        ["Type", "UnionType", "Facet"].includes(h.name)
+        ["Type", "UnionType", "AbstractType", "Facet"].includes(h.name)
       ) {
         try {
           const decoded = domain.type(v);
@@ -447,12 +449,16 @@ export function valueText(
                   }
                 : typeDescription(t, domain.localReferences);
             return (description.kind === "symbol" &&
-              primitiveNames.has(description.name)) ||
+              descriptionAtoms.has(description.name)) ||
               (description.kind === "term" &&
                 description.head.kind === "symbol" &&
-                ["Type", "UnionType", "Facet", "TreeGrammar"].includes(
-                  description.head.name,
-                ))
+                [
+                  "Type",
+                  "UnionType",
+                  "AbstractType",
+                  "Facet",
+                  "TreeGrammar",
+                ].includes(description.head.name))
               ? description
               : {
                   kind: "term" as const,
@@ -479,7 +485,9 @@ export function valueText(
           name: v.name,
           quoted: head
             ? !/^\p{Lu}/u.test(v.name) && !["|", "[]", "{}"].includes(v.name)
-            : !isSelfEvaluating(v.name) && !referenceNames.has(v.name),
+            : !descriptionAtoms.has(v.name) &&
+              !isSelfEvaluating(v.name) &&
+              !referenceNames.has(v.name),
         };
       if (v.kind === "literal") return syntax(v);
       if (v.kind === "term") {
@@ -692,7 +700,7 @@ export function parseValueText(
                   { label: "_1", value: decode(positional(n, 1)[0], true) },
                 ],
               });
-        if (n.head.name === "UnionType") {
+        if (n.head.name === "UnionType" || n.head.name === "AbstractType") {
           positional(n);
           return domain.type(decode(n, true));
         }
@@ -761,7 +769,7 @@ export function parseValueText(
     const local = domain.localType?.(normal(n));
     if (local) return local;
     const value = decode(n);
-    if (value.kind === "symbol" && primitiveNames.has(value.name))
+    if (value.kind === "symbol" && descriptionAtoms.has(value.name))
       return domain.type(value);
     if (value.kind !== "type")
       return fail("a serialized interpretation requires a type value", n);
@@ -769,6 +777,10 @@ export function parseValueText(
   }
   try {
     const local = typeExpected ? domain.localType?.(normal(tree)) : undefined;
+    // Outside descriptions Type is an ordinary name; as the whole text of a
+    // type it still denotes the Type type, as the other primitive names do.
+    if (typeExpected && tree.kind === "symbol" && tree.name === "Type")
+      return local ?? domain.type(sym("Type"));
     return local ?? decode(tree);
   } catch (error) {
     if (error instanceof LanguageError) {

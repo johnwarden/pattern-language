@@ -39,6 +39,8 @@ export type Pattern<T> =
       kind: "union";
       choices: Pattern<T>[];
       preserveSpace?: boolean;
+      /** Member order is part of the value (AbstractType); otherwise it is normalized. */
+      ordered?: boolean;
       preferred?: Pattern<T>[];
     }
   | { kind: "sequence"; parts: Pattern<T>[] }

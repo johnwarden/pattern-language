@@ -54,6 +54,15 @@ must test composition and state role differences explicitly.
   `Number` will later be an abstract union of fixed-width number types.
 - Primitive names such as `Int` are `ReservedSymbol` values. `True` and `False` are
   `Bool` values, the type of computed comparisons: `(1 == 2) == False` is `True`.
+- `Type` is an ordinary name for the abstract union of the type-value kinds
+  `ConcreteType | AbstractType | RefinementType | PrimitiveType`, not a reserved
+  atom; `:Type` is an ordinary symbol. `ConcreteType(pattern)`, `AbstractType(a | b)`
+  and `RefinementType(base, predicate)` construct type values beside the legacy
+  `Type(...)`/`UnionType(...)`, which keep working until their deprecation
+  ([contracts](tests/specification/type-values.test); todo cases in
+  [type-values/](tests/specification/type-values/) wait on refinement declaration
+  syntax, named function values and unlabeled bound defaults). `PrimitiveType` is
+  currently the same type as `ReservedSymbol`.
 - General abstract unions may have overlapping spellings. A separate unambiguous
   grammar requirement supports annotation-free DSL text. Typed general text retains
   sufficient member reconstruction information; no branch priority is introduced.

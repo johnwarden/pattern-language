@@ -33,7 +33,7 @@ test("a companion todo does not remove a supported playground program", () => {
   const value = loadTests({
     "paired.test": `test "Literal migration"
   legacy expect Bool is Bool :: ReservedSymbol
-  todo expect Bool is Bool :: PrimitiveType
+  todo expect Bool is Bool :: UnimplementedMetatype
 end`,
   })[0];
   assert.equal(value.program, true);

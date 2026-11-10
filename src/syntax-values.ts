@@ -19,7 +19,7 @@ import {
 import type { Rational } from "./rational.ts";
 import type { Value } from "./values.ts";
 import { typeData } from "./type-data.ts";
-import { primitiveNames, isCanonicalAtom } from "./primitive-names.ts";
+import { descriptionAtoms, isCanonicalAtom } from "./primitive-names.ts";
 
 /** Remove only the program reader's outer wrapper, never a quoted block itself. */
 let codeLayoutForms: LayoutForms | undefined;
@@ -304,7 +304,7 @@ export function literalSyntax(value: Value): Syntax {
   if (!space) return expression;
   const description = typeData(space);
   const type =
-    description.kind === "symbol" && primitiveNames.has(description.name)
+    description.kind === "symbol" && descriptionAtoms.has(description.name)
       ? { kind: "symbol" as const, name: description.name, quoted: false }
       : {
           kind: "apply" as const,
