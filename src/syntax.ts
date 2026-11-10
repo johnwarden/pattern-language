@@ -49,7 +49,15 @@ export type Syntax =
       spelling?: string;
       span?: Span;
     }
-  | { kind: "apply"; head: Syntax; body: Field<Syntax>[]; span?: Span }
+  | {
+      kind: "apply";
+      head: Syntax;
+      body: Field<Syntax>[];
+      typeArguments?: boolean;
+      /** Elaboration marker for a dedicated type declaration signature. */
+      angleDeclaration?: boolean;
+      span?: Span;
+    }
   | {
       kind: "postfix";
       operator: string;
@@ -200,6 +208,7 @@ export function implicitFieldCapture(field: Field<Syntax>): string | undefined {
 export function isTypeSpecification(n: Syntax): boolean {
   return (
     (n.kind === "symbol" && !n.quoted && /^\p{Lu}/u.test(n.name)) ||
+    (n.kind === "apply" && !!n.typeArguments) ||
     (n.kind === "postfix" && isTypeSpecification(n.operand)) ||
     (n.kind === "form" && n.name === "TypeExpression") ||
     (n.kind === "sequence" &&
@@ -407,6 +416,8 @@ export function normal(n: Syntax, indent = 0): string {
         : inner + n.operator;
     }
     case "apply": {
+      if (n.typeArguments)
+        return normal(n.head, indent) + "<" + body(n.body) + ">";
       if (
         n.head.kind === "symbol" &&
         !n.head.quoted &&
@@ -464,6 +475,7 @@ export function syntaxKey(n: Syntax): string {
       case "apply":
         return [
           n.kind,
+          !!n.typeArguments,
           key(n.head),
           canonicalFields(n.body).map((e) => [e.label, key(e.value)]),
         ];

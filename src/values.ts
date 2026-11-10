@@ -84,6 +84,7 @@ export interface TypeDeclaration {
   name: string;
   parameters: Field<Syntax>[];
   parameterized: boolean;
+  angleParameters?: boolean;
   body: Syntax;
   env: Scope;
   captures: Set<string>;

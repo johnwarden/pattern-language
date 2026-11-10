@@ -47,7 +47,7 @@ export const HOST_READERS = [
 ] as const;
 
 /** One executable tree schema serves grammar transport and expression inspection. */
-export const SYNTAX_SCHEMA = `def SyntaxNode type Name(String,Bool) | NumberLiteral(Rational) | StringLiteral(String) | Apply(SyntaxNode,[_... :: (type Field(String,SyntaxNode))*]) | Pack([_... :: (type Field(String,SyntaxNode))*]) | Postfix(String,SyntaxNode) | Quote(SyntaxNode) | TypedQuote(SyntaxNode,SyntaxNode,Bool) | TextTemplate([_... :: (type Text(String) | Hole(SyntaxNode,Int,String))*]) | ReaderQuote(SyntaxNode,[_... :: (type Text(String) | Hole(SyntaxNode,Int,String))*]) | Sequence([_... :: SyntaxNode*]) | Block([_... :: SyntaxNode*]) | Form(String,[_... :: SyntaxNode*],[_... :: (type Capture(String,Bool,[_... :: (type Field(String,SyntaxNode))*]))*])
+export const SYNTAX_SCHEMA = `def SyntaxNode type Name(String,Bool) | NumberLiteral(Rational) | StringLiteral(String) | Apply(SyntaxNode,[_... :: (type Field(String,SyntaxNode))*]) | TypeApply(SyntaxNode,[_... :: (type Field(String,SyntaxNode))*]) | Pack([_... :: (type Field(String,SyntaxNode))*]) | Postfix(String,SyntaxNode) | Quote(SyntaxNode) | TypedQuote(SyntaxNode,SyntaxNode,Bool) | TextTemplate([_... :: (type Text(String) | Hole(SyntaxNode,Int,String))*]) | ReaderQuote(SyntaxNode,[_... :: (type Text(String) | Hole(SyntaxNode,Int,String))*]) | Sequence([_... :: SyntaxNode*]) | Block([_... :: SyntaxNode*]) | Form(String,[_... :: SyntaxNode*],[_... :: (type Capture(String,Bool,[_... :: (type Field(String,SyntaxNode))*]))*])
 `;
 
 /** Recursive source-language schema for the actual grammar transport format. */
@@ -97,7 +97,11 @@ export function encodeSyntax(input: Syntax): Value {
           return node("NumberLiteral", valRational(r.n, r.d));
         }
       case "apply":
-        return node("Apply", child(s.head), fields(s.body, depth));
+        return node(
+          s.typeArguments ? "TypeApply" : "Apply",
+          child(s.head),
+          fields(s.body, depth),
+        );
       case "postfix":
         return node("Postfix", valLiteral(s.operator), child(s.operand));
       case "pack":
@@ -209,10 +213,12 @@ export function decodeSyntax(input: Value): Syntax {
       case "StringLiteral":
         return { kind: "literal", value: text(xs[0]) };
       case "Apply":
+      case "TypeApply":
         return {
           kind: "apply",
           head: child(xs[0]),
           body: fields(xs[1], depth),
+          ...(head.name === "TypeApply" ? { typeArguments: true } : {}),
         };
       case "Postfix":
         return {

@@ -105,10 +105,7 @@ test("indented concrete declarations require and preserve their aligned end", ()
   if (tree.kind === "block") {
     const canonical = tree.lines.map(normal).join("\n");
     const restored = new Interpreter();
-    assert.equal(
-      restored.inspect(restored.run(canonical)),
-      expected,
-    );
+    assert.equal(restored.inspect(restored.run(canonical)), expected);
   }
   assert.throws(
     () =>
@@ -126,11 +123,11 @@ test("unimplemented declaration signatures are rejected rather than becoming fun
       new Interpreter().run(
         "type rectangle concrete Rect(Rational, Rational)\nrectangle",
       ),
-    /type declaration requires a bare UpperCamel name/,
+    /type declaration requires an UpperCamel name and simple Type parameters/,
   );
   assert.throws(
     () => new Interpreter().run("type Box(T) concrete Box(T)\nBox"),
-    /type declaration requires a bare UpperCamel name/,
+    /type declaration requires an UpperCamel name and simple Type parameters/,
   );
 });
 

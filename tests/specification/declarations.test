@@ -113,7 +113,7 @@ test "C17 defaults belong to bindings and explicit factories"
 end
 
 test "C18 equivalent independently named descriptors interoperate"
-  todo assert
+  assert
     produced = (
       type Option<T> concrete :None | Some(T)
       (Some("hello") :: Option<String>)

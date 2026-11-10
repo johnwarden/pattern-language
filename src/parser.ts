@@ -241,7 +241,8 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
   const out: Token[] = [];
   let i = 0,
     line = 1,
-    column = 1;
+    column = 1,
+    angleDepth = 0;
   while (i < source.length) {
     const c = source[i];
     if (c === " " || c === "\t" || c === "\r") {
@@ -346,10 +347,20 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
           column: 1,
         });
       continue;
-    } else if (options.specification && /[<>]/.test(c)) {
+    } else if (
+      /[<>]/.test(c) &&
+      (options.specification ||
+        (c === ">" && angleDepth > 0) ||
+        (c === "<" &&
+          (angleDepth > 0 ||
+            (out.at(-1)?.end === i &&
+              out.at(-1)?.kind === "name" &&
+              /^\p{Lu}/u.test(out.at(-1)!.text)))))
+    ) {
       i++;
       kind = "op";
       text = c;
+      angleDepth += c === "<" ? 1 : -1;
     } else if (
       (options.specification
         ? /^(?:0[fFxXbB]|[0-9][0-9_]*_)/
@@ -656,9 +667,20 @@ class Reader {
           );
         break;
       }
-      if (this.options.specification && t.kind === "op" && t.text === "<") {
+      if (
+        t.kind === "op" &&
+        t.text === "<" &&
+        (this.options.specification ||
+          (n.kind === "symbol" && !n.quoted && /^\p{Lu}/u.test(n.name)))
+      ) {
         this.take();
-        n = { ...apply(n, this.arguments(">")), span: n.span };
+        n = {
+          kind: "apply",
+          head: n,
+          body: this.arguments(">"),
+          typeArguments: true,
+          span: n.span,
+        };
       } else if (t.kind === "(") {
         this.take();
         n = { ...apply(n, this.arguments(")")), span: n.span };
