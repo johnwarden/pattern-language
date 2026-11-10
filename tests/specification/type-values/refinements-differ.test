@@ -1,0 +1,9 @@
+# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+todo test "Different refinements are not equated merely by their base"
+  def positive(n :: Rational) n > 0
+  def nonZero(n :: Rational) n != 0
+  a = RefinementType(Rational, positive)
+  b = RefinementType(Rational, nonZero)
+  assert a != b
+  assert a != Rational
+end

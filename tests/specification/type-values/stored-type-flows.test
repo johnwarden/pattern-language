@@ -1,0 +1,9 @@
+# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+todo test "A stored type flows through ordinary calls and returns"
+  def make(T :: Type) ConcreteType(Box(T))
+  def use(T :: Type)(x :: T) x
+  saved = make(String)
+  assert saved == ConcreteType(Box(String))
+  expect use(saved)(Box("hi") :: saved) is Box("hi") :: saved
+  expect use(saved, Box("hi")) fails "E_NO_METHOD"
+end

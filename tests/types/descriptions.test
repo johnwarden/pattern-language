@@ -1,5 +1,6 @@
 test "Explicit Apply describes a literal reserved head"
-  assert Type(Apply(Literal(String), Fields(:A))) == (type String(:A))
+  # Legacy: the Type(Apply(Literal(...))) descriptor encoding; public descriptor-field extraction is deferred.
+  legacy assert Type(Apply(Literal(String), Fields(:A))) == (type String(:A))
 end
 
 test "String constructor patterns round trip without becoming string literals"

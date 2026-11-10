@@ -9,7 +9,8 @@ test "Canonical type alternatives"
   assert parse(Type)(toString(Type)(a)) == b
 
   mixed = type Some(Int) | 10 | :None | 2
-  expect mixed is Type(:None | 2 | 10 | Some(Int)) :: Type
+  legacy expect mixed is Type(:None | 2 | 10 | Some(Int)) :: Type
+  todo expect mixed is ConcreteType(:None | 2 | 10 | Some(Int)) :: Type
 
   ((a == b), toString(Type)(a), (parse(Type)(toString(Type)(a)) == b), mixed)
 end
@@ -54,14 +55,15 @@ test "Type fields and ignored captures"
   Rect(_, h) = r
 
   observed = type Rectangle
-  expect observed is Type(Rect(Float, Float)) :: Type
+  legacy expect observed is Type(Rect(Float, Float)) :: Type
+  todo expect observed is ConcreteType(Rect(Float, Float)) :: Type
   expect h is 4 :: Float
   ((type Rectangle), h)
 end
 
 test "Inspect a pattern union"
   t = type :Some(Int) | :None
-  Type(:|(left)(right)) = t
+  legacy Type(:|(left)(right)) = t
 
   legacy expect left is :None :: Expression
   legacy expect right is Some(Int) :: Expression
@@ -121,7 +123,8 @@ test "A union of type values"
   def Square type :Square(Float)
   shape = UnionType(type Circle, type Square)
 
-  expect shape is UnionType(Type(Circle(Float)), Type(Square(Float))) :: Type
+  legacy expect shape is UnionType(Type(Circle(Float)), Type(Square(Float))) :: Type
+  todo expect shape is AbstractType(ConcreteType(Circle(Float)) | ConcreteType(Square(Float))) :: Type
 end
 
 test "Option factory with ()"
@@ -132,7 +135,8 @@ test "Option factory with ()"
   expect toString(Option(Int))(a) is "None" :: String
   expect a is None :: Option(Int)
   expect b is Some(5) :: Option(Int)
-  expect Option(Int) is Type(:None | Some(Int)) :: Type
+  legacy expect Option(Int) is Type(:None | Some(Int)) :: Type
+  todo expect Option(Int) is ConcreteType(:None | Some(Int)) :: Type
   (toString(Option(Int))(a), b, Option(Int))
 end
 
@@ -250,11 +254,13 @@ test "Types are ordinary values"
   r = Rect
   value = Rect(2, 2) :: Rect
 
-  expect r is Type(Rect(Float, Float)) :: Type
+  legacy expect r is Type(Rect(Float, Float)) :: Type
+  todo expect r is ConcreteType(Rect(Float, Float)) :: Type
   expect value is Rect(2, 2) :: Rect
   expect Int is Int :: ReservedSymbol
   expect Float is Float :: ReservedSymbol
-  expect Type(Int) is Type(Int) :: Type
+  legacy expect Type(Int) is Type(Int) :: Type
+  todo expect Int is Int :: PrimitiveType
   (r, value, Int, Float, Type(Int))
 end
 
@@ -269,27 +275,31 @@ test "Type normalization and wrappers"
   def Rect type Rect(Float, Float)
 
   observedInt = type Int
-  observedTypeInt = type type Int
-  observedTypeTypeInt = type type type Int
+  legacy observedTypeInt = type type Int
+  legacy observedTypeTypeInt = type type type Int
   observedRect = type Rect
-  observedTypeRect = type type Rect
+  legacy observedTypeRect = type type Rect
   expect observedInt is Int :: Type
   expect observedTypeInt is Int :: Type
   expect observedTypeTypeInt is Int :: Type
-  expect Type(Int) is Type(Int) :: Type
-  expect observedRect is Type(Rect(Float, Float)) :: Type
-  expect observedTypeRect is Type(Rect(Float, Float)) :: Type
-  expect Type(Rect) is Type(Rect(Float, Float)) :: Type
-  expect Type(Type(Rect)) is Type(Rect(Float, Float)) :: Type
+  legacy expect Type(Int) is Type(Int) :: Type
+  todo expect Int is Int :: PrimitiveType
+  legacy expect observedRect is Type(Rect(Float, Float)) :: Type
+  todo expect observedRect is ConcreteType(Rect(Float, Float)) :: Type
+  legacy expect observedTypeRect is Type(Rect(Float, Float)) :: Type
+  todo expect observedTypeRect is ConcreteType(Rect(Float, Float)) :: Type
+  legacy expect Type(Rect) is Type(Rect(Float, Float)) :: Type
+  legacy expect Type(Type(Rect)) is Type(Rect(Float, Float)) :: Type
   (observedInt, observedTypeInt, observedTypeTypeInt, Type(Int), observedRect, observedTypeRect, Type(Rect), Type(Type(Rect)))
 end
 
 test "Types as ordinary values"
   def Rectangle type :Rect(width :: Float, height :: Float)
-  t = Type(Rect(Float, Float))
-  Type(pattern) = t
+  legacy t = Type(Rect(Float, Float))
+  legacy Type(pattern) = t
 
-  assert Type(pattern) == t
+  # Legacy: Type(pattern) = t destructuring is retired; public descriptor-field extraction is deferred.
+  legacy assert Type(pattern) == t
 
   assert t == (type Rectangle)
   # Legacy blocked: public descriptor text is still provisional.

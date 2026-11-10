@@ -1,6 +1,7 @@
 test "Concrete type declaration syntax"
   type Color concrete :Black | :White
 
-  expect Color is Type(:Black | :White) :: Type
+  legacy expect Color is Type(:Black | :White) :: Type
+  todo expect Color is ConcreteType(:Black | :White) :: Type
   expect :Black :: Color is Black :: Color
 end

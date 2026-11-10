@@ -46,7 +46,8 @@ test "Definitions evaluate their bodies"
 
   expect :(Rect(Float)) is Rect(Float) :: Expression
   observed = type R
-  expect observed is Type(Rect(Float)) :: Type
+  legacy expect observed is Type(Rect(Float)) :: Type
+  todo expect observed is ConcreteType(Rect(Float)) :: Type
   (r, (type R))
 end
 

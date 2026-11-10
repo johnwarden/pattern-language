@@ -1,0 +1,22 @@
+# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+todo test "Type is a prelude union, not a reserved symbol"
+  assert :Type .matches UpperCamelSymbol
+  assert not(Type .matches ReservedSymbol)
+  assert Int .matches Type
+  assert Bool .matches PrimitiveType
+  assert PrimitiveType .matches PrimitiveType
+  assert not(:Type .matches Type)
+
+  concreteValue = ConcreteType(Rect(Rational))
+  abstractValue = AbstractType(Rational | String)
+  predicate = n -> n != 0
+  refined = RefinementType(Rational, predicate)
+  assert concreteValue .matches ConcreteType
+  assert abstractValue .matches AbstractType
+  assert refined .matches RefinementType
+  assert concreteValue .matches Type
+  assert abstractValue .matches Type
+  assert refined .matches Type
+  assert not(concreteValue .matches AbstractType)
+  assert not(refined .matches ConcreteType)
+end

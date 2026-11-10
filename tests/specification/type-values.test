@@ -54,3 +54,81 @@ test "C06 equal spellings can belong to different concrete spaces"
     (red == stopped)
   fails "E_INCOMPARABLE_TYPES"
 end
+
+# Cases below capture specs/approved/type-values.md. Cases that need the new
+# kind constructors (ConcreteType, AbstractType, RefinementType) in their setup
+# are whole-case todos in tests/specification/type-values/, one per file because
+# a file may hold only one todo test. Here only cases with working setup appear.
+
+test "A primitive is already a type value"
+  todo expect Int is Int :: PrimitiveType
+  assert Int .matches Type
+  assert (type Int) == Int
+  expect :Int fails "E_QUOTED_PRIMITIVE"
+end
+
+test "An independently declared descriptor interops"
+  first = (
+    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    Rectangle
+  )
+  second = (
+    type Shape concrete Rect(width :: Rational, height :: Rational)
+    Shape
+  )
+  assert first == second
+  todo assert first == ConcreteType(Rect(Rational, Rational))
+  value = (Rect(2, 3) :: first)
+  assert value .matches second
+end
+
+test "Independent abstract scopes retain the same member domain"
+  left = (
+    type Choice abstract Rational | String
+    Choice
+  )
+  right = (
+    type Other abstract String | Rational
+    Other
+  )
+  assert left == right
+  def pass(t :: Type) t
+  assert pass(left) == right
+end
+
+test "A declaration registers its accessors"
+  type Rectangle concrete Rect(w :: Rational, h :: Rational)
+  value = Rect(2, 3) :: Rectangle
+  expect value.w is 2 :: Rational
+  todo assert Rectangle == ConcreteType(Rect(Rational, Rational))
+end
+
+test "A type constructor cannot declare captures"
+  todo expect
+    ConcreteType(Rect(w :: Rational, h :: Rational))
+  fails "ordinary type construction cannot declare captures/accessors"
+end
+
+test "Equivalent declarations and accessor collisions still fail"
+  type First concrete Rect(w :: Rational)
+
+  expect
+    type First concrete Rect(w :: Rational)
+    type Second concrete Rect(w :: Rational)
+    Second
+  fails "E_DUPLICATE_TYPE"
+
+  expect
+    def w(x) 99
+    value = Rect(2) :: First
+    value.w
+  fails "E_AMBIGUOUS_CALL"
+
+end
+
+test "Typed overloaded function still works"
+  type First concrete Rect(w :: Rational)
+  def w(x :: Int) 99
+  value = Rect(2) :: First
+  expect value.w is 2
+end

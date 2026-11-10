@@ -1,0 +1,10 @@
+# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+todo test "Type value constructors differ from applying a type to data"
+  type Rectangle concrete Rect(w :: Rational, h :: Rational)
+  t = ConcreteType(Rect(Rational, Rational))
+  assert t == Rectangle
+  assert Rect(2, 3) .matches t
+  expect Rect(2, 3) :: t is Rect(2, 3) :: Rectangle
+  expect t(2, 3) fails "E_NOT_CALLABLE"
+  expect Type(Rect(Rational, Rational)) is Type(Rect(Rational, Rational)) :: Expression
+end

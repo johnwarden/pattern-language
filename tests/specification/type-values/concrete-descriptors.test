@@ -1,0 +1,12 @@
+# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+todo test "Concrete descriptors are capture-free and structural"
+  type Rectangle concrete Rect(w :: Rational, h :: Rational)
+  x = ConcreteType(Rect(Rational, Rational))
+  y = ConcreteType(Rect(Rational, Rational))
+  assert Rectangle == x
+  assert x == y
+  assert not(x == ConcreteType(Rect(Rational, String)))
+  assert not(x == ConcreteType(Rect(width: Rational, height: Rational)))
+  def keep(t :: Type) t
+  assert keep(x) == Rectangle
+end

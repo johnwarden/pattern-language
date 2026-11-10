@@ -1,0 +1,8 @@
+# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+todo test "A constructor spelling in Code does not grant it type identity"
+  source = parse(Code)("ConcreteType(Rect(Rational))")
+  assert source .matches Code
+  t = ConcreteType(Rect(Rational))
+  assert t .matches Type
+  assert not(source .matches Type)
+end

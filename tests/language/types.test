@@ -120,7 +120,8 @@ end
 test "Anonymous type macro"
   t = t -> type :Some(t)
 
-  expect t(type Int) is Type(Some(Int)) :: Type
+  legacy expect t(type Int) is Type(Some(Int)) :: Type
+  todo expect t(type Int) is ConcreteType(Some(Int)) :: Type
 end
 
 test "Option"

@@ -57,8 +57,9 @@ test "Equal types in independent scopes share accessors"
 end
 
 test "unionType normalizes like UnionType"
-  assert (unionType String | Int) == UnionType(Int, String)
-  assert (unionType Int | String | Int) == UnionType(String, Int)
+  # Legacy: UnionType normalizes member order; AbstractType(...) does not (specs/approved/type-values.md), so no replacement is specified.
+  legacy assert (unionType String | Int) == UnionType(Int, String)
+  legacy assert (unionType Int | String | Int) == UnionType(String, Int)
   expect
     unionType Int | foo
   fails "unbound"

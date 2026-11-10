@@ -77,12 +77,14 @@ end
 test "UnionType text distinguishes Float64 from Float"
   t = UnionType(Float32, Float64)
 
-  expect toString(Type)(t) is "UnionType(Float32, Float64)" :: String
+  # Legacy blocked: exact old UnionType(...) text; the canonical descriptor format is not chosen.
+  legacy expect toString(Type)(t) is "UnionType(Float32, Float64)" :: String
   assert parse(Type)(toString(Type)(t)) == t
 end
 
 test "Overlapping option unions construct; unannotated None is ambiguous"
-  expect UnionType(Int?, String?) is UnionType(Type(Int | :None), Type(:None | String)) :: Type
+  legacy expect UnionType(Int?, String?) is UnionType(Type(Int | :None), Type(:None | String)) :: Type
+  todo expect AbstractType(Int? | String?) is AbstractType(ConcreteType(Int | :None) | ConcreteType(:None | String)) :: Type
 
   expect
     def U UnionType(Int?, String?)
@@ -92,9 +94,11 @@ test "Overlapping option unions construct; unannotated None is ambiguous"
 end
 
 test "Overlapping numeric and constructor unions construct"
-  expect UnionType(Int, Float) is UnionType(Float, Int) :: Type
-  assert UnionType(Int, Int) == UnionType(Int)
+  # Legacy: UnionType reorders and deduplicates members; AbstractType(...) does not, so no replacement is specified.
+  legacy expect UnionType(Int, Float) is UnionType(Float, Int) :: Type
+  legacy assert UnionType(Int, Int) == UnionType(Int)
 
+  # Legacy (not marked): UnionType(A, B) reorders members; the inventory format cannot hold this multi-line subject.
   expect
     def A type :X(Int)
     def B type :X(Float)
@@ -126,5 +130,6 @@ test "Overlapping abstract facet members retain spaces"
   def Colored type :Rect(Float, Float, color: String)
   def Rectangular type :Rect(w :: Float, h :: Float, **)
 
-  expect UnionType(type Rectangular, type Colored) is UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
+  # Legacy: the Facet(Apply(OpenFields(...))) descriptor encoding; public descriptor-field extraction is deferred.
+  legacy expect UnionType(type Rectangular, type Colored) is UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
 end

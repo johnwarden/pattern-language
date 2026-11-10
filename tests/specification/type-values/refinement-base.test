@@ -1,0 +1,14 @@
+# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+todo test "A refinement has a base and predicate, and keeps its base space"
+  def nonZero(n :: Rational) n != 0
+  type NonZero refinement Rational .where nonZero
+  t = RefinementType(Rational, nonZero)
+  assert t == NonZero
+  assert t .matches Type
+  assert not(t == Rational)
+  assert not(t == ConcreteType(Rational))
+  assert not(0 .matches t)
+  assert 2 .matches t
+  def identity(u :: Type) u
+  assert identity(t) == NonZero
+end
