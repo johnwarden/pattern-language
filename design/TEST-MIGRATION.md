@@ -313,14 +313,11 @@ Host remainder is TS Rational/binary64 helpers, public syntax-tree display, exac
 
 ## Type identity and value-tree migration
 
-Jonathan approved an assertion-level pass on the value/inspection group.
-This first slice moves unique portable evaluations that master already
-implements consistently with D05, D19 and D20. Named declarations use
-`type Name concrete`. Parameterized factories keep bootstrap
-`def Name(t :: Type) type`. Concrete-identity incomparability,
-inspection/decoding, function-value printing and application-head
-evaluation of `True(1)`/`1(1)` were not selected. Expected results are
-authored data.
+#60 moved the identity and value-tree slice into source tests. #68 restores
+its representation/decoding blocks to host and removes the five matching source
+cases. The original authored host blocks and expectations are preserved without
+syntax/API changes; mixed blocks also restore some portable checks. Identity and
+the other semantic source cases remain.
 
 | Former host block | Current source case(s) | Coverage retained |
 | --- | --- | --- |
@@ -335,14 +332,14 @@ authored data.
 | type-atoms: specialized function checks the member | types/value-trees#a-specialized-type-argument-function-still-checks-the-member | Exact `E_NO_METHOD` stays |
 | type-atoms: factory accessors remain visible | types/value-trees#factory-accessors-remain-visible-to-earlier-functions | — |
 | type-atoms: bound values substitute in type patterns | types/value-trees#bound-values-substitute-in-type-patterns | — |
-| type-atoms: Type construction through Any | types/value-trees#type-construction-sees-int-through-abstract-storage | — |
-| type-atoms: canonical alternatives include literals | types/value-trees#canonical-alternatives-put-symbols-before-literals-and-applications | `parseExpression` postfix matrix stays |
+| type-atoms: Type construction through Any | —; source case removed in #68 | test/type-atoms.test.ts: original abstract-storage block restored |
+| type-atoms: canonical alternatives include literals | —; source case removed in #68 | test/type-atoms.test.ts: original ordering/equality block restored; postfix parser matrix stays |
 | type-atoms: postfix type ≠ prefix quotation | types/value-trees#postfix-type-descriptions-are-not-prefix-quotation | syntax kind/key/`normal` stay |
 | type-atoms: reserved Int/True redeclarations | types/value-trees#reserved-primitive-names-cannot-be-redeclared; types/value-trees#reserved-constants-cannot-be-redeclared | `env.bindings.delete` stays |
 | type-atoms: type defaults | types/value-trees#ordinary-type-construction-rejects-binding-defaults | Exact `E_TYPE_DEFAULT` and binding-default positive stay |
-| value-representation: compiled vs quoted trees | types/value-trees#compiled-type-trees-equal-quoted-trees | Nested list equality and Expression parse round-trips stay |
-| value-representation: quoted type tree as a named type | types/value-trees#a-quoted-type-tree-can-be-installed-as-a-named-type | `.where` on a bound `Int` stays |
-| value-representation: invalid type-shaped data | types/value-trees#invalid-type-shaped-data-is-not-a-type | — |
+| type-atoms/value-representation: compiled vs quoted trees | —; source case removed in #68 | Original canonical-string, explicit Type(Int), nested equality and global-text/Expression transport blocks restored in both host files |
+| value-representation: quoted type tree as a named type | —; source case removed in #68 | test/value-representation.test.ts: original type-position block restored intact, including `.where` and bound matcher checks |
+| value-representation: invalid type-shaped data | —; source case removed in #68 | test/value-representation.test.ts: original malformed Primitive/UnionType matching and transport block restored |
 | value-representation: bound type value is a matcher | types/value-trees#a-bound-type-value-is-a-matcher | — |
 
 Host remainder is `inspect`, REPL abbreviation, `parseExpression` trees, lexical-storage surgery, Expression text transport, exact diagnostic codes, and concrete-identity incomparability. No expected-failure or legacy marker was added or changed. abstract-values and structural-slots were not selected.
