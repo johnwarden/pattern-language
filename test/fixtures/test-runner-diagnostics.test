@@ -1,4 +1,4 @@
-# Deliberately failing acceptance input for specs/approved/test-runner-improvements.md.
+# Deliberately failing acceptance input for specs/implemented/test-runner-improvements.md.
 # Host checks consume this file (test/test-runner-diagnostics.test.ts); each case must
 # produce a distinct, identifiable report. Passing language cases belong in tests/.
 

@@ -102,7 +102,29 @@ cannot succeed by evaluating the expected expression. Preserve canonical,
 inert expected-data rules, one-positional-result checks, explicit-annotation
 behavior, and ordinary/todo/legacy modes. Cover both inline and indented forms.
 
-Implement this together with the approved [expectation predicates](expect-predicates.md)
-and [String-substring contains](expect-contains.md). Successful language cases
+Implement this together with the approved [expectation predicates](../approved/expect-predicates.md)
+and [String-substring contains](../approved/expect-contains.md). Successful language cases
 belong in `tests/`; malformed or deliberately failing runner inputs may remain
 in `test/fixtures` when host tests consume them.
+
+## Captured as tests
+
+Implemented in [#71](https://github.com/johnwarden/pattern-language/pull/71),
+squash commit `92791e4`, on the current `result`/`error` spelling:
+
+- [test-runner-diagnostics.test.ts](../../test/test-runner-diagnostics.test.ts)
+  consumes the deliberately failing inputs in
+  [test-runner-diagnostics.test](../../test/fixtures/test-runner-diagnostics.test)
+  and covers all three predicates (`==`, `!=`, `.matches`), operand evaluation
+  counts/order, thrown operands, multiline ranges, repeated runs, quiet expected
+  todos and every failing assertion in a file.
+- [expected-types.test](../../tests/language/expected-types.test) holds the
+  passing optional-type examples; the failing type/value mismatch and inert
+  expected-data cases are host fixtures.
+- Direct `assert not(a == b)` forms were rewritten as `assert a != b`; the `not`
+  prelude test is deliberately unchanged.
+
+Remaining: the `is` spelling used in the examples above arrives with the
+coordinated [expectation-predicates](../approved/expect-predicates.md) migration
+(#70), which also converts these tests. Implemented here means captured as
+tests, not a statement about unrelated runtime work.

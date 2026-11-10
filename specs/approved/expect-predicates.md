@@ -13,7 +13,7 @@ expect subject fails "diagnostic"
 `is` replaces `result`; `fails` replaces `error`. Preserve existing equality,
 inert authored expected data and diagnostic matching. An omitted RHS type uses
 the subject value's type, as specified in
-[test-runner improvements](test-runner-improvements.md). `contains` follows the
+[test-runner improvements](../implemented/test-runner-improvements.md). `contains` follows the
 [approved String-substring contract](expect-contains.md). Future predicates such
 as `isApprox` remain unimplemented.
 
