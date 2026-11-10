@@ -66,7 +66,7 @@ test("a DSL typed quote returns the same interpreted value as explicit ascriptio
   assert.equal(
     i.inspect(
       i.run(
-        "def MathExp type Symbol | Float | :sum(a :: MathExp,b :: MathExp) | :product(a :: MathExp,b :: MathExp)\na = MathExp` sum(foo,bar)\nb = parse(MathExp)(\"sum(foo,bar)\")\n(a,a == b)",
+        "def MathExp type Symbol | Float | :sum(a :: MathExp,b :: MathExp) | :product(a :: MathExp,b :: MathExp)\na = MathExp` sum(foo,bar)\nb = :(sum(foo,bar)) :: MathExp\n(a,a == b)",
       ),
     ),
     "(sum(foo, bar) :: MathExp, True :: Bool)",
@@ -75,7 +75,7 @@ test("a DSL typed quote returns the same interpreted value as explicit ascriptio
 test("recursive symbolic operators in application heads are structural, not type modifiers", () => {
   assert.equal(
     run(
-      "def MathExp type Symbol | Float | ((a :: MathExp) :+ (b :: MathExp)) | ((a :: MathExp) :* (b :: MathExp))\na = MathExp` (1 + foo) * 3\nb = parse(MathExp)(\"(1 + foo) * 3\")\na == b",
+      "def MathExp type Symbol | Float | ((a :: MathExp) :+ (b :: MathExp)) | ((a :: MathExp) :* (b :: MathExp))\na = MathExp` (1 + foo) * 3\nb = :((1 + foo) * 3) :: MathExp\na == b",
     ),
     "True",
   );
