@@ -1,39 +1,39 @@
-# Expectation predicates: is and fails
+# Expectation predicates: is, contains and fails
 
-Approved by Jonathan in the project chat on 9 November 2026. This records a
-surface-syntax migration; the corresponding mass edits need not add test cases.
+Approved by Jonathan in the project chat on 9 November 2026; reaffirmed for
+implementation on 10 November. This is a coordinated surface-syntax migration.
 
-Replace the current expectation delimiters with:
-
-```text
+```pattern
+expect subject is expected
 expect subject is expected :: Type
+expect subject contains "needle"
 expect subject fails "diagnostic"
 ```
 
-`is` replaces `result`; `fails` replaces `error`. Preserve the existing equality,
-typed expected-data and diagnostic contracts. Expected values remain authored
-inert data. Preserve todo/legacy execution, unexpected-success reporting, optional
-inbox discovery, explicit-path runs and filename diagnostics. Do not rename words
-inside unrelated program strings, quoted code or deliberate malformed fixtures.
+`is` replaces `result`; `fails` replaces `error`. Preserve existing equality,
+inert authored expected data and diagnostic matching. An omitted RHS type uses
+the subject value's type, as specified in
+[test-runner improvements](test-runner-improvements.md). `contains` follows the
+[approved String-substring contract](expect-contains.md). Future predicates such
+as `isApprox` remain unimplemented.
 
-Examples of the target spelling live in
-[`test/fixtures/expect-predicates.test`](../../test/fixtures/expect-predicates.test).
-That fixture is pending parser input, not executed corpus coverage on the current
-runner. Convert existing assertions and update the shared Test schema, runner,
-host/source fixtures, documentation and affected editor consumers together.
+Preserve todo/legacy execution and unexpected-success reporting, explicit-path
+runs, optional inbox discovery and filename diagnostics. Rename assertion clauses,
+not unrelated program strings, quoted code or deliberate malformed-input cases.
+Update the shared Test schema, runner, CLI, source corpus, host tests,
+documentation and affected editor consumers together in one implementation PR.
+Reconcile affected active branches when rebasing after its authorized merge;
+do not merge unrelated features as part of the migration.
 
-The coordinated migration is authorized for `master` and affected branches at
-03:00 Europe/Madrid on 10 November. Preserve branch work with exact-head leases;
-do not merge unrelated features. This timing is for the migration, not a general
-license to choose unspecified language behavior.
+[Predicate input](../../test/fixtures/expect-predicates.test) and
+[contains input](../../test/fixtures/expect-contains.test) drive runner acceptance.
+Passing language examples belong in `tests/` once supported. Keep deliberately
+failing or malformed inputs in `test/fixtures` only when host tests assert their
+reports; those inputs are not a default passing corpus or language-feature todos.
+The contains fixture's [authored outcomes](../../test/fixtures/expect-contains.md)
+remain the acceptance criteria, rather than observed output.
 
-`expect subject contains expected` now has the separately
-[approved String-substring contract](expect-contains.md). Its
-[draft fixtures](../../test/fixtures/expect-contains.test) include both successful
-checks and intentionally failing runner inputs with authored outcomes. Include
-the predicate and real harness checks in the coordinated migration. Leave room
-for later predicates such as `isApprox` without implementing them now.
-
-Move this record to `../implemented/` when real tests capture the new syntax;
-replace the pending-fixture note with links to those tests and the migration PR.
-No corresponding inbox submission exists to remove for this decision.
+The earlier scheduled migration wording is superseded by this implementation
+request. Move this record to `../implemented/` when executable tests capture the
+change, with links to the tests and implementation PR. No inbox file remains to
+remove for this decision.

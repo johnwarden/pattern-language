@@ -1,5 +1,5 @@
-# Target syntax for the coordinated Test DSL migration, not current-runner input.
-# The adjacent note records the migration window and unresolved predicate details.
+# Acceptance input for specs/approved/expect-predicates.md.
+# Host checks consume this file; supported passing cases belong in tests/.
 
 todo test "Equality expectation uses is"
   expect 1 is 1 :: Rational
