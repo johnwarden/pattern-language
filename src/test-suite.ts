@@ -707,15 +707,30 @@ function watchOperands(interpreter: Interpreter, subject: Syntax) {
     stop,
     report(): OperandReport | undefined {
       if (!seen.left || !seen.right) return;
+      // Printing is diagnostic work. LanguageError E_VALUE_SERIALIZATION
+      // (no portable source spelling) becomes a placeholder. Any other
+      // inspect error must fail the test.
+      const inspect = (values: Field<Value>[]) => {
+        try {
+          return interpreter.inspect(values);
+        } catch (error) {
+          if (
+            error instanceof LanguageError &&
+            error.diagnostic.code === "E_VALUE_SERIALIZATION"
+          )
+            return "<value cannot be printed>";
+          throw error;
+        }
+      };
       return {
         operator: DIRECT_OPERATORS[name],
         left: {
           expression: text(left),
-          actual: interpreter.inspect(seen.left),
+          actual: inspect(seen.left),
         },
         right: {
           expression: text(right),
-          actual: interpreter.inspect(seen.right),
+          actual: inspect(seen.right),
         },
       };
     },
@@ -963,7 +978,6 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         if (!(error instanceof LanguageError)) throw error;
         mismatch = renderDiagnostic(error);
       } finally {
-        operands = watch?.report();
         watch?.stop();
       }
       if (step.mode === "todo") {
@@ -980,6 +994,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         mismatch = "This assertion now passes; remove todo.";
         operands = undefined;
       }
+      if (mismatch && step.mode !== "todo") operands = watch?.report();
       if (mismatch)
         failCheck(
           step,

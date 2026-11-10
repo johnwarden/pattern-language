@@ -109,9 +109,16 @@ comparison: assertion is False
 
 The operands are captured during the assertion's one ordinary evaluation, in order
 and through the normal operator dispatch, never by running either again. If an
-operand throws, the original language diagnostic and its location are kept. The
-runner reports every failing assertion of a test, and every failing test.
-Host tests ([test-runner-diagnostics.test.ts](../test/test-runner-diagnostics.test.ts))
+operand throws, the original language diagnostic and its location are kept. If
+printing a captured operand raises `E_VALUE_SERIALIZATION`, that operand is shown
+as `<value cannot be printed>` without changing the predicate outcome. Closures
+such as `x -> x` have no portable spelling (`toString(Expression)(x -> x)` fails
+with that code) and must not change a passing assertion. Any other error while
+printing — a host exception or a language error with a different code — is a
+test failure and keeps its diagnostic. The runner reports every failing assertion of a test, and every
+failing test.
+Host tests ([test-runner-diagnostics.test.ts](../test/test-runner-diagnostics.test.ts)
+and [test-operand-rendering.test.ts](../test/test-operand-rendering.test.ts))
 cover this, since reports are harness output, not language behavior.
 
 ## Multiple and empty returns
