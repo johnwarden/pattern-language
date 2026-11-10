@@ -707,15 +707,24 @@ function watchOperands(interpreter: Interpreter, subject: Syntax) {
     stop,
     report(): OperandReport | undefined {
       if (!seen.left || !seen.right) return;
+      // Printing is diagnostic work. Some valid values (such as exact 1 / 3)
+      // have no source spelling, so formatting must not change the check result.
+      const inspect = (values: Field<Value>[]) => {
+        try {
+          return interpreter.inspect(values);
+        } catch {
+          return "<value cannot be printed>";
+        }
+      };
       return {
         operator: DIRECT_OPERATORS[name],
         left: {
           expression: text(left),
-          actual: interpreter.inspect(seen.left),
+          actual: inspect(seen.left),
         },
         right: {
           expression: text(right),
-          actual: interpreter.inspect(seen.right),
+          actual: inspect(seen.right),
         },
       };
     },
@@ -963,7 +972,6 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         if (!(error instanceof LanguageError)) throw error;
         mismatch = renderDiagnostic(error);
       } finally {
-        operands = watch?.report();
         watch?.stop();
       }
       if (step.mode === "todo") {
@@ -980,6 +988,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         mismatch = "This assertion now passes; remove todo.";
         operands = undefined;
       }
+      if (mismatch && step.mode !== "todo") operands = watch?.report();
       if (mismatch)
         failCheck(
           step,
