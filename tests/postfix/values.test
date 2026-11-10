@@ -69,9 +69,11 @@ test "Prefix question mark is ordinary application, not an optional"
 end
 
 test "Optional type descriptions print as None unions"
-  # Legacy blocked: exact old Type(...) text; the ordinary descriptor text for this case is not fixed (see design/LEGACY-ASSERTIONS.md).
+  # Legacy: the exact old Type(...) text. The todos are the descriptors' ordinary value text; symbols stay quoted inside a descriptor.
   legacy expect toString(Type)(type String?) is "Type(:None | String)" :: String
+  todo expect toString(Type)(type String?) is "ConcreteType(:None | String)" :: String
   legacy expect toString(Type)(type String??) is "Type(:None | Type(:None | String))" :: String
+  todo expect toString(Type)(type String??) is "ConcreteType(:None | ConcreteType(:None | String))" :: String
 end
 
 test "An ordinary postfix question-mark definition coexists with the optional convention"

@@ -6,8 +6,9 @@ test "A direct union arm takes precedence over inward designation"
   expect outer is None :: Float??
   expect inner is (None :: Float?) :: Float??
   expect toString(Float??)(outer) is "None" :: String
-  # Legacy blocked: exact old Type(...) text; the ordinary descriptor text for this case is not fixed (see design/LEGACY-ASSERTIONS.md).
+  # Legacy: the exact old Type(...) suffix. The todos are the descriptor's ordinary value text; symbols stay quoted inside a descriptor.
   legacy expect toString(Float??)(inner) is "None :: Type(Float | :None)" :: String
+  todo expect toString(Float??)(inner) is "None :: ConcreteType(Float | :None)" :: String
   assert outer == sameOuter
   assert outer != inner
   assert parse(Float??)(toString(Float??)(outer)) == outer
@@ -17,8 +18,9 @@ end
 test "Nested String options print relative to the requested grammar"
   (inner :: String??) = :None :: String?
 
-  # Legacy blocked: exact old Type(...) text; the ordinary descriptor text for this case is not fixed (see design/LEGACY-ASSERTIONS.md).
+  # Legacy: the exact old Type(...) suffix (see above).
   legacy expect toString(String??)(inner) is "None :: Type(:None | String)" :: String
+  todo expect toString(String??)(inner) is "None :: ConcreteType(:None | String)" :: String
   assert parse(String??)(toString(String??)(inner)) == inner
   assert parse(Any)(toString(Any)(inner)) == inner
 end
@@ -30,9 +32,11 @@ test "An explicit concrete member identifies an otherwise ambiguous branch"
 
   expect x is (None :: String?) :: MyType
   expect y is (None :: Float?) :: MyType
-  # Legacy blocked: exact old Type(...) text; the ordinary descriptor text for this case is not fixed (see design/LEGACY-ASSERTIONS.md).
+  # Legacy: the exact old Type(...) suffix (see above).
   legacy expect toString(MyType)(x) is "None :: Type(:None | String)" :: String
+  todo expect toString(MyType)(x) is "None :: ConcreteType(:None | String)" :: String
   legacy expect toString(MyType)(y) is "None :: Type(Float | :None)" :: String
+  todo expect toString(MyType)(y) is "None :: ConcreteType(Float | :None)" :: String
   assert x != y
   assert parse(MyType)(toString(MyType)(x)) == x
   assert parse(MyType)(toString(MyType)(y)) == y

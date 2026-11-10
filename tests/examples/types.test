@@ -3,8 +3,9 @@ test "Canonical type alternatives"
   b = type :Black | :Red
 
   assert a == b
-  # Legacy blocked: public descriptor text is still provisional; retain normalization and round-trip checks.
+  # Legacy: the exact old Type(...) text. The todo is the descriptor's ordinary value text; symbols inside a descriptor stay quoted (type values are self-evaluating).
   legacy expect toString(Type)(a) is "Type(:Black | :Red)" :: String
+  todo expect toString(Type)(a) is "ConcreteType(:Black | :Red)" :: String
 
   assert parse(Type)(toString(Type)(a)) == b
 
@@ -35,8 +36,9 @@ test "Factory defaults and complete types"
 
   expect r is Rect(3, 4, color: Black) :: Rectangle
   expect r.color is Black :: Color
-  # Legacy blocked: public descriptor text is still provisional.
+  # Legacy: the exact old Type(...) text. The todo keeps the same spacing, with the nested Type(...) member as ConcreteType(...).
   legacy expect toString(Type)(type Rectangle) is "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: String
+  todo expect toString(Type)(type Rectangle) is "ConcreteType(Rect(Int, Int, color: ConcreteType(:Black | :White)))" :: String
 
   assert not(:(Rect(3, 4)) .matches (type Rectangle))
   (r, r.color, toString(Type)(type Rectangle), :(Rect(3, 4)) .matches (type Rectangle))

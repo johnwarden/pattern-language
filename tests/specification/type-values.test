@@ -135,24 +135,26 @@ end
 
 # specs/approved/type-values.md "A primitive is not wrapped". A primitive atom is
 # already a type value, so no pattern form or constructor wraps one. The spec does
-# not select the diagnostic. E_LANGUAGE is provisional: it is what the runtime
-# already emits for the nearest rejected form, `concrete concrete Int`.
+# not select a diagnostic. E_TYPE_DESCRIPTION (the existing invalid-type-description
+# code) is the chosen code for the four forms that currently succeed.
+# `concrete concrete Int` stays on E_LANGUAGE, its grammar-level rejection of a
+# nested type form, until it gets a semantic code.
 test "A primitive is not wrapped"
   expect
     concrete concrete Int
   fails "E_LANGUAGE"
   todo expect
     concrete Int
-  fails "E_LANGUAGE"
+  fails "E_TYPE_DESCRIPTION"
   todo expect
     abstract Int
-  fails "E_LANGUAGE"
+  fails "E_TYPE_DESCRIPTION"
   todo expect
     ConcreteType(Int)
-  fails "E_LANGUAGE"
+  fails "E_TYPE_DESCRIPTION"
   todo expect
     AbstractType(Int)
-  fails "E_LANGUAGE"
+  fails "E_TYPE_DESCRIPTION"
   assert (concrete Rect(Int, Int)) .matches Type
   assert (abstract Float32 | Float64) .matches Type
 end
