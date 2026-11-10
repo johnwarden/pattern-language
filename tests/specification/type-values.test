@@ -205,3 +205,29 @@ test "A concrete type cannot be open"
     concrete {**}
   fails "E_TYPE_DESCRIPTION"
 end
+
+# specs/approved/type-values.md "A lone primitive is not wrapped": the rule concerns
+# a lone primitive, not reuse of an existing type. A union of primitives is valid, and
+# an existing type value (an abstract union, a refinement) can be made concrete. The
+# `concrete` pattern form works today; the ConcreteType(...) constructor call is
+# still a raw Expression (not a Type), so its todo assertions fail on `.matches Type`.
+# Value checks use annotated numbers: an unannotated 3 matches both Int and Float.
+test "A union or an existing type value can be made concrete"
+  todo assert ConcreteType(Rational | String) .matches Type
+  assert (concrete Int | Float) .matches Type
+
+  a = abstract Int | Float
+  b = concrete a
+  assert b .matches Type
+  assert (3 :: Int) .matches b
+  assert (0.5 :: Float) .matches b
+  assert not("x" .matches b)
+  todo assert ConcreteType(a) .matches Type
+
+  r = Int .where (n -> n > (0 :: Int))
+  s = concrete r
+  assert s .matches Type
+  assert (3 :: Int) .matches s
+  assert not((0 :: Int) .matches s)
+  todo assert ConcreteType(r) .matches Type
+end
