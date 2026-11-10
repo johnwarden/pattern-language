@@ -15,10 +15,10 @@ test "Angle arguments require types, and runtime constructor packs stay separate
   type Box<T> concrete Box(T)
   expect
     Box<"hello">
-  error "type arguments must be Type values"
+  fails "type arguments must be Type values"
   expect
     Box<String, String>
-  error "pattern did not match"
+  fails "pattern did not match"
   assert (Box("hello") :: Box<String>) == (Box("hello") :: (concrete Box(String)))
 end
 
