@@ -18,7 +18,64 @@ test("hex Rational syntax encoding keeps the exact Float64-rounded Rational", ()
   assert.equal(run("syntaxTree(0f0.1)"), "NumberLiteral(0x1.999999999999Ap-4)");
 });
 
+test("numeric syntax adapters preserve exact decimal and zero payloads", () => {
+  const setup =
+    "(Tree :: Type) = syntaxSchema()\n" +
+    "decimal = syntaxTree(:(0.1))\n" +
+    "NumberLiteral(n) = decimal\n" +
+    "NumberLiteral(zero) = syntaxTree(:(0))\n";
+  assert.equal(run(setup + "n == 0.1"), "True");
+  assert.equal(run(setup + "zero == 0"), "True");
+  assert.equal(run(setup + "decimal .matches Tree"), "True");
+  assert.equal(run(setup + "syntaxExpression(decimal) == :(0.1)"), "True");
+  assert.equal(
+    run(setup + "syntaxTree(syntaxExpression(decimal)) == decimal"),
+    "True",
+  );
+  assert.equal(
+    run(setup + "parse(Tree)(toString(Tree)(decimal)) == decimal"),
+    "True",
+  );
+  assert.equal(run("syntaxTree(:(0.1))"), "NumberLiteral(0.1)");
+  assert.equal(run("syntaxTree(:(0))"), "NumberLiteral(0)");
+});
+
+test("numeric syntax-tree schema transport distinguishes exact and rounded values", () => {
+  const setup =
+    "(Tree :: Type) = syntaxSchema()\n" +
+    "exact = syntaxTree(0.1)\n" +
+    "rounded = syntaxTree(0f0.1)\n" +
+    "NumberLiteral(n) = rounded\n" +
+    "text = toString(Tree)(exact)\n";
+  assert.equal(run(setup + "exact != rounded"), "True");
+  assert.equal(run(setup + "n == 0f0.1"), "True");
+  assert.equal(run(setup + "n != 0.1"), "True");
+  assert.equal(run(setup + "syntaxExpression(exact) == 0.1"), "True");
+  assert.equal(run(setup + "syntaxExpression(rounded) == 0f0.1"), "True");
+  assert.equal(run(setup + "parse(Tree)(text) == exact"), "True");
+});
+
+test("numeric syntax payloads preserve large integers and unary-minus structure", () => {
+  const setup =
+    "large = syntaxTree(9007199254740993)\n" +
+    "NumberLiteral(n) = large\n" +
+    "NumberLiteral(negative) = NumberLiteral(0 - 0.1)\n" +
+    'Apply(Name("-", False), [Field("_1", NumberLiteral(magnitude))]) = syntaxTree(:(-0.1))\n';
+  assert.equal(run(setup + "n == 9007199254740993"), "True");
+  assert.equal(run(setup + "large != syntaxTree(9007199254740992)"), "True");
+  assert.equal(run(setup + "negative == 0 - 0.1"), "True");
+  assert.equal(run(setup + "magnitude == 0.1"), "True");
+  assert.equal(
+    run("syntaxTree(9007199254740993)"),
+    "NumberLiteral(9007199254740993)",
+  );
+});
+
 test("unspellable 1/3 is an exact serialization failure", () => {
+  assert.equal(
+    run("NumberLiteral(n) = NumberLiteral((1 / 3) * 1)\n(n * 3) == 1"),
+    "True",
+  );
   assert.throws(
     () => run("1 / 3"),
     (e: unknown) =>

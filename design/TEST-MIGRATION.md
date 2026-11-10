@@ -296,7 +296,7 @@ Host remainder is exact diagnostic codes, fresh-interpreter typed-text transport
 The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) marked
 `test/rational-primitives.test.ts` as mixed numeric. Float32 membership already
 lived in `tests/specification/primitives.test` C03. Unique remaining evaluations
-now run there and in `tests/numeric/syntax-tree.test`. Expected results are
+now run there and in `tests/numeric/exact-values.test`. Expected results are
 authored data. IEEE/family/edge policy and D07 integer designation were not
 chosen by this migration.
 
@@ -305,11 +305,31 @@ chosen by this migration.
 | Float32 membership is exact representability, not finite-after-fround | specification/primitives#c03-exact-designation-differs-from-rounding already covered `0.5` / `0.1` `.matches Float32` | — |
 | Float membership and `0.5 :: Float` designation | specification/primitives#c03-exact-designation-differs-from-rounding | Unique `Float` lines; host display of the same programs removed |
 | Rational-to-binary64 conversion keeps the smallest subnormal and small normals | — | Direct `float64ToRational` / `rationalToNumber` helpers stay |
-| hex Rational syntax encoding keeps the exact Float64-rounded Rational | numeric/syntax-tree#syntaxtree-distinguishes-01-from-0f01-and-round-trips already covers the hex payload | Host `syntaxTree(0f0.1)` display string stays |
-| non-dyadic Rationals stay exact internally without a ratified spelling | numeric/syntax-tree#unspellable-13-stays-exact-as-a-numberliteral-payload | Exact `E_VALUE_SERIALIZATION` on bare `1 / 3` stays |
+| hex Rational syntax encoding keeps the exact Float64-rounded Rational | numeric/exact-values#exact-and-rounded-literals-remain-distinct-through-code-text covers value/Code distinctions | Host `syntaxTree(0f0.1)` display string stays |
+| non-dyadic Rationals stay exact internally without a ratified spelling | numeric/exact-values#an-exact-rational-without-a-source-spelling-fails-only-when-serialized | Exact `E_VALUE_SERIALIZATION` when printing the bare `1 / 3` program result stays; the source case explicitly calls `toString(Rational)(n)` |
 | `0.5 :: Int` remains a generic mismatch until D07 integer designation | — | Exact `E_PATTERN_MISMATCH` stays until D07 |
 
-Host remainder is TS Rational/binary64 helpers, public syntax-tree display, exact serialization and D07 mismatch codes. No expected-failure or legacy marker was added or changed.
+Host remainder is TS Rational/binary64 helpers, bootstrap syntax-tree display, exact serialization and D07 mismatch codes. No expected-failure or legacy marker was added or changed.
+
+## Numeric destination-contract correction
+
+The audited `tests/numeric/syntax-tree.test` is replaced by
+[exact-values.test](../tests/numeric/exact-values.test). Native schema/node
+adapters are tested on host, alongside the existing syntax-inspection suite.
+This batch changes no runtime behavior, todo or legacy markers and chooses no
+new numeric spelling.
+
+| Audited source case | Retained language observation | Retained host observation |
+| --- | --- | --- |
+| NumberLiteral payload is the denoted Rational | Exact decimal arithmetic, rounded-value distinction and zero. | `numeric syntax adapters preserve exact decimal and zero payloads` in `test/rational-primitives.test.ts`: native node payloads, schema membership, bridge inversion, quoted-tree text round trip and decimal/zero display goldens. |
+| syntaxTree distinguishes 0.1 from 0f0.1 and round-trips | Numeric/Code inequality and established Code text round trips. | `numeric syntax-tree schema transport distinguishes exact and rounded values`: value-tree text round trip; existing exact Float64-rounded adapter display golden and syntax-inspection transport checks. |
+| NumberLiteral keeps integers beyond 2^53 and signed values | Neighboring large integers and signed arithmetic. | `numeric syntax payloads preserve large integers and unary-minus structure`: node payloads, prefix AST decomposition and large-integer display golden. |
+| Unspellable 1/3 stays exact as a NumberLiteral payload | Exact arithmetic and explicit `toString(Rational)(n)` serialization failure. | `test/rational-primitives.test.ts` retains construction and destructuring of the native `NumberLiteral` carrier, plus exact `E_VALUE_SERIALIZATION` when printing the bare `1 / 3` program result. |
+
+The earlier inventory describes the migration history; this correction restores
+[the source/host contract boundary](TEST-CONTRACT-AUDIT.md). Layout, example and
+type-descriptor adapter cleanup remain separate scopes. No legacy-inventory
+entry changes in this numeric batch.
 
 ## Type identity and value-tree migration
 

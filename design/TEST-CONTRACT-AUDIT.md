@@ -16,11 +16,17 @@ blocks. [The coverage map](TEST-MIGRATION.md#type-identity-and-value-tree-migrat
 records their homes. Identity tests, the other semantic value-tree cases and the
 Boolean-assertion cleanup remain.
 
+## Numeric correction: #66
+
+[Exact numeric values and Code text](../tests/numeric/exact-values.test) now
+replace source tests of bootstrap `syntaxTree` and `NumberLiteral` encodings.
+Host checks in `test/rational-primitives.test.ts` retain native schema/payload
+transport, quoted- and value-tree round trips, and decimal, zero, large-integer
+and rounded-hex display goldens. The [coverage map](TEST-MIGRATION.md#numeric-destination-contract-correction)
+records the split.
+
 ## Remaining cleanup
 
-- Keep numeric cleanup in [#66](https://github.com/johnwarden/pattern-language/pull/66):
-  numeric/Code cases stay in source; native adapter goldens and quoted
-  `syntaxTree` round trips stay on host. Reconcile shared docs in the second PR.
 - Move remaining native layout/example/schema and descriptor observations in
   bounded batches, reusing equivalent host coverage.
 - Before each backout, inspect the original migration and current master;
