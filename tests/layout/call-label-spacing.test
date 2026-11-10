@@ -1,8 +1,32 @@
 test "Tight f(x) is application; empty f() is empty apply"
-  expect syntaxTree(:(f(x))) is Apply(Name("f", False), [Field("_1", Name("x", False))]) :: SyntaxNode
-  expect syntaxTree(:(f())) is Apply(Name("f", False), []) :: SyntaxNode
+  def f(x) x
+  def g() 7
   def id(x) x
+  def oneArgument(c)
+    match c
+      :f(a) -> True
+      _ -> False
+    end
+  end
+  def emptyCall(c)
+    match c
+      :f() -> True
+      _ -> False
+    end
+  end
 
+  expect f(3) is 3 :: Rational
+  expect g() is 7 :: Rational
+  expect toString(Code)(:(f(x))) is "f(x)" :: String
+  expect toString(Code)(:(f())) is "f()" :: String
+  expect oneArgument(:(f(x))) is True :: Bool
+  expect oneArgument(:(f())) is False :: Bool
+  expect oneArgument(:(f)) is False :: Bool
+  expect emptyCall(:(f())) is True :: Bool
+  expect emptyCall(:(f(x))) is False :: Bool
+  expect emptyCall(:(f)) is False :: Bool
+  assert Code(:(f())) != Code(:(f))
+  assert Code(:(f())) != Code(:(f(x)))
   expect id(3) is 3 :: Rational
   expect parse(Code)("f (x)") fails "a term cannot be followed by a spaced '('"
   expect parse(Code)("f ()") fails "a term cannot be followed by a spaced '('"
@@ -10,10 +34,20 @@ test "Tight f(x) is application; empty f() is empty apply"
 end
 
 test "A field colon must touch its label"
-  expect syntaxTree(:(Rect(w: 1))) is Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
-  expect syntaxTree(:(Rect(w:1))) is Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
-  expect syntaxTree(:(Rect(w: (1)))) is Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
-  expect syntaxTree(:(Rect(w :(1)))) is Apply(Name("Rect", False), [Field("_1", Sequence([Name("w", False), Quote(NumberLiteral(1))]))]) :: SyntaxNode
+  def labeled(c)
+    match c
+      :Rect(w: n) -> True
+      _ -> False
+    end
+  end
+
+  expect labeled(:(Rect(w: 1))) is True :: Bool
+  expect labeled(:(Rect(w:1))) is True :: Bool
+  expect labeled(:(Rect(w: (1)))) is True :: Bool
+  expect labeled(:(Rect(w :(1)))) is False :: Bool
+  expect toString(Code)(:(Rect(w:1))) is "Rect(w: 1)" :: String
+  expect toString(Code)(:(Rect(w :(1)))) is "Rect(w :(1))" :: String
+  assert parse(Code)("Rect(w:1)") == parse(Code)("Rect(w: 1)")
   assert parse(Code)("Rect(w: 1)") != parse(Code)("Rect(w :(1))")
   expect parse(Code)("Rect(w : 1)") fails "quotation requires :(expression)"
 end

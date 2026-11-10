@@ -192,13 +192,17 @@ test "Open structural facet"
 end
 
 test "Inspect and rebuild syntax"
-  tree = syntaxTree(:(factory(1)(2, color: :Red)))
-  Apply(function, arguments) = tree
-  changed = Apply(function, [Field("_1", NumberLiteral(3)), Field("color", Name("Red", True))])
+  original = :(factory(1)(2, color: :Red))
+  :factory(first)(second, color: tint) = original
+  rebuilt = Code$` factory($(first))(3, color: $(tint))
 
-  legacy expect syntaxExpression(changed) is
-    (factory(1)(3, color: :Red)) :: Expression
-  end
+  expect first is 1 :: Expression
+  expect second is 2 :: Expression
+  expect tint is :Red :: Expression
+  expect toString(Code)(rebuilt) is "factory(1)(3, color: :Red)" :: String
+  expect rebuilt is factory(1)(3, color: :Red) :: Code
+  assert rebuilt != Code(original)
+  (first, second, tint, rebuilt)
 end
 
 test "Abstract slots and ordering"

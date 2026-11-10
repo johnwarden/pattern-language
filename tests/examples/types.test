@@ -300,8 +300,8 @@ end
 
 test "Inspect a typed code binding without evaluating it"
   def isBinding(e)
-    match syntaxTree(e)
-      Apply(Apply(Name("=", False), _), _) -> True
+    match e
+      :(_ = _) -> True
       _ -> False
     end
   end
@@ -311,10 +311,8 @@ test "Inspect a typed code binding without evaluating it"
   (patternText, bodyText) =
     match code
       (binding :: Binding) ->
-        Apply(Apply(_, left), right) = syntaxTree(binding)
-        [Field("_1", pattern)] = left
-        [Field("_1", value)] = right
-        (toString(Code)(Code(syntaxExpression(pattern))), toString(Code)(Code(syntaxExpression(value))))
+        :(pattern = value) = binding
+        (toString(Code)(Code(pattern)), toString(Code)(Code(value)))
       end
       _ -> panic("Expected a binding")
     end
@@ -322,6 +320,8 @@ test "Inspect a typed code binding without evaluating it"
 
   expect patternText is "f" :: String
   expect bodyText is "x -> x * 2" :: String
+  expect isBinding(Code` f(x)) is False :: Bool
+  expect isBinding(Code` f == x) is False :: Bool
   (patternText, bodyText)
 end
 
