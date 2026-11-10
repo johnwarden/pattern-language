@@ -1,66 +1,52 @@
-# Proposed implementation queue from executable todos
+# Implementation queue
 
-Proposed scopes, not new language decisions or implementation claims. The survey
-inspected master `9888c3d3d2495012c8f18b6c6c81d89326b3581d`: 67 todo assertions
-across 36 cases in 12 files, with no whole-test todos or todo setup steps.
-The final named-function test expansion adds four more assertions. The original
-58 todos and the expanded named-function cases were trialled as ordinary checks
-to distinguish their actual blockers from their titles.
+Updated 10 November 2026. Follow the linked executable contracts and approved
+decisions. A declaration/parser failure does not demonstrate the deeper rule
+behind a todo.
 
-Use current master and the linked `.test` cases before claiming work; other
-agents are actively migrating tests. This queue must not become a parallel prose
-specification. [#61](https://github.com/johnwarden/pattern-language/pull/61)
-implements scope 1 against the current application-head contracts.
-[#62](https://github.com/johnwarden/pattern-language/pull/62) implements scope 2.
-The mirrored-row-spreading work landed as ordinary C20 coverage plus focused
-[source contracts](../../tests/spreading/vertical-values.test). These are
-implementation statuses, not merge authorizations.
+## Ready implementation slices
 
-| Proposed PR | Target contracts and observed blocker | Scope and dependencies |
+| Work | Contract | Handoff |
 | --- | --- | --- |
-| 1. Reject non-callable application heads during evaluation | Ordinary checks in [application-heads.test](../../tests/specification/application-heads.test): Bool, ReservedSymbol, evaluated Symbol and typed constructed-data heads report `E_NOT_CALLABLE` during evaluation. Unquoted `Tag(1)` still constructs; a raw Expression term may occupy a later head. | Implemented on [#61](https://github.com/johnwarden/pattern-language/pull/61): `invoke` classifies the concrete head before unwrapping; actual `Type`/`String` functions still dispatch. Host checks keep the evaluation phase. Not a merge authorization. |
-| 2. Simple angle-parameter type declarations/applications | Remaining C05/C18 and the C12 absence-designation assertion: seven generic-dependent trials stop at tight-angle parsing; five appear independent of extraction coverage. | Shared parser/grammar and existing type factories. Implement the accepted Box<T>/Box<String> slice without variadics, constraints, family recovery or runtime-pack flattening. Validate comparison spacing, canonical/inert Code and independent structural interop. |
-| 3. Refinement declaration surface | Eight C07–C10 todos in [refinements.test](../../tests/specification/refinements.test) stop at declaration recognition first. | Follow #48's structural elaboration into existing refinement construction. Add focused base-identity/no-accessor controls. Coordinate with PR 2's grammar owner; do not claim evidence checking or introduce predicate-based overload fallback. |
-| 4. Mirrored vertical spreading | C20 reconstruction in [spreading.test](../../tests/specification/spreading.test) is ordinary coverage. The three remaining scenarios require evaluated-Code assert. | The single-row-template slice and focused [source cases](../../tests/spreading/vertical-values.test) preserve dimensions, ragged rows, empty matrices and empty rows. Broader row templates remain work. |
-| 5. Concrete boundary in ordinary constructor bindings | [raw-expressions.test](../../tests/specification/raw-expressions.test), “Ordinary constructor bindings do not project a concrete value,” currently succeeds. | Audit existing ordinary fixtures first, especially interpreted Rect destructuring in `tests/bindings/defaults.test`. Preserve their default/capture observations through explicit match; separately enforce binding rejection. Retain raw Expression destructuring, whole-value binding and one-boundary match. |
-| 6. Closed single-definition function values | All 17 todos in [named-function-values.test](../../tests/specification/named-function-values.test) currently stop at E_FUNCTION_NOT_VALUE. | Representation preflight first: complete immutable definition/dependency values, captures, recursive groups, labels/rest/packs/defaults and structural identity. A name handle or hidden ambient closure is insufficient. Overloaded constants, group selection and public Function/Library text remain pending. |
+| Concrete boundary in ordinary bindings | [raw-expressions.test](../../tests/specification/raw-expressions.test), "Ordinary constructor bindings do not project a concrete value" | The negative subject currently succeeds. Enforce rejection while retaining raw Expression destructuring, whole-value binding and explicit one-boundary matching. Audit [defaults.test](../../tests/bindings/defaults.test); preserve its capture/default observations through explicit matching. No angle syntax dependency. |
+| Refinement declaration recognition | C07–C10 in [refinements.test](../../tests/specification/refinements.test) | The eight todos currently stop at declaration recognition. Add focused declaration, base-identity and no-accessor controls, then elaborate `type NonZero refinement Rational .where predicate` into the existing refinement mechanism. Evidence checking belongs to milestone 7; this slice must not introduce predicate-driven overload selection. |
 
-PRs 1 and 2 can start in parallel. Give 2 and 3 one grammar owner or serialize
-them. PR 4 owns collection evaluation; PR 5 owns binding/pattern policy and its
-fixture audit. Stage PR 6 after callability and the representation preflight.
-Keep ownership explicit around the shared runtime file, refresh master before
-publishing, and do not race the coordinated expectation-DSL migration.
+Write any missing focused contracts before runtime changes. These scopes may
+proceed independently with explicit ownership around shared runtime/grammar code.
 
-For PR 6, deliberately reconcile the superseded ordinary “Defined functions are
-not values / cannot be passed / cannot be returned” cases in
-`tests/language/namespaces.test`, plus the E_FUNCTION_NOT_VALUE checks in
-`test/declaration-boundaries.test.ts` and `test/type-operations.test.ts`. Nearby
-accessor, native and overloaded-name cases have distinct policies; do not remove
-them indiscriminately. The [complete test proposal](../../specs/inbox/named-function-value-tests.md)
-separates agreed obligations from undecided representation and selection cases.
+## Ready for contract conversion; remaining design dependencies
 
-## Small cleanup and work not yet ready
+| Work | Current state | Next step |
+| --- | --- | --- |
+| Ordinary type values | [Approved type-values decision](../../specs/approved/type-values.md); [prelude-pattern draft](../../specs/inbox/prelude-type-kind-patterns.md) | Convert the approved examples into focused contracts. Settle the ordinary construction rule and required supporting domains before claiming the full prelude implementation is ready. No angle syntax is required. |
+| Closed named function values | [Approved decision](../../specs/approved/named-function-values.md), [closed immutable values](../../specs/approved/library-closure-and-local-printing.md), and 17 todos in [named-function-values.test](../../tests/specification/named-function-values.test) | Representation preflight first: complete immutable captured values/dependencies, finite recursion, packs, labels/rest/defaults and structural identity. A name handle or hidden ambient closure is insufficient. Public Function/Library grammar, admissible captures and overloaded-name selection remain design work. |
+| Retiring legacy type-definition syntax | [Approved retirement](../../specs/approved/retire-legacy-type-definition-syntax.md) | Coordinate replacement construction/declaration support with prelude/corpus migration before removing compatibility. The newer type-values decision already permits ordinary Type-valued functions. |
 
-C17's two negative subjects already reject (E_PATTERN_MISMATCH and E_TYPE_DEFAULT),
-and C24's two-result binding already rejects (E_PATTERN_MISMATCH). Their authored
-phrases differ. Choose diagnostic alignment or deliberate contract revision;
-do not silently substitute observed output or advertise missing enforcement.
+## Parked angle-bracket syntax
 
-- C11 stops at the single-arm extraction statement syntax; existing arrow-match
-  one-boundary controls already work.
-- C14's public unambiguous qualifier/certification remains pending; #43 stays parked.
-- C15's separate record facets work, while `&` currently constructs raw data.
-  A bounded facet-composition proposal needs explicit compatibility rules.
-- C22 stops at absent Int8/Int64 before keyword remainder behavior.
-- PrimitiveType, numeric-width and QuotedSymbol cases need their specified
-  representation/vocabulary contracts, not generic evaluation patches.
-- Lifting stops at absent sqrt before demonstrating lifting behavior.
-- C23's remaining case reaches evaluated-Code assert, not a round-trip failure.
-- C26's three todos are intentional harness fixtures, not language backlog.
-- C27's two lexical candidates are explicitly unapproved.
+[#62](https://github.com/johnwarden/pattern-language/pull/62) is parked as a draft
+at the author's request. Preserve its implementation and the existing C05/C12/C18
+todos. Do not resume or rebase the parked PR until reactivated. Ordinary argument
+packs remain available for type-valued factories; angle syntax does not block
+milestones 5a.2 or 5b.
 
-The [approved type-syntax retirement](../../specs/approved/retire-legacy-type-definition-syntax.md)
-is a separate breaking-change scope. New declaration/factory support and corpus/
-prelude migration are prerequisites; the ordinary Type-valued-function boundary
-still needs clarification. Do not bundle removal into the expectation rename or
-the small syntax slices above without explicit coordination.
+## Test maintenance and later work
+
+- C17's missing-field/default subjects and C24's two-result binding already reject.
+  Their diagnostic contracts need deliberate alignment; do not substitute observed
+  output without an agreed contract change.
+- Some C20 spreading and C23 round-trip cases stop at an `assert` inside evaluated
+  Code. Isolate their intended observations from that unrelated dependency.
+- Callability, overlapping abstract unions, single-template mirrored spreading and
+  anonymous repeated patterns already have ordinary source coverage. Do not assign
+  those completed slices again.
+- C11's short extraction-statement spelling is not implemented; existing arrow-match
+  controls cover supported one-boundary projection.
+- C14's unambiguous qualifier/certification, C15's bounded facet-intersection
+  compatibility rules and C22's typed keyword remainder need design work first.
+- Numeric-width, lifting and public QuotedSymbol cases have their own vocabulary
+  dependencies. C26 contains deliberate harness fixtures, not language backlog.
+- Arithmetic precedence and parenthesized fraction literals are under review in
+  [separate](../../specs/inbox/arithmetic-precedence.md)
+  [proposals](../../specs/inbox/rational-literals-and-text.md).
+- Foundation drafts #43, #44 and #45 remain parked.

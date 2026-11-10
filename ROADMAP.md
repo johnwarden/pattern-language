@@ -1,6 +1,6 @@
 # Roadmap and conformance status
 
-Updated 9 November 2026. This is the current design, implementation boundary and
+Updated 10 November 2026. This is the current design, implementation boundary and
 milestone sequence, not a development history. The integrated
 [decision/conformance record](design/LANGUAGE-DECISIONS.md) supplies reasons, status
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
@@ -94,10 +94,13 @@ selected. Ordinary where refinements remain in scope.
 IEEE signed zero, NaN identity/payloads and infinities remain deferred. Numeric
 family aliases, edge rounding/overflow and canonical spelling remain provisional.
 
-The concrete/abstract declaration forms and simple parameterized forms already
-written in `tests/specification/` are current implementation targets. Their
-missing parser/runtime support must not be treated as a reason to postpone those
-cases indefinitely. Unspecified extensions to generic constraints, MemberOf,
+The concrete/abstract declaration forms already written in
+`tests/specification/` remain current implementation targets. Angle-bracket generic
+syntax is accepted but deferred: [#62](https://github.com/johnwarden/pattern-language/pull/62)
+is parked at the author's request. Ordinary argument packs for type-valued
+factories cover the current milestones. Preserve the angle-syntax todos, but do
+not treat them as blockers for 5a.2 or 5b while this work is parked.
+Unspecified extensions to generic constraints, MemberOf,
 bare-family facets, parameter recovery and singleton abstract policy remain
 provisional/unresolved. Equivalent local declarations and accessor collisions
 remain errors for now; their replacement alias/import policy is deferred by the
@@ -163,7 +166,7 @@ The current declaration syntax includes these targets:
 | `type EitherFloat abstract Float32 \| Float64` | C13: retain overlapping members and their concrete identities; no first-match branch priority |
 | `abstract Float32 \| Float64` | C13: construct the same abstract member domain as an ordinary value without a named declaration |
 | `type Rectangular abstract {width: Float32, height: Float32, **}` | C15: identity-preserving abstract views and facet composition |
-| `type Box<T> concrete Box(T)` and `Box<String>` | C05/C12/C18: parameterized structural type values and independent-scope interoperability |
+| `type Box<T> concrete Box(T)` and `Box<String>` | C05/C12/C18: accepted but deferred; #62 is parked. Use ordinary-pack type factories for current work |
 | `type NonZero refinement Rational .where nonZero` | C07-C10: refinement syntax, then the separately specified evidence and overload rules |
 
 #31's value alignment and #32's declaration-product separation are integrated.
