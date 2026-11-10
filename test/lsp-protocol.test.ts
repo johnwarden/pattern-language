@@ -229,7 +229,7 @@ test(
     const uri = "file:///does-not-exist/tests/inbox/changed.test";
     await c.open(
       uri,
-      'todo test "Unimplemented"\n  def bomb() 1 / 0\n  expect missing() result None :: MissingType\nend',
+      'todo test "Unimplemented"\n  def bomb() 1 / 0\n  expect missing() is None :: MissingType\nend',
     );
     const symbols = await c.connection.sendRequest<DocumentSymbol[]>(
       "textDocument/documentSymbol",

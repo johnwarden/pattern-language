@@ -9,7 +9,7 @@ test "Vertical matrix capture preserves empty and nonempty rows"
     2, 3, 4
   ]
 
-  expect m.values result [[], [1], [2, 3, 4]] :: (type [_... :: Float**])
+  expect m.values is [[], [1], [2, 3, 4]] :: (type [_... :: Float**])
 end
 
 test "An empty vertical matrix is an empty list of rows"
@@ -20,7 +20,7 @@ test "An empty vertical matrix is an empty list of rows"
   m = Matrix` [
   ]
 
-  expect m.values result [] :: (type [_... :: Float**])
+  expect m.values is [] :: (type [_... :: Float**])
 end
 
 test "Row collection literals evaluate their fields"
@@ -34,7 +34,7 @@ test "Row collection literals evaluate their fields"
     x * 2, 9
   ]
 
-  expect m.values result [[3, 4], [6, 9]] :: (type [_... :: Float**])
+  expect m.values is [[3, 4], [6, 9]] :: (type [_... :: Float**])
 end
 
 test "Repeated application rows collect heads and argument packs independently"
@@ -47,6 +47,6 @@ test "Repeated application rows collect heads and argument packs independently"
     g(3)
   end
 
-  expect x.heads result [f, g] :: (type [_... :: Symbol*])
-  expect x.arguments result [[1, 2], [3]] :: (type [_... :: Float**])
+  expect x.heads is [f, g] :: (type [_... :: Symbol*])
+  expect x.arguments is [[1, 2], [3]] :: (type [_... :: Float**])
 end

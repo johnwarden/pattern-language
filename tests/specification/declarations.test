@@ -1,18 +1,18 @@
 test "C16 named declarations install accessors; plain construction cannot declare them"
   def Rectangle type :Rect(w :: Rational, h :: Rational)
   r = Rect(2, 3) :: Rectangle
-  expect r.w result 2 :: Rational
+  expect r.w is 2 :: Rational
 
   expect
     t = type :Rect(width :: Rational, height :: Rational)
     t
-  error "ordinary type construction cannot declare captures/accessors"
+  fails "ordinary type construction cannot declare captures/accessors"
 
   expect
     t = type :Rect(width: Rational, height: Rational)
     (labeled :: t) = Rect(width: 2, height: 3)
     labeled.width
-  error "unbound name"
+  fails "unbound name"
 end
 
 test "C05 named types equal capture-free type values"
@@ -57,7 +57,7 @@ test "C16 declarations own accessor products"
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     r = (Rect(2, 3) :: Rectangle)
     r.w
-  result
+  is
     (
       2
     ) :: (
@@ -72,7 +72,7 @@ test "C16 declarations own accessor products"
     r = (Rect(2, 3) :: Rectangle)
     t = concrete Rect(width :: Rational, height :: Rational)
     t
-  error "ordinary type construction cannot declare captures/accessors"
+  fails "ordinary type construction cannot declare captures/accessors"
 end
 
 test "C17 defaults belong to bindings and explicit factories"
@@ -82,7 +82,7 @@ test "C17 defaults belong to bindings and explicit factories"
       (Rect(w, h, color: color) :: Rectangle)
     end
     rectangle(2, 3)
-  result
+  is
     (
       Rect(2, 3, color: "black")
     ) :: (
@@ -100,7 +100,7 @@ test "C17 defaults belong to bindings and explicit factories"
       (Rect(w, h, color: color) :: Rectangle)
     end
     (Rect(2, 3) :: Rectangle)
-  error "required color field is absent"
+  fails "required color field is absent"
 
   todo expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
@@ -109,7 +109,7 @@ test "C17 defaults belong to bindings and explicit factories"
     end
     type Invalid concrete Rect(color: String = "black")
     Invalid
-  error "defaults are forbidden in type descriptions"
+  fails "defaults are forbidden in type descriptions"
 end
 
 test "C18 equivalent independently named descriptors interoperate"
@@ -146,7 +146,7 @@ test "C18 equivalent independently named descriptors interoperate"
       read(produced)
     )
     consumed
-  result
+  is
     (
       "hello"
     ) :: (

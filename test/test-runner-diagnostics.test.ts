@@ -100,7 +100,7 @@ test("the deliberately failing fixtures produce distinct reports", () => {
 
 test("a todo assertion that still fails stays quiet", () => {
   const [report] = run(
-    'test "Future"\n  left = 1\n  todo assert left == 2\n  todo expect 1 result 2\n  assert left == 1\nend',
+    'test "Future"\n  left = 1\n  todo assert left == 2\n  todo expect 1 is 2\n  assert left == 1\nend',
   );
   assert.equal(report.status, "passed", report.message);
   assert.deepEqual(
@@ -123,7 +123,7 @@ test("every failing assertion in a file is reported with its own location", () =
     "  assert 1 == 2",
     "  assert 2 == 2",
     "  assert 3 != 3",
-    "  expect 4 result 5",
+    "  expect 4 is 5",
     "end",
     "",
     'test "Second"',
@@ -137,7 +137,7 @@ test("every failing assertion in a file is reported with its own location", () =
     ["failed", "failed"],
   );
   const first = reports[0].message;
-  for (const text of ["assert 1 == 2", "assert 3 != 3", "expect 4 result 5"])
+  for (const text of ["assert 1 == 2", "assert 3 != 3", "expect 4 is 5"])
     assert.ok(first.includes("many.test:" + where(source, text)), first);
   assert.ok(!first.includes("assert 2 == 2"), first);
   assert.ok(reports[1].message.includes("many.test:9:3"), reports[1].message);
@@ -156,7 +156,7 @@ test("every failing assertion in a file is reported with its own location", () =
     for (const text of [
       "assert 1 == 2",
       "assert 3 != 3",
-      "expect 4 result 5",
+      "expect 4 is 5",
       "assert False",
     ])
       assert.ok(result.stdout.includes(text), result.stdout);
@@ -245,7 +245,7 @@ test("a multiline assertion reports its first line and its complete original sou
     "  end",
     "  expect",
     "    1",
-    "  result",
+    "  is",
     "    2",
     "  end",
     "end",
@@ -262,7 +262,7 @@ test("a multiline assertion reports its first line and its complete original sou
   );
   assert.equal(second.location?.line, 8);
   assert.ok(
-    second.location?.source.startsWith("expect\n  1\nresult"),
+    second.location?.source.startsWith("expect\n  1\nis"),
     second.location?.source,
   );
   assert.ok(
@@ -320,13 +320,13 @@ const outcome = (body: string) =>
 
 test("expected data without an annotation uses the actual subject type", () => {
   for (const body of [
-    "  expect 1 result 1",
-    "  expect 3 :: Int result 3",
-    '  expect "hello" result "hello"',
-    "  expect :Ready result Ready",
-    "  expect 1 result\n    1\n  end",
-    "  expect\n    1\n  result 1",
-    "  legacy expect 3 :: Int result 3",
+    "  expect 1 is 1",
+    "  expect 3 :: Int is 3",
+    '  expect "hello" is "hello"',
+    "  expect :Ready is Ready",
+    "  expect 1 is\n    1\n  end",
+    "  expect\n    1\n  is 1",
+    "  legacy expect 3 :: Int is 3",
   ]) {
     const report = outcome(body);
     assert.equal(report.status, "passed", body + "\n" + report.message);
@@ -334,7 +334,7 @@ test("expected data without an annotation uses the actual subject type", () => {
 });
 
 test("an unannotated expected value still requires the same value", () => {
-  const report = outcome("  expect 1 result 2");
+  const report = outcome("  expect 1 is 2");
   assert.equal(report.status, "failed");
   assert.equal(report.phase, "comparison");
   assert.match(
@@ -342,34 +342,34 @@ test("an unannotated expected value still requires the same value", () => {
     /expected 2 :: Rational; received 1 :: Rational/,
   );
   assert.ok(report.message.includes("optional.test:2:3"), report.message);
-  assert.ok(report.message.includes("expect 1 result 2"), report.message);
+  assert.ok(report.message.includes("expect 1 is 2"), report.message);
   assert.equal(report.checks[0].expected, "2 :: Rational");
   assert.equal(report.checks[0].actual, "1 :: Rational");
 });
 
 test("an explicit type mismatch remains a failure", () => {
-  const report = outcome("  expect 3 :: Int result 3 :: Rational");
+  const report = outcome("  expect 3 :: Int is 3 :: Rational");
   assert.equal(report.status, "failed");
   assert.match(
     report.message,
-    /result type mismatch: expected Rational; received Int/,
+    /is type mismatch: expected Rational; received Int/,
   );
 });
 
 test("omitting the annotation does not coerce or reinterpret the expected data", () => {
   for (const body of [
-    "  expect 3 :: Int result 3.5",
-    '  expect 1 result "1"',
-    "  expect 3 :: Int result 4",
+    "  expect 3 :: Int is 3.5",
+    '  expect 1 is "1"',
+    "  expect 3 :: Int is 4",
   ])
     assert.equal(outcome(body).status, "failed", body);
 });
 
 test("unannotated expected data is inert and never evaluated", () => {
   for (const body of [
-    "  expect 2 result\n    (1 + 1)\n  end",
-    "  expect 2 result\n    1 + 1\n  end",
-    "  expect 2 result\n    missing()\n  end",
+    "  expect 2 is\n    (1 + 1)\n  end",
+    "  expect 2 is\n    1 + 1\n  end",
+    "  expect 2 is\n    missing()\n  end",
   ]) {
     const report = outcome(body);
     assert.equal(report.status, "failed", body);
@@ -377,31 +377,29 @@ test("unannotated expected data is inert and never evaluated", () => {
   }
 });
 
-test("a result still requires exactly one positional value without an annotation", () => {
-  const report = outcome(
-    "  def two()\n    (1, 2)\n  end\n  expect two() result 1",
-  );
+test("an is expectation still requires exactly one positional value without an annotation", () => {
+  const report = outcome("  def two()\n    (1, 2)\n  end\n  expect two() is 1");
   assert.equal(report.status, "failed");
   assert.match(report.message, /exactly one positional value/);
 });
 
 test("todo and legacy modes treat an unannotated expectation like an ordinary one", () => {
-  const stillFailing = outcome("  todo expect 1 result 2\n  assert True");
+  const stillFailing = outcome("  todo expect 1 is 2\n  assert True");
   assert.equal(stillFailing.status, "passed", stillFailing.message);
   assert.equal(stillFailing.checks[0].status, "expected-failure");
-  const fulfilled = outcome("  todo expect 1 result 1");
+  const fulfilled = outcome("  todo expect 1 is 1");
   assert.equal(fulfilled.status, "failed");
   assert.match(fulfilled.message, /remove todo/);
   assert.ok(
-    fulfilled.message.includes("todo expect 1 result 1"),
+    fulfilled.message.includes("todo expect 1 is 1"),
     fulfilled.message,
   );
-  const legacy = outcome("  legacy expect 1 result 2");
+  const legacy = outcome("  legacy expect 1 is 2");
   assert.equal(legacy.status, "failed");
   assert.equal(legacy.checks[0].mode, "legacy");
-  assert.equal(outcome("  legacy expect 1 result 1").status, "passed");
+  assert.equal(outcome("  legacy expect 1 is 1").status, "passed");
   const wholeTest = run(
-    'todo test "Whole"\n  expect 1 result 2\nend',
+    'todo test "Whole"\n  expect 1 is 2\nend',
     "whole.test",
   )[0];
   assert.equal(wholeTest.status, "expected-failure");

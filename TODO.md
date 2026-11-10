@@ -19,7 +19,7 @@ subset, not completion of the revised design.
 
 ## Completed: milestone 5a.1 — test DSL conformance
 
-- [x] Define revised Test/setup/assert/expect/error and todo data grammar and isolation.
+- [x] Define revised Test/setup/assert/expect (is, fails, contains) and todo data grammar and isolation.
 - [x] Preserve complete result packs and expected-value-as-data semantics.
 - [x] Implement assertion-level todo/legacy forms; todos execute and must fail, legacy checks must pass.
 - [x] Verify assertion isolation, silent expected failures, unexpected-pass failures and setup/host error boundaries.

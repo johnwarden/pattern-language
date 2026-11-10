@@ -2,26 +2,26 @@ test "arithmetic"
   a = 1 :: Int
   b = 2 :: Int
 
-  expect a + b result 3 :: Int
+  expect a + b is 3 :: Int
 end
 
 test "dot is function call"
   def b(x) y -> x + y
   a = 1 :: Int
 
-  expect a .b 2 :: Int result 3 :: Int
+  expect a .b 2 :: Int is 3 :: Int
 end
 
 test "empty call"
   def f() 42
 
-  expect f() result 42 :: Rational
+  expect f() is 42 :: Rational
 end
 
 test "explicit named function parameter"
   def f(x, foo: y) y
 
-  expect f(1, foo: 2) result 2 :: Rational
+  expect f(1, foo: 2) is 2 :: Rational
 end
 
 test "multiple packs"
@@ -30,7 +30,7 @@ test "multiple packs"
   end
   g = f(1, 2)
 
-  expect g(3) result 9 :: Int
+  expect g(3) is 9 :: Int
 end
 
 test "no eager execution"
@@ -38,14 +38,14 @@ test "no eager execution"
     (1 / 0)
   end
 
-  expect 7 result 7 :: Rational
+  expect 7 is 7 :: Rational
 end
 
 test "parameter interpretation"
   def Rectangle type :Rect(w :: Float, h :: Float)
   def area(r :: Rectangle) r.w * r.h
 
-  expect area(Rect(3, 4)) result 12 :: Float
+  expect area(Rect(3, 4)) is 12 :: Float
 end
 
 test "same precedence"
@@ -53,11 +53,11 @@ test "same precedence"
   b = 3 :: Int
   c = 4 :: Int
 
-  expect a * b + c result 14 :: Int
+  expect a * b + c is 14 :: Int
 end
 
 test "single grouping"
   x = (1)
 
-  expect x result 1 :: Rational
+  expect x is 1 :: Rational
 end

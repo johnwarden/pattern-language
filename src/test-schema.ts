@@ -1,3 +1,42 @@
+/**
+ * One step grammar per assertion predicate and mode. A predicate is the word after
+ * the subject (`is`, `fails`, `contains`); later predicates add a clause here and
+ * a comparison in the runner.
+ */
+function expectationSchema(
+  mode: string,
+  name: string,
+  modifier: string,
+): string {
+  const step = (type: string, rest: string, parts: string) =>
+    `def ${name}${type} type ${modifier}${rest}
+def stepParts(e :: ${name}${type})
+  (${parts})
+end`;
+  return [
+    step(
+      "IsExpectation",
+      ":expect subject :: Expression :is expected :: Expression",
+      `"is", "${mode}", e.subject, e.expected`,
+    ),
+    step(
+      "FailsExpectation",
+      ":expect subject :: Expression :fails reason :: String",
+      `"fails", "${mode}", e.subject, e.reason`,
+    ),
+    step(
+      "ContainsExpectation",
+      ":expect subject :: Expression :contains needle :: Expression",
+      `"contains", "${mode}", e.subject, e.needle`,
+    ),
+    step(
+      "Assertion",
+      ":assert condition :: Expression",
+      `"assert", "${mode}", e.condition`,
+    ),
+  ].join("\n");
+}
+
 /** Expected data is inert grammar data; a trailing :: annotation is read by the harness, never evaluated. */
 export const TEST_SCHEMA = `def Test type :test name :: String body :: Expression
 def TodoTest type :todo :test name :: String body :: Expression
@@ -14,42 +53,9 @@ end
 def testParts(t :: TodoTest)
   ("todo", t.name, t.body)
 end
-def ResultExpectation type :expect subject :: Expression :result expected :: Expression
-def stepParts(e :: ResultExpectation)
-  ("result", "check", e.subject, e.expected)
-end
-def ErrorExpectation type :expect subject :: Expression :error reason :: String
-def stepParts(e :: ErrorExpectation)
-  ("error", "check", e.subject, e.reason)
-end
-def Assertion type :assert condition :: Expression
-def stepParts(e :: Assertion)
-  ("assert", "check", e.condition)
-end
-def LegacyResultExpectation type :legacy :expect subject :: Expression :result expected :: Expression
-def stepParts(e :: LegacyResultExpectation)
-  ("result", "legacy", e.subject, e.expected)
-end
-def LegacyErrorExpectation type :legacy :expect subject :: Expression :error reason :: String
-def stepParts(e :: LegacyErrorExpectation)
-  ("error", "legacy", e.subject, e.reason)
-end
-def LegacyAssertion type :legacy :assert condition :: Expression
-def stepParts(e :: LegacyAssertion)
-  ("assert", "legacy", e.condition)
-end
-def TodoResultExpectation type :todo :expect subject :: Expression :result expected :: Expression
-def stepParts(e :: TodoResultExpectation)
-  ("result", "todo", e.subject, e.expected)
-end
-def TodoErrorExpectation type :todo :expect subject :: Expression :error reason :: String
-def stepParts(e :: TodoErrorExpectation)
-  ("error", "todo", e.subject, e.reason)
-end
-def TodoAssertion type :todo :assert condition :: Expression
-def stepParts(e :: TodoAssertion)
-  ("assert", "todo", e.condition)
-end
+${expectationSchema("check", "", "")}
+${expectationSchema("legacy", "Legacy", ":legacy ")}
+${expectationSchema("todo", "Todo", ":todo ")}
 def LegacySetup type :legacy statement :: Expression
 def stepParts(e :: LegacySetup)
   ("setup", "legacy", e.statement)
@@ -60,15 +66,9 @@ def stepParts(e :: TodoSetup)
 end
 TestFileContent
 `;
-export const TEST_STEP_TYPES = [
-  "ResultExpectation",
-  "ErrorExpectation",
-  "Assertion",
-  "LegacyResultExpectation",
-  "LegacyErrorExpectation",
-  "LegacyAssertion",
-  "TodoResultExpectation",
-  "TodoErrorExpectation",
-  "TodoAssertion",
-] as const;
+export const TEST_STEP_TYPES = ["", "Legacy", "Todo"].flatMap((mode) =>
+  ["IsExpectation", "FailsExpectation", "ContainsExpectation", "Assertion"].map(
+    (type) => mode + type,
+  ),
+);
 export const TEST_SETUP_TYPES = ["LegacySetup", "TodoSetup"];

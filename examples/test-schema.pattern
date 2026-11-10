@@ -13,37 +13,49 @@ end
 def testParts(t :: TodoTest)
   ("todo", t.name, t.body)
 end
-def ResultExpectation type :expect subject :: Expression :result expected :: Expression
-def stepParts(e :: ResultExpectation)
-  ("result", "check", e.subject, e.expected)
+def IsExpectation type :expect subject :: Expression :is expected :: Expression
+def stepParts(e :: IsExpectation)
+  ("is", "check", e.subject, e.expected)
 end
-def ErrorExpectation type :expect subject :: Expression :error reason :: String
-def stepParts(e :: ErrorExpectation)
-  ("error", "check", e.subject, e.reason)
+def FailsExpectation type :expect subject :: Expression :fails reason :: String
+def stepParts(e :: FailsExpectation)
+  ("fails", "check", e.subject, e.reason)
+end
+def ContainsExpectation type :expect subject :: Expression :contains needle :: Expression
+def stepParts(e :: ContainsExpectation)
+  ("contains", "check", e.subject, e.needle)
 end
 def Assertion type :assert condition :: Expression
 def stepParts(e :: Assertion)
   ("assert", "check", e.condition)
 end
-def LegacyResultExpectation type :legacy :expect subject :: Expression :result expected :: Expression
-def stepParts(e :: LegacyResultExpectation)
-  ("result", "legacy", e.subject, e.expected)
+def LegacyIsExpectation type :legacy :expect subject :: Expression :is expected :: Expression
+def stepParts(e :: LegacyIsExpectation)
+  ("is", "legacy", e.subject, e.expected)
 end
-def LegacyErrorExpectation type :legacy :expect subject :: Expression :error reason :: String
-def stepParts(e :: LegacyErrorExpectation)
-  ("error", "legacy", e.subject, e.reason)
+def LegacyFailsExpectation type :legacy :expect subject :: Expression :fails reason :: String
+def stepParts(e :: LegacyFailsExpectation)
+  ("fails", "legacy", e.subject, e.reason)
+end
+def LegacyContainsExpectation type :legacy :expect subject :: Expression :contains needle :: Expression
+def stepParts(e :: LegacyContainsExpectation)
+  ("contains", "legacy", e.subject, e.needle)
 end
 def LegacyAssertion type :legacy :assert condition :: Expression
 def stepParts(e :: LegacyAssertion)
   ("assert", "legacy", e.condition)
 end
-def TodoResultExpectation type :todo :expect subject :: Expression :result expected :: Expression
-def stepParts(e :: TodoResultExpectation)
-  ("result", "todo", e.subject, e.expected)
+def TodoIsExpectation type :todo :expect subject :: Expression :is expected :: Expression
+def stepParts(e :: TodoIsExpectation)
+  ("is", "todo", e.subject, e.expected)
 end
-def TodoErrorExpectation type :todo :expect subject :: Expression :error reason :: String
-def stepParts(e :: TodoErrorExpectation)
-  ("error", "todo", e.subject, e.reason)
+def TodoFailsExpectation type :todo :expect subject :: Expression :fails reason :: String
+def stepParts(e :: TodoFailsExpectation)
+  ("fails", "todo", e.subject, e.reason)
+end
+def TodoContainsExpectation type :todo :expect subject :: Expression :contains needle :: Expression
+def stepParts(e :: TodoContainsExpectation)
+  ("contains", "todo", e.subject, e.needle)
 end
 def TodoAssertion type :todo :assert condition :: Expression
 def stepParts(e :: TodoAssertion)

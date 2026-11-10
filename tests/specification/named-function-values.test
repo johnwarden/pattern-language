@@ -4,7 +4,7 @@ test "A named function can be stored and invoked as a value"
   todo expect
     f = square
     f(3 :: Int)
-  result 9 :: Int
+  is 9 :: Int
 end
 
 test "Named function values retain captured values across caller shadowing"
@@ -12,7 +12,7 @@ test "Named function values retain captured values across caller shadowing"
   def shift(n :: Int) n + offset
   def invoke(f, offset :: Int) f(2 :: Int)
 
-  todo expect invoke(shift, 100 :: Int) result 5 :: Int
+  todo expect invoke(shift, 100 :: Int) is 5 :: Int
 end
 
 test "Named function values retain transitive referenced definitions"
@@ -25,7 +25,7 @@ test "Named function values retain transitive referenced definitions"
     f(3 :: Int)
   end
 
-  todo expect invoke(calculate) result 7 :: Int
+  todo expect invoke(calculate) is 7 :: Int
 end
 
 test "Named function values retain a finite mutually recursive group"
@@ -50,7 +50,7 @@ test "Named function values preserve successive argument packs"
     f = add
     partial = f(2 :: Int)
     partial(3 :: Int)
-  result 5 :: Int
+  is 5 :: Int
 end
 
 test "Closing a named function does not evaluate unused defaults"
@@ -59,7 +59,7 @@ test "Closing a named function does not evaluate unused defaults"
   todo expect
     f = choose
     f(value: 8)
-  result 8 :: Int
+  is 8 :: Int
 end
 
 test "Named function values preserve labeled parameter binders"
@@ -68,7 +68,7 @@ test "Named function values preserve labeled parameter binders"
   todo expect
     f = join
     f(second: "b", first: "a")
-  result "a:b" :: String
+  is "a:b" :: String
 end
 
 test "Named function values preserve rest capture binders"
@@ -77,7 +77,7 @@ test "Named function values preserve rest capture binders"
   todo expect
     f = collect
     f(1 :: Int, 2 :: Int, 3 :: Int)
-  result [1, 2, 3] :: (concrete [_... :: Int*])
+  is [1, 2, 3] :: (concrete [_... :: Int*])
 end
 
 test "Named function defaults retain their captured values"
@@ -85,7 +85,7 @@ test "Named function defaults retain their captured values"
   def choose(value: Int = fallback) value
   def invoke(f, fallback :: Int) f()
 
-  todo expect invoke(choose, 100 :: Int) result 3 :: Int
+  todo expect invoke(choose, 100 :: Int) is 3 :: Int
 end
 
 test "A returned named function retains local type and accessor definitions"
@@ -98,7 +98,7 @@ test "A returned named function retains local type and accessor definitions"
   todo expect
     f = makeReader()
     f(Box(3))
-  result 3 :: Int
+  is 3 :: Int
 end
 
 test "A returned named function retains a departed scope's captured value"
@@ -110,7 +110,7 @@ test "A returned named function retains a departed scope's captured value"
   todo expect
     f = makeShift(3 :: Int)
     f(2 :: Int)
-  result 5 :: Int
+  is 5 :: Int
 end
 
 test "Aliases of one named function value preserve identity"
@@ -139,8 +139,8 @@ test "A named function can be passed and returned as a value"
   def apply(f, n :: Int) f(n)
   def getSquare() square
 
-  todo expect apply(square, 4 :: Int) result 16 :: Int
-  todo expect getSquare()(5 :: Int) result 25 :: Int
+  todo expect apply(square, 4 :: Int) is 16 :: Int
+  todo expect getSquare()(5 :: Int) is 25 :: Int
 end
 
 test "A where predicate accepts the value of a named function"

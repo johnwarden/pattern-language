@@ -108,10 +108,10 @@ from `tests/examples/`.
 
 ```text
 test "Current and future text result types"
-  expect :Widget result Widget :: UpperCamelSymbol
-  expect 0.1 result 0.1 :: Rational
-  legacy expect toString(Rational)(0.1) result "0.1" :: Expression
-  todo expect toString(Rational)(0.1) result "0.1" :: String
+  expect :Widget is Widget :: UpperCamelSymbol
+  expect 0.1 is 0.1 :: Rational
+  legacy expect toString(Rational)(0.1) is "0.1" :: Expression
+  todo expect toString(Rational)(0.1) is "0.1" :: String
 end
 ```
 

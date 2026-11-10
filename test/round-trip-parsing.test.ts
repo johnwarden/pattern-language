@@ -716,7 +716,7 @@ test("sidefix and deferred-expectation type/value text round trip without evalua
 // From test/test-suite.test.ts
 
 test("test-file values retain unresolved operands through data round trips", () => {
-  const value = sample("missing()", "result 3 :: MissingType", "todo");
+  const value = sample("missing()", "is 3 :: MissingType", "todo");
   const i = new Interpreter(),
     type = unwrap(single(i.run(TEST_SCHEMA)));
   if (type.kind !== "type") assert.fail();
@@ -731,7 +731,7 @@ test("test-file values retain unresolved operands through data round trips", () 
 // From test/todo-tests.test.ts
 
 test("whole-test todo file values survive the published schema's typed-text transport", () => {
-  const value = read("  expect missing() result 3 :: MissingType");
+  const value = read("  expect missing() is 3 :: MissingType");
   const interpreter = new Interpreter();
   const type = unwrap(single(interpreter.run(TEST_SCHEMA)));
   if (type.kind !== "type") assert.fail();

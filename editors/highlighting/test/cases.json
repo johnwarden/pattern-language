@@ -81,7 +81,7 @@
   },
   {
     "name": "patterns bindings macros and test DSL use ordinary lexical scopes",
-    "source": "todo test \"captures\"\n  def Vector(T, Ns...) type [T...]\n  macro accessor(x) x.width\n  match x (s :: String)@\n  expect [s, tail…] result {name: s, rest: tail} :: Vector(String)\n  assert True error \"mismatch\"\n  legacy expect False result False :: Bool\nend\nconcrete refinement FutureKeyword\n{label:value, other:None} :::String",
+    "source": "todo test \"captures\"\n  def Vector(T, Ns...) type [T...]\n  macro accessor(x) x.width\n  match x (s :: String)@\n  expect [s, tail…] is {name: s, rest: tail} :: Vector(String)\n  assert True fails \"mismatch\"\n  legacy expect False is False :: Bool\nend\nconcrete refinement FutureKeyword\n{label:value, other:None} :::String",
     "checks": [
       { "line": 0, "text": "todo", "scope": "keyword.other.test" },
       { "line": 0, "text": "test", "scope": "keyword.other.test" },

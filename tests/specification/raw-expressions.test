@@ -3,10 +3,10 @@ test "Raw runtime expressions can be interpreted as concrete values"
   def Rectangle type Rect(width :: Int, height :: Int)
   (r :: Rectangle) = e
 
-  expect e result Rect(2, 2) :: Expression
-  expect r result Rect(2, 2) :: Rectangle
-  expect r.width result 2 :: Int
-  expect r.height result 2 :: Int
+  expect e is Rect(2, 2) :: Expression
+  expect r is Rect(2, 2) :: Rectangle
+  expect r.width is 2 :: Int
+  expect r.height is 2 :: Int
 end
 
 test "Ordinary constructor bindings do not project a concrete value"
@@ -16,7 +16,7 @@ test "Ordinary constructor bindings do not project a concrete value"
   todo expect
     Rect(w, h) = r
     w
-  error "E_PATTERN_MISMATCH"
+  fails "E_PATTERN_MISMATCH"
 end
 
 test "Explicit matching projects one concrete boundary with interpreted fields"
@@ -29,6 +29,6 @@ test "Explicit matching projects one concrete boundary with interpreted fields"
     end
   end
 
-  expect w result 2 :: Int
-  expect h result 2 :: Int
+  expect w is 2 :: Int
+  expect h is 2 :: Int
 end

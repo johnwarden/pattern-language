@@ -45,7 +45,7 @@ contexts:
       scope: storage.type.pattern-language
     - match: (?<![\p{L}\p{N}_])(?:if|else|match|end)(?![\p{L}\p{N}_])
       scope: keyword.control.pattern-language
-    - match: (?<![\p{L}\p{N}_])(?:test|expect|result|error|assert|todo|legacy)(?![\p{L}\p{N}_])
+    - match: (?<![\p{L}\p{N}_])(?:test|expect|is|fails|contains|assert|todo|legacy)(?![\p{L}\p{N}_])
       scope: keyword.other.test.pattern-language
     - match: (?<![\p{L}\p{N}_])(?:True|False)(?![\p{L}\p{N}_])
       scope: constant.language.pattern-language

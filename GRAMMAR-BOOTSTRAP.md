@@ -494,7 +494,7 @@ form. File/setup/fixture/host failures remain failures. Subjects execute in isol
 child scopes, so no assertion grants another a definition or proof fact.
 
 Expected results are canonical data, not executed expressions. The DSL uses
-expect subject result expected :: Type and assert for predicate checks. Group
+expect subject is expected [:: Type] (omitted: the subject value's type; explicit: the exact type) and assert for predicate checks. Group
 binary expected data before ::. Exact observed types and single positional arity
 are checked separately from payload equality. Multi-return values are destructured
 once and checked through separate assertions; no results-pack form remains. Error

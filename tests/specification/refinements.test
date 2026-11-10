@@ -26,7 +26,7 @@ test "C07 refinement evidence preserves the base value"
     (n :: NonZero) = x
     assert n == x
     keep(n)
-  result
+  is
     (
       0.5
     ) :: (
@@ -51,7 +51,7 @@ test "C08 todo assert supplies no refinement evidence"
       keep(x)
     end
     unchecked(1)
-  error "refinement evidence is missing in unchecked"
+  fails "refinement evidence is missing in unchecked"
 end
 
 test "C09 base and refinement overloads overlap"
@@ -61,7 +61,7 @@ test "C09 base and refinement overloads overlap"
     def choose(x :: Rational) "base"
     def choose(x :: NonZero) "refined"
     choose(1)
-  error "overlapping base and refinement overload domains"
+  fails "overlapping base and refinement overload domains"
 end
 
 test "C10 unrelated domains can coexist"
@@ -74,7 +74,7 @@ test "C10 unrelated domains can coexist"
       if nonZero(x) choose(x) else "zero"
     end
     checked(1)
-  result
+  is
     (
       "number"
     ) :: (
@@ -98,7 +98,7 @@ test "C10 unrelated domains can coexist"
       if nonZero(x) choose(x) else "zero"
     end
     checked(0)
-  result
+  is
     (
       "zero"
     ) :: (
@@ -122,7 +122,7 @@ test "C10 unrelated domains can coexist"
       if nonZero(x) choose(x) else "zero"
     end
     choose("hello")
-  result
+  is
     (
       "string"
     ) :: (

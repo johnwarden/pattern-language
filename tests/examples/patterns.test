@@ -2,8 +2,8 @@ test "Capture accessors"
   def Rectangle type :Rect(w :: Float, h :: Float)
   r = Rect(3, 4) :: Rectangle
 
-  expect r.w result 3 :: Float
-  expect w(r) result 3 :: Float
+  expect r.w is 3 :: Float
+  expect w(r) is 3 :: Float
   (r.w, w(r))
 end
 
@@ -13,8 +13,8 @@ test "Defaults in function arguments"
   def colorOf(Rect(w, h, color: String = "black")) color
   raw = Rect(3, 4) :: Plain
 
-  expect colorOf(raw) result "black" :: String
-  expect raw result Rect(3, 4) :: Plain
+  expect colorOf(raw) is "black" :: String
+  expect raw is Rect(3, 4) :: Plain
   (colorOf(raw), raw)
 end
 
@@ -22,9 +22,9 @@ test "Exact fields and rest markers"
   def Packet type Rect(Int, Int, Int, color: Symbol, note: String)
   Rect(w, h, ..., color: c, **) = Rect(2, 3, 4, color: :Black, note: "extra") :: Packet
 
-  expect w result 2 :: Int
-  expect h result 3 :: Int
-  expect c result Black :: UpperCamelSymbol
+  expect w is 2 :: Int
+  expect h is 3 :: Int
+  expect c is Black :: UpperCamelSymbol
   (w, h, c)
 end
 
@@ -32,14 +32,14 @@ test "Labels containing patterns"
   def Rectangle type Rectangle(Int, Int)
   def area(shape: Rectangle(w, h)) w * h
 
-  expect area(shape: (Rectangle(3, 4) :: Rectangle)) result 12 :: Int
+  expect area(shape: (Rectangle(3, 4) :: Rectangle)) is 12 :: Int
 end
 
 test "Named result capture"
   (x, foo: String) = (1, foo: "bar")
 
-  expect x result 1 :: Rational
-  expect foo result "bar" :: String
+  expect x is 1 :: Rational
+  expect foo is "bar" :: String
   (x, foo)
 end
 
@@ -57,10 +57,10 @@ test "Picture: nested pattern captures"
   def Picture type :Picture(color: (type :Red | :Black), shape: Rectangle(w :: Float, h :: Float))
   p = Picture(color: :Red, shape: Rectangle(3, 4)) :: Picture
 
-  expect p.color result Red :: (type :Red | :Black)
-  expect p.w result 3 :: Float
-  expect p.h result 4 :: Float
+  expect p.color is Red :: (type :Red | :Black)
+  expect p.w is 3 :: Float
+  expect p.h is 4 :: Float
   observed = type Picture
-  expect observed result Type(Picture(color: Type(:Black | :Red), shape: Rectangle(Float, Float))) :: Type
+  expect observed is Type(Picture(color: Type(:Black | :Red), shape: Rectangle(Float, Float))) :: Type
   (p.color, p.w, p.h, (type Picture))
 end

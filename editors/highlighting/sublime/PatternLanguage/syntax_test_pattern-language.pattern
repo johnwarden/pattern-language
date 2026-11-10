@@ -105,13 +105,13 @@ todo test "captures"
 # ^^^^^ keyword.control
 #            ^^ keyword.operator.type
 #               ^^^^^^ support.type
-  expect [s, tail…] result {name: s, rest: tail} :: Vector(String)
+  expect [s, tail…] is {name: s, rest: tail} :: Vector(String)
 # ^^^^^^ keyword.other.test
 #                ^ keyword.operator.rest
-#                           ^^^^ entity.name.tag
-  assert True error "mismatch"
+#                       ^^^^ entity.name.tag
+  assert True fails "mismatch"
 #        ^^^^ constant.language
-  legacy expect False result False :: Bool
+  legacy expect False is False :: Bool
 # ^^^^^^ keyword.other.test
 end
 # <- keyword.control

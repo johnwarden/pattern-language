@@ -1,5 +1,5 @@
 test "An indented function cannot terminate at EOF"
-  expect parse(Code)("def f(x)\n  x") error "E_BLOCK_END"
+  expect parse(Code)("def f(x)\n  x") fails "E_BLOCK_END"
 end
 
 test "A nested block needs its own aligned end"
@@ -11,7 +11,7 @@ test "A nested block needs its own aligned end"
     end
     main
   end
-  expect parse(Code)(src) error "E_BLOCK_END"
+  expect parse(Code)(src) fails "E_BLOCK_END"
 
   src = '
     main = x ->
@@ -21,7 +21,7 @@ test "A nested block needs its own aligned end"
     end
     main
   end
-  expect parse(Code)(src) error "E_BLOCK_END"
+  expect parse(Code)(src) fails "E_BLOCK_END"
 end
 
 test "An expectation cannot borrow its enclosing test's end"
@@ -34,7 +34,7 @@ test "An expectation cannot borrow its enclosing test's end"
         8 :: Int
     end
   end
-  expect parse(Code)(src) error "E_BLOCK_END"
+  expect parse(Code)(src) fails "E_BLOCK_END"
 end
 
 test "A final end can close a string and its surrounding if"
@@ -53,7 +53,7 @@ end
 test "An error clause closes an indented subject without a preceding end"
   expect
     missing()
-  error "E_UNBOUND_NAME"
+  fails "E_UNBOUND_NAME"
 end
 
 test "An indented last operand still needs an aligned end"
@@ -67,30 +67,30 @@ test "A completing inline clause does not invent a trailing end"
     if True
       1
     else 2
-  result 1 :: Rational
+  is 1 :: Rational
 end
 
 test "Indentation around a completing clause does not change membership"
   expect
     missing()
-  error "E_UNBOUND_NAME"
-  expect missing() error "E_UNBOUND_NAME"
+  fails "E_UNBOUND_NAME"
+  expect missing() fails "E_UNBOUND_NAME"
 end
 
 test "An indented operand without a later grammar clause needs end"
-  expect parse(Code)("hold\n  True") error "E_BLOCK_END"
+  expect parse(Code)("hold\n  True") fails "E_BLOCK_END"
 end
 
 test "Removing required infix spaces is an error"
-  expect parse(Code)("a+b") error "infix operators require spaces"
+  expect parse(Code)("a+b") fails "infix operators require spaces"
 end
 
 test "infix"
-  expect parse(Code)("x + ") error "Missing second argument to infix operation"
+  expect parse(Code)("x + ") fails "Missing second argument to infix operation"
 end
 
 test "An extra end after a complete inline clause is an error"
-  expect parse(Code)("if True\n  1\nelse 2\nend") error "E_UNEXPECTED_END"
+  expect parse(Code)("if True\n  1\nelse 2\nend") fails "E_UNEXPECTED_END"
 end
 
 test "An extra end does not steal an enclosing block"
@@ -103,7 +103,7 @@ test "An extra end does not steal an enclosing block"
       x
     end
   end
-  expect parse(Code)(src) error "E_UNEXPECTED_END"
+  expect parse(Code)(src) fails "E_UNEXPECTED_END"
 end
 
 test "Quoted if/else branches share one end"
@@ -113,7 +113,7 @@ test "Quoted if/else branches share one end"
     else '
       there
     end
-  result "Hello" :: String
+  is "Hello" :: String
 
   expect
     if 1 == 0 '
@@ -121,7 +121,7 @@ test "Quoted if/else branches share one end"
     else '
       there
     end
-  result "there" :: String
+  is "there" :: String
 
   source = "if 1 == 1 '\n    Hello\nelse '\n    there\nend"
 

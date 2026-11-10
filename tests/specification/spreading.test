@@ -2,7 +2,7 @@ test "C19 horizontal rest remains a typed positional list"
   expect
     def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
     copy()
-  result
+  is
     (
       []
     ) :: (
@@ -14,7 +14,7 @@ test "C19 horizontal rest remains a typed positional list"
   expect
     def copy(xs... :: Float32*) [xs...] :: [_... :: Float32*]
     copy(0.5)
-  result
+  is
     (
       [0.5]
     ) :: (
@@ -29,7 +29,7 @@ test "C19 horizontal rest remains a typed positional list"
     packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
     Packet(first, rest... :: Float32*, color: c, **) = packet
     rest
-  result
+  is
     (
       [1]
     ) :: (
@@ -47,7 +47,7 @@ test "C19 horizontal rest remains a typed positional list"
     packet = (Packet(0.5, 1, color: "blue", note: "extra") :: Packet)
     Packet(first, rest... :: Float32*, color: c, **) = packet
     c
-  result
+  is
     (
       "blue"
     ) :: (
@@ -72,7 +72,7 @@ test "C20 row capture and spreading are mirror images"
     ] :: Matrix)
     rows = x.cells
     rows
-  result
+  is
     (
       [[0.5, 1], [2, 4]]
     ) :: (
@@ -127,7 +127,7 @@ test "C20 row capture and spreading are mirror images"
       ()
     ] :: Matrix)
     empty.cells
-  result
+  is
     (
       []
     ) :: (
@@ -175,7 +175,7 @@ test "C20 row capture and spreading are mirror images"
       ()
     ] :: Matrix)
     oneEmptyRow.cells
-  result
+  is
     (
       [[]]
     ) :: (
@@ -239,7 +239,7 @@ test "C21 vertical-only capture is a list of items"
       end
     end
     items.todos
-  result
+  is
     (
       ["first", "second"]
     ) :: (
@@ -269,7 +269,7 @@ test "C22 keyword remainder retains its record field types"
     end
     john = ({name: "John", id: 5, age: 48} :: PersonRecord)
     extra(john)
-  result
+  is
     (
       {age: 48}
     ) :: (

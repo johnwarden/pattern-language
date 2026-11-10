@@ -87,7 +87,7 @@ x = MyDsl` do "Foo" with "bar"
 name = "bar"
 (y :: MyDsl) = do "Foo" with name
 assert x == y
-expect toString(MyDsl)(x) result 'do "Foo" with "bar"' :: String
+expect toString(MyDsl)(x) is 'do "Foo" with "bar"' :: String
 ```
 
 Keep :do and :with quoted in pattern declarations to distinguish fixed keywords

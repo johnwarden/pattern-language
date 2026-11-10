@@ -1,35 +1,35 @@
 test "Prefix minus negates and infix minus subtracts"
   expect
     -1
-  result
+  is
     -1 :: Rational
   end
 
   expect
     -(1)
-  result
+  is
     -1 :: Rational
   end
 
   x = 3
   expect
     -x
-  result
+  is
     -3 :: Rational
   end
 
   expect
     -(x)
-  result
+  is
     -3 :: Rational
   end
 
   expect 1 - x
-  result
+  is
     -2 :: Rational
   end
-  expect 1 - -x result 4 :: Rational
-  expect 1 - -2 result 3 :: Rational
+  expect 1 - -x is 4 :: Rational
+  expect 1 - -2 is 3 :: Rational
 end
 
 test "Prefix and infix minus survive Code text round trips"

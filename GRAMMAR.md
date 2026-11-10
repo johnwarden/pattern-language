@@ -179,9 +179,9 @@ assertion rows. It is distinct from ordinary value-returning Code bodies:
 
 ```text
 test "Current and future primitives"
-  expect :Widget result Widget :: UpperCamelSymbol
-  legacy expect 5 result 5 :: Expression
-  todo expect 5 result 5 :: Rational
+  expect :Widget is Widget :: UpperCamelSymbol
+  legacy expect 5 is 5 :: Expression
+  todo expect 5 is 5 :: Rational
 end
 ```
 
@@ -190,17 +190,17 @@ Setup alternatives use the isolated incoming-scope rule in TEST-SUITE.md.
 Plain and legacy assertions must pass; todo
 assertions execute and must fail. A fulfilled todo fails the test and requests
 removing its marker. No case is skipped for containing todos. The same modifiers
-apply to assert, expected-error and single-result forms. File/setup/fixture/host
+apply to assert, `fails` and single-value `is` forms. File/setup/fixture/host
 errors cannot be swallowed by todo. Subjects execute in separate child scopes and
 cannot supply declarations or checking facts to other assertions.
 
 Expected results use canonical data trees, not evaluable expressions. An optional
 trailing `:: Type` asserts the exact observed type; without it the data is read as
 the actual subject value's type. Parenthesize an expected binary tree by indenting it
-after `result`, not by writing spaced `result (`:
+after `is`, not by writing spaced `is (`:
 
 ```text
-expect e result
+expect e is
   (1 + 1) :: Expression
 end
 ```

@@ -5,7 +5,7 @@ test "User-defined hold still needs an aligned end"
     hold
       1
     end
-  result 1 :: Rational
+  is 1 :: Rational
 
-  expect parse(Code)("hold\n  1") error "E_BLOCK_END"
+  expect parse(Code)("hold\n  1") fails "E_BLOCK_END"
 end

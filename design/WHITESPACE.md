@@ -68,7 +68,7 @@ supports declaring every such grammar alternative.
 **Ratified layout contract.** Block and clause completeness come from the active
 surface grammar’s quoted keyword chains, not a hardcoded `assert`/`expect`/`else`
 list. Indentation is not a semantic delimiter. Parse failures of malformed inner
-source belong in [TEST-SUITE.md](TEST-SUITE.md) (`expect parse(Code)(text) error` of quoted text).
+source belong in [TEST-SUITE.md](TEST-SUITE.md) (`expect parse(Code)(text) fails` of quoted text).
 
 Indentation makes structure readable. It must not be the sole evidence that an
 executable indented block has ended. Layout-introduced forms require an explicit
@@ -101,13 +101,13 @@ does not invent a trailing `end`.
 ```text
 expect
   something
-error "error"
+fails "error"
 ```
 
-is one ErrorExpectation. The `error` clause comes from the test grammar, so no
-`end` stands between the subject and `error`. Adding or removing indentation
+is one FailsExpectation. The `fails` clause comes from the test grammar, so no
+`end` stands between the subject and `fails`. Adding or removing indentation
 around `something` must not change that membership: the same keywords written
-flat (`expect something` then `error "error"`) are the same form.
+flat (`expect something` then `fails "error"`) are the same form.
 
 ```text
 assert
@@ -210,7 +210,7 @@ a - (b)                 # valid: infix operator then group
 -x                      # valid: prefix operator touches the operand
 - (x)                   # error: prefix operator must touch its operand
 x = (1, 2)              # valid: pack after =
-expect e result (1 + 1) :: Expression   # valid: result operand continues
+expect e is (1 + 1) :: Expression   # valid: is operand continues
 ```
 
 `def f() (x, y)` is the term error (`f()` then spaced `(`); indent the pack.
@@ -243,7 +243,7 @@ boundaries and custom-grammar reflow also need systematic review. No new rejecti
 rule or general proof of conformance is selected by this document.
 
 tests/layout/explicit-ends.test covers EOF, missing nested terminators,
-indentation changes, an expectation borrowing its test's end, an error clause
+indentation changes, an expectation borrowing its test's end, a `fails` clause
 completing without a preceding `end`, quoted if/else branches, extra `end`
 after a complete inline clause, incomplete infix, and `parse(Code)` of quoted
 malformed source.

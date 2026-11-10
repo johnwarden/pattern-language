@@ -17,7 +17,7 @@ test "Captured matrix rows spread vertically without flattening"
   assert rebuilt == original
   expect
     rebuilt
-  result
+  is
     [
       ()
       (0.5,)
@@ -50,13 +50,13 @@ test "Vertical spreading distinguishes an empty matrix from one empty row"
   assert emptyCopy != rowCopy
   expect
     emptyCopy
-  result
+  is
     [
     ] :: Matrix
   end
   expect
     rowCopy
-  result
+  is
     [
       ()
     ] :: Matrix
@@ -81,7 +81,7 @@ test "Vertical spreading retains surrounding rows in source order"
 
   expect
     combined
-  result
+  is
     [
       0.5
       1, 2
@@ -126,7 +126,7 @@ test "Brace collection rows spread with the same dimensions"
   assert rebuilt == original
   expect
     rebuilt
-  result
+  is
     {
       "first"
       ()
@@ -142,7 +142,7 @@ test "Vertical spreading requires a list of row lists"
       rows...
       ...
     ]
-  error "E_VERTICAL_SPREAD"
+  fails "E_VERTICAL_SPREAD"
 
   expect
     rows = [1, 2]
@@ -150,7 +150,7 @@ test "Vertical spreading requires a list of row lists"
       rows...
       ...
     ]
-  error "E_VERTICAL_SPREAD"
+  fails "E_VERTICAL_SPREAD"
 end
 
 test "A vertical value marker requires a preceding row"
@@ -158,7 +158,7 @@ test "A vertical value marker requires a preceding row"
     [
       ...
     ]
-  error "E_VERTICAL_SPREAD"
+  fails "E_VERTICAL_SPREAD"
 end
 
 test "Quoted vertical row spreads remain inert Code"

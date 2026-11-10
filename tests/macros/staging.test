@@ -4,7 +4,7 @@ test "A generated sidefix definition recognizes the following source line"
 
   expect
     answer 7
-  result 7 :: Rational
+  is 7 :: Rational
 end
 
 test "Generated grammar is reusable on separate function invocations"
@@ -15,8 +15,8 @@ test "Generated grammar is reusable on separate function invocations"
   end
   (a, b) = (f(8), f(9))
 
-  expect a result 8 :: Rational
-  expect b result 9 :: Rational
+  expect a is 8 :: Rational
+  expect b is 9 :: Rational
 end
 
 test "Generated grammar does not escape a function body"
@@ -29,7 +29,7 @@ test "Generated grammar does not escape a function body"
 
   expect
     answer 1
-  error "registered sidefix grammar"
+  fails "registered sidefix grammar"
 end
 
 test "Generated function parameters cannot capture inserted caller expressions"
@@ -37,7 +37,7 @@ test "Generated function parameters cannot capture inserted caller expressions"
   x = 10
   (install Args(x))
 
-  expect add(2) result 12 :: Rational
+  expect add(2) is 12 :: Rational
 end
 
 test "A generated macro retains its own interpolation stage and parameter scope"
@@ -46,7 +46,7 @@ test "A generated macro retains its own interpolation stage and parameter scope"
 
   expect
     (twice Args(6))
-  result 12 :: Rational
+  is 12 :: Rational
 end
 
 test "Ordinary functions retain their definition-time grammar"
@@ -55,14 +55,14 @@ test "Ordinary functions retain their definition-time grammar"
   end
   macro :if x :: Expression y :: Expression :else z :: Expression Code` 99
 
-  expect f() result 1 :: Rational
+  expect f() is 1 :: Rational
 end
 
 test "A generated final definition is still invalid as a program result"
   expect
     macro :install Args() Code` macro :answer x :: Expression Code$` $(x)
     (install Args())
-  error "must end with a result"
+  fails "must end with a result"
 end
 
 test "A generated structural type participates in subsequent sidefix patterns"
@@ -72,5 +72,5 @@ test "A generated structural type participates in subsequent sidefix patterns"
 
   expect
     use Point(1)
-  result 7 :: Rational
+  is 7 :: Rational
 end

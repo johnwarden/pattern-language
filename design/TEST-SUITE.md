@@ -22,28 +22,33 @@ contain a single `todo test` block.
 test "A value and a predicate"
   def Rectangle type Rect(w :: Float, h :: Float)
   r = Rect(2, 3) :: Rectangle
-  expect r.w result 2 :: Float
+  expect r.w is 2 :: Float
   assert r.h == 3
 end
 
 test "Current and future literals"
-  expect :Widget result Widget :: UpperCamelSymbol
-  legacy expect 5 result 5 :: Expression
-  todo expect 5 result 5 :: Rational
+  expect :Widget is Widget :: UpperCamelSymbol
+  legacy expect 5 is 5 :: Expression
+  todo expect 5 is 5 :: Rational
 end
 ```
 
 The schema is generated from src/test-schema.ts into examples/test-schema.pattern.
 TestFileContent has a required first TestBlock row and a vertical TestBlock* tail.
 TestBlock accepts either Test or TodoTest through an ordinary source union. The
-expected data after result is an ordinary Expression capture; the harness reads an
+expected data after `is` is an ordinary Expression capture; the harness reads an
 optional trailing `:: Type` from it and never evaluates the data:
 
 ```text
-def ResultExpectation type :expect subject :: Expression :result expected :: Expression
+def IsExpectation type :expect subject :: Expression :is expected :: Expression
+def FailsExpectation type :expect subject :: Expression :fails reason :: String
+def ContainsExpectation type :expect subject :: Expression :contains needle :: Expression
 ```
 
-The result delimiter is required. There are no value/type keyword clauses or results
+`is`, `fails` and `contains` are the expectation predicates; each exists in plain,
+`legacy` and `todo` forms, and a later predicate such as `isApprox` is another
+clause beside them. `contains` accepts only a String subject and an authored String
+needle; see [expect-contains](../specs/approved/expect-contains.md). The `is` delimiter is required. There are no value/type keyword clauses or results
 pack expectations. Multiple expect lines describe distinct scalar observations.
 Malformed inner source stays inside a string passed to `parse(Code)`; see Parse
 failures of quoted source below.
@@ -53,7 +58,7 @@ failures of quoted source below.
 ```text
 test "Symbolic expression data"
   e = :(1 + 1)
-  legacy expect e result
+  legacy expect e is
     (1 + 1) :: Expression
   end
 end
@@ -68,12 +73,12 @@ read only after the result's observed type agrees; invalid data never computes a
 answer.
 
 Without `:: Type`, the expected data is interpreted using the type of the actual
-subject value: `expect 1 result 1`, `expect rectangle result Rect(2, 3)`. Equality
+subject value: `expect 1 is 1`, `expect rectangle is Rect(2, 3)`. Equality
 still requires the same type, so omitting the annotation neither coerces the subject
 nor infers a different type from the data's spelling. An explicit annotation still
 asserts that exact type, and the data is never executed in either form.
 
-A result check requires exactly one positional value, an equal observed type, and
+An `is` check requires exactly one positional value, an equal observed type, and
 an equal expected value. A broad expected type is not a substitute for exact type
 identity. Expected data must have the canonical tree spelling for that type, modulo
 surface grouping/formatting normalization. In particular :Widget produces Widget
@@ -83,7 +88,7 @@ uses a space after every comma, without changing the content of string values.
 
 Use assert condition for predicates, `assert a != b` for direct inequality and
 assert not(condition) for other negative predicates. Assert requires one positional value of the actual Bool space, not a
-same-spelled constructor from another type and not truthiness. Keep a result check
+same-spelled constructor from another type and not truthiness. Keep an `is` check
 when the boolean's own type or literal representation is the point being tested.
 
 ## Failure reports
@@ -117,8 +122,8 @@ test "Separate return values"
     (2 :: Float, 3 :: Float)
   end
   (width, height) = dimensions()
-  expect width result 2 :: Float
-  expect height result 3 :: Float
+  expect width is 2 :: Float
+  expect height is 3 :: Float
 end
 
 test "No return values"
@@ -138,7 +143,7 @@ of exact label sets. Host tests retain direct complete-pack shape/label coverage
 source tests also check labeled capture, missing labels and exact positional arity.
 No tuple/unit value or new pack representation is introduced.
 
-Use direct subjects such as expect r.w result 3 :: Float. Keep definitions close to
+Use direct subjects such as expect r.w is 3 :: Float. Keep definitions close to
 their uses, put blank lines between tests and logical sections, and avoid numbered
 observation captures. Genuine multiple returns may be destructured into descriptive
 names. Keep legacy/todo counterparts adjacent so their change is easy to review.
@@ -159,7 +164,7 @@ A whole-test todo applies to the case as a unit:
 
 ```text
 todo test "A future capability"
-  expect missing() result 1 :: Rational
+  expect missing() is 1 :: Rational
 end
 ```
 
@@ -209,10 +214,10 @@ decision in [LEGACY-ASSERTIONS.md](LEGACY-ASSERTIONS.md). A corpus check rejects
 unaccounted legacy assertions and stale unresolved entries. Stable semantics belong
 in ordinary assertions even when their setup still uses bootstrap declarations.
 
-The same modifiers apply to expect subject error "reason". An E_ string matches
+The same modifiers apply to expect subject fails "reason". An E_ string matches
 a subject diagnostic code exactly; another string matches its message by
 substring.
-Finding the expected error satisfies an error assertion, so it is an unexpected
+Finding the expected error satisfies a `fails` assertion, so it is an unexpected
 success when that assertion is todo. Assertion-level todo does not swallow
 shared setup failures. Fixture failures, malformed source and host exceptions
 are never swallowed by either todo form. All assertions run after ordinary
@@ -231,11 +236,11 @@ future work; test assertions do not add its facts to setup.
 
 Malformed program text cannot be a live `expect` subject: the outer `.test` file
 would fail to parse. There is no special parse-error clause. Write an ordinary
-error check whose subject is `parse(Code)` of a string:
+`fails` check whose subject is `parse(Code)` of a string:
 
 ```text
 test "infix"
-  expect parse(Code)("x + ") error "Missing second argument to infix operation"
+  expect parse(Code)("x + ") fails "Missing second argument to infix operation"
 end
 ```
 
@@ -243,7 +248,7 @@ end
 grammar, not session macros. Finding the expected error passes; a successful
 parse fails with “the subject succeeded.” An `E_` string matches a diagnostic
 code exactly; another string matches its message by substring. Todo and legacy
-modifiers apply as they do to any other error check.
+modifiers apply as they do to any other `fails` check.
 
 Successful parses belong in the test as ordinary code. Comparing two spellings
 of the same or different tree, or checking a newline/indent shape that cannot be

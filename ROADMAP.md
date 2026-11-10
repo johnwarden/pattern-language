@@ -264,7 +264,7 @@ language-level failures are silent expected failures. A success fails the suite 
 “This assertion now passes; remove todo.” Fixture/setup/file/host errors remain failures.
 
 The suite checks separately checked return values, exact observed types, canonical expected data,
-expected subject errors and assertions. Result observations use expect e result v :: T;
+expected subject errors and assertions. Result observations use expect e is v [:: T] (an omitted type is the subject value's type; an explicit one is the exact type);
 multiple returns are destructured into separately checked captures. Each subject has a separate child scope;
 no assertion grants checking facts or leaks declarations to the next. All assertions
 run even after a failed check. Minimal source-only adapters retain future spellings,
