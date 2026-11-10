@@ -23,12 +23,12 @@ test "Recursive identity is alpha invariant"
   type Other concrete :Nil | :Cons(String, Other)
 
   assert a == b
-  assert not(a == Other)
+  assert a != Other
 end
 
 test "Physical labels matter but their order does not"
   assert (type :R(x: Int, y: String)) == (type :R(y: String, x: Int))
-  assert not((type :R(x: Int)) == (type :R(y: Int)))
+  assert (type :R(x: Int)) != (type :R(y: Int))
 end
 
 test "Capture names erase against a capture-free type"
@@ -68,5 +68,5 @@ test "Quoted symbols stay distinct from reserved type names in Any"
   (symbol :: Any) = :Widget
   (typeValue :: Any) = Int
 
-  assert not(symbol == typeValue)
+  assert symbol != typeValue
 end

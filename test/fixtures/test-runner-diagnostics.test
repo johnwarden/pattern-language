@@ -1,0 +1,39 @@
+# Deliberately failing acceptance input for specs/approved/test-runner-improvements.md.
+# Host checks consume this file (test/test-runner-diagnostics.test.ts); each case must
+# produce a distinct, identifiable report. Passing language cases belong in tests/.
+
+test "Failed equality"
+  left = 1
+  right = 2
+  assert left == right
+end
+
+test "Failed inequality"
+  left = 1
+  right = 1
+  assert left != right
+end
+
+test "Failed pattern match"
+  candidate = "hello"
+  assert candidate .matches Rational
+end
+
+test "Fulfilled todo"
+  todo assert 1 == 1
+end
+
+test "A value mismatch is a comparison failure"
+  expect 1 result 2
+end
+
+test "An explicit type mismatch remains a failure"
+  expect 3 :: Int result 3 :: Rational
+end
+
+test "Expected data is never executed"
+  expect 2
+  result
+    (1 + 1)
+  end
+end

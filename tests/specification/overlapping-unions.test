@@ -24,7 +24,7 @@ test "Overlapping UnionType keeps Float32 and Float64 identities"
   expect b result 0.5 :: Float64
   assert a .matches Float32
   assert b .matches Float64
-  assert not(a == b)
+  assert a != b
   assert parse(EitherFloat)(toString(EitherFloat)(a)) == a
 end
 

@@ -83,8 +83,7 @@ test("expected values are data rather than expressions to evaluate", () => {
     true,
   );
   assert.equal(
-    runTest(sample('"Hello, $name"', 'result "Hello, $name" :: String'))
-      .passed,
+    runTest(sample('"Hello, $name"', 'result "Hello, $name" :: String')).passed,
     true,
   );
   const wrong = runTest(
@@ -156,11 +155,10 @@ end`).passed,
     assert.equal(result.passed, false, body);
   }
 });
-test("removed expectation clauses and missing result annotations are rejected", () => {
+test("removed expectation clauses are rejected", () => {
   for (const old of [
     "expect 1 value 1 type Expression",
     "expect (1, 2) results {1 :: Expression, 2 :: Expression}",
-    "expect 1 result 1",
   ])
     assert.throws(() =>
       loadTests({ "removed.test": `test "Old"\n ${old}\nend` }),
@@ -173,11 +171,12 @@ test("grouping preserves symbolic binary expected data and does not evaluate it"
     ).passed,
     true,
   );
-  assert.throws(() =>
-    run(
-      `test "Wrong grouping"\n e = :(1 + 1)\n legacy expect e result 1 + 1 :: Expression\nend`,
-    ),
+  const ungrouped = run(
+    `test "Wrong grouping"\n e = :(1 + 1)\n legacy expect e result 1 + 1 :: Expression\nend`,
   );
+  assert.equal(ungrouped.passed, false);
+  assert.equal(ungrouped.phase, "expectation");
+  assert.match(ungrouped.message, /E_TEST_VALUE_SYNTAX/);
 });
 test("expected errors apply only to the subject", () => {
   assert.equal(
@@ -325,7 +324,10 @@ test("a fulfilled todo fails and asks for removal, including expected-error asse
   ]) {
     const r = run(source);
     assert.equal(r.passed, false);
-    assert.equal(r.message, "This assertion now passes; remove todo.");
+    assert.ok(
+      r.message.startsWith("This assertion now passes; remove todo."),
+      r.message,
+    );
   }
 });
 test("legacy assertions must pass and never suppress failures", () => {

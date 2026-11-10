@@ -78,7 +78,7 @@ import {
   isTypeSpecification,
   isName,
 } from "./syntax.ts";
-import type { Syntax, Field } from "./syntax.ts";
+import type { Syntax, Field, Span } from "./syntax.ts";
 import { Matcher, Mismatch, any } from "./pattern.ts";
 import type { Pattern, Match, Capture } from "./pattern.ts";
 import {
@@ -333,6 +333,13 @@ export class Interpreter {
   private evaluatedTypes = new WeakMap<Scope, WeakMap<Syntax, TypeValue>>();
   private codeType?: TypeValue;
   private deferringDeclarations = false;
+  private operandProbe?: {
+    span: Span;
+    operator: string;
+    observe: (side: "left" | "right", operands: Field<Value>[]) => void;
+    inner?: Syntax;
+    outer?: Syntax;
+  };
   private deferredUnions: TypeValue[] = [];
   private aliasTargets = new WeakMap<TypeValue, TypeValue>();
   constructor(
@@ -1975,6 +1982,7 @@ export class Interpreter {
         return singleton(value);
       }
     }
+    this.enterOperandSite(n);
     const fn = methods.length
       ? {
           kind: "overload" as const,
@@ -1983,20 +1991,57 @@ export class Interpreter {
         }
       : single(this.evaluate(n.head, env), "function head");
     const unique = this.uniqueClosure(fn);
-    return this.invoke(
-      fn,
-      this.evaluateFields(
-        n.body,
-        env,
-        unique
-          ? this.expectedFieldsFromPattern(
-              unique.parameters[0] ?? [],
-              unique.env,
-            )
-          : [],
-      ),
+    const args = this.evaluateFields(
+      n.body,
       env,
+      unique
+        ? this.expectedFieldsFromPattern(unique.parameters[0] ?? [], unique.env)
+        : [],
     );
+    this.recordOperands(n, args);
+    return this.invoke(fn, args, env);
+  }
+  /**
+   * Host embedding API: report the evaluated operand packs of the one binary
+   * application `left operator right` located at `span`. The observer runs during
+   * the ordinary evaluation, left before right, with the packs the operator then
+   * receives; nothing is evaluated again. Returns a function that removes it.
+   */
+  observeOperands(
+    span: Span,
+    operator: string,
+    observe: (side: "left" | "right", operands: Field<Value>[]) => void,
+  ): () => void {
+    const probe = { span, operator, observe };
+    this.operandProbe = probe;
+    return () => {
+      if (this.operandProbe === probe) this.operandProbe = undefined;
+    };
+  }
+  private enterOperandSite(n: Extract<Syntax, { kind: "apply" }>) {
+    const probe = this.operandProbe;
+    const span = n.span;
+    if (
+      !probe ||
+      probe.outer ||
+      n.head.kind !== "apply" ||
+      !isName(n.head.head, probe.operator) ||
+      n.head.body.length !== 1 ||
+      n.body.length !== 1 ||
+      !span ||
+      span.start !== probe.span.start ||
+      span.end !== probe.span.end ||
+      span.source?.name !== probe.span.source?.name
+    )
+      return;
+    probe.inner = n.head;
+    probe.outer = n;
+  }
+  private recordOperands(n: Syntax, args: Field<Value>[]) {
+    const probe = this.operandProbe;
+    if (!probe) return;
+    if (n === probe.inner) probe.observe("left", args);
+    else if (n === probe.outer) probe.observe("right", args);
   }
   private snapshot(env: Scope): Scope {
     const copy = new Scope(env.parent);
