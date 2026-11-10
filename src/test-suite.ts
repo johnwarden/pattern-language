@@ -38,6 +38,13 @@ export interface TestStep {
   expectedType?: Syntax;
   reason?: string;
   source: string;
+  /** Where the step starts and its original source, keyword included. */
+  location: StepLocation;
+}
+export interface StepLocation {
+  line: number;
+  column: number;
+  source: string;
 }
 export interface TestCase {
   id: string;
@@ -61,6 +68,15 @@ export interface CheckReport {
   actual?: string;
   expected?: string;
   span?: Span;
+  /** The original assertion; present on every failed check. */
+  location?: StepLocation & { file: string };
+  /** Operands of a failed direct ==, != or .matches, captured during evaluation. */
+  operands?: OperandReport;
+}
+export interface OperandReport {
+  operator: "==" | "!=" | ".matches";
+  left: { expression: string; actual: string };
+  right: { expression: string; actual: string };
 }
 export interface TestReport {
   id: string;
@@ -161,6 +177,42 @@ function slug(name: string): string {
   );
 }
 
+/** An optional trailing :: names the expected type; everything else is inert data. */
+function splitExpected(expected: Syntax): [Syntax, Syntax | undefined] {
+  const annotation = binary(one(expected), "::");
+  return annotation ? [annotation[0], annotation[1]] : [expected, undefined];
+}
+/** The step's original text from its first token's line start through its last token. */
+function stepLocation(first: Syntax, last: Syntax): StepLocation {
+  const start = first.span;
+  const end = last.span;
+  if (
+    !start?.source ||
+    start.start === undefined ||
+    end?.end === undefined ||
+    end.source !== start.source
+  )
+    return {
+      line: start?.line ?? 0,
+      column: start?.column ?? 0,
+      source: normal(first),
+    };
+  const text = start.source.text;
+  let stop = end.end;
+  // A block's span excludes its aligned end, which belongs to the original step.
+  if (last.kind === "block")
+    stop +=
+      /^(?:[ \t]*(?:#[^\n]*)?\n)*[ \t]*end\b/.exec(text.slice(stop))?.[0]
+        .length ?? 0;
+  return {
+    line: start.line,
+    column: start.column,
+    source: dedent(
+      text.slice(start.start - (start.column - 1), stop).trimEnd(),
+      start.column - 1,
+    ),
+  };
+}
 interface Rule {
   type: TypeValue;
   arity: number;
@@ -262,15 +314,19 @@ class TestReader {
         );
         const role = scalarString(kind.value) as TestStep["kind"];
         const subject = dataSyntax(parts[0].value);
+        const [expected, expectedType] =
+          role === "result"
+            ? splitExpected(dataSyntax(parts[1].value))
+            : [undefined, undefined];
         result.push({
           kind: role,
           mode: scalarString(mode.value) as AssertionMode,
           subject,
           source: testSourceText(subject),
-          expected: role === "result" ? dataSyntax(parts[1].value) : undefined,
-          expectedType:
-            role === "result" ? dataSyntax(parts[2].value) : undefined,
+          expected,
+          expectedType,
           reason: role === "error" ? scalarString(parts[1].value) : undefined,
+          location: stepLocation(tokens[pos], tokens[match.end - 1]),
         });
         pos = match.end;
       } else {
@@ -348,6 +404,7 @@ class TestReader {
                     new RegExp("^" + setupRule.keyword + "[ \\t]+", "m"),
                     "",
                   ),
+            location: stepLocation(n, tokens[next - 1]),
           });
         } else
           result.push({
@@ -355,6 +412,7 @@ class TestReader {
             mode: "check",
             subject: body.lines[row],
             source,
+            location: stepLocation(n, tokens[next - 1]),
           });
         pos = next;
       }
@@ -486,7 +544,8 @@ export function isAssertion(step: TestStep): boolean {
 }
 interface ExpectedResult {
   value: Syntax;
-  type: TypeValue;
+  /** Absent when the data takes the actual subject value's type. */
+  type?: TypeValue;
 }
 function expectedData(
   tree: Syntax,
@@ -569,7 +628,7 @@ function expectedResult(
   );
   return {
     value: step.expected!,
-    type: typeOf(step.expectedType!, interpreter),
+    type: step.expectedType && typeOf(step.expectedType, interpreter),
   };
 }
 function resultType(value: Value, interpreter: Interpreter): TypeValue {
@@ -591,6 +650,7 @@ function compareResult(
 ): string | undefined {
   if (actual.length !== 1 || actual[0].label !== "_1")
     return "result requires exactly one positional value; destructure multiple returns before checking them";
+  if (!expected.type) return;
   const type = resultType(actual[0].value, interpreter);
   if (!equal(type, expected.type))
     return (
@@ -599,6 +659,66 @@ function compareResult(
       "; received " +
       type.name
     );
+}
+
+const DIRECT_OPERATORS: Record<string, OperandReport["operator"]> = {
+  "==": "==",
+  "!=": "!=",
+  matches: ".matches",
+};
+/** Watch the operands of a direct ==, != or .matches while the assertion runs normally. */
+function watchOperands(interpreter: Interpreter, subject: Syntax) {
+  const tree = one(subject);
+  if (
+    tree.kind !== "apply" ||
+    tree.head.kind !== "apply" ||
+    tree.head.head.kind !== "symbol" ||
+    tree.head.head.quoted ||
+    !Object.hasOwn(DIRECT_OPERATORS, tree.head.head.name) ||
+    tree.head.body.length !== 1 ||
+    tree.body.length !== 1 ||
+    !tree.span
+  )
+    return;
+  const name = tree.head.head.name,
+    seen: { left?: Field<Value>[]; right?: Field<Value>[] } = {},
+    stop = interpreter.observeOperands(tree.span, name, (side, operands) => {
+      seen[side] = operands;
+    }),
+    text = (operand: Syntax) => normal(operand).replace(/\s*\n\s*/g, " "),
+    left = tree.head.body[0].value,
+    right = tree.body[0].value;
+  return {
+    stop,
+    report(): OperandReport | undefined {
+      if (!seen.left || !seen.right) return;
+      return {
+        operator: DIRECT_OPERATORS[name],
+        left: {
+          expression: text(left),
+          actual: interpreter.inspect(seen.left),
+        },
+        right: {
+          expression: text(right),
+          actual: interpreter.inspect(seen.right),
+        },
+      };
+    },
+  };
+}
+/** Reason, file:line:column, the original assertion and any captured operands. */
+function describeFailure(reason: string, check: CheckReport): string {
+  const at = check.location!;
+  return [
+    reason,
+    "  at " + at.file + ":" + at.line + ":" + at.column,
+    ...at.source.split("\n").map((line) => "    " + line),
+    ...(check.operands
+      ? [check.operands.left, check.operands.right].map(
+          (side) => "  " + side.expression + ": " + side.actual,
+        )
+      : []),
+  ].join("\n");
 }
 
 /** Execute checks; whole-test todo expects a case failure, never a host/fixture failure. */
@@ -639,10 +759,26 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
     };
   };
   let firstFailure: { phase: TestReport["phase"]; message: string } | undefined;
+  const failures: string[] = [];
   const fail = (message: string, todoEligible = true) => {
     if (!todoEligible) unexpectedTodo = true;
+    failures.push(message);
     if (!firstFailure || (test.mode === "todo" && !todoEligible))
       firstFailure = { phase, message };
+  };
+  const located = (step: TestStep, check: CheckReport): CheckReport => ({
+    ...check,
+    location: { file: test.file, ...step.location },
+  });
+  /** One failed check: its entry in the report and its full description. */
+  const failCheck = (
+    step: TestStep,
+    check: CheckReport,
+    todoEligible: boolean,
+  ) => {
+    const entry = located(step, check);
+    checks.push(entry);
+    fail(describeFailure(entry.message, entry), todoEligible);
   };
   try {
     if (fixture) interpreter.run(fixture, "repl", test.file + ":fixture");
@@ -695,15 +831,15 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
             if (!(error instanceof LanguageError)) throw error;
             failed = true;
           }
-          const message = failed ? "" : "This setup now succeeds; remove todo.";
-          checks.push({
+          const check: CheckReport = {
             kind: "setup",
             mode: "todo",
             status: failed ? "expected-failure" : "failed",
-            message,
+            message: failed ? "" : "This setup now succeeds; remove todo.",
             span: step.subject.span,
-          });
-          if (!failed) fail(message, false);
+          };
+          if (failed) checks.push(check);
+          else failCheck(step, check, false);
           continue;
         }
         if (setup.length && setup[0].mode !== step.mode) flush();
@@ -719,7 +855,9 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
       }
       let mismatch: string | undefined,
         actualOutput: string | undefined,
-        expectedOutput: string | undefined;
+        expectedOutput: string | undefined,
+        watch: ReturnType<typeof watchOperands>,
+        operands: OperandReport | undefined;
       try {
         let expected: ExpectedResult | undefined;
         if (step.kind === "result") {
@@ -729,6 +867,10 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         phase = "body";
         let subjectFailed = false;
         try {
+          watch =
+            step.kind === "assert"
+              ? watchOperands(interpreter, step.subject)
+              : undefined;
           results = execute(interpreter, step.subject);
           actualOutput = interpreter.inspect(results);
         } catch (error) {
@@ -762,7 +904,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
             phase = "expectation";
             const data = expectedData(
               expected!.value,
-              expected!.type,
+              expected!.type ?? resultType(results![0].value, interpreter),
               interpreter,
             );
             expectedOutput = interpreter.inspect(singleton(data));
@@ -780,6 +922,9 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         // indicate a broken harness and must never be swallowed by todo.
         if (!(error instanceof LanguageError)) throw error;
         mismatch = renderDiagnostic(error);
+      } finally {
+        operands = watch?.report();
+        watch?.stop();
       }
       if (step.mode === "todo") {
         if (mismatch) {
@@ -793,19 +938,24 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
           continue;
         }
         mismatch = "This assertion now passes; remove todo.";
+        operands = undefined;
       }
-      if (mismatch) {
-        checks.push({
-          kind: step.kind,
-          mode: step.mode,
-          status: "failed",
-          message: mismatch,
-          actual: actualOutput,
-          expected: expectedOutput,
-          span: step.subject.span,
-        });
-        fail(mismatch, step.mode !== "todo");
-      } else
+      if (mismatch)
+        failCheck(
+          step,
+          {
+            kind: step.kind,
+            mode: step.mode,
+            status: "failed",
+            message: mismatch,
+            actual: actualOutput,
+            expected: expectedOutput,
+            span: step.subject.span,
+            operands,
+          },
+          step.mode !== "todo",
+        );
+      else
         checks.push({
           kind: step.kind,
           mode: step.mode,
@@ -825,7 +975,14 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
       );
     if (firstFailure) {
       phase = firstFailure.phase;
-      return report("failed", firstFailure.message, true);
+      const reported = firstFailure.message;
+      return report(
+        "failed",
+        [reported, ...failures.filter((message) => message !== reported)].join(
+          "\n\n",
+        ),
+        true,
+      );
     }
     return report(
       "passed",

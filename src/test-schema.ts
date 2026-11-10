@@ -1,4 +1,4 @@
-/** Test result annotations are grammar data, never evaluated as ascriptions. */
+/** Expected data is inert grammar data; a trailing :: annotation is read by the harness, never evaluated. */
 export const TEST_SCHEMA = `def Test type :test name :: String body :: Expression
 def TodoTest type :todo :test name :: String body :: Expression
 def TestBlock unionType Test | TodoTest
@@ -14,12 +14,9 @@ end
 def testParts(t :: TodoTest)
   ("todo", t.name, t.body)
 end
-def ExpectedResult type
-  (expected :: Expression) ::: (expectedType :: Expression)
-end
-def ResultExpectation type :expect subject :: Expression :result result :: ExpectedResult
+def ResultExpectation type :expect subject :: Expression :result expected :: Expression
 def stepParts(e :: ResultExpectation)
-  ("result", "check", e.subject, e.result.expected, e.result.expectedType)
+  ("result", "check", e.subject, e.expected)
 end
 def ErrorExpectation type :expect subject :: Expression :error reason :: String
 def stepParts(e :: ErrorExpectation)
@@ -29,9 +26,9 @@ def Assertion type :assert condition :: Expression
 def stepParts(e :: Assertion)
   ("assert", "check", e.condition)
 end
-def LegacyResultExpectation type :legacy :expect subject :: Expression :result result :: ExpectedResult
+def LegacyResultExpectation type :legacy :expect subject :: Expression :result expected :: Expression
 def stepParts(e :: LegacyResultExpectation)
-  ("result", "legacy", e.subject, e.result.expected, e.result.expectedType)
+  ("result", "legacy", e.subject, e.expected)
 end
 def LegacyErrorExpectation type :legacy :expect subject :: Expression :error reason :: String
 def stepParts(e :: LegacyErrorExpectation)
@@ -41,9 +38,9 @@ def LegacyAssertion type :legacy :assert condition :: Expression
 def stepParts(e :: LegacyAssertion)
   ("assert", "legacy", e.condition)
 end
-def TodoResultExpectation type :todo :expect subject :: Expression :result result :: ExpectedResult
+def TodoResultExpectation type :todo :expect subject :: Expression :result expected :: Expression
 def stepParts(e :: TodoResultExpectation)
-  ("result", "todo", e.subject, e.result.expected, e.result.expectedType)
+  ("result", "todo", e.subject, e.expected)
 end
 def TodoErrorExpectation type :todo :expect subject :: Expression :error reason :: String
 def stepParts(e :: TodoErrorExpectation)

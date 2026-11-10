@@ -35,14 +35,12 @@ end
 
 The schema is generated from src/test-schema.ts into examples/test-schema.pattern.
 TestFileContent has a required first TestBlock row and a vertical TestBlock* tail.
-TestBlock accepts either Test or TodoTest through an ordinary source union. ExpectedResult
-uses an ordinary pattern containing literal ::, quoted ::: in its definition:
+TestBlock accepts either Test or TodoTest through an ordinary source union. The
+expected data after result is an ordinary Expression capture; the harness reads an
+optional trailing `:: Type` from it and never evaluates the data:
 
 ```text
-def ExpectedResult type
-  (expected :: Expression) ::: (expectedType :: Expression)
-end
-def ResultExpectation type :expect subject :: Expression :result result :: ExpectedResult
+def ResultExpectation type :expect subject :: Expression :result expected :: Expression
 ```
 
 The result delimiter is required. There are no value/type keyword clauses or results
@@ -65,8 +63,15 @@ The expected expression is data, not a computation producing 2. Parentheses make
 :: apply to the whole expected binary tree. All infix punctuation retains equal
 precedence and right associativity, so the ungrouped version is not the same grammar.
 Type-expression operands may use local names from setup or a grouped local block.
-Expected-type resolution happens before subject evaluation. Expected data is read
-only after the result's observed type agrees; invalid data never computes an answer.
+An explicit expected type is resolved before subject evaluation. Expected data is
+read only after the result's observed type agrees; invalid data never computes an
+answer.
+
+Without `:: Type`, the expected data is interpreted using the type of the actual
+subject value: `expect 1 result 1`, `expect rectangle result Rect(2, 3)`. Equality
+still requires the same type, so omitting the annotation neither coerces the subject
+nor infers a different type from the data's spelling. An explicit annotation still
+asserts that exact type, and the data is never executed in either form.
 
 A result check requires exactly one positional value, an equal observed type, and
 an equal expected value. A broad expected type is not a substitute for exact type
@@ -76,10 +81,33 @@ in UpperCamelSymbol: every symbol prints bare in value text, and colon quotation
 is a code form. Quoting Widget in that expected data rejects. The shared printer
 uses a space after every comma, without changing the content of string values.
 
-Use assert condition for predicates and assert not(condition) for negative
-predicates. Assert requires one positional value of the actual Bool space, not a
+Use assert condition for predicates, `assert a != b` for direct inequality and
+assert not(condition) for other negative predicates. Assert requires one positional value of the actual Bool space, not a
 same-spelled constructor from another type and not truthiness. Keep a result check
 when the boolean's own type or literal representation is the point being tested.
+
+## Failure reports
+
+Every failed assertion reports its file, line and column and its original source,
+including multiline subjects. A todo that unexpectedly passes names the todo to
+remove; an expected todo failure stays quiet. A failed direct `assert a == b`,
+`assert a != b` or `assert a .matches b` also lists both operand expressions with
+their actual values and types:
+
+```text
+comparison: assertion is False
+  at suite.test:8:3
+    assert left == right
+  left: 1 :: Rational
+  right: 2 :: Rational
+```
+
+The operands are captured during the assertion's one ordinary evaluation, in order
+and through the normal operator dispatch, never by running either again. If an
+operand throws, the original language diagnostic and its location are kept. The
+runner reports every failing assertion of a test, and every failing test.
+Host tests ([test-runner-diagnostics.test.ts](../test/test-runner-diagnostics.test.ts))
+cover this, since reports are harness output, not language behavior.
 
 ## Multiple and empty returns
 

@@ -194,8 +194,9 @@ apply to assert, expected-error and single-result forms. File/setup/fixture/host
 errors cannot be swallowed by todo. Subjects execute in separate child scopes and
 cannot supply declarations or checking facts to other assertions.
 
-Expected results use canonical data trees with exact observed type annotations,
-not evaluable expressions. Parenthesize an expected binary tree by indenting it
+Expected results use canonical data trees, not evaluable expressions. An optional
+trailing `:: Type` asserts the exact observed type; without it the data is read as
+the actual subject value's type. Parenthesize an expected binary tree by indenting it
 after `result`, not by writing spaced `result (`:
 
 ```text
@@ -206,8 +207,7 @@ end
 
 Multiple-return calls are destructured once,
 then captures are checked separately; predicate checks use assert. The grammar has
-no value/type keyword clauses or results-pack expectation. The expected annotation
-itself is an ordinary ExpectedResult pattern around literal :: (quoted ::: in the
-pattern declaration). Canonical printers place a space after commas; literal string
-contents are preserved. `.test` files still use the nonempty TestFileContent row
+no value/type keyword clauses or results-pack expectation. The expected data is an
+ordinary Expression capture; the harness reads its optional trailing :: annotation.
+Canonical printers place a space after commas; literal string contents are preserved. `.test` files still use the nonempty TestFileContent row
 grammar. See [TEST-SUITE.md](design/TEST-SUITE.md) for execution and scope.

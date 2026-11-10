@@ -121,9 +121,9 @@ On a laptop, Devbox plus direnv is the development environment (Node.js 24, just
 The source suite is tests/**/*.test, grouped by topic. `tests/inbox` is optional:
 default host/source runs and pre-push exclude it. Run `just test tests/inbox`
 or select an inbox file to opt in. Source runs print each filename. Assertions use
-expect subject result expected :: Type, assert, and expect subject error "reason".
-Expected results are data, not expressions to execute. `todo test` marks a whole
-expected-failure case, including language failures in its shared setup; it runs
+expect subject result expected [:: Type], assert, and expect subject error "reason".
+Expected results are data, not expressions to execute; without :: Type they take
+the actual subject's type. `todo test` marks a whole expected-failure case, including language failures in its shared setup; it runs
 and must fail as a unit. A file may contain only one todo test. Todo assertions
 still run and must fail individually; an unexpected success requires removing
 todo. Legacy assertions must pass until explicitly retired. Do not generate expected values from current outputs.
