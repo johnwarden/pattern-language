@@ -19,7 +19,7 @@ function rejects(source: string, code: string) {
   assert.throws(
     () => run(source),
     (error: unknown) =>
-      error instanceof LanguageError && error.diagnostic.code === code,
+      fails instanceof LanguageError && error.diagnostic.code === code,
   );
 }
 
@@ -112,7 +112,7 @@ test("vertical string captures reject a spaced parenthesis after the constructor
           "t = TodoList` todo (\n\n)\n(t.todos, toString(String*)(t.todos))",
       ),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       /a term cannot be followed by a spaced '\('/.test(
         (error as LanguageError).message,
       ),
@@ -158,7 +158,7 @@ test("bad vertical elements are rejected with their source location", () => {
   assert.throws(
     () => run(todo + 't = TodoList`\n todo\n  "valid"\n  7\n end\nend\nt'),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.diagnostic.code === "E_PATTERN_MISMATCH" &&
       error.diagnostic.primary?.line === 8 &&
       error.diagnostic.primary?.column === 3,
@@ -183,7 +183,7 @@ test("Body admits definitions without installing or evaluating them in the host 
     assert.throws(
       () => interpreter.run(expression),
       (error: unknown) =>
-        error instanceof LanguageError &&
+        fails instanceof LanguageError &&
         error.diagnostic.code === "E_UNBOUND_NAME",
     );
 });

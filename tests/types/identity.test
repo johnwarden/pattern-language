@@ -23,12 +23,12 @@ test "Recursive identity is alpha invariant"
   type Other concrete :Nil | :Cons(String, Other)
 
   assert a == b
-  assert not(a == Other)
+  assert a != Other
 end
 
 test "Physical labels matter but their order does not"
   assert (type :R(x: Int, y: String)) == (type :R(y: String, x: Int))
-  assert not((type :R(x: Int)) == (type :R(y: Int)))
+  assert (type :R(x: Int)) != (type :R(y: Int))
 end
 
 test "Capture names erase against a capture-free type"
@@ -52,8 +52,8 @@ test "Equal types in independent scopes share accessors"
   (same, w, h) = (a == b, width(a), height(b))
 
   assert same
-  expect w result 3 :: Int
-  expect h result 4 :: Int
+  expect w is 3 :: Int
+  expect h is 4 :: Int
 end
 
 test "unionType normalizes like UnionType"
@@ -61,12 +61,12 @@ test "unionType normalizes like UnionType"
   assert (unionType Int | String | Int) == UnionType(String, Int)
   expect
     unionType Int | foo
-  error "unbound"
+  fails "unbound"
 end
 
 test "Quoted symbols stay distinct from reserved type names in Any"
   (symbol :: Any) = :Widget
   (typeValue :: Any) = Int
 
-  assert not(symbol == typeValue)
+  assert symbol != typeValue
 end

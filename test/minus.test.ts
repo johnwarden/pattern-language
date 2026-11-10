@@ -37,11 +37,11 @@ test("infix minus validates the first pack before evaluating its right operand",
   assert.throws(
     () => run("Int - missing()"),
     (error: unknown) =>
-      error instanceof LanguageError && error.diagnostic.code === "E_NO_METHOD",
+      fails instanceof LanguageError && error.diagnostic.code === "E_NO_METHOD",
   );
   assert.throws(
     () => evaluate("Code` Int - missing()"),
     (error: unknown) =>
-      error instanceof LanguageError && error.diagnostic.code === "E_NO_METHOD",
+      fails instanceof LanguageError && error.diagnostic.code === "E_NO_METHOD",
   );
 });

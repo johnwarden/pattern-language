@@ -24,7 +24,7 @@ test("type defaults are rejected in named, generic, anonymous, nested, and refin
     assert.throws(
       () => run(source),
       (error: unknown) =>
-        error instanceof LanguageError &&
+        fails instanceof LanguageError &&
         error.diagnostic.code === "E_TYPE_DEFAULT",
       source,
     );

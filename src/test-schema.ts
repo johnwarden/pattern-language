@@ -14,14 +14,15 @@ end
 def testParts(t :: TodoTest)
   ("todo", t.name, t.body)
 end
-def ExpectedResult type
-  (expected :: Expression) ::: (expectedType :: Expression)
-end
-def ResultExpectation type :expect subject :: Expression :result result :: ExpectedResult
+def ResultExpectation type :expect subject :: Expression :is expected :: Expression
 def stepParts(e :: ResultExpectation)
-  ("result", "check", e.subject, e.result.expected, e.result.expectedType)
+  ("result", "check", e.subject, e.expected)
 end
-def ErrorExpectation type :expect subject :: Expression :error reason :: String
+def ContainsExpectation type :expect subject :: Expression :contains expected :: Expression
+def stepParts(e :: ContainsExpectation)
+  ("contains", "check", e.subject, e.expected)
+end
+def ErrorExpectation type :expect subject :: Expression :fails reason :: String
 def stepParts(e :: ErrorExpectation)
   ("error", "check", e.subject, e.reason)
 end
@@ -29,11 +30,15 @@ def Assertion type :assert condition :: Expression
 def stepParts(e :: Assertion)
   ("assert", "check", e.condition)
 end
-def LegacyResultExpectation type :legacy :expect subject :: Expression :result result :: ExpectedResult
+def LegacyResultExpectation type :legacy :expect subject :: Expression :is expected :: Expression
 def stepParts(e :: LegacyResultExpectation)
-  ("result", "legacy", e.subject, e.result.expected, e.result.expectedType)
+  ("result", "legacy", e.subject, e.expected)
 end
-def LegacyErrorExpectation type :legacy :expect subject :: Expression :error reason :: String
+def LegacyContainsExpectation type :legacy :expect subject :: Expression :contains expected :: Expression
+def stepParts(e :: LegacyContainsExpectation)
+  ("contains", "legacy", e.subject, e.expected)
+end
+def LegacyErrorExpectation type :legacy :expect subject :: Expression :fails reason :: String
 def stepParts(e :: LegacyErrorExpectation)
   ("error", "legacy", e.subject, e.reason)
 end
@@ -41,11 +46,15 @@ def LegacyAssertion type :legacy :assert condition :: Expression
 def stepParts(e :: LegacyAssertion)
   ("assert", "legacy", e.condition)
 end
-def TodoResultExpectation type :todo :expect subject :: Expression :result result :: ExpectedResult
+def TodoResultExpectation type :todo :expect subject :: Expression :is expected :: Expression
 def stepParts(e :: TodoResultExpectation)
-  ("result", "todo", e.subject, e.result.expected, e.result.expectedType)
+  ("result", "todo", e.subject, e.expected)
 end
-def TodoErrorExpectation type :todo :expect subject :: Expression :error reason :: String
+def TodoContainsExpectation type :todo :expect subject :: Expression :contains expected :: Expression
+def stepParts(e :: TodoContainsExpectation)
+  ("contains", "todo", e.subject, e.expected)
+end
+def TodoErrorExpectation type :todo :expect subject :: Expression :fails reason :: String
 def stepParts(e :: TodoErrorExpectation)
   ("error", "todo", e.subject, e.reason)
 end
@@ -65,12 +74,15 @@ TestFileContent
 `;
 export const TEST_STEP_TYPES = [
   "ResultExpectation",
+  "ContainsExpectation",
   "ErrorExpectation",
   "Assertion",
   "LegacyResultExpectation",
+  "LegacyContainsExpectation",
   "LegacyErrorExpectation",
   "LegacyAssertion",
   "TodoResultExpectation",
+  "TodoContainsExpectation",
   "TodoErrorExpectation",
   "TodoAssertion",
 ] as const;

@@ -6,37 +6,37 @@ test "Postfix punctuation distinct from prefix application"
   (x :: PostfixAt) = "foo"@
   (y :: PrefixAt) = @"bar"
 
-  expect x == y error "E_INCOMPARABLE_TYPES"
+  expect x == y fails "E_INCOMPARABLE_TYPES"
   s = match x
     (captured :: String)@ -> captured
   end
   t = match y
     @(captured :: String) -> captured
   end
-  expect s result "foo" :: String
-  expect t result "bar" :: String
+  expect s is "foo" :: String
+  expect t is "bar" :: String
 end
 
 test "Source optional convention has unwrapped present values"
-  expect "x" :: String? result "x" :: String?
-  expect :None :: String? result None :: String?
-  expect Some("x") :: String? error "E_PATTERN_MISMATCH"
-  expect "x"? error "E_NO_METHOD"
+  expect "x" :: String? is "x" :: String?
+  expect :None :: String? is None :: String?
+  expect Some("x") :: String? fails "E_PATTERN_MISMATCH"
+  expect "x"? fails "E_NO_METHOD"
 end
 
 test "Ordinary definitions give postfix operators meaning"
   def (n :: Rational)@ n + 1
-  expect 2@ result 3 :: Rational
+  expect 2@ is 3 :: Rational
   prefix = @(2)
-  expect prefix result
+  expect prefix is
     @(2) :: Expression
   end
 end
 
 test "Another source postfix type convention"
   def (T :: Type)~ type T | :Absent
-  expect 3 :: Int~ result 3 :: Int~
-  expect :Absent :: Int~ result Absent :: Int~
+  expect 3 :: Int~ is 3 :: Int~
+  expect :Absent :: Int~ is Absent :: Int~
 end
 
 test "Postfix type descriptions preserve matching after round trip"
@@ -59,7 +59,7 @@ end
 test "Postfix percent remains punctuation; hash is a comment"
   def Percent type String%
   (p :: Percent) = "data"%
-  expect p result "data"% :: Percent
+  expect p is "data"% :: Percent
   assert parse(Percent)(toString(Percent)(p)) == p
   x = 1# trailing comment
   y = 1 # separated comment
@@ -69,12 +69,12 @@ test "Postfix percent remains punctuation; hash is a comment"
 end
 
 test "Prefix and postfix operators must touch their operand"
-  expect parse(Code)("T * *") error "must touch their operand"
-  expect parse(Code)("* *x") error "must touch their operand"
-  expect parse(Code)("T ? ?") error "must touch their operand"
-  expect parse(Code)("? ?x") error "must touch their operand"
-  expect parse(Code)("- (x)") error "must touch their operand"
-  expect parse(Code)("* (x)") error "must touch their operand"
+  expect parse(Code)("T * *") fails "must touch their operand"
+  expect parse(Code)("* *x") fails "must touch their operand"
+  expect parse(Code)("T ? ?") fails "must touch their operand"
+  expect parse(Code)("? ?x") fails "must touch their operand"
+  expect parse(Code)("- (x)") fails "must touch their operand"
+  expect parse(Code)("* (x)") fails "must touch their operand"
   parse(Code)("1 * *x")
   parse(Code)("1 * x*")
   parse(Code)("x* * 1")
@@ -92,6 +92,6 @@ end
 test "Lifting remains a future source convention"
   (present :: Float?) = 4
   (absent :: Float?) = :None
-  todo expect sqrt?(present) result 2 :: Float?
-  todo expect sqrt?(absent) result None :: Float?
+  todo expect sqrt?(present) is 2 :: Float?
+  todo expect sqrt?(absent) is None :: Float?
 end

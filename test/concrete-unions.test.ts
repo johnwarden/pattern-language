@@ -59,7 +59,7 @@ test("nested annotation payloads remain data in the test DSL", async () => {
   type Box concrete :Box(Rational)
   type Outer concrete Box | :None
   (x :: Outer) = Box(2) :: Box
-  expect x result (Box(1 + 1) :: Box) :: Outer
+  expect x is (Box(1 + 1) :: Box) :: Outer
 end`,
   });
   const result = runTest(value);

@@ -50,5 +50,5 @@ test "Peer optional absence is ambiguous regardless of branch order"
 
   expect
     :None :: MyType
-  error "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_PATTERN"
 end

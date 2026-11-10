@@ -62,7 +62,7 @@ test("normalized-source diagnostics keep correct line and column positions", () 
   assert.throws(
     () => new Interpreter().run("\uFEFFname = 1\r\nmissing"),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.diagnostic.primary?.line === 2 &&
       error.diagnostic.primary?.column === 1,
   );

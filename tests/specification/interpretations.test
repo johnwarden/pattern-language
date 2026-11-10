@@ -8,7 +8,7 @@ test "C11 projection is one explicit concrete boundary"
     match w s :: Small
     match s r :: Rational
     r
-  result
+  is
     (
       0
     ) :: Rational
@@ -24,7 +24,7 @@ test "C11 projection is one explicit concrete boundary"
     match s r :: Rational
     (direct :: Rational) = w
     direct
-  error "ordinary binding does not unwrap Wrapped"
+  fails "ordinary binding does not unwrap Wrapped"
 
   todo expect
     small = n -> (n == 0)
@@ -36,7 +36,7 @@ test "C11 projection is one explicit concrete boundary"
     match s r :: Rational
     match w direct :: Rational
     direct
-  error "the immediate base of Wrapped is Small"
+  fails "the immediate base of Wrapped is Small"
 
   todo expect
     small = n -> (n == 0)
@@ -48,7 +48,7 @@ test "C11 projection is one explicit concrete boundary"
     match s r :: Rational
     def consume(x :: Rational) x
     consume(w)
-  error "dispatch does not unwrap Wrapped"
+  fails "dispatch does not unwrap Wrapped"
 end
 
 test "C12 designation is recursive only when unambiguous"
@@ -63,7 +63,7 @@ test "C12 designation is recursive only when unambiguous"
       :None -> "outer absent"
     end
     text
-  result
+  is
     (
       "Hello"
     ) :: (
@@ -105,7 +105,7 @@ test "C12 designation is recursive only when unambiguous"
       s
     end
     extract("Hello" :: Option<String>)
-  error "String extraction is not guaranteed for every Option<String>"
+  fails "String extraction is not guaranteed for every Option<String>"
 end
 
 test "C13 abstract union retains overlapping numeric members"
@@ -119,7 +119,7 @@ test "C13 abstract union retains overlapping numeric members"
     (a :: EitherFloat) = float32(0.5)
     (b :: EitherFloat) = float64(0.5)
     a
-  result
+  is
     (
       0.5
     ) :: (
@@ -135,7 +135,7 @@ test "C13 abstract union retains overlapping numeric members"
     (a :: EitherFloat) = float32(0.5)
     (b :: EitherFloat) = float64(0.5)
     b
-  result
+  is
     (
       0.5
     ) :: (
@@ -168,7 +168,7 @@ test "C14 unambiguous is a separate grammar requirement"
     assert parse(Token)(toString(Token)(n)) == n
     type Bad unambiguous abstract Float32 | Float64
     Bad
-  error "the same numeric spelling admits more than one interpretation"
+  fails "the same numeric spelling admits more than one interpretation"
 end
 
 test "C15 facet intersection preserves concrete identity and fields"
@@ -191,7 +191,7 @@ test "C15 facet intersection preserves concrete identity and fields"
     (view :: ColoredRectangle) = card
     assert view == card
     view
-  result
+  is
     (
       {width: 0.5, height: 1, color: "blue"}
     ) :: (

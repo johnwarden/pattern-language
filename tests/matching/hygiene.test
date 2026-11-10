@@ -2,7 +2,7 @@ test "Hygiene preserves quoted literal patterns"
   macro :make Args() Code` :foo -> 1
   f = (make Args())
 
-  expect f(:foo) result 1 :: Rational
+  expect f(:foo) is 1 :: Rational
 end
 
 test "Hygiene preserves literal constructor heads"
@@ -17,7 +17,7 @@ test "Default expressions use the surrounding scope before binding captures"
   macro :make Args() Code` (size: Int = size) -> size
   f = (make Args())
 
-  expect f() result 9 :: Int
+  expect f() is 9 :: Int
 end
 
 test "Hygiene renames all alternative sites together"
@@ -25,15 +25,15 @@ test "Hygiene renames all alternative sites together"
   f = (make Args())
   (some, other) = (f(Some(3)), f(Other(4)))
 
-  expect some result 3 :: Rational
-  expect other result 4 :: Rational
+  expect some is 3 :: Rational
+  expect other is 4 :: Rational
 end
 
 test "Inserted patterns stay in their caller scope"
   macro :make Args(p) Code$` $(p) -> 42
   f = (make Args(:foo))
 
-  expect f(:foo) result 42 :: Rational
+  expect f(:foo) is 42 :: Rational
 end
 
 test "Alpha-renaming cannot hide duplicate captures in separate parameter packs"
@@ -43,12 +43,12 @@ test "Alpha-renaming cannot hide duplicate captures in separate parameter packs"
       1
     )
     (make Args())
-  error "duplicate capture name"
+  fails "duplicate capture name"
 end
 
 test "No sequence repetition or alternation extension is introduced"
   expect
     macro :many Args(Int Int) Code` 0
     many Args(1 2)
-  error "unsupported grammar pattern"
+  fails "unsupported grammar pattern"
 end

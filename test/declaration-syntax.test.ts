@@ -28,7 +28,7 @@ test("ambiguous complete grammar alternatives reject instead of choosing declara
   assert.throws(
     () => grammar.parse("item 3"),
     (error: unknown) =>
-      error instanceof LanguageError && /ambiguous form/.test(error.message),
+      fails instanceof LanguageError && /ambiguous form/.test(error.message),
   );
 });
 
@@ -80,7 +80,7 @@ test("named type declarations retain the required final-result rule", () => {
     assert.throws(
       () => new Interpreter().run(source),
       (error: unknown) =>
-        error instanceof LanguageError &&
+        fails instanceof LanguageError &&
         error.diagnostic.code === "E_SYNTAX" &&
         /result pack/.test(error.message),
     );
@@ -116,7 +116,7 @@ test("indented concrete declarations require and preserve their aligned end", ()
         "type Rectangle concrete\n  Rect(w :: Rational, h :: Rational)\nRectangle",
       ),
     (error: unknown) =>
-      error instanceof LanguageError && error.diagnostic.code === "E_BLOCK_END",
+      fails instanceof LanguageError && error.diagnostic.code === "E_BLOCK_END",
   );
 });
 
@@ -142,7 +142,7 @@ test("reading Code with the new declarations remains inert", () => {
   assert.throws(
     () => interpreter.run("Untouched"),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.diagnostic.code === "E_UNBOUND_NAME",
   );
 });

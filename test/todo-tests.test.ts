@@ -9,7 +9,7 @@ const read = (body: string) =>
   loadTests({ "inbox/future.test": `todo test "Future"\n${body}\nend` })[0];
 
 test("a file containing one whole-test todo is discoverable without execution", () => {
-  const value = read("  x = missing()\n  expect x result 1 :: Rational");
+  const value = read("  x = missing()\n  expect x is 1 :: Rational");
   assert.equal(value.id, "inbox/future#future");
   assert.equal(value.name, "Future");
   assert.equal(value.mode, "todo");
@@ -52,7 +52,7 @@ test("test and todo test blocks coexist with stable IDs and shared duplicate che
 
 test("a whole-test todo tolerates partial progress and executes remaining assertions", () => {
   const result = runTest(
-    read("  assert True\n  expect 1 result 2 :: Rational\n  assert True"),
+    read("  assert True\n  expect 1 is 2 :: Rational\n  assert True"),
   );
   assert.equal(result.status, "expected-failure");
   assert.equal(result.passed, true);
@@ -70,7 +70,7 @@ test("a language failure in whole-test todo setup is expected and case-local", (
   assert.equal(result.status, "expected-failure");
   assert.equal(result.phase, "setup");
   const next = loadTests({
-    "next.test": 'test "Fresh"\n  expect partial error "E_UNBOUND_NAME"\nend',
+    "next.test": 'test "Fresh"\n  expect partial fails "E_UNBOUND_NAME"\nend',
   })[0];
   assert.equal(runTest(next).passed, true);
 });
@@ -78,7 +78,7 @@ test("a language failure in whole-test todo setup is expected and case-local", (
 test("a completed whole-test todo fails, including a successful error expectation", () => {
   for (const body of [
     "  assert True",
-    '  expect missing() error "E_UNBOUND_NAME"',
+    '  expect missing() fails "E_UNBOUND_NAME"',
   ]) {
     const result = runTest(read(body));
     assert.equal(result.passed, false);
@@ -129,7 +129,7 @@ test("whole-test todo never absorbs fixture, host, malformed-file or missing-che
 });
 
 test("whole-test todo file values survive the published schema's typed-text transport", () => {
-  const value = read("  expect missing() result 3 :: MissingType");
+  const value = read("  expect missing() is 3 :: MissingType");
   const interpreter = new Interpreter();
   const type = unwrap(single(interpreter.run(TEST_SCHEMA)));
   if (type.kind !== "type") assert.fail();

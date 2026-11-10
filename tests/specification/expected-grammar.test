@@ -41,5 +41,5 @@ test "Unquoted DSL without an expected grammar is incomplete"
   def MyDsl type :do String :with String
   name = "bar"
   go = () -> (do "Foo" with name)
-  expect go() error "unknown or incomplete macro form"
+  expect go() fails "unknown or incomplete macro form"
 end

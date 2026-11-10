@@ -9,9 +9,9 @@ import {
 } from "../src/index.ts";
 
 const isBlockEnd = (error: unknown) =>
-  error instanceof LanguageError && error.diagnostic.code === "E_BLOCK_END";
+  fails instanceof LanguageError && error.diagnostic.code === "E_BLOCK_END";
 const isUnexpectedEnd = (error: unknown) =>
-  error instanceof LanguageError &&
+  fails instanceof LanguageError &&
   error.diagnostic.code === "E_UNEXPECTED_END";
 
 test("clause keywords come from the active grammar object, not a hardcoded else list", () => {
@@ -173,7 +173,7 @@ test("session hold rejects a wholly parenthesized operand and accepts a continui
   assert.throws(
     () => i.parse("hold (1)", "repl"),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.message.includes(
         "a keyword operand cannot be a single parenthesized group",
       ),

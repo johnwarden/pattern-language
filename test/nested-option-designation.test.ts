@@ -7,7 +7,7 @@ const rejects = (source: string, code: string) =>
   assert.throws(
     () => run(source),
     (error: unknown) =>
-      error instanceof LanguageError && error.diagnostic.code === code,
+      fails instanceof LanguageError && error.diagnostic.code === code,
   );
 
 const nested = `type Inner concrete String | :None

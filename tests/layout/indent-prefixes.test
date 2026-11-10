@@ -5,7 +5,7 @@ test "Pure spaces, pure tabs, and mixed prefixes parse"
     else
       2
     end
-  result 1 :: Rational
+  is 1 :: Rational
 
   assert parse(Code)("if True\n\t1\nelse\n\t2\nend") .matches Code
   assert parse(Code)("if True\n \t1\nelse\n \t2\nend") .matches Code
@@ -19,14 +19,14 @@ test "Quoted if/else branches use the same prefix relation"
     else '
       there
     end
-  result "Hello" :: String
+  is "Hello" :: String
 
   expect
     '
       hello
         world
     end
-  result "hello\n  world" :: String
+  is "hello\n  world" :: String
 
   assert parse(Code)("if 1 == 1 '\n\tHello\nelse '\n\tthere\nend") .matches Code
   assert parse(Code)("if 1 == 1 '\n \tHello\nelse '\n \tthere\nend") .matches Code
@@ -34,11 +34,11 @@ test "Quoted if/else branches use the same prefix relation"
 end
 
 test "Incompatible tab and space prefixes reject"
-  expect parse(Code)("if True\n  1\n\t2\nend") error "inconsistent indentation"
-  expect parse(Code)("'\n  x\n\ty\nend") error "indentation prefix"
+  expect parse(Code)("if True\n  1\n\t2\nend") fails "inconsistent indentation"
+  expect parse(Code)("'\n  x\n\ty\nend") fails "indentation prefix"
 end
 
 test "An extra end after a complete mixed-prefix clause is an error"
-  expect parse(Code)("if True\n\t1\nelse 2\nend") error "E_UNEXPECTED_END"
-  expect parse(Code)("if True\n \t1\nelse 2\nend") error "E_UNEXPECTED_END"
+  expect parse(Code)("if True\n\t1\nelse 2\nend") fails "E_UNEXPECTED_END"
+  expect parse(Code)("if True\n \t1\nelse 2\nend") fails "E_UNEXPECTED_END"
 end

@@ -1,18 +1,18 @@
 test "Float64 is a distinct primitive and float64 converts"
-  expect float64(0.5) result 0.5 :: Float64
-  expect float32(0.5) result 0.5 :: Float32
+  expect float64(0.5) is 0.5 :: Float64
+  expect float32(0.5) is 0.5 :: Float32
   observed = type Float64
-  expect observed result Float64 :: Type
+  expect observed is Float64 :: Type
   expect
     type Num
-  error "E_UNBOUND_TYPE"
+  fails "E_UNBOUND_TYPE"
   expect
     type Int64
-  error "E_UNBOUND_TYPE"
+  fails "E_UNBOUND_TYPE"
 
   expect
     float32(0.5) == float64(0.5)
-  error "E_INCOMPARABLE_TYPES"
+  fails "E_INCOMPARABLE_TYPES"
 end
 
 test "Overlapping UnionType keeps Float32 and Float64 identities"
@@ -20,11 +20,11 @@ test "Overlapping UnionType keeps Float32 and Float64 identities"
   (a :: EitherFloat) = float32(0.5)
   (b :: EitherFloat) = float64(0.5)
 
-  expect a result 0.5 :: Float32
-  expect b result 0.5 :: Float64
+  expect a is 0.5 :: Float32
+  expect b is 0.5 :: Float64
   assert a .matches Float32
   assert b .matches Float64
-  assert not(a == b)
+  assert a != b
   assert parse(EitherFloat)(toString(EitherFloat)(a)) == a
 end
 
@@ -33,14 +33,14 @@ test "Union text omits :: when untagged print reconstructs the same member and v
   (x :: Unique) = 3 :: Int
   omitted = toString(Unique)(x)
 
-  expect omitted result "3" :: String
+  expect omitted is "3" :: String
   assert parse(Unique)(omitted) == x
 
   def Mixed UnionType(type Int, type Float)
   (y :: Mixed) = 0.5 :: Float
   uniqueFloat = toString(Mixed)(y)
 
-  expect uniqueFloat result "0.5" :: String
+  expect uniqueFloat is "0.5" :: String
   assert parse(Mixed)(uniqueFloat) == y
 end
 
@@ -51,18 +51,18 @@ test "Union text keeps :: when untagged print is ambiguous or a different value"
   ambiguous = toString(EitherFloat)(a)
   differentValue = toString(EitherFloat)(c)
 
-  expect ambiguous result "0.5 :: Float32" :: String
-  expect differentValue result "0x1.999999999999Ap-4 :: Float64" :: String
+  expect ambiguous is "0.5 :: Float32" :: String
+  expect differentValue is "0x1.999999999999Ap-4 :: Float64" :: String
   assert parse(EitherFloat)(ambiguous) == a
   assert parse(EitherFloat)(differentValue) == c
 
   expect
     parse(EitherFloat)("0.5")
-  error "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_PATTERN"
 
   expect
     parse(EitherFloat)("0.1")
-  error "E_PATTERN_MISMATCH"
+  fails "E_PATTERN_MISMATCH"
 end
 
 test "Unannotated overlapping numeric values stay ambiguous"
@@ -71,60 +71,60 @@ test "Unannotated overlapping numeric values stay ambiguous"
   expect
     (x :: EitherFloat) = 0.5
     x
-  error "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_PATTERN"
 end
 
 test "UnionType text distinguishes Float64 from Float"
   t = UnionType(Float32, Float64)
 
-  expect toString(Type)(t) result "UnionType(Float32, Float64)" :: String
+  expect toString(Type)(t) is "UnionType(Float32, Float64)" :: String
   assert parse(Type)(toString(Type)(t)) == t
 end
 
 test "Overlapping option unions construct; unannotated None is ambiguous"
-  expect UnionType(Int?, String?) result UnionType(Type(Int | :None), Type(:None | String)) :: Type
+  expect UnionType(Int?, String?) is UnionType(Type(Int | :None), Type(:None | String)) :: Type
 
   expect
     def U UnionType(Int?, String?)
     (x :: U) = :None
     x
-  error "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_PATTERN"
 end
 
 test "Overlapping numeric and constructor unions construct"
-  expect UnionType(Int, Float) result UnionType(Float, Int) :: Type
+  expect UnionType(Int, Float) is UnionType(Float, Int) :: Type
   assert UnionType(Int, Int) == UnionType(Int)
 
   expect
     def A type :X(Int)
     def B type :X(Float)
     UnionType(A, B)
-  result UnionType(Type(X(Float)), Type(X(Int))) :: Type
+  is UnionType(Type(X(Float)), Type(X(Int))) :: Type
 
   expect
     def U UnionType(type Int, type Float)
     (x :: U) = 3
     x
-  error "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_PATTERN"
 end
 
 test "Same-space refinement unions reject without running predicates"
   expect
     def P Int .where (n -> panic("must not run"))
     unionType P | Int
-  error "E_REFINED_UNION"
+  fails "E_REFINED_UNION"
 end
 
 test "Concrete duplicate alternatives still reject"
   expect
     def Bad type :A | :A
     0
-  error "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_PATTERN"
 end
 
 test "Overlapping abstract facet members retain spaces"
   def Colored type :Rect(Float, Float, color: String)
   def Rectangular type :Rect(w :: Float, h :: Float, **)
 
-  expect UnionType(type Rectangular, type Colored) result UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
+  expect UnionType(type Rectangular, type Colored) is UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
 end

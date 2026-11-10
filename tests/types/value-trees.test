@@ -1,10 +1,10 @@
 test "A type-argument pack is not a merged pack"
   def f(t :: Type)(x :: t, y :: t) x + y
 
-  expect f(Int)(2, 3) result 5 :: Int
+  expect f(Int)(2, 3) is 5 :: Int
   expect
     f(Int, 2, 3)
-  error "E_NO_METHOD"
+  fails "E_NO_METHOD"
 end
 
 test "A specialized type-argument function still checks the member"
@@ -12,7 +12,7 @@ test "A specialized type-argument function still checks the member"
 
   expect
     nonZero(Int)("five")
-  error "E_NO_METHOD"
+  fails "E_NO_METHOD"
 end
 
 test "Factory accessors remain visible to earlier functions"
@@ -22,19 +22,19 @@ test "Factory accessors remain visible to earlier functions"
 
   (intValue, stringValue) = (f(Box(value: 3)), g(Box(value: "hi")))
 
-  expect intValue result 3 :: Int
-  expect stringValue result "hi" :: String
+  expect intValue is 3 :: Int
+  expect stringValue is "hi" :: String
 end
 
 test "Bound values substitute in type patterns"
   t = Int
   type Box concrete Box(t)
 
-  expect Box(3) :: Box result Box(3) :: Box
+  expect Box(3) :: Box is Box(3) :: Box
 
   n = 3
   u = type Box(n)
-  expect Box(3) :: u result Box(3) :: u
+  expect Box(3) :: u is Box(3) :: u
 end
 
 test "A bound type value is a matcher"
@@ -47,7 +47,7 @@ test "A bound type value is a matcher"
   assert x .matches t
   assert parse(t)(toString(t)(x)) == x
   assert accept(Int)
-  expect Cons(1, :Nil) :: L(t) result Cons(1, Nil) :: L(Int)
+  expect Cons(1, :Nil) :: L(t) is Cons(1, Nil) :: L(Int)
 end
 
 test "Postfix type descriptions are not prefix quotation"
@@ -63,18 +63,18 @@ test "Reserved primitive names cannot be redeclared"
   expect
     type Int concrete Box(Float)
     0
-  error "E_RESERVED_PRIMITIVE"
+  fails "E_RESERVED_PRIMITIVE"
 end
 
 test "Reserved constants cannot be redeclared"
   expect
     type True concrete Box(Int)
     0
-  error "E_RESERVED_CONSTANT"
+  fails "E_RESERVED_CONSTANT"
 end
 
 test "Ordinary type construction rejects binding defaults"
   expect
     type Rect(w :: Float, h :: Float, color: Symbol = :Red)
-  error "E_TYPE_DEFAULT"
+  fails "E_TYPE_DEFAULT"
 end

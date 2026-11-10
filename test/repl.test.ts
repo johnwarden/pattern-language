@@ -64,7 +64,7 @@ end`;
   assert.throws(
     () => i.parse(extra, "repl"),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.diagnostic.code === "E_UNEXPECTED_END",
   );
 });
@@ -103,7 +103,7 @@ test("user-defined grammar drives the same REPL completeness rule", () => {
   assert.throws(
     () => i.parse("probe\n  1\nthen 2\nend", "repl"),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.diagnostic.code === "E_UNEXPECTED_END",
   );
   assert.equal(ready("probe\n  1\n", i), false);

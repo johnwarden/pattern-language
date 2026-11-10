@@ -7,7 +7,7 @@ const rejects = (source: string, code: string) =>
   assert.throws(
     () => run(source),
     (error: unknown) =>
-      error instanceof LanguageError && error.diagnostic.code === code,
+      fails instanceof LanguageError && error.diagnostic.code === code,
   );
 const picture =
   "def Picture type :Picture(color: (type :Red | :Black),shape: Rectangle(w :: Float,h :: Float))\np = Picture(color: :Red,shape: Rectangle(3,4)) :: Picture\n";

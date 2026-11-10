@@ -1,0 +1,22 @@
+test "Expected data follows the subject's exact type"
+  expect 1 is 1
+  expect 3 :: Int is 3
+  expect "hello" is "hello"
+  expect :Ready is Ready
+  type Rectangle concrete Rect(width :: Rational, height :: Rational)
+  rectangle = Rect(2, 3) :: Rectangle
+  expect rectangle is Rect(2, 3)
+  expect rectangle is Rect(2, 3) :: Rectangle
+end
+
+test "Contains checks exact String substrings"
+  text = "hello world"
+  expect text contains "hello"
+  expect text contains "lo wo"
+  expect text contains "world"
+  expect "a.c" contains "."
+end
+
+test "Fails checks language diagnostics"
+  expect missing() fails "E_UNBOUND_NAME"
+end

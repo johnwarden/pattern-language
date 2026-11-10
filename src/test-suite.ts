@@ -6,7 +6,7 @@ import {
   parseTestSource,
 } from "./parser.ts";
 import { DEFAULT_GRAMMAR, Grammar } from "./grammar.ts";
-import { normal, binary, LanguageError } from "./syntax.ts";
+import { normal, binary, isName, LanguageError } from "./syntax.ts";
 import type { Field, Syntax, Span } from "./syntax.ts";
 import { dataSyntax, codeSource } from "./syntax-values.ts";
 import {
@@ -31,13 +31,15 @@ import {
 
 export type AssertionMode = "check" | "legacy" | "todo";
 export interface TestStep {
-  kind: "setup" | "output" | "result" | "error" | "assert";
+  kind: "setup" | "output" | "result" | "contains" | "error" | "assert";
   mode: AssertionMode;
   subject: Syntax;
   expected?: Syntax;
   expectedType?: Syntax;
   reason?: string;
   source: string;
+  clause?: string;
+  span?: Span;
 }
 export interface TestCase {
   id: string;
@@ -142,6 +144,18 @@ function dedent(text: string, indentation?: number): string {
   return lines
     .map((line) => (line.startsWith(prefix) ? line.slice(prefix.length) : line))
     .join("\n");
+}
+function clauseText(tokens: Syntax[], from: number, to: number): string {
+  const start = tokens[from].span;
+  const end = tokens[to - 1].span;
+  if (
+    start?.source &&
+    start.start !== undefined &&
+    end?.end !== undefined &&
+    start.source === end.source
+  )
+    return start.source.text.slice(start.start, end.end).trimEnd();
+  return tokens.slice(from, to).map(testSourceText).join(" ");
 }
 function scalarString(value: Value): string {
   const v = unwrap(value);
@@ -262,14 +276,23 @@ class TestReader {
         );
         const role = scalarString(kind.value) as TestStep["kind"];
         const subject = dataSyntax(parts[0].value);
+        const expected =
+          role === "result" || role === "contains"
+            ? dataSyntax(parts[1].value)
+            : undefined;
+        const annotation =
+          role === "result" && expected
+            ? binary(one(expected), "::")
+            : undefined;
         result.push({
           kind: role,
           mode: scalarString(mode.value) as AssertionMode,
           subject,
           source: testSourceText(subject),
-          expected: role === "result" ? dataSyntax(parts[1].value) : undefined,
-          expectedType:
-            role === "result" ? dataSyntax(parts[2].value) : undefined,
+          clause: clauseText(tokens, pos, match.end),
+          span: tokens[pos].span,
+          expected: annotation?.[0] ?? expected,
+          expectedType: annotation?.[1],
           reason: role === "error" ? scalarString(parts[1].value) : undefined,
         });
         pos = match.end;
@@ -287,7 +310,7 @@ class TestReader {
             operand.kind === "symbol" &&
             !operand.quoted &&
             (this.starts.has(operand.name) ||
-              ["test", "value", "result", "results", "error"].includes(
+              ["test", "value", "is", "contains", "fails", "results"].includes(
                 operand.name,
               ))
           );
@@ -296,7 +319,7 @@ class TestReader {
           n.kind === "symbol" &&
           !n.quoted &&
           (this.starts.has(n.name) ||
-            ["test", "value", "results", "result"].includes(n.name))
+            ["test", "value", "results", "is", "contains", "fails"].includes(n.name))
         )
           throw problem(
             "incomplete assert/expect/todo/legacy form; group compound operands or use indented blocks",
@@ -462,7 +485,11 @@ export function loadTests(files: Record<string, string>): TestCase[] {
     );
 }
 
-function execute(interpreter: Interpreter, tree: Syntax): Field<Value>[] {
+function execute(
+  interpreter: Interpreter,
+  tree: Syntax,
+  observe?: (tree: Syntax, result: Field<Value>[]) => void,
+): Field<Value>[] {
   // The source-only reader must not make unsupported syntax executable.
   parseSurface(
     testSourceText(tree),
@@ -474,7 +501,10 @@ function execute(interpreter: Interpreter, tree: Syntax): Field<Value>[] {
     tree.kind === "block"
       ? tree
       : { kind: "block" as const, lines: [tree], span: tree.span };
-  return interpreter.evaluateCode(interpreter.interpretSyntax(codeType, block));
+  return interpreter.evaluateCode(
+    interpreter.interpretSyntax(codeType, block),
+    observe,
+  );
 }
 function typeOf(tree: Syntax, interpreter: Interpreter): TypeValue {
   return asType(single(execute(interpreter, tree)), interpreter);
@@ -486,7 +516,7 @@ export function isAssertion(step: TestStep): boolean {
 }
 interface ExpectedResult {
   value: Syntax;
-  type: TypeValue;
+  type?: TypeValue;
 }
 function expectedData(
   tree: Syntax,
@@ -569,7 +599,9 @@ function expectedResult(
   );
   return {
     value: step.expected!,
-    type: typeOf(step.expectedType!, interpreter),
+    type: step.expectedType
+      ? typeOf(step.expectedType, interpreter)
+      : undefined,
   };
 }
 function resultType(value: Value, interpreter: Interpreter): TypeValue {
@@ -592,13 +624,107 @@ function compareResult(
   if (actual.length !== 1 || actual[0].label !== "_1")
     return "result requires exactly one positional value; destructure multiple returns before checking them";
   const type = resultType(actual[0].value, interpreter);
-  if (!equal(type, expected.type))
+  if (expected.type && !equal(type, expected.type))
     return (
       "result type mismatch: expected " +
       expected.type.name +
       "; received " +
       type.name
     );
+}
+
+function directOperands(condition: Syntax): [Syntax, Syntax] | undefined {
+  const tree = one(condition);
+  const comparison = binary(tree, "==") ?? binary(tree, "!=");
+  if (comparison) return comparison;
+  if (
+    tree.kind !== "apply" ||
+    tree.head.kind !== "apply" ||
+    !isName(tree.head.head, "matches") ||
+    tree.head.body.length !== 1 ||
+    tree.body.length !== 1
+  )
+    return undefined;
+  const left = tree.head.body[0].value,
+    right = tree.body[0].value;
+  const between =
+    left.span?.source &&
+    left.span.end !== undefined &&
+    right.span?.start !== undefined
+      ? left.span.source.text.slice(left.span.end, right.span.start)
+      : "";
+  return /^\s*\.matches\s*$/.test(between) ? [left, right] : undefined;
+}
+
+function sourceSpanEqual(a?: Span, b?: Span): boolean {
+  return !!(
+    a &&
+    b &&
+    a.start !== undefined &&
+    a.end !== undefined &&
+    a.source?.name === b.source?.name &&
+    a.start === b.start &&
+    a.end === b.end
+  );
+}
+
+function sourceSpanWithin(inner?: Span, outer?: Span): boolean {
+  return !!(
+    inner &&
+    outer &&
+    inner.start !== undefined &&
+    inner.end !== undefined &&
+    outer.start !== undefined &&
+    outer.end !== undefined &&
+    inner.source?.name === outer.source?.name &&
+    inner.start >= outer.start &&
+    inner.end <= outer.end
+  );
+}
+
+function assertionLocation(step: TestStep): string {
+  const span = step.span ?? step.subject.span;
+  return `${span?.source?.name ?? "test"}:${span?.line ?? 1}:${span?.column ?? 1}: ${step.clause ?? testSourceText(step.subject)}`;
+}
+
+function captureOperands(
+  step: TestStep,
+  interpreter: Interpreter,
+): {
+  observe: (tree: Syntax, result: Field<Value>[]) => void;
+  describe: () => string;
+} | undefined {
+  if (step.kind !== "assert") return undefined;
+  const operands = directOperands(step.subject);
+  if (!operands) return undefined;
+  const observed: (Field<Value>[] | undefined)[] = [];
+  const exact = [false, false];
+  return {
+    observe(tree, result) {
+      for (let i = 0; i < operands.length; i++) {
+        if (sourceSpanEqual(tree.span, operands[i].span)) {
+          observed[i] = result;
+          exact[i] = true;
+        } else if (!exact[i] && sourceSpanWithin(tree.span, operands[i].span))
+          observed[i] = result;
+      }
+    },
+    describe() {
+      return operands
+        .map((operand, i) => {
+          if (observed[i] === undefined) return undefined;
+          let printed: string;
+          try {
+            printed = interpreter.inspect(observed[i]);
+          } catch {
+            printed = "<value cannot be printed>";
+          }
+          return `${testSourceText(operand)}: ${printed}`;
+        })
+        .filter((line) => line !== undefined)
+        .join("\n");
+    },
+  };
 }
 
 /** Execute checks; whole-test todo expects a case failure, never a host/fixture failure. */
@@ -695,7 +821,9 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
             if (!(error instanceof LanguageError)) throw error;
             failed = true;
           }
-          const message = failed ? "" : "This setup now succeeds; remove todo.";
+          const message = failed
+            ? ""
+            : `${step.subject.span?.source?.name ?? test.file}:${step.subject.span?.line ?? 1}:${step.subject.span?.column ?? 1}: todo ${step.source}\nThis setup now succeeds; remove todo.`;
           checks.push({
             kind: "setup",
             mode: "todo",
@@ -720,6 +848,8 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
       let mismatch: string | undefined,
         actualOutput: string | undefined,
         expectedOutput: string | undefined;
+      const operands = captureOperands(step, interpreter);
+      let languageFailure = false;
       try {
         let expected: ExpectedResult | undefined;
         if (step.kind === "result") {
@@ -729,7 +859,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         phase = "body";
         let subjectFailed = false;
         try {
-          results = execute(interpreter, step.subject);
+          results = execute(interpreter, step.subject, operands?.observe);
           actualOutput = interpreter.inspect(results);
         } catch (error) {
           if (
@@ -756,13 +886,38 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
           )
             mismatch = "assert requires Bool, not truthiness";
           else if (value.name !== "True") mismatch = "assertion is False";
+        } else if (step.kind === "contains") {
+          if (results!.length !== 1 || results![0].label !== "_1")
+            mismatch = "contains requires exactly one positional String value";
+          else {
+            const string = asType(single(interpreter.run("String")), interpreter);
+            const subject = unwrap(results![0].value);
+            if (
+              !equal(resultType(results![0].value, interpreter), string) ||
+              subject.kind !== "literal" ||
+              typeof subject.value !== "string"
+            )
+              mismatch = "contains requires a String subject";
+            else {
+              phase = "expectation";
+              const needle = expectedData(step.expected!, string, interpreter);
+              expectedOutput = interpreter.inspect(singleton(needle));
+              const text = unwrap(needle);
+              if (text.kind !== "literal" || typeof text.value !== "string")
+                mismatch = "contains requires a String needle";
+              else if (!subject.value.includes(text.value))
+                mismatch =
+                  `expected ${actualOutput} to contain ${expectedOutput}`;
+              phase = "comparison";
+            }
+          }
         } else {
           mismatch = compareResult(results!, expected!, interpreter);
           if (!mismatch) {
             phase = "expectation";
             const data = expectedData(
               expected!.value,
-              expected!.type,
+              expected!.type ?? resultType(results![0].value, interpreter),
               interpreter,
             );
             expectedOutput = interpreter.inspect(singleton(data));
@@ -779,6 +934,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         // Interpreter/validation errors are assertion failures. Host exceptions
         // indicate a broken harness and must never be swallowed by todo.
         if (!(error instanceof LanguageError)) throw error;
+        languageFailure = true;
         mismatch = renderDiagnostic(error);
       }
       if (step.mode === "todo") {
@@ -795,6 +951,12 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         mismatch = "This assertion now passes; remove todo.";
       }
       if (mismatch) {
+        const detail = !languageFailure ? operands?.describe() : undefined;
+        mismatch =
+          assertionLocation(step) +
+          "\n" +
+          mismatch +
+          (detail ? "\n" + detail : "");
         checks.push({
           kind: step.kind,
           mode: step.mode,
@@ -802,7 +964,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
           message: mismatch,
           actual: actualOutput,
           expected: expectedOutput,
-          span: step.subject.span,
+          span: step.span ?? step.subject.span,
         });
         fail(mismatch, step.mode !== "todo");
       } else

@@ -42,7 +42,7 @@ test("stored Code with a non-callable head fails during evaluation, not reading"
     assert.throws(
       () => interpreter.evaluateCode(code),
       (error: unknown) =>
-        error instanceof LanguageError &&
+        fails instanceof LanguageError &&
         error.diagnostic.code === "E_NOT_CALLABLE" &&
         error.diagnostic.phase === "evaluate",
       source,

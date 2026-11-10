@@ -106,7 +106,7 @@ test("postfix type descriptions round-trip inhabitants across interpreters", () 
   assert.throws(
     () => j.run("t = parse(Type)(text)\nPostfix(:@, 1) :: t"),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.diagnostic.code === "E_PATTERN_MISMATCH",
   );
   assert.equal(stringResult(j, "toString(Type)(t)"), text);

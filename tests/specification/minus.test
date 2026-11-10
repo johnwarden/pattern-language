@@ -9,9 +9,9 @@ test "Prefix minus negates; infix minus subtracts"
   assert nx == negate(x)
   assert groupedX == nx
   assert (1 - x) == negate(2)
-  expect 1 - -x result 4 :: Rational
-  expect 1 - -2 result 3 :: Rational
-  expect 5 - (2) result 3 :: Rational
+  expect 1 - -x is 4 :: Rational
+  expect 1 - -2 is 3 :: Rational
+  expect 5 - (2) is 3 :: Rational
   assert parse(Code)("-1") == parse(Code)("-(1)")
   assert parse(Code)("-x") == parse(Code)("-(x)")
   quotedPrefix = Code` -1
@@ -33,13 +33,13 @@ test "Prefix minus preserves concrete numeric types and finite float ranges"
   singlePrecision = -(1 :: Float32)
   doublePrecision = -(1 :: Float64)
 
-  expect integer result
+  expect integer is
     -1 :: Int
   end
-  expect singlePrecision result
+  expect singlePrecision is
     -1 :: Float32
   end
-  expect doublePrecision result
+  expect doublePrecision is
     -1 :: Float64
   end
 

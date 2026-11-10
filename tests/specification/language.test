@@ -23,9 +23,9 @@ test "C24 applications preserve complete successive packs"
   end
   partial = combine(1, 2)
   (a, b, c) = partial(3)
-  expect a result 1 :: Rational
-  expect b result 2 :: Rational
-  expect c result 3 :: Rational
+  expect a is 1 :: Rational
+  expect b is 2 :: Rational
+  expect c is 3 :: Rational
   def empty()
     ()
   end
@@ -35,39 +35,39 @@ test "C24 applications preserve complete successive packs"
     x = (1, 2)
     (one) = x
     one
-  error "one capture cannot consume two positional results"
+  fails "one capture cannot consume two positional results"
 end
 
 test "C25 infix operators retain equal precedence"
-  expect (2 :: Float64) * (3 :: Float64) + (4 :: Float64) result 14 :: Float64
+  expect (2 :: Float64) * (3 :: Float64) + (4 :: Float64) is 14 :: Float64
   def select(a)(b) b
-  expect 1 .select 2 result 2 :: Rational
+  expect 1 .select 2 is 2 :: Rational
 end
 
 test "C26 todo assertions execute in isolated scopes"
   marker = 1
 
   todo assert FuturePredicate(FutureValue)
-  todo expect FutureSubject() result FutureExpected() :: FutureType
+  todo expect FutureSubject() is FutureExpected() :: FutureType
   todo expect
     marker = 2
     def futureLocal() 99
     missing()
-  result 0 :: Expression
+  is 0 :: Expression
 
   expect
     futureLocal()
-  error "E_UNBOUND_NAME"
+  fails "E_UNBOUND_NAME"
 
-  expect marker result 1 :: Rational
+  expect marker is 1 :: Rational
 end
 
 test "C27 candidate Code rejection of redundant primitive quotation"
   todo expect
     :5
-  error "primitive quotation is not a Code form"
+  fails "primitive quotation is not a Code form"
 
   todo expect
     :Bool
-  error "primitive quotation is not a Code form"
+  fails "primitive quotation is not a Code form"
 end

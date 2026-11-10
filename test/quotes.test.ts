@@ -18,7 +18,7 @@ test("unknown reader functions produce a source-located name error", () => {
   assert.throws(
     () => run("unknown' text"),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.diagnostic.code === "E_UNBOUND_NAME" &&
       error.diagnostic.primary?.line === 1,
   );
@@ -37,7 +37,7 @@ test("hole errors identify the actual interpolation expression", () => {
   assert.throws(
     () => run('x = 1\ny = 2\n$"Hi $missing"'),
     (error: unknown) =>
-      error instanceof LanguageError &&
+      fails instanceof LanguageError &&
       error.diagnostic.primary?.line === 3 &&
       error.diagnostic.primary.column === 7,
   );

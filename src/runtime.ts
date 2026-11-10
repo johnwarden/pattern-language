@@ -332,6 +332,7 @@ export class Interpreter {
   >();
   private evaluatedTypes = new WeakMap<Scope, WeakMap<Syntax, TypeValue>>();
   private codeType?: TypeValue;
+  private evaluationObserver?: (tree: Syntax, result: Field<Value>[]) => void;
   private deferringDeclarations = false;
   private deferredUnions: TypeValue[] = [];
   private aliasTargets = new WeakMap<TypeValue, TypeValue>();
@@ -408,8 +409,14 @@ export class Interpreter {
   /** Host embedding API; not an operation installed in the source language.
    * Evaluate stored Code in an isolated child of this interpreter's session.
    */
-  evaluateCode(value: Value): Field<Value>[] {
-    return this.transaction((env) => {
+  evaluateCode(
+    value: Value,
+    observe?: (tree: Syntax, result: Field<Value>[]) => void,
+  ): Field<Value>[] {
+    const previous = this.evaluationObserver;
+    this.evaluationObserver = observe;
+    try {
+      return this.transaction((env) => {
       const code = unwrap(value);
       if (
         code.kind !== "code" ||
@@ -430,8 +437,11 @@ export class Interpreter {
               lines: [code.tree],
               span: code.tree.span,
             };
-      return this.evaluateBlock(tree, env);
-    });
+        return this.evaluateBlock(tree, env);
+      });
+    } finally {
+      this.evaluationObserver = previous;
+    }
   }
   /** Interpret inert surface data using an ordinary type/grammar. */
   interpretSyntax(type: TypeValue, tree: Syntax): Value {
@@ -1372,7 +1382,9 @@ export class Interpreter {
   }
   private evaluate(n: Syntax, env: Scope): Field<Value>[] {
     try {
-      return this.evaluateNode(n, env);
+      const result = this.evaluateNode(n, env);
+      this.evaluationObserver?.(n, result);
+      return result;
     } catch (error) {
       if (error instanceof LanguageError) error.at(n.span);
       throw error;
@@ -2104,6 +2116,7 @@ export class Interpreter {
         values =
           (type && this.evaluateExpectedGrammar(e.value, type, env)) ??
           this.evaluate(e.value, env);
+        this.evaluationObserver?.(e.value, values);
         if (!positional(e.label)) {
           if (values.length !== 1)
             throw new LanguageError(

@@ -1,19 +1,19 @@
 test "Tight f(x) is application; empty f() is empty apply"
-  expect syntaxTree(:(f(x))) result Apply(Name("f", False), [Field("_1", Name("x", False))]) :: SyntaxNode
-  expect syntaxTree(:(f())) result Apply(Name("f", False), []) :: SyntaxNode
+  expect syntaxTree(:(f(x))) is Apply(Name("f", False), [Field("_1", Name("x", False))]) :: SyntaxNode
+  expect syntaxTree(:(f())) is Apply(Name("f", False), []) :: SyntaxNode
   def id(x) x
 
-  expect id(3) result 3 :: Rational
-  expect parse(Code)("f (x)") error "a term cannot be followed by a spaced '('"
-  expect parse(Code)("f ()") error "a term cannot be followed by a spaced '('"
-  expect parse(Code)("id (3)") error "a term cannot be followed by a spaced '('"
+  expect id(3) is 3 :: Rational
+  expect parse(Code)("f (x)") fails "a term cannot be followed by a spaced '('"
+  expect parse(Code)("f ()") fails "a term cannot be followed by a spaced '('"
+  expect parse(Code)("id (3)") fails "a term cannot be followed by a spaced '('"
 end
 
 test "A field colon must touch its label"
-  expect syntaxTree(:(Rect(w: 1))) result Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
-  expect syntaxTree(:(Rect(w:1))) result Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
-  expect syntaxTree(:(Rect(w: (1)))) result Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
-  expect syntaxTree(:(Rect(w :(1)))) result Apply(Name("Rect", False), [Field("_1", Sequence([Name("w", False), Quote(NumberLiteral(1))]))]) :: SyntaxNode
+  expect syntaxTree(:(Rect(w: 1))) is Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
+  expect syntaxTree(:(Rect(w:1))) is Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
+  expect syntaxTree(:(Rect(w: (1)))) is Apply(Name("Rect", False), [Field("w", NumberLiteral(1))]) :: SyntaxNode
+  expect syntaxTree(:(Rect(w :(1)))) is Apply(Name("Rect", False), [Field("_1", Sequence([Name("w", False), Quote(NumberLiteral(1))]))]) :: SyntaxNode
   assert parse(Code)("Rect(w: 1)") != parse(Code)("Rect(w :(1))")
-  expect parse(Code)("Rect(w : 1)") error "quotation requires :(expression)"
+  expect parse(Code)("Rect(w : 1)") fails "quotation requires :(expression)"
 end

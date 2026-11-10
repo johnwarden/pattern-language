@@ -83,6 +83,9 @@ try {
         else {
           failures++;
           console.log(report.phase + ": " + report.message);
+          for (const check of report.checks)
+            if (check.status === "failed" && check.message !== report.message)
+              console.log("assertion: " + check.message);
         }
       }
     }

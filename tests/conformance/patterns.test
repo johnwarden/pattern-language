@@ -1,25 +1,25 @@
 test "independent captures"
   Pair(x, y) = Pair(1, 2)
 
-  expect x result 1 :: Rational
-  expect y result 2 :: Rational
+  expect x is 1 :: Rational
+  expect y is 2 :: Rational
   (x, y)
 end
 
 test "list rest empty"
   def copy(xs... :: Int*) [xs...] :: [_... :: Int*]
 
-  expect copy() result [] :: (type [_... :: Int*])
+  expect copy() is [] :: (type [_... :: Int*])
 end
 
 test "list rest singleton"
   def copy(xs... :: Int*) [xs...] :: [_... :: Int*]
 
-  expect copy(1) result [1] :: (type [_... :: Int*])
+  expect copy(1) is [1] :: (type [_... :: Int*])
 end
 
 test "single pattern grouping"
   (x) = 1
 
-  expect x result 1 :: Rational
+  expect x is 1 :: Rational
 end
