@@ -40,18 +40,20 @@ test "An ambiguous absence between peer options is an ambiguous value"
   fails "E_AMBIGUOUS_VALUE"
 end
 
-# A refinement of Int runs over explicit Ints: matching a bare literal 0 is an
-# incomparable type (reported at the call site); a literal inside the predicate is
-# read in the context of n :: Int.
-test "A refinement of Int runs over explicit Ints only"
+# A Rational literal is accepted anywhere an Int is expected: as the matched value and,
+# in an operator whose other operand is an Int, inside a predicate (n -> n > 0 reads 0
+# as an Int). A non-integral literal such as 0.5 is not an Int.
+test "A Rational literal is accepted where an Int is expected"
   r = Int .where (n -> n > 0)
-  # The error should point at the call site `0 .matches r`, not into the predicate.
-  # The test DSL's `fails` pins only a code or message substring, so the location is not pinnable.
-  expect 0 .matches r fails "E_INCOMPARABLE_TYPES"
+  todo assert not(0 .matches r)
+  todo assert 2 .matches r
   todo assert not((0 :: Int) .matches r)
   todo assert (2 :: Int) .matches r
 
   r2 = Int .where (n -> n > (0 :: Int))
+  assert not(0 .matches r2)
+  assert 2 .matches r2
   assert not((0 :: Int) .matches r2)
   assert (2 :: Int) .matches r2
+  expect 0.5 .matches r2 is False
 end
