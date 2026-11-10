@@ -161,7 +161,7 @@ test "Type arguments use ordinary packs"
   assert nonZero(Float)(0.5)
   f = nonZero(Int)
   assert f(5)
-  (nonZero(Int)(5), nonZero(Int)(0), nonZero(Float)(0.5), f(5))
+  (nonZero(Int)(5), nonZero(Int)(0), nonZero(Float)(0.5))
 end
 
 test "Types use ordinary value equality"

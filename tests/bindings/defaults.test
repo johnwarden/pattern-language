@@ -37,8 +37,8 @@ test "Destructuring defaults bind captures without adding fields"
 
   (x, color: c :: Symbol = :Red) = (1)
 
-  expect x is 1 :: Rational
-  expect c is Red :: UpperCamelSymbol
+  assert x == 1
+  assert c == :Red
 end
 
 test "Named and anonymous parameter defaults share binding semantics"

@@ -97,6 +97,13 @@ test "Constructor heads stay tags while bare symbols need quotation"
   fails "E_UNBOUND_NAME"
 end
 
+test "An unbound TitleCase name is an error"
+  expect
+    x = Foo
+    x
+  fails "E_UNBOUND_NAME"
+end
+
 test "Plain type construction cannot declare captures"
   expect
     t = type Rect(w :: Float, h :: Float)
