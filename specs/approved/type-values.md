@@ -41,7 +41,6 @@ end
 test "A primitive is already a type value"
   expect Int is Int :: PrimitiveType
   assert Int .matches Type
-  assert (type Int) == Int
   expect :Int fails "E_QUOTED_PRIMITIVE"
 end
 
@@ -151,27 +150,30 @@ end
 Predicate value identity follows the portable function decision; no extensional
 equality, environment replay, or public predicate-field extraction is implied.
 
-## A primitive is not wrapped
+## A new type needs more than an existing type
 
-A primitive atom is already a type value, so neither the constructors nor the
-pattern forms wrap one. `concrete Int` is rejected for the same reason that
-`concrete concrete Int` is rejected: the operand is already a type value, not a
-pattern to be made concrete. The same holds for the constructor spellings and
-the abstract kind:
+A primitive atom is already a type value, and `type Int` is no longer in the
+grammar. A new type, whether concrete or abstract, needs more than a trivial
+pattern that matches exactly the values of an existing type, so neither the
+constructors nor the declaration and pattern forms wrap one. All of these are
+rejected with `E_TYPE_DESCRIPTION`:
 
 ```text
 concrete Int
-ConcreteType(Int)
 abstract Int
+concrete concrete Int
+ConcreteType(Int)
 AbstractType(Int)
+type X concrete Int
+type Y abstract Int
 ```
 
-These are rejected rather than normalized to the bare primitive. A primitive
-remains usable inside a larger pattern (`concrete Rect(Int, Int)`,
-`abstract Float32 | Float64`) and as the base of a refinement
-(`RefinementType(Rational, nonZero)`). Use the primitive itself where a type
-value is wanted: `Int`, `Int :: PrimitiveType`. The diagnostic code and text are
-not selected here; the implementation tests choose them.
+They are rejected rather than normalized to the bare primitive. To give an
+existing type another name, bind it (`alias = Int`); a binding is not a
+declaration. A primitive remains usable inside a larger pattern
+(`concrete Rect(Int, Int)`, `abstract Float32 | Float64`) and as the base of a
+refinement (`RefinementType(Rational, nonZero)`). Use the primitive itself where
+a type value is wanted: `Int`, `Int :: PrimitiveType`.
 
 ## Declaration products, defaults, and application
 
@@ -195,12 +197,7 @@ test "A type constructor cannot declare captures"
   fails "ordinary type construction cannot declare captures/accessors"
 end
 
-test "A bound default supplies a capture but cannot change a type"
-  type Rectangle concrete Rect(w :: Rational, h :: Rational)
-  def rectangle(w :: Rational, h :: Rational = 3)
-    Rect(w, h) :: Rectangle
-  end
-  expect rectangle(2).h is 3 :: Rational
+test "A type description cannot carry a default"
   expect
     ConcreteType(Rect(Rational, color: String = "black"))
   fails "defaults are forbidden in type descriptions"
@@ -281,7 +278,7 @@ instead use the direct primitive atoms, as specified below.
 | --- | --- |
 | `Type(Rect(Float, Float))` for a declared concrete rectangle | `ConcreteType(Rect(Float, Float))` equal to the declaration's type value |
 | `Type(:None | Some(Int))` / `Type(:Black | :Red)` | `ConcreteType(:None | Some(Int))` / `ConcreteType(:Black | :Red)` |
-| `Type(Int)` / `type type Int` | Retire the wrapper; assert `Int :: PrimitiveType`, `(type Int) == Int`, and ordinary `Type` membership |
+| `Type(Int)` / `type type Int` | Retire the wrapper; assert `Int :: PrimitiveType` and ordinary `Type` membership; `type Int` is no longer in the grammar |
 | `Type(pattern) = t` | Retire the wrapper-specific destructuring; match the ordinary kind constructor instead (`ConcreteType(pattern) = t`) |
 | `Type(t) == Type(Int)` with `t` stored as `Any` | Assert the directly stored primitive is still `Int` and accepted by `Type` |
 | `toString(Type)` / `parse(Type)` | Keep the prelude union as expected type; the text of a descriptor is its ordinary value text (e.g. `ConcreteType(Rect(Rational))`). Legacy `Type(...)` text keeps its current spelling until the legacy form is deprecated, including `Recursive(...)` with `Recur(0)` back-references |

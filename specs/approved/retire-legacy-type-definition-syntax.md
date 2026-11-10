@@ -66,9 +66,16 @@ replaces `def Rectangular type :Rect(w :: Float, h :: Float, **)`. A concrete
 type cannot be open: `ConcreteType({**})` is an error, and the same holds for
 the `concrete` pattern form. The mass edit must therefore classify each retired
 declaration by whether its pattern is open instead of rewriting every `type` to
-`concrete`. The diagnostic is not selected here; the implementation tests choose
-it (`E_TYPE_DESCRIPTION`, the invalid type description code, is the working
-choice).
+`concrete`. These errors use `E_TYPE_DESCRIPTION`, the invalid type description
+code.
+
+An abstract open facet registers accessors for its named fields, as the retired
+definition did. Given the declaration above and a value `r` of a concrete
+`Rect(Float, Float, color: String)` type, `(p :: Rectangular) = r` binds a value
+with `p.w` and `p.h`, and `toString(Rectangular)(p)` is
+`Rect(2, 3, color: "black" :: String)`. The facet fixes the `Float` fields, so
+their annotations are omitted; the open `color` field keeps its `String`
+annotation because the facet does not determine it.
 
 Pending clarification: how this rule applies to an annotated typed repetition
 such as `... :: Float32*`, which the approved
