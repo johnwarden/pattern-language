@@ -158,3 +158,36 @@ test "A primitive is not wrapped"
   assert (concrete Rect(Int, Int)) .matches Type
   assert (abstract Float32 | Float64) .matches Type
 end
+
+# specs/approved/type-values.md "Construction and identity": ConcreteType(...) and
+# AbstractType(...) never reorder, merge or deduplicate their alternatives.
+# Distinctness is the ordinary structural comparison of the resulting values. Today
+# the constructor calls are raw Expressions, so the != assertions hold for that
+# reason; the todo membership assertions pin that they are Type values.
+# `AbstractType(Int | Int)` is not used: AbstractType(Int) is rejected
+# ("A primitive is not wrapped"), and an Int | Int alternative list is not a spec example.
+test "Kind constructors never reorder or deduplicate"
+  assert AbstractType(Int | String) != AbstractType(String | Int)
+  assert AbstractType(Int | String | Int) != AbstractType(Int | String)
+  assert ConcreteType(:B | :A) != ConcreteType(:A | :B)
+  assert ConcreteType(:A | :B | :A) != ConcreteType(:A | :B)
+  assert AbstractType(Int | String) == AbstractType(Int | String)
+  assert ConcreteType(:B | :A) == ConcreteType(:B | :A)
+  todo assert AbstractType(Int | String) .matches Type
+  todo assert AbstractType(String | Int) .matches Type
+  todo assert ConcreteType(:B | :A) .matches Type
+  todo assert ConcreteType(:A | :B | :A) .matches Type
+end
+
+# Normalization happens when a `concrete` or `abstract` pattern is evaluated, so
+# inputs equal modulo order (and, for abstract, repetition) give equal values. A
+# repeated concrete alternative is instead rejected by the existing
+# "Concrete duplicate alternatives still reject" contract.
+test "Patterns normalize when evaluated"
+  assert (abstract Int | String) == (abstract String | Int)
+  assert (abstract Int | String | Int) == (abstract String | Int)
+  assert (abstract Int | String | Int) == (abstract Int | String)
+  assert (concrete :B | :A) == (concrete :A | :B)
+  assert (abstract Int | String) .matches Type
+  assert (concrete :B | :A) .matches Type
+end

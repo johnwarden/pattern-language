@@ -66,6 +66,7 @@ end
 test "Inspect a pattern union"
   t = type :Some(Int) | :None
   legacy Type(:|(left)(right)) = t
+  todo ConcreteType(:|(left)(right)) = t
 
   legacy expect left is :None :: Expression
   legacy expect right is Some(Int) :: Expression
