@@ -1,0 +1,36 @@
+test "Decimal literals denote exact Rational values"
+  n = 0.1
+
+  assert (n * 10) == 1
+end
+
+test "Zero is an exact Rational"
+  expect 0 result 0 :: Rational
+end
+
+test "Exact and rounded literals remain distinct through Code text"
+  exact = Code` 0.1
+  rounded = Code` 0f0.1
+
+  assert 0.1 != 0f0.1
+  assert exact != rounded
+  assert parse(Code)(toString(Code)(exact)) == exact
+  assert parse(Code)(toString(Code)(rounded)) == rounded
+end
+
+test "Large integers and signed values retain exact meaning"
+  n = 9007199254740993
+
+  assert n != 9007199254740992
+  expect n result 9007199254740993 :: Rational
+  assert (0 - 0.1) == (-0.1)
+  assert (0 - n) == (-9007199254740993)
+end
+
+test "An exact Rational without a source spelling fails only when serialized"
+  n = (1 / 3) * 1
+
+  assert (n * 3) == 1
+  assert ((1 / 3) * 3) == 1
+  expect toString(Rational)(n) error "E_VALUE_SERIALIZATION"
+end
