@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { decodeSource } from "./source-encoding.ts";
 
 export const TEST_ROOT = fileURLToPath(new URL("../tests/", import.meta.url));
+const isTestSource = (path: string) => [".test", ".md"].includes(extname(path));
 /** Stable keys; inbox is opt-in by a direct path. No symlinks or duplicates. */
 export function collectTestFiles(
   paths: string[] = [TEST_ROOT],
@@ -55,14 +56,14 @@ export function collectTestFiles(
       )) {
         if (
           entry.isDirectory() ||
-          (entry.isFile() && extname(entry.name) === ".test")
+          (entry.isFile() && isTestSource(entry.name))
         )
           visit(join(path, entry.name));
       }
-    } else if (info.isFile() && extname(path) === ".test") {
+    } else if (info.isFile() && isTestSource(path)) {
       const real = realpathSync(path);
       if (!found.has(real)) found.set(real, path);
-    } else throw new Error("test files must use .test: " + basename(path));
+    } else throw new Error("test files must use .test or .md: " + basename(path));
   };
   inputs.forEach(visit);
   return Object.fromEntries(

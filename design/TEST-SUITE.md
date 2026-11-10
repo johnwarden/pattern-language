@@ -10,13 +10,33 @@ or runnable examples. Inbox is optional in default runs and runnable explicitly.
 
 ## Files and basic forms
 
-The runner recursively discovers tests/**/*.test, grouped by broad topic. Each file
+The runner recursively discovers tests/**/*.test and tests/**/*.md, grouped by broad topic. Each file
 contains one or more named test blocks. Shared setup belongs inside the test. IDs
 are root-relative file paths without .test plus the title slug, and survive selecting
 only a subset or inserting/reordering cases. Discovered symlinks are not traversed.
 Duplicate title slugs in a file reject. `todo` can modify a whole test, an
 assertion, or setup. `legacy` modifies assertions and setup only. A file may
 contain a single `todo test` block.
+
+## Tests in Markdown
+
+A `.md` file is a test source too. The content of every fenced code block whose info
+string's first word is exactly `pattern` (a backtick or tilde fence of three or more
+characters, indented at most three spaces, closed by a fence of the same character and
+at least the same length) is read as a `.test` file: same grammar, assertions,
+modifiers, fixtures, and one fresh interpreter per case. Fences are independent files;
+nothing is shared between them, so each may hold its own single `todo test`. Other
+fences (`text`, `ts`, `pattern-language`) and prose are ignored. A `pattern` fence with
+no top-level `test`, `todo test` or `legacy test` declaration is an illustrative snippet
+and is not run. Fences nested in list items or block quotes are not recognized.
+
+Reports name the `.md` file with the real Markdown line and column. A fence indented
+under 1-3 spaces is dedented for reading and its step and parse-error columns are
+shifted back; columns inside evaluation-time diagnostics of such a fence are relative
+to the dedented text. IDs are the file path with `.md` plus the title slug; a title
+repeated in a later fence of the same file gets `@L<fence line>` appended. An
+unterminated `pattern` fence is a malformed-file failure at its opening line. A `.md`
+file with no runnable fence passes with zero tests. `tests/inbox/*.md` stays opt-in.
 
 ```text
 test "A value and a predicate"

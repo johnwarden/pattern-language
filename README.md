@@ -102,8 +102,8 @@ for binding defaults, type accessors, ordered match arms and macro staging.
 
 Milestone **5a.1 is implemented**. Test files use `.test`, live in broad groups
 under `tests/`, and contain one or more `test` or `todo test` blocks. A file may
-contain only a single todo test. The runner recursively discovers `.test` files
-(excluding the optional inbox unless directly selected); the playground embeds runnable cases
+contain only a single todo test. The runner recursively discovers `.test` files and the
+`pattern` fences of `.md` files (excluding the optional inbox unless directly selected); the playground embeds runnable cases
 from `tests/examples/`.
 
 ```text
@@ -185,9 +185,10 @@ just build
 just test
 just test tests/examples/patterns.test # one source test file
 just test tests/examples              # source tests in a directory
+just test tests/language/markdown-fences.md # tests in a Markdown file
 just test test/indent-prefix.test.ts  # one host test file
 just test tests/inbox                 # opt in to draft inbox tests
-just test-language                   # scans tests/**/*.test, excluding inbox
+just test-language                   # scans tests/**/*.test and *.md, excluding inbox
 just test-language --list
 just test-language tests/bindings
 ```

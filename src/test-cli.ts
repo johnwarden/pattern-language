@@ -19,7 +19,7 @@ try {
       fixture = decodeSource(readFileSync(path), path);
     } else if (arg === "--help") {
       console.log(
-        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: recursively scan tests/**/*.test, excluding tests/inbox. Select tests/inbox or a file inside it to opt in. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
+        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: recursively scan tests/**/*.test and tests/**/*.md, excluding tests/inbox. Select tests/inbox or a file inside it to opt in. A .md file contributes the tests in its ```pattern fences. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
       );
       process.exit(0);
     } else if (arg.startsWith("--")) throw new Error("unknown option " + arg);
@@ -87,7 +87,7 @@ try {
       }
     }
   }
-  if (!testCount && !failures) throw new Error("no .test files found");
+  if (!Object.keys(files).length) throw new Error("no .test or .md files found");
   if (!list)
     console.log(
       `${passed} tests passed, ${failures} tests failed; ${assertions} assertions passed (${legacy} legacy), ${expectedFailures} todo assertions failed as expected` +

@@ -52,13 +52,13 @@ test-tour:
 repl:
     {{ node }} src/cli.ts --repl
 
-# Host tests, or a source .test file/directory. Full run includes shell smokes.
+# Host tests, or a source .test/.md file or directory. Full run includes shell smokes.
 [positional-arguments]
 test path="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ -n "${1:-}" ]]; then
-      if [[ -d "$1" || "$1" == *.test ]]; then
+      if [[ -d "$1" || "$1" == *.test || "$1" == *.md ]]; then
         {{ node }} src/test-cli.ts "$1"
       else
         {{ node }} --test "$1"
@@ -88,7 +88,7 @@ test path="":
       fi
     fi
 
-# Source-language suite (tests/**/*.test)
+# Source-language suite (tests/**/*.test and tests/**/*.md)
 [positional-arguments]
 test-language *args:
     #!/usr/bin/env bash

@@ -21,7 +21,8 @@ import {
 import type { Value, TypeValue } from "./values.ts";
 import { primitiveNames } from "./primitive-names.ts";
 import type { Pattern } from "./pattern.ts";
-import { renderDiagnostic } from "./diagnostics.ts";
+import { attachSource, renderDiagnostic } from "./diagnostics.ts";
+import { patternFences, UnterminatedFence } from "./markdown-tests.ts";
 import { lineIndent } from "./indent.ts";
 import {
   TEST_SCHEMA,
@@ -433,7 +434,47 @@ class TestReader {
       tail.kind = "output";
     return result;
   }
-  file(file: string, source: string): TestCase[] {
+  /** A Markdown file's `pattern` fences are independent `.test` sources. */
+  markdown(file: string, text: string): TestCase[] {
+    let fences;
+    try {
+      fences = patternFences(text);
+    } catch (error) {
+      if (!(error instanceof UnterminatedFence)) throw error;
+      const span: Span = { line: error.line, column: error.column };
+      attachSource(span, { name: file, text });
+      throw new LanguageError(error.message, span, {
+        code: "E_TEST_FENCE",
+        phase: "parse",
+        notes: ["Close the fence with a line of at least as many backticks or tildes."],
+      });
+    }
+    const cases: TestCase[] = [];
+    const taken = new Set<string>();
+    for (const fence of fences) {
+      if (!fence.hasTests) continue;
+      let fenceCases: TestCase[];
+      try {
+        fenceCases = this.file(file, fence.source, taken, fence.line);
+      } catch (error) {
+        if (fence.indent && error instanceof LanguageError)
+          shiftDiagnostic(error, fence.indent, { name: file, text });
+        throw error;
+      }
+      if (fence.indent)
+        for (const value of fenceCases)
+          for (const step of value.steps) step.location.column += fence.indent;
+      for (const value of fenceCases) taken.add(value.id);
+      cases.push(...fenceCases);
+    }
+    return cases;
+  }
+  file(
+    file: string,
+    source: string,
+    taken?: Set<string>,
+    fenceLine?: number,
+  ): TestCase[] {
     const tree = parseTestSource(source, file, {
       layoutForms: testLayoutForms,
     });
@@ -473,7 +514,8 @@ class TestReader {
           body,
           "E_TEST_SYNTAX",
         );
-      const id = stem(file) + "#" + slug(title);
+      let id = stem(file) + "#" + slug(title);
+      if (taken?.has(id)) id += "@L" + fenceLine;
       if (ids.has(id))
         throw problem(
           "duplicate case ID in " + file + ": " + title,
@@ -520,10 +562,33 @@ export function loadTests(files: Record<string, string>): TestCase[] {
   return Object.entries(files)
     .sort(([a], [b]) => a.localeCompare(b, "en"))
     .flatMap(([name, source]) =>
-      reader.file(name.endsWith(".test") ? name : name + ".test", source),
+      name.endsWith(".md")
+        ? reader.markdown(name, source)
+        : reader.file(name.endsWith(".test") ? name : name + ".test", source),
     );
 }
 
+/** Report a diagnostic from dedented fence content at its real Markdown columns. */
+function shiftDiagnostic(
+  error: LanguageError,
+  indent: number,
+  document: { name: string; text: string },
+): void {
+  const shift = (span?: Span): Span | undefined => {
+    if (!span) return span;
+    const moved: Span = {
+      ...span,
+      column: span.column + indent,
+      endColumn: span.endColumn && span.endColumn + indent,
+    };
+    attachSource(moved, document);
+    return moved;
+  };
+  const d = error.diagnostic;
+  d.primary = shift(d.primary);
+  for (const related of d.related) related.span = shift(related.span);
+  error.refresh();
+}
 function execute(interpreter: Interpreter, tree: Syntax): Field<Value>[] {
   // The source-only reader must not make unsupported syntax executable.
   parseSurface(

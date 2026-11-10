@@ -108,8 +108,8 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 | `just run FILE` | Run a `.pattern` program through `src/cli.ts`. Extra CLI flags follow the filename (`just run demo.pattern --parse`). |
 | `just watch FILE` | Re-run FILE when it, `default.pattern`, or `src/**/*.ts` change (`entr`). |
 | `just repl` | Interactive CLI (`--repl`). |
-| `just test [path]` | A `.test` file or directory runs source-language tests; a TypeScript file runs host tests. No path runs host tests plus Dockerfile/devbox alignment and finite recipe smokes. |
-| `just test-language` | Source suite (`tests/**/*.test`, excluding inbox). `just test-language --list` lists cases. |
+| `just test [path]` | A `.test` or `.md` file, or a directory, runs source-language tests; a TypeScript file runs host tests. No path runs host tests plus Dockerfile/devbox alignment and finite recipe smokes. |
+| `just test-language` | Source suite (`tests/**/*.test` and `tests/**/*.md`, excluding inbox). `just test-language --list` lists cases. |
 | `just typecheck` | `tsc --noEmit`. |
 | `just build` | Generate browser bundles and the Node-only language server. |
 | `just lsp` | Start the built stdio language server for editor clients. |
@@ -118,7 +118,9 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 
 On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
-The source suite is tests/**/*.test, grouped by topic. `tests/inbox` is optional:
+The source suite is tests/**/*.test, grouped by topic, plus `.md` files: the content
+of each ```pattern fence containing top-level test declarations runs as its own `.test`
+file (other fences and prose are ignored; see design/TEST-SUITE.md). `tests/inbox` is optional:
 default host/source runs and pre-push exclude it. Run `just test tests/inbox`
 or select an inbox file to opt in. Source runs print each filename. Assertions use
 expect subject is expected [:: Type], expect subject contains "needle" (String
