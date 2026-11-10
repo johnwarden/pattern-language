@@ -77,8 +77,9 @@ test "Local and global type text"
   global = toString(Type)(t)
 
   expect local is "Rectangle" :: String
-  # Legacy blocked: local alias policy and global descriptor spelling are still provisional.
+  # Legacy: the exact old Type(...) text. The todo is the ordinary value text of the descriptor (specs/approved/type-values.md, Migration targets).
   legacy expect global is "Type(Rect(Float, Float))" :: String
+  todo expect global is "ConcreteType(Rect(Float, Float))" :: String
 
   assert parseLocal(Type)(local) == t
 
@@ -205,7 +206,7 @@ test "Local recursive type block"
     List(Int)
   )) = Cons(5, :Nil)
 
-  # Legacy blocked: parses exact old Type(Recursive(...)) text; the canonical descriptor format is not chosen.
+  # Legacy blocked: parses exact old Type(Recursive(...)) text; recursive spelling is kept as is; separate decision.
   legacy expect x is Cons(5, Nil) :: (parse(Type)("Type(Recursive(:Nil | Cons(Int,Recur(0))))"))
 end
 
@@ -298,13 +299,16 @@ test "Types as ordinary values"
   def Rectangle type :Rect(width :: Float, height :: Float)
   legacy t = Type(Rect(Float, Float))
   legacy Type(pattern) = t
+  todo ConcreteType(pattern) = t
 
-  # Legacy: Type(pattern) = t destructuring is retired; public descriptor-field extraction is deferred.
+  # Legacy: Type(pattern) = t destructuring is retired; the replacement matches the ordinary kind constructor (ConcreteType(pattern) = t).
   legacy assert Type(pattern) == t
+  todo assert ConcreteType(pattern) == t
 
   assert t == (type Rectangle)
-  # Legacy blocked: public descriptor text is still provisional.
+  # Legacy: the exact old Type(...) text. The todo is the ordinary value text of the descriptor.
   legacy expect toString(Type)(t) is "Type(Rect(Float, Float))" :: String
+  todo expect toString(Type)(t) is "ConcreteType(Rect(Float, Float))" :: String
 
   ((Type(pattern) == t), (t == (type Rectangle)), toString(Type)(t))
 end

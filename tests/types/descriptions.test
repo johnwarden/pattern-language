@@ -1,5 +1,5 @@
 test "Explicit Apply describes a literal reserved head"
-  # Legacy: the Type(Apply(Literal(...))) descriptor encoding; public descriptor-field extraction is deferred.
+  # Legacy: the Type(Apply(Literal(...))) descriptor encoding; the replacement descriptor data for this pattern is not specified (see design/LEGACY-ASSERTIONS.md).
   legacy assert Type(Apply(Literal(String), Fields(:A))) == (type String(:A))
 end
 

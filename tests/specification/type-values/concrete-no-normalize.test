@@ -1,0 +1,13 @@
+# specs/approved/type-values.md "Construction and identity": normalization happens
+# when a `concrete` pattern is evaluated, never in the ConcreteType constructor.
+# Whole-case todo (setup needs the prelude ConcreteType kind).
+todo test "ConcreteType values don't automatically normalize"
+  declared = concrete :A | :B
+  assert declared == (concrete :B | :A)
+  x = ConcreteType(:B | :A)
+  assert x != declared
+  assert x == ConcreteType(:B | :A)
+  assert x .matches Type
+  assert parse(Type)(toString(Type)(x)) == x
+  assert parse(Type)(toString(Type)(x)) != declared
+end

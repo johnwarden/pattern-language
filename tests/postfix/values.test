@@ -69,7 +69,7 @@ test "Prefix question mark is ordinary application, not an optional"
 end
 
 test "Optional type descriptions print as None unions"
-  # Legacy blocked: exact old Type(...) text; the canonical descriptor format is not chosen.
+  # Legacy blocked: exact old Type(...) text; the ordinary descriptor text for this case is not fixed (see design/LEGACY-ASSERTIONS.md).
   legacy expect toString(Type)(type String?) is "Type(:None | String)" :: String
   legacy expect toString(Type)(type String??) is "Type(:None | Type(:None | String))" :: String
 end

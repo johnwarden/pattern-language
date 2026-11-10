@@ -132,3 +132,27 @@ test "Typed overloaded function still works"
   value = Rect(2) :: First
   expect value.w is 2
 end
+
+# specs/approved/type-values.md "A primitive is not wrapped". A primitive atom is
+# already a type value, so no pattern form or constructor wraps one. The spec does
+# not select the diagnostic. E_LANGUAGE is provisional: it is what the runtime
+# already emits for the nearest rejected form, `concrete concrete Int`.
+test "A primitive is not wrapped"
+  expect
+    concrete concrete Int
+  fails "E_LANGUAGE"
+  todo expect
+    concrete Int
+  fails "E_LANGUAGE"
+  todo expect
+    abstract Int
+  fails "E_LANGUAGE"
+  todo expect
+    ConcreteType(Int)
+  fails "E_LANGUAGE"
+  todo expect
+    AbstractType(Int)
+  fails "E_LANGUAGE"
+  assert (concrete Rect(Int, Int)) .matches Type
+  assert (abstract Float32 | Float64) .matches Type
+end

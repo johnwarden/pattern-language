@@ -77,8 +77,9 @@ end
 test "UnionType text distinguishes Float64 from Float"
   t = UnionType(Float32, Float64)
 
-  # Legacy blocked: exact old UnionType(...) text; the canonical descriptor format is not chosen.
+  # Legacy: the exact old UnionType(...) text. The todo is the ordinary value text of AbstractType(Float32 | Float64); t's setup moves to AbstractType with the implementation.
   legacy expect toString(Type)(t) is "UnionType(Float32, Float64)" :: String
+  todo expect toString(Type)(t) is "AbstractType(Float32 | Float64)" :: String
   assert parse(Type)(toString(Type)(t)) == t
 end
 
@@ -130,6 +131,6 @@ test "Overlapping abstract facet members retain spaces"
   def Colored type :Rect(Float, Float, color: String)
   def Rectangular type :Rect(w :: Float, h :: Float, **)
 
-  # Legacy: the Facet(Apply(OpenFields(...))) descriptor encoding; public descriptor-field extraction is deferred.
+  # Legacy: the Facet(Apply(OpenFields(...))) descriptor encoding; the replacement descriptor data for this pattern is not specified (see design/LEGACY-ASSERTIONS.md).
   legacy expect UnionType(type Rectangular, type Colored) is UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
 end

@@ -6,7 +6,6 @@ todo test "A refinement has a base and predicate, and keeps its base space"
   assert t == NonZero
   assert t .matches Type
   assert not(t == Rational)
-  assert not(t == ConcreteType(Rational))
   assert not(0 .matches t)
   assert 2 .matches t
   def identity(u :: Type) u
