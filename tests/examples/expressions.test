@@ -184,7 +184,7 @@ test "Open structural facet"
   expect p.h is 3 :: Float
 
   assert p == r
-  # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
+  # Legacy blocked: abstract facet reconstruction text is still provisional (C15). The replacement lives in specification/type-values/open-structural-facet.test.
   legacy expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: String
 
   assert parse(Rectangular)(toString(Rectangular)(p)) == r

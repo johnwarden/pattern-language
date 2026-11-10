@@ -33,7 +33,7 @@ ordinary assertion if the intended result is already implemented.
 | `examples/expressions#deferred-expected-output` | `e(expected)` | D03 / milestone 5b: the concrete interpretation of raw syntax captured by Expression. |
 | `examples/expressions#language-as-data` | `len(rules)` | D04: numeric result space of collection lengths; Int family/default numeric vocabulary is provisional. |
 | `examples/expressions#language-as-data` | `len(nodes)` | D04: numeric result space of collection lengths. |
-| `examples/expressions#open-structural-facet` | `toString(Rectangular)(p)` | C15 / typed text: final reconstruction syntax for an abstract facet and its concrete descriptor. |
+| `examples/expressions#open-structural-facet` | `toString(Rectangular)(p)` | Replacement lives in `specification/type-values/open-structural-facet` (a whole-case todo with the `type ... abstract` setup; the legacy line keeps its `def ... type` setup here); blocked on `type ... abstract` open-facet declarations installing `p.w`/`p.h` and on the reconstruction text (C15). |
 | `examples/expressions#inspect-and-rebuild-syntax` | `syntaxExpression(changed)` | D03 / milestone 5b: public syntax-tree-to-value mapping; raw runtime Expressions are now permitted. |
 | `examples/grammars#sidefix-data-dsl` | `e(expected(check(t)))` | D03 / milestone 5b: a raw grammar operand is syntax, not necessarily an evaluated Rational literal. |
 | `examples/grammars#sidefix-data-dsl` | `type(expected(check(t)))` | D03 / milestone 5b: concrete representation of a raw grammar operand. |

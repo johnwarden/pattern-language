@@ -1,0 +1,20 @@
+# Replaces the legacy examples/expressions "Open structural facet" test. A pattern
+# with `**` is an open structural facet, so it is declared `abstract`, never
+# `concrete`. Whole-case todo: today the `type ... abstract` open-facet declaration is
+# accepted but does not install the `w`/`h` accessors (first failure: unbound name w),
+# and the reconstruction text is still the legacy `Type(...)` spelling.
+todo test "Open structural facet"
+  type ColoredRect concrete Rect(Float, Float, color: String)
+  type Rectangular abstract Rect(w :: Float, h :: Float, **)
+  r = Rect(2, 3, color: "black") :: ColoredRect
+  (p :: Rectangular) = r
+
+  expect p is Rect(2, 3, color: "black") :: ColoredRect
+  expect p.w is 2 :: Float
+  expect p.h is 3 :: Float
+
+  assert p == r
+  expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: ConcreteType(Rect(Float, Float, color: String))" :: String
+
+  assert parse(Rectangular)(toString(Rectangular)(p)) == r
+end
