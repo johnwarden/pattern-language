@@ -45,8 +45,8 @@ test "Type value constructors differ from applying a type to data"
   assert t == Rectangle
   assert Rect(2, 3) .matches t
   expect Rect(2, 3) :: t is Rect(2, 3) :: Rectangle
-  expect t(2, 3) fails "E_NOT_CALLABLE"
-  expect Type(Rect(Rational, Rational)) fails "E_NOT_CALLABLE"
+  expect t(2, 3) error "E_NOT_CALLABLE"
+  expect Type(Rect(Rational, Rational)) is Type(Rect(Rational, Rational)) :: Expression
 end
 ```
 
@@ -80,14 +80,21 @@ test "An independently declared descriptor interops"
   assert value .matches second
 end
 
-test "Abstract members remain their concrete types"
-  type Either abstract Rational | String
+
+test "AbstractType and UnionType values don't automatically normalize"
+  type Either abstract String | Rational
   a = AbstractType(Rational | String)
   b = AbstractType(String | Rational)
   assert Either == a
-  assert a == b
+  assert Either != b
+end
+
+test "Abstract members remain their concrete types"
+  type Either abstract Rational | String
+  a = AbstractType(Rational | String)
+  assert Either == a
   assert a .matches Type
-  assert not(a == ConcreteType(Rect(Rational)))
+  assert not(a == ConcreteType(Rational | String))
   assert 3 .matches a
   assert "hello" .matches a
 end
@@ -167,17 +174,26 @@ test "A bound default supplies a capture but cannot change a type"
 end
 
 test "Equivalent declarations and accessor collisions still fail"
+  type First concrete Rect(w :: Rational)
+  
   expect
     type First concrete Rect(w :: Rational)
     type Second concrete Rect(w :: Rational)
     Second
   fails "E_DUPLICATE_TYPE"
+
   expect
-    type First concrete Rect(w :: Rational)
     def w(x) 99
     value = Rect(2) :: First
     value.w
   fails "E_AMBIGUOUS_CALL"
+
+  test "Typed overloaded function still works"
+    def w(x :: Int) 99
+    value = Rect(2) :: First
+    expect value.w is 2
+  end
+
 end
 
 test "A stored type flows through ordinary calls and returns"
@@ -224,13 +240,13 @@ arbitrary expression tree. Refinement round trips await portable predicate value
 | Existing authored subject | Proposed replacement contract |
 | --- | --- |
 | `Type(Rect(Float, Float))` for a declared concrete rectangle | `ConcreteType(Rect(Float, Float))` equal to the declaration's type value |
-| `Type(:None | Some(Int))` / `Type(:Black | :Red)` | Use `AbstractType(...)` or `ConcreteType(...)` according to the declared member-space role; classify each legacy case before changing its golden |
+| `Type(:None | Some(Int))` / `Type(:Black | :Red)` | Use `ConcreteType(...)` according to the declared member-space role; classify each legacy case before changing its golden |
 | `Type(Int)` / `type type Int` | Retire the wrapper; assert `Int :: PrimitiveType`, `(type Int) == Int`, and ordinary `Type` membership |
 | `Type(pattern) = t` | Use the agreed ordinary kind pattern (candidate `ConcreteType(pattern) = t`); do not assume public descriptor-field extraction is approved |
 | `Type(t) == Type(Int)` with `t` stored as `Any` | Assert the directly stored primitive is still `Int` and accepted by `Type` |
 | `toString(Type)` / `parse(Type)` | Keep the prelude union as expected type; migrate exact old `Type(...)` text only after canonical format is chosen |
 | `:(Type(...))` equal to a compiled type | Preserve Code/Expression as source data; public type-value decoding remains a separate decision |
-| `UnionType(Type(X(...)), ...)` | Preserve member-space identity and normalize each member to its chosen kind; union construction does not install declarations |
+| `UnionType(Type(X(...)), ...)` | Use AbstractType(ConcreteType(X(...)) | ...). Preserve member-space identity and normalize each member to its chosen kind; union construction does not install declarations |
 
 ## Decisions to settle
 
