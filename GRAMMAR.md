@@ -164,6 +164,8 @@ capture followed by ... has T*. Labels sort per pack, while positional and row o
 remain significant. Rows are not flattened into commas or promoted to tuple values.
 Zero rows, one explicit () row, and flat [] remain distinct. The bootstrap preserves
 rows after an opening newline, except comma continuation of the same pack.
+For a repetition without a capture name, see the bare annotated ellipsis
+[source cases](tests/specification/anonymous-spreads.test).
 
 Single-template mirrored vertical spreading is covered by
 [source contracts](tests/spreading/vertical-values.test). Broader row templates
