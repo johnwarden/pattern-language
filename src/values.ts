@@ -130,6 +130,8 @@ export type Value =
       kind: "view";
       /** A surface symbol literal may be interpreted by its immediate context. Binding commits it. */
       provisional?: boolean;
+      /** An unbound numeric source literal (or constant arithmetic on such literals) that an operator's other concrete operand may designate. Binding commits it. */
+      literal?: boolean;
       base: Value;
       space?: TypeValue;
       views: Map<string, { type: TypeValue; captures: Captures<Value> }>;

@@ -47,10 +47,10 @@ end
 # the operator operand is not designated; 0.5 does not denote an integer, so it is not an Int.
 test "A Rational literal is accepted where an Int is expected"
   r = Int .where (n -> n > 0)
-  todo assert not(0 .matches r)
-  todo assert 2 .matches r
-  todo assert not((0 :: Int) .matches r)
-  todo assert (2 :: Int) .matches r
+  assert not(0 .matches r)
+  assert 2 .matches r
+  assert not((0 :: Int) .matches r)
+  assert (2 :: Int) .matches r
 
   r2 = Int .where (n -> n > (0 :: Int))
   assert not(0 .matches r2)
@@ -58,4 +58,34 @@ test "A Rational literal is accepted where an Int is expected"
   assert not((0 :: Int) .matches r2)
   assert (2 :: Int) .matches r2
   expect 0.5 .matches r2 is False
+end
+
+# An operator with a concrete Int operand designates a literal denoting an integer
+# (including constant arithmetic on literals) as that Int, exactly as `0 :: Int`
+# would. Only literals are designated; Int and Rational values stay incomparable.
+test "An integer literal beside an Int operand is an Int"
+  n = 2 :: Int
+  expect n > 0 is True
+  expect n < 10 is True
+  expect n == 0 is False
+  expect n == 2 is True
+  expect n >= 2 is True
+  expect 0 < n is True
+  expect 2 == n is True
+  expect n > 1 + 0 is True
+  expect n > -1 is True
+end
+
+test "A literal that does not denote an Int is not designated"
+  n = 2 :: Int
+  expect n > 0.5 fails "different concrete types cannot be compared"
+end
+
+test "Only a literal is designated, not a bound Rational or another type"
+  n = 2 :: Int
+  q = 1 / 2
+  one = 1
+  expect n > one fails "different concrete types cannot be compared"
+  expect n > (1 :: Float) fails "different concrete types cannot be compared"
+  expect (2 :: Float) > (1 :: Float) is True
 end

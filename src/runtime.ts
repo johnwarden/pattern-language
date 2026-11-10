@@ -911,6 +911,8 @@ export class Interpreter {
           name,
           [1, 1],
           ([a, b]) => {
+            const bothLiteral =
+              this.isSourceLiteral(a) && this.isSourceLiteral(b);
             const space = concreteSpace(a) ?? concreteSpace(b);
             const other = concreteSpace(b);
             if (
@@ -942,6 +944,7 @@ export class Interpreter {
               if (!left || !right) throw new LanguageError("expected a number");
               const result = exactOps[name](left, right);
               const value = valRational(result.n, result.d);
+              if (bothLiteral) return single(this.sourceLiteral(value));
               return space
                 ? this.check(space, value)
                 : single(this.ascribeRational(value));
@@ -959,7 +962,9 @@ export class Interpreter {
     for (const name of ["==", "!=", "<", ">", "<=", ">="])
       scope.bindings.set(
         name,
-        this.native(name, [1, 1], ([a, b]) => {
+        this.native(name, [1, 1], ([a0, b0]) => {
+          const a = this.designateLiteral(b0, a0),
+            b = this.designateLiteral(a0, b0);
           const c =
             name === "==" || name === "!=" ? equal(a, b) : compare(a, b);
           const yes =
@@ -1241,8 +1246,10 @@ export class Interpreter {
       );
     env.bindings.set(
       name,
-      "kind" in value && value.kind === "view" && value.provisional
-        ? { ...value, provisional: false }
+      "kind" in value &&
+        value.kind === "view" &&
+        (value.provisional || value.literal)
+        ? { ...value, provisional: false, literal: false }
         : value,
     );
   }
@@ -1634,7 +1641,7 @@ export class Interpreter {
       const r = rationalFromSyntax(n);
       if (!r)
         throw new LanguageError("malformed numeric source literal", n.span);
-      return this.ascribeRational(valRational(r.n, r.d));
+      return this.sourceLiteral(valRational(r.n, r.d));
     }
     if (n.kind === "symbol") {
       if (n.quoted) {
@@ -1919,7 +1926,7 @@ export class Interpreter {
         const r = parseNumericSpelling(spelling.value);
         if (!r)
           throw new LanguageError("malformed numeric source literal", n.span);
-        return this.ascribeRational(valRational(r.n, r.d));
+        return this.sourceLiteral(valRational(r.n, r.d));
       }
     }
     const lookup = lexicalScopes.get(n.head) ?? env;
@@ -3912,6 +3919,33 @@ export class Interpreter {
       ),
     );
   }
+  /** A numeric source literal: a Rational that an operator may designate as the other operand's concrete type. */
+  private sourceLiteral(value: Value): Field<Value>[] {
+    return this.ascribeRational(value).map((field) =>
+      field.value.kind === "view"
+        ? { ...field, value: { ...field.value, literal: true } }
+        : field,
+    );
+  }
+  private isSourceLiteral(v: Value): boolean {
+    const x = slotValue(v);
+    return x.kind === "view" && !!x.literal;
+  }
+  /** `lit :: Int` when the other operand is a concrete Int and the literal denotes an integer in range. */
+  private designateLiteral(other: Value, lit: Value): Value {
+    if (!this.isSourceLiteral(lit)) return lit;
+    const space = concreteSpace(other);
+    const int = this.primitives.get("Int")!;
+    if (!space || typeIdentity(space) !== typeIdentity(int)) return lit;
+    const r = asRational(lit);
+    if (!r || r.d !== 1n) return lit;
+    try {
+      return single(this.check(int, valRational(r.n, r.d)));
+    } catch (error) {
+      if (error instanceof LanguageError) return lit;
+      throw error;
+    }
+  }
   private ascribeRational(value: Value): Field<Value>[] {
     return this.check(this.primitives.get("Rational")!, value);
   }
@@ -3928,6 +3962,7 @@ export class Interpreter {
       const r = asRational(v);
       if (!r) throw new LanguageError("expected a number");
       const value = valRational(-r.n, r.d);
+      if (this.isSourceLiteral(v)) return this.sourceLiteral(value);
       return space ? this.check(space, value) : this.ascribeRational(value);
     }
     const r = asRational(v);
