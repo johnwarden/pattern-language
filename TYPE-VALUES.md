@@ -44,8 +44,13 @@ kinds of type values, built by `ConcreteType(pattern)`, `AbstractType(a | b)` an
 a `concrete`/`abstract` pattern is evaluated, not in the kind constructors: a direct
 `ConcreteType` or `AbstractType` call keeps its alternatives in the given order, so an
 order that differs from the declaration's canonical one is a different value. A
-primitive atom is already a type value, so `concrete Int`, `ConcreteType(Int)`,
-`abstract Int` and `AbstractType(Int)` are rejected (`E_TYPE_DESCRIPTION`). The complete metatype and redundant primitive-quote
+lone primitive atom is already a type value, so `concrete Int`, `ConcreteType(Int)`,
+`abstract Int`, `AbstractType(Int)` and `concrete concrete Int` are rejected
+(`E_TYPE_DESCRIPTION`); unions of primitives and existing type values can be made
+concrete. A concrete type cannot be open (`ConcreteType({**})`, `concrete {**}` are
+`E_TYPE_DESCRIPTION`); an open structural facet is declared `abstract`, installs
+accessors for its named fields, and its values print with a `::` type only on the
+extra fields the facet does not fix. Type descriptions cannot carry defaults. The complete metatype and redundant primitive-quote
 policy remain provisional. Nonprimitive numeric types should be definable carveouts.
 Primitive names are `ReservedSymbol` values, and the type description of
 `type Int` is the reserved symbol `Int` itself, not `:Int`. A quoted primitive

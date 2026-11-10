@@ -61,7 +61,7 @@ must test composition and state role differences explicitly.
   `Type(...)`/`UnionType(...)`, which keep working until their deprecation
   ([contracts](tests/specification/type-values.test); todo cases in
   [type-values/](tests/specification/type-values/) wait on refinement declaration
-  syntax, named function values and unlabeled bound defaults). `PrimitiveType` is
+  syntax, named function values and the legacy `Type(...)` deprecation). `PrimitiveType` is
   currently the same type as `ReservedSymbol`.
 - General abstract unions may have overlapping spellings. A separate unambiguous
   grammar requirement supports annotation-free DSL text. Typed general text retains
