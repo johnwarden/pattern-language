@@ -5,8 +5,10 @@ Approved by Jonathan in the project chat on 10 November 2026. Origin:
 
 The examples below are approved source contracts. Capture them in
 `tests/specification/` before implementation. They approve the constructor forms
-and behavior shown here, not general descriptor inspection, decoding from
-arbitrary Expressions, or a wire format. `Type` is a prelude abstract union of
+and behavior shown here. Descriptor values are ordinary data: inspecting one is
+ordinary pattern matching on its kind constructor, and its text is its ordinary
+value text. This does not approve decoding from arbitrary Expressions (see
+below) or a wire format. `Type` is a prelude abstract union of
 `AbstractType | ConcreteType | RefinementType | PrimitiveType`; the first three
 kinds are defined with ordinary patterns. Primitive atoms retain their existing
 special status. `Type(...)` is retired as a native type-value wrapper.
@@ -280,10 +282,10 @@ instead use the direct primitive atoms, as specified below.
 | `Type(Rect(Float, Float))` for a declared concrete rectangle | `ConcreteType(Rect(Float, Float))` equal to the declaration's type value |
 | `Type(:None | Some(Int))` / `Type(:Black | :Red)` | `ConcreteType(:None | Some(Int))` / `ConcreteType(:Black | :Red)` |
 | `Type(Int)` / `type type Int` | Retire the wrapper; assert `Int :: PrimitiveType`, `(type Int) == Int`, and ordinary `Type` membership |
-| `Type(pattern) = t` | Retire the old wrapper-specific destructuring; public descriptor-field extraction remains deferred |
+| `Type(pattern) = t` | Retire the wrapper-specific destructuring; match the ordinary kind constructor instead (`ConcreteType(pattern) = t`) |
 | `Type(t) == Type(Int)` with `t` stored as `Any` | Assert the directly stored primitive is still `Int` and accepted by `Type` |
-| `toString(Type)` / `parse(Type)` | Keep the prelude union as expected type; migrate exact old `Type(...)` text only after canonical format is chosen |
-| `:(Type(...))` equal to a compiled type | Preserve Code/Expression as source data; public type-value decoding remains a separate decision |
+| `toString(Type)` / `parse(Type)` | Keep the prelude union as expected type; the text of a descriptor is its ordinary value text (e.g. `ConcreteType(Rect(Rational))`). Legacy `Type(...)` text keeps its current spelling until the legacy form is deprecated, including `Recursive(...)` with `Recur(0)` back-references |
+| `:(Type(...))` equal to a compiled type | Preserve Code/Expression as source data; Code is not implicitly decoded to a type value (see No implicit public decoding) |
 | `UnionType(Type(X(...)), ...)` | `AbstractType(ConcreteType(X(...)) | ...)`; union construction does not install declarations or accessors |
 
 ## Implementation handoff and deferred decisions
@@ -298,6 +300,10 @@ instead use the direct primitive atoms, as specified below.
 3. Migrate legacy concrete and abstract constructors according to the table,
    preserving primitive atoms. This approval does not add an explicit primitive
    descriptor quote.
-4. Public descriptor inspection/decoding and exact canonical text remain deferred.
-   Portable refinement predicate values and their text follow the portable function
-   decision; specify them before adding a refinement round-trip test.
+4. Descriptor inspection is ordinary pattern matching on the kind constructors,
+   and descriptor text is their ordinary value text; neither needs a separate
+   mechanism. Two things stay open: the recursive descriptor spelling, which keeps
+   its current `Recursive(...)` / `Recur(0)` form for now and is changed only by a
+   separate decision, and refinement predicate values and their text, which follow
+   the portable function decision; specify them before adding a refinement
+   round-trip test.
