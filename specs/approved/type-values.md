@@ -150,11 +150,10 @@ end
 Predicate value identity follows the portable function decision; no extensional
 equality, environment replay, or public predicate-field extraction is implied.
 
-## A new type needs more than an existing type
+## A lone primitive is not wrapped
 
 A primitive atom is already a type value, and `type Int` is no longer in the
-grammar. A new type, whether concrete or abstract, needs more than a trivial
-pattern that matches exactly the values of an existing type, so neither the
+grammar. A pattern that is just one primitive adds nothing, so neither the
 constructors nor the declaration and pattern forms wrap one. All of these are
 rejected with `E_TYPE_DESCRIPTION`:
 
@@ -168,12 +167,18 @@ type X concrete Int
 type Y abstract Int
 ```
 
-They are rejected rather than normalized to the bare primitive. To give an
-existing type another name, bind it (`alias = Int`); a binding is not a
-declaration. A primitive remains usable inside a larger pattern
-(`concrete Rect(Int, Int)`, `abstract Float32 | Float64`) and as the base of a
-refinement (`RefinementType(Rational, nonZero)`). Use the primitive itself where
-a type value is wanted: `Int`, `Int :: PrimitiveType`.
+`concrete concrete Int` is rejected because its operand, `concrete Int`, is
+itself rejected. These forms are rejected rather than normalized to the bare
+primitive.
+
+The rule concerns a lone primitive, not reuse of an existing type. A union of
+two or more primitives is valid (`ConcreteType(Rational | String)`,
+`concrete Int | Float`), and an existing type value can be made concrete: given
+`a = abstract Int | Float`, `b = concrete a` is valid, and so is `concrete` of a
+refinement such as `Int .where ...`. A primitive also remains usable inside a
+larger pattern (`concrete Rect(Int, Int)`, `abstract Float32 | Float64`) and as
+the base of a refinement (`RefinementType(Rational, nonZero)`). Use the
+primitive itself where a type value is wanted: `Int`, `Int :: PrimitiveType`.
 
 ## Declaration products, defaults, and application
 
