@@ -56,9 +56,12 @@ end
 
 ## Construction and identity
 
-Direct kind-constructor calls build ordinary structural values without automatic
-alternative reordering. The declaration examples produce canonical descriptor
-data; equality compares the resulting values, rather than normalizing them.
+Normalization happens when a `concrete` or `abstract` pattern is evaluated, not
+in the kind constructors. `ConcreteType(...)` and `AbstractType(...)` have no
+automatic normalizing behavior for now: a descriptor value may hold its
+alternatives in any order, and direct constructor calls never reorder, merge or
+deduplicate them. The declaration examples produce canonical descriptor data;
+equality compares the resulting values, rather than normalizing them.
 
 ```pattern
 test "Concrete descriptors are capture-free and structural"
@@ -127,7 +130,6 @@ test "A refinement has a base and predicate, and keeps its base space"
   assert t == NonZero
   assert t .matches Type
   assert not(t == Rational)
-  assert not(t == ConcreteType(Rational))
   assert not(0 .matches t)
   assert 2 .matches t
   def identity(u :: Type) u
@@ -146,6 +148,28 @@ end
 
 Predicate value identity follows the portable function decision; no extensional
 equality, environment replay, or public predicate-field extraction is implied.
+
+## A primitive is not wrapped
+
+A primitive atom is already a type value, so neither the constructors nor the
+pattern forms wrap one. `concrete Int` is rejected for the same reason that
+`concrete concrete Int` is rejected: the operand is already a type value, not a
+pattern to be made concrete. The same holds for the constructor spellings and
+the abstract kind:
+
+```text
+concrete Int
+ConcreteType(Int)
+abstract Int
+AbstractType(Int)
+```
+
+These are rejected rather than normalized to the bare primitive. A primitive
+remains usable inside a larger pattern (`concrete Rect(Int, Int)`,
+`abstract Float32 | Float64`) and as the base of a refinement
+(`RefinementType(Rational, nonZero)`). Use the primitive itself where a type
+value is wanted: `Int`, `Int :: PrimitiveType`. The diagnostic code and text are
+not selected here; the implementation tests choose them.
 
 ## Declaration products, defaults, and application
 
