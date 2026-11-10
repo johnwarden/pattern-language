@@ -41,10 +41,10 @@ test "Function block"
 end
 
 test "Definitions evaluate their bodies"
-  def r :Rect(Float)
+  def r :(Rect(Float))
   def R type :Rect(Float)
 
-  expect :Rect(Float) result Rect(Float) :: Expression
+  expect :(Rect(Float)) result Rect(Float) :: Expression
   observed = type R
   expect observed result Type(Rect(Float)) :: Type
   (r, (type R))

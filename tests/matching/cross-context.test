@@ -81,12 +81,11 @@ test "One positional and rest pattern agrees in a macro parameter"
   result [2, 3] :: Expression
 end
 
-test "Head quoting and structural interpolation produce the same data"
+test "Whole quotation is inert and structural interpolation supplies values"
   x = 3
 
-  expect
-    :foo(x)
-  result foo(3) :: Expression
+  expect :foo(x) error "E_NOT_CALLABLE"
+  expect :(foo(x)) result foo(:x) :: Expression
   expect
     Expression$` foo($x)
   result foo(3) :: Expression

@@ -111,7 +111,7 @@ test("matches evaluates both arguments and uses the shared pattern specification
   assert.equal(run("(:x .matches :x,42 .matches :x)"), "(True, False)");
   assert.equal(run("(1 :: Float) .matches (type Int)"), "False");
   assert.equal(run("(1 :: Float) .matches (1 :: Int)"), "False");
-  assert.equal(run("Some(3) .matches :Some(Int)"), "False");
+  assert.equal(run("Some(3) .matches :(Some(Int))"), "False");
   assert.equal(run("p = :(f(missing))\n:(f(missing)) .matches p"), "True");
 });
 

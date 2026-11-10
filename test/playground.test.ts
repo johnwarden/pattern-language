@@ -104,7 +104,7 @@ describe(
     const tests = exampleTests.filter((value) => value.program);
     assert.equal(
       tests.length,
-      76,
+      77,
       "migration assertions must not hide existing examples",
     );
     const select = el<HTMLSelectElement>("example");

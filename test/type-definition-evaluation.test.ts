@@ -5,8 +5,8 @@ import { Interpreter, displayResults, LanguageError } from "../src/index.ts";
 const run = (source: string) => displayResults(new Interpreter().run(source));
 
 test("definition bodies evaluate normally and TitleCase results must be types", () => {
-  assert.equal(run("def r :Rect(Float)\nr"), "Rect(Float)");
-  for (const body of [":Rect(Float)", "Rect(Float)", "3"])
+  assert.equal(run("def r :(Rect(Float))\nr"), "Rect(Float)");
+  for (const body of [":(Rect(Float))", "Rect(Float)", "3"])
     assert.throws(
       () => run("def R " + body + "\n0"),
       (error: unknown) => {
@@ -24,7 +24,7 @@ test("definition bodies evaluate normally and TitleCase results must be types", 
     run("def make() type :Rect(Float)\ndef R make()\nRect(3) :: R"),
     "Rect(3)",
   );
-  assert.equal(run("def make() :Rect(Float)\ndef r make()\nr"), "Rect(Float)");
+  assert.equal(run("def make() :(Rect(Float))\ndef r make()\nr"), "Rect(Float)");
 });
 
 test("named type declarations retain generated local accessors", () => {

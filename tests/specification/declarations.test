@@ -22,7 +22,7 @@ test "C05 named types equal capture-free type values"
   assert t == u
   def Box(T :: Type) type :Box(T)
   assert Box(String) == (type :Box(String))
-  b = :Box("hello") :: Box(String)
+  b = Box("hello") :: Box(String)
   text = match b
     :Box(value) -> value
   end

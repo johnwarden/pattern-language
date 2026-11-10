@@ -78,7 +78,7 @@ test "Equals can be a constructor in a type"
   end
 
   expect
-    (:=(1)(2)) :: Syntax
+    parse(Syntax)("1 = 2")
   result
     (1 = 2) :: Syntax
   end

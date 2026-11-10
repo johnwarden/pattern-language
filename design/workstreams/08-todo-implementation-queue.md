@@ -9,16 +9,16 @@ to distinguish their actual blockers from their titles.
 
 Use current master and the linked `.test` cases before claiming work; other
 agents are actively migrating tests. This queue must not become a parallel prose
-specification. Drafts [#61](https://github.com/johnwarden/pattern-language/pull/61)
-and [#62](https://github.com/johnwarden/pattern-language/pull/62) implement the first
-two scopes. The mirrored-row-spreading branch implements scope 4's single-template
-reconstruction slice; its focused [source contracts](../../tests/spreading/vertical-values.test)
-cover dimensions without the original evaluated-Code assert blocker. These are
+specification. [#61](https://github.com/johnwarden/pattern-language/pull/61)
+implements scope 1 against the current application-head contracts.
+[#62](https://github.com/johnwarden/pattern-language/pull/62) implements scope 2.
+The mirrored-row-spreading work landed as ordinary C20 coverage plus focused
+[source contracts](../../tests/spreading/vertical-values.test). These are
 implementation statuses, not merge authorizations.
 
 | Proposed PR | Target contracts and observed blocker | Scope and dependencies |
 | --- | --- | --- |
-| 1. Reject non-callable application heads during evaluation | Six todos in [application-heads.test](../../tests/specification/application-heads.test): Bool and constructed-value heads currently succeed as raw construction. | Preserve concrete identity in `runtime.ts::invoke`; retain real Symbol heads, functions, complete packs and inert Code. Validate evaluation-phase failure with `test/application-heads.test.ts`. Ready independently of grammar expansion. |
+| 1. Reject non-callable application heads during evaluation | Ordinary checks in [application-heads.test](../../tests/specification/application-heads.test): Bool, ReservedSymbol, evaluated Symbol and typed constructed-data heads report `E_NOT_CALLABLE` during evaluation. Unquoted `Tag(1)` still constructs; a raw Expression term may occupy a later head. | Implemented on [#61](https://github.com/johnwarden/pattern-language/pull/61): `invoke` classifies the concrete head before unwrapping; actual `Type`/`String` functions still dispatch. Host checks keep the evaluation phase. Not a merge authorization. |
 | 2. Simple angle-parameter type declarations/applications | Remaining C05/C18 and the C12 absence-designation assertion: seven generic-dependent trials stop at tight-angle parsing; five appear independent of extraction coverage. | Shared parser/grammar and existing type factories. Implement the accepted Box<T>/Box<String> slice without variadics, constraints, family recovery or runtime-pack flattening. Validate comparison spacing, canonical/inert Code and independent structural interop. |
 | 3. Refinement declaration surface | Eight C07–C10 todos in [refinements.test](../../tests/specification/refinements.test) stop at declaration recognition first. | Follow #48's structural elaboration into existing refinement construction. Add focused base-identity/no-accessor controls. Coordinate with PR 2's grammar owner; do not claim evidence checking or introduce predicate-based overload fallback. |
 | 4. Mirrored vertical spreading | C20 reconstruction in [spreading.test](../../tests/specification/spreading.test) is ordinary coverage. The three remaining scenarios require evaluated-Code assert. | The single-row-template slice and focused [source cases](../../tests/spreading/vertical-values.test) preserve dimensions, ragged rows, empty matrices and empty rows. Broader row templates remain work. |

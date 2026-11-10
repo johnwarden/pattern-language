@@ -1,9 +1,12 @@
-test "Head-only quotation interpolates; whole-expression quotation does not"
+test "Whole-expression quotation is inert; typed interpolation supplies values"
   x = 3
-  (head, whole) = (:Box(x), :(Box(x)))
+  whole = :(Box(x))
+  expanded = Expression$` Box($x)
 
-  expect head result Box(3) :: Expression
+  expect :Box(x) error "E_NOT_CALLABLE"
+  expect expanded result Box(3) :: Expression
   expect whole result Box(:x) :: Expression
+  (whole, expanded)
 end
 
 test "Typed quote blocks expand macro templates with explicit interpolation"

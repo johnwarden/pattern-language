@@ -147,9 +147,10 @@ test("holes interpret sidefix code using the active lexical grammar", () => {
     "7",
   );
 });
-test("colon quotes are raw; quoting an application head still evaluates its arguments", () => {
-  assert.equal(run("x = 3\n:Box(x)"), "Box(3)");
+test("colon quotes are raw; a quoted head is not callable", () => {
+  assert.throws(() => run("x = 3\n:Box(x)"), /not callable/);
   assert.equal(run("x = 3\n:(Box(x))"), "Box(x)");
+  assert.equal(run("x = 3\nExpression$` Box($x)"), "Box(3)");
   assert.equal(run("x = 3\n:(Box($x))"), "Box($(x))");
   assert.equal(run("x = 3\nCode` $x + 1"), "$(x) + 1");
   assert.equal(run("x = 3\nCode$` $x + 1"), "3 + 1");
@@ -226,6 +227,16 @@ test("outer reader interpolation preserves the fragment/value boundary", () => {
   assert.equal(
     execute(
       'def Rect type Rect(Int,Int)\ndef html(fragments,values)\n  [value] = values\n  value == (Rect(2,3) :: Rect)\nend\nx = Rect(2,3) :: Rect\nCode$` html$"$x"',
+    ),
+    "True",
+  );
+  assert.equal(
+    execute('def html(fragments,values) values\nx = :(1(2))\nCode$` html$"$x"'),
+    "[1(2)]",
+  );
+  assert.equal(
+    execute(
+      'def html(fragments,values)\n  [value] = values\n  value == :(1(2)(3))\nend\nx = :(1(2)(3))\nCode$` html$"$x"',
     ),
     "True",
   );

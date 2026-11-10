@@ -199,10 +199,10 @@ test("duplicate capture diagnostics agree across every applicable pattern contex
 test("schema recognition rejects malformed constructor arities before interpretation", () => {
   for (const source of [
     "Type(:(Type()))",
-    "Type(:Literal())",
-    "Type(:Apply(:A))",
-    "Type(:Recur())",
-    "Type(:OpenFields(labels: True,positional: False))",
+    "Type(:(Literal()))",
+    "Type(:(Apply(:A)))",
+    "Type(:(Recur()))",
+    "Type(:(OpenFields(labels: True,positional: False)))",
   ])
     assert.throws(
       () => run(source),

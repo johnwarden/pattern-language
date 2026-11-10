@@ -373,7 +373,7 @@ test("named repetition cannot be smuggled through a portable field description",
 });
 
 test("literal punctuation remains distinct from the labeled-rest marker in portable data", () => {
-  for (const value of [":R(:**)", ":(R(**))", ":**"])
+  for (const value of [":(R(:**))", ":(R(**))", ":**"])
     assert.equal(
       run("v = " + value + "\nparse(Expression)(toString(Expression)(v)) == v"),
       "True",

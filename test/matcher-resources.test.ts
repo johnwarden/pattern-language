@@ -106,7 +106,7 @@ test("nested portable type descriptions survive schema validation and round trip
   assert.equal(
     displayResults(
       new Interpreter().run(
-        "t = Type(:" + pattern + ")\nparse(Type)(toString(Type)(t)) == t",
+        "t = Type(:(" + pattern + "))\nparse(Type)(toString(Type)(t)) == t",
       ),
     ),
     "True",

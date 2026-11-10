@@ -9,7 +9,7 @@ test "Hygiene preserves literal constructor heads"
   macro :make Args() Code` (tag, tag(value)) -> value
   f = (make Args())
 
-  expect f(1, :tag(3)) result 3 :: Rational
+  expect f(1, Expression$` tag($(3))) result 3 :: Rational
 end
 
 test "Default expressions use the surrounding scope before binding captures"

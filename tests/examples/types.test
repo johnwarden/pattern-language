@@ -34,8 +34,8 @@ test "Factory defaults and complete types"
   # Legacy blocked: public descriptor text is still provisional.
   legacy expect toString(Type)(type Rectangle) result "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: String
 
-  assert not(:Rect(3, 4) .matches (type Rectangle))
-  (r, r.color, toString(Type)(type Rectangle), :Rect(3, 4) .matches (type Rectangle))
+  assert not(:(Rect(3, 4)) .matches (type Rectangle))
+  (r, r.color, toString(Type)(type Rectangle), :(Rect(3, 4)) .matches (type Rectangle))
 end
 
 test "Optional labeled defaults"
@@ -90,11 +90,8 @@ test "Mutually recursive mathematical expression types"
     (a :: MathExp) :* (b :: MathExp)
   end
   def MathExp UnionType(Sum, Product, Symbol, Float)
-  (one :: MathExp) = 1 :: Float
-  (two :: MathExp) = 2 :: Float
-  (three :: MathExp) = 3 :: Float
-  (sum :: MathExp) = (one :+ two) :: Sum
-  expression = (sum :* three) :: Product
+  sum = parse(Sum)("1 :+ 2")
+  expression = parse(Product)("(1 :+ 2) :* 3")
   text = toString(Product)(expression)
 
   assert parse(Product)(text) == expression

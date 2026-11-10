@@ -10,13 +10,15 @@ end
 
 test "Quoted expression values"
   def f(x) 2 * x
-  b = :f(1)
   c = :(f(1))
 
-  assert b == c
-  legacy expect b result f(1) :: Expression
+  expect c result f(1) :: Expression
 
-  ((b == c), b)
+  (c, c == :(f(1)))
+end
+
+test "A quoted head is not a data constructor"
+  expect :f(1) error "E_NOT_CALLABLE"
 end
 
 test "Raw and interpolated typed Code"

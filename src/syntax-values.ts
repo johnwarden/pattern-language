@@ -256,7 +256,30 @@ export function literalSyntax(value: Value): Syntax {
     const head = unwrap(raw.head);
     expression =
       head.kind === "symbol" || head.kind === "term"
-        ? { kind: "apply", head: literalSyntax(raw.head), body }
+        ? {
+            kind: "typedQuote",
+            grammar: { kind: "symbol", name: "Expression", quoted: false },
+            interpolate: true,
+            value: {
+              kind: "apply",
+              head:
+                head.kind === "symbol"
+                  ? { kind: "symbol", name: head.name, quoted: false }
+                  : {
+                      kind: "apply",
+                      head: { kind: "symbol", name: "$", quoted: false },
+                      body: pack(literalSyntax(raw.head)),
+                    },
+              body: body.map((field) => ({
+                ...field,
+                value: {
+                  kind: "apply",
+                  head: { kind: "symbol", name: "$", quoted: false },
+                  body: pack(field.value),
+                },
+              })),
+            },
+          }
         : {
             kind: "apply",
             head: { kind: "symbol", name: "Node", quoted: false },
