@@ -12,38 +12,38 @@ choices or claim current implementation support.
 
 ## Values
 
+Use direct source literals for value examples. Explicit `parse` calls below test
+string reading, Code structure, rejected source or text round trips.
+
 ```pattern
 test "Fraction literals denote exact reduced Rationals"
-  third = (1/3)
-  expect third is (1 / 3) :: Rational
-  half = (2/4)
-  expect half is 0.5 :: Rational
-  whole = (3/1)
-  expect whole is 3 :: Rational
-  zero = (0/5)
-  expect zero is 0 :: Rational
-  large = (9007199254740993/1)
-  expect large is 9007199254740993 :: Rational
+  expect (1/3) is (1 / 3) :: Rational
+  expect (2/4) is 0.5 :: Rational
+  expect (3/1) is 3 :: Rational
+  expect (0/5) is 0 :: Rational
+  expect (9007199254740993/1) is 9007199254740993 :: Rational
+
   assert (2/6) == (1/3)
 end
 
 test "A decimal exponent scales the entire fraction exactly"
-  expect parse(Rational)("(1/3)e20") is (100000000000000000000 / 3) :: Rational
-  expect parse(Rational)("(1/3)e-2") is (1 / 300) :: Rational
-  expect parse(Rational)("(3/4)e2") is 75 :: Rational
-  expect parse(Rational)("(1/3)e0") is (1 / 3) :: Rational
-  expect parse(Rational)("(1/3)e+2") is (100 / 3) :: Rational
+  expect (1/3)e20 is (100000000000000000000 / 3) :: Rational
+  expect (1/3)e-2 is (1 / 300) :: Rational
+  expect (3/4)e2 is 75 :: Rational
+  expect (1/3)e0 is (1 / 3) :: Rational
+  expect (1/3)e+2 is (100 / 3) :: Rational
+end
 
+test "Reading a fraction exponent produces the same exact Code atom"
   assert parse(Code)("(1/3)e20") == parse(Code)("(100000000000000000000/3)")
   assert parse(Code)("(3/4)e2") == Code` 75
 end
 
 test "Negative fractions use ordinary prefix negation"
-  negative = -(1/3)
-  expect negative is
+  expect -(1/3) is
     -(1 / 3) :: Rational
   end
-  expect parse(Rational)("-(1/3)e2") is
+  expect -(1/3)e2 is
     -(100 / 3) :: Rational
   end
   assert parse(Code)("-(1/3)") == Code` -((1/3))
@@ -129,7 +129,7 @@ test "Typed Rational text reconstructs the same exact value"
   assert parse(Rational)(toString(Rational)(-(2/6))) == -(2/6)
   assert parse(Rational)(toString(Rational)((9007199254740993/1))) == 9007199254740993
 
-  scaled = parse(Rational)("(1/3)e20")
+  scaled = (1/3)e20
   expanded = (100000000000000000000/3)
   assert toString(Rational)(scaled) == toString(Rational)(expanded)
 end
@@ -142,6 +142,26 @@ test "Code printing reconstructs numeric atoms and prefix negation"
   assert parse(Code)(toString(Code)(negative)) == negative
 end
 ```
+
+## Remaining review decisions
+
+- Specify the component grammar: signs, leading zeros, underscores and permitted
+  whitespace, including whether either component may use a nondecimal spelling.
+  State the exponent marker, sign, digit and adjacency rules explicitly.
+- Preserve division applications when printing Code. Since `(1 / 3)` is a literal,
+  a printer cannot use that spelling merely to group an ordinary `1 / 3`
+  application. Add round-trip cases for a division application used as an operand
+  and as a callable head; decide when an explicit form such as `/(1)(3)` is needed.
+- Account for existing grouped division fixtures. In particular, `(1 / 0)` would
+  become a source-reading error, including inside an unused default or inert Code.
+  Cases meant to test lazy runtime division must retain an ordinary division
+  application through an unambiguous spelling; do not silently lose that coverage.
+- Ratify the canonical text selection order and its limits. The examples propose
+  short decimal, then exact binary64 hexadecimal, then reduced fraction; spell out
+  the 16-place cutoff and hexadecimal normalization if retained.
+- State the typed Rational reader's sign grammar. It must accept the chosen
+  negative canonical text without evaluating arbitrary Code, while source Code
+  continues to represent negation as an ordinary prefix application.
 
 After approval, revise the PR's literal cases and the old serialization-failure
 case in [exact-values.test](../../tests/numeric/exact-values.test).
