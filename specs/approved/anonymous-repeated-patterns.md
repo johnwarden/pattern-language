@@ -14,14 +14,20 @@ An anonymous matrix pattern retains horizontal and vertical repetition:
 ```pattern
 concrete [
   ... :: Float32**
-  …
+  ...
 ]
 ```
 
 The annotation describes the aggregate repetition dimensions; the pattern
-structure specifies where those dimensions occur. ASCII `...` and Unicode
-`…` have the same role. There is no synthetic underscore binding. Existing
-underscore syntax is not retired by this decision.
+structure specifies where those dimensions occur. The ellipsis is spelled with
+ASCII `...` only; Unicode `…` is not supported syntax. There is no synthetic
+underscore binding. Existing underscore syntax is not retired by this decision.
+
+Updated by Jonathan in the project chat on 2026-11-10: the earlier wording that
+made `...` and `…` interchangeable is withdrawn. The bootstrap lexer still maps
+`…` to the same symbol as `...` and prints it as `…`; rejecting `…` and printing
+`...` canonically is pending implementation in a separate change, so this record
+stays approved until its contracts exist.
 
 Write and validate executable contracts in
 `tests/specification/anonymous-spreads.test` before implementation. Cover
