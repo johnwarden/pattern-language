@@ -17,6 +17,8 @@ import { any } from "./pattern.ts";
 import type { Pattern } from "./pattern.ts";
 import { uniqueCaptures, patternCaptures } from "./pattern-captures.ts";
 import { isSelfEvaluating } from "./primitive-names.ts";
+const anonymousSpread = (node: Syntax) =>
+  node.kind === "symbol" && !node.quoted && node.name === "…";
 /** Domain adapters supply leaves; all structural pattern syntax is compiled here. */
 export interface PatternDomain<T> {
   atom: (node: Syntax) => Pattern<T>;
@@ -58,17 +60,20 @@ export class PatternCompiler<T> {
       return { kind: "union", choices: union.map((x) => this.compile(x)) };
     const annotation = binary(n, "::");
     if (annotation) {
+      const anonymous = anonymousSpread(annotation[0]);
       const rest = spread(annotation[0]),
         left = rest ?? annotation[0];
-      const typed = rest
-        ? {
-            kind: "repeat" as const,
-            pattern: this.domain.repeatedElement(
-              annotation[1],
-              this.dimensions,
-            ),
-          }
-        : this.domain.annotation(annotation[1], this.dimensions);
+      const typed =
+        rest || anonymous
+          ? {
+              kind: "repeat" as const,
+              pattern: this.domain.repeatedElement(
+                annotation[1],
+                this.dimensions,
+              ),
+            }
+          : this.domain.annotation(annotation[1], this.dimensions);
+      if (anonymous) return typed;
       if (
         left.kind === "symbol" &&
         !left.quoted &&
@@ -269,7 +274,10 @@ export class PatternCompiler<T> {
           value: base,
         },
         annotation = binary(e.value, "::"),
-        rest = spread(annotation ? annotation[0] : e.value);
+        anonymous = !!annotation && anonymousSpread(annotation[0]),
+        rest = anonymous
+          ? annotation![0]
+          : spread(annotation ? annotation[0] : e.value);
       if (rest) {
         if (fallback)
           throw new LanguageError("rest captures cannot have defaults");
@@ -307,7 +315,7 @@ export class PatternCompiler<T> {
         if (
           rest.kind !== "symbol" ||
           rest.quoted ||
-          !(isCapture(rest.name) || rest.name === "_")
+          !(anonymous || isCapture(rest.name) || rest.name === "_")
         )
           throw new LanguageError("rest capture must be lowercase");
         hasRest = true;
@@ -326,7 +334,7 @@ export class PatternCompiler<T> {
           : any<T>();
         const repeated: Pattern<T> = { kind: "repeat", pattern: element };
         parts.push(
-          rest.name === "_"
+          anonymous || rest.name === "_"
             ? repeated
             : {
                 kind: "capture",

@@ -785,6 +785,8 @@ class Reader {
       const touching = !!next && next.start === t.end;
       if (t.quoted || (touching && next.kind === "("))
         return { ...symbol(t.text, !!t.quoted), span };
+      if (t.kind === "spread" && next?.kind === "op" && next.text === "::")
+        return { ...symbol(t.text), span };
       if (this.stop(stops)) return { ...symbol(t.text, !!t.quoted), span };
       if (t.kind === "op" && next && !touching)
         throw new LanguageError(
