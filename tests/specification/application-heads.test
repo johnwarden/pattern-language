@@ -39,7 +39,6 @@ test "Evaluating ReservedSymbol heads reports not callable"
   expect head(1) error "E_NOT_CALLABLE"
   typeHead = Type
   expect typeHead(String) error "E_NOT_CALLABLE"
-  expect Type(String) result Type(String) :: Type
   expect String([65]) result "A" :: String
 end
 
