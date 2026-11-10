@@ -350,20 +350,22 @@ the other semantic source cases remain.
 | disjoint-unions: unionType normalizes like UnionType | types/identity#uniontype-normalizes-like-uniontype | Unbound alternative throw stays |
 | disjoint-unions: Widget vs Int in Any | types/identity#quoted-symbols-stay-distinct-from-reserved-type-names-in-any | `inspect` symbol classes stay |
 | type-atoms: type-argument pack vs merged pack | types/value-trees#a-type-argument-pack-is-not-a-merged-pack | Exact `E_NO_METHOD` stays |
-| type-atoms: specialized function checks the member | types/value-trees#a-specialized-type-argument-function-still-checks-the-member | Exact `E_NO_METHOD` stays |
+| type-atoms: specialized function checks the member | types/value-trees#a-specialized-type-argument-function-still-checks-the-member; examples/types#type-arguments-use-ordinary-packs | Partial application `f = nonZero(Int); f(5)` lives in the examples case |
 | type-atoms: factory accessors remain visible | types/value-trees#factory-accessors-remain-visible-to-earlier-functions | — |
 | type-atoms: bound values substitute in type patterns | types/value-trees#bound-values-substitute-in-type-patterns | — |
 | type-atoms: Type construction through Any | —; source case removed in #68 | test/type-atoms.test.ts: original abstract-storage block restored |
-| type-atoms: canonical alternatives include literals | —; source case removed in #68 | test/type-atoms.test.ts: original ordering/equality block restored; postfix parser matrix stays |
+| type-atoms: Bool predicates, constructor heads, mixed alternative sort | specification/primitives#literal-and-computed-booleans-share-one-bool-type; language/types#constructor-heads-stay-tags-while-bare-symbols-need-quotation; examples/types#canonical-type-alternatives | Boolean checks are `assert`; inspect `:: Bool` goldens were not sourced |
+| type-atoms: primitive names, TitleCase values, type factories, idempotent `type`, named accessors, type defaults | specification/primitives#c01-intrinsic-primitive-values; examples/types#types-are-ordinary-values; examples/types#option-factory-with; examples/types#type-normalization-and-wrappers; language/types field accessor/function and #plain-type-construction-cannot-declare-captures; types/value-trees#ordinary-type-construction-rejects-binding-defaults; bindings/defaults#destructuring-defaults-bind-captures-without-adding-fields | Duplicate host blocks removed after the missing `Int == (type Int)`, `type type type Int`, `Type(Rect)`/`Type(Type(Rect))`, `Rect(2, 2) :: Rect`, `E_PLAIN_TYPE_CAPTURE`, and `(x, color: c :: Symbol = :Red) = (1)` assertions were added to those cases |
+| type-atoms: canonical alternatives include literals | examples/types#canonical-type-alternatives | Mixed `Some(Int) \| 10 \| :None \| 2` sort; `:Red \| :Black` equality was already there; postfix parser matrix stays on host |
 | type-atoms: postfix type ≠ prefix quotation | types/value-trees#postfix-type-descriptions-are-not-prefix-quotation | syntax kind/key/`normal` stay |
 | type-atoms: reserved Int/True redeclarations | types/value-trees#reserved-primitive-names-cannot-be-redeclared; types/value-trees#reserved-constants-cannot-be-redeclared | `env.bindings.delete` stays |
-| type-atoms: type defaults | types/value-trees#ordinary-type-construction-rejects-binding-defaults | Exact `E_TYPE_DEFAULT` and binding-default positive stay |
+| type-atoms: type defaults | types/value-trees#ordinary-type-construction-rejects-binding-defaults | Exact `E_TYPE_DEFAULT`; the capture-only binding-default program lives in bindings/defaults |
 | type-atoms/value-representation: compiled vs quoted trees | —; source case removed in #68 | Nested equality stays in `test/value-representation.test.ts`; explicit Type(Int) and global-text/Expression transport live in test/round-trip-parsing.test.ts |
 | value-representation: quoted type tree as a named type | —; source case removed in #68 | Original type-position block, including `.where` and bound matcher checks, lives in test/round-trip-parsing.test.ts |
 | value-representation: invalid type-shaped data | —; source case removed in #68 | Original malformed Primitive/UnionType matching and quoted UnionType text transport live in test/round-trip-parsing.test.ts |
 | value-representation: bound type value is a matcher | types/value-trees#a-bound-type-value-is-a-matcher | — |
 
-Host remainder is `inspect`, REPL abbreviation, `parseExpression` trees, lexical-storage surgery, exact diagnostic codes, and concrete-identity incomparability. Expression and Type(Int) text transport live in test/round-trip-parsing.test.ts. No expected-failure or legacy marker was added or changed. abstract-values and structural-slots keep mixed print/parse assertions incidental to identity and facet checks.
+Host remainder in `test/type-atoms.test.ts` is `inspect` REPL abbreviation, `parseExpression` trees (angle brackets and postfix kind/key/`normal`), lexical-storage surgery, and the #68 representation blocks (abstract storage through Any, compiled-vs-quoted trees, enum `toString` then eval). Expression and Type(Int) text transport live in test/round-trip-parsing.test.ts. No expected-failure or legacy marker was added or changed. abstract-values and structural-slots keep mixed print/parse assertions incidental to identity and facet checks.
 
 ## Existing source cases
 

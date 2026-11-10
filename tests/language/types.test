@@ -84,6 +84,26 @@ test "Quoted symbol"
   expect v is f :: LowerCamelSymbol
 end
 
+test "Constructor heads stay tags while bare symbols need quotation"
+  expect Foo(1) is Foo(1) :: Expression
+  expect :Foo is Foo :: UpperCamelSymbol
+
+  def Rect type Rect(Float, Float)
+  assert Type(Rect(Float, Float)) == Rect
+
+  expect
+    def Wrong Foo
+    0
+  fails "E_UNBOUND_NAME"
+end
+
+test "Plain type construction cannot declare captures"
+  expect
+    t = type Rect(w :: Float, h :: Float)
+    0
+  fails "E_PLAIN_TYPE_CAPTURE"
+end
+
 test "Pattern union"
   def S type :Rect(Int, Int) | :Circle(Int)
 
