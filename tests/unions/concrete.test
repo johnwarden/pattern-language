@@ -15,7 +15,7 @@ test "An explicit outer absence does not project as inner absence"
     match x
       (inner :: String?) -> inner
     end
-  error "E_PATTERN_MISMATCH"
+  fails "E_PATTERN_MISMATCH"
 end
 
 test "A direct constructor arm wins over an inward path"
@@ -68,5 +68,5 @@ test "Peer optional absence is ambiguous when String? precedes Float?"
 
   expect
     :None :: MyType
-  error "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_PATTERN"
 end
