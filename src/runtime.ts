@@ -1964,8 +1964,9 @@ export class Interpreter {
         });
       }
       if (
-        /^\p{Lu}/u.test(n.head.name) ||
-        [...n.head.name].every((c) => punctuation.has(c))
+        !constantNames.has(n.head.name) &&
+        (/^\p{Lu}/u.test(n.head.name) ||
+          [...n.head.name].every((c) => punctuation.has(c)))
       ) {
         const value: Value = {
           kind: "term",
@@ -2496,9 +2497,16 @@ export class Interpreter {
   }
   private invoke(fn: Value, args: Field<Value>[], env?: Scope): Field<Value>[] {
     this.tick();
+    const head = slotValue(fn);
+    if (
+      head.kind === "symbol" ||
+      head.kind === "term" ||
+      (head.kind === "view" &&
+        head.base.kind === "symbol" &&
+        concreteSpace(head)?.name === ordinarySymbolCategory(head.base.name))
+    )
+      return singleton({ kind: "term", head: unwrap(head), body: args });
     fn = unwrap(fn);
-    if (fn.kind === "symbol" || fn.kind === "term")
-      return singleton({ kind: "term", head: fn, body: args });
     const candidates =
       fn.kind === "overload"
         ? fn.candidates

@@ -16,10 +16,12 @@ their internal symbol-shaped payload must not make them Symbol constructor heads
 An expression returning a closure can be called, so `make()(7)` remains valid.
 Successive argument packs stay separate; this does not flatten `f(a)(b)` to f(a,b).
 
-Current numeric/String-head evaluation already reports `E_NOT_CALLABLE`. Boolean
-and constructed-data heads still use a permissive constructor path, so their
-negative contracts are todo. Remove those markers only when evaluating the head
-produces the intended error; rejecting Code during parsing is not a valid fix.
+Numeric, String, Bool and concrete constructed-data heads report `E_NOT_CALLABLE`
+during evaluation. A typed Symbol head still constructs data; a Bool with a
+symbol-shaped payload does not. Code parsing retains both forms without calling
+their heads. Uninterpreted raw Expression terms can still continue as structural
+constructor data, including successive argument packs. Whether that construction
+path should be restricted further remains unresolved.
 
 The source test runner evaluates assertion subjects as parsed Code. A focused host
 test additionally parses a stored Code value and evaluates that same value to

@@ -25,14 +25,14 @@ test "Evaluating a numeric or String head reports not callable"
 end
 
 test "Evaluating a Bool head must not reinterpret its payload as a Symbol"
-  todo expect True(1) error "E_NOT_CALLABLE"
-  todo expect False(1) error "E_NOT_CALLABLE"
+  expect True(1) error "E_NOT_CALLABLE"
+  expect False(1) error "E_NOT_CALLABLE"
 
   head = True
-  todo expect head(1) error "E_NOT_CALLABLE"
+  expect head(1) error "E_NOT_CALLABLE"
 
   def truth() 1 == 1
-  todo expect truth()(1) error "E_NOT_CALLABLE"
+  expect truth()(1) error "E_NOT_CALLABLE"
 end
 
 test "Symbol heads construct values in their established concrete context"
@@ -59,8 +59,8 @@ end
 test "A constructed value is not implicitly a callable head"
   def Tagged type :Tag(Rational)
   value = Tag(1) :: Tagged
-  todo expect value(2) error "E_NOT_CALLABLE"
+  expect value(2) error "E_NOT_CALLABLE"
 
   def data() Tag(1) :: Tagged
-  todo expect data()(2) error "E_NOT_CALLABLE"
+  expect data()(2) error "E_NOT_CALLABLE"
 end
