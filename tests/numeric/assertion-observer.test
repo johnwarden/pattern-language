@@ -1,7 +1,0 @@
-test "Unprintable exact Rational operands do not change passing assertions"
-  assert (1 / 3) == (1 / 3)
-  assert (1 / 3) != (2 / 3)
-  assert (1 / 3) .matches Rational
-  assert not((1 / 3) != (1 / 3))
-  assert True
-end

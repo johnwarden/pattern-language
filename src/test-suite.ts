@@ -707,9 +707,9 @@ function watchOperands(interpreter: Interpreter, subject: Syntax) {
     stop,
     report(): OperandReport | undefined {
       if (!seen.left || !seen.right) return;
-      // Printing is diagnostic work. Exact 1 / 3 has no source spelling:
-      // E_VALUE_SERIALIZATION becomes a placeholder. Any other inspect error
-      // must fail the test.
+      // Printing is diagnostic work. LanguageError E_VALUE_SERIALIZATION
+      // (no portable source spelling) becomes a placeholder. Any other
+      // inspect error must fail the test.
       const inspect = (values: Field<Value>[]) => {
         try {
           return interpreter.inspect(values);

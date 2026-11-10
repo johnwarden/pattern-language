@@ -1,0 +1,7 @@
+test "Unprintable function operands do not change passing assertions"
+  assert (x -> x) .matches Any
+  assert (x -> x) .matches Expression
+  assert not((x -> x) .matches String)
+  expect toString(Expression)(x -> x) fails "E_VALUE_SERIALIZATION"
+  assert True
+end

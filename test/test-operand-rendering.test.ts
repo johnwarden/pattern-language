@@ -9,9 +9,27 @@ const run = (body: string) =>
     loadTests({ "unprintable.test": `test "Values"\n  ${body}\nend` })[0],
   );
 
+const originalInspect = Interpreter.prototype.inspect;
+/** Keep Bool assertion results printable; throw only when formatting operands. */
+function withOperandInspect(error: unknown, body: () => void) {
+  let threw = false;
+  Interpreter.prototype.inspect = function (values) {
+    const text = originalInspect.call(this, values);
+    if (/:: Bool\b/.test(text)) return text;
+    threw = true;
+    throw error;
+  };
+  try {
+    body();
+    assert.ok(threw);
+  } finally {
+    Interpreter.prototype.inspect = originalInspect;
+  }
+}
+
 test("passing direct predicates with unprintable values leave following checks intact", () => {
   const report = run(
-    "assert (1 / 3) == (1 / 3)\n  assert (1 / 3) != (2 / 3)\n  assert (1 / 3) .matches Rational\n  assert True",
+    "assert (x -> x) .matches Any\n  assert (x -> x) .matches Expression\n  assert not((x -> x) .matches String)\n  assert True",
   );
   assert.equal(report.status, "passed", report.message);
   assert.deepEqual(
@@ -23,7 +41,7 @@ test("passing direct predicates with unprintable values leave following checks i
 
 test("a macro-produced operand keeps the ordinary evaluation result", () => {
   const report = run(
-    "macro :third Args() Code` (1 / 3)\n  assert (third Args()) == (1 / 3)\n  assert True",
+    "macro :identity Args() Code` x -> x\n  assert (identity Args()) .matches Any\n  assert True",
   );
   assert.equal(report.status, "passed", report.message);
   assert.deepEqual(
@@ -32,57 +50,60 @@ test("a macro-produced operand keeps the ordinary evaluation result", () => {
   );
 });
 
-test("failed predicates report unprintable operands without replacing the failure", () => {
-  for (const [clause, expectedReason] of [
-    ["assert (1 / 3) == (2 / 3)", /assertion is False/],
-    ["assert (1 / 3) != (1 / 3)", /assertion is False/],
-    ["assert (1 / 3) .matches String", /E_VALUE_SERIALIZATION/],
-  ] as const) {
-    const report = run(`${clause}\n  assert True`);
-    assert.equal(report.status, "failed", clause);
-    assert.deepEqual(
-      report.checks.map((c) => c.status),
-      ["failed", "passed"],
-    );
-    assert.match(report.message, expectedReason);
-    assert.match(report.message, /unprintable\.test:2:3/);
-    assert.ok(report.message.includes(clause), report.message);
-    assert.match(report.message, /1 \/ 3: <value cannot be printed>/);
-    if (!clause.includes(".matches"))
+test("E_VALUE_SERIALIZATION while printing operands is a placeholder, not the failure", () => {
+  withOperandInspect(
+    new LanguageError("value has no structural representation yet", undefined, {
+      code: "E_VALUE_SERIALIZATION",
+    }),
+    () => {
+      const report = run("assert 1 == 2\n  assert True");
+      assert.equal(report.status, "failed");
+      assert.deepEqual(
+        report.checks.map((c) => c.status),
+        ["failed", "passed"],
+      );
+      assert.match(report.message, /assertion is False/);
+      assert.match(report.message, /unprintable\.test:2:3/);
+      assert.ok(report.message.includes("assert 1 == 2"), report.message);
+      assert.match(report.message, /1: <value cannot be printed>/);
+      assert.match(report.message, /2: <value cannot be printed>/);
       assert.doesNotMatch(report.message, /E_VALUE_SERIALIZATION/);
-  }
+    },
+  );
+});
+
+test("a failed match of an unprintable function keeps the False result", () => {
+  const report = run("assert (x -> x) .matches String\n  assert True");
+  assert.equal(report.status, "failed", report.message);
+  assert.deepEqual(
+    report.checks.map((c) => c.status),
+    ["failed", "passed"],
+  );
+  assert.match(report.message, /assertion is False/);
+  assert.match(report.message, /x -> x: <function>/);
+  assert.doesNotMatch(report.message, /E_VALUE_SERIALIZATION/);
 });
 
 test("fulfilled todo reports its source and later assertions still execute", () => {
-  const report = run("todo assert (1 / 3) == (1 / 3)\n  assert True");
+  const report = run("todo assert (x -> x) .matches Any\n  assert True");
   assert.equal(report.status, "failed");
   assert.deepEqual(
     report.checks.map((c) => c.status),
     ["failed", "passed"],
   );
   assert.match(report.message, /remove todo/);
-  assert.match(report.message, /todo assert \(1 \/ 3\) == \(1 \/ 3\)/);
+  assert.match(report.message, /todo assert \(x -> x\) \.matches Any/);
   assert.equal(report.checks[0].operands, undefined);
 });
 
 test("an unexpected inspect exception while printing operands fails the test", () => {
-  const original = Interpreter.prototype.inspect;
   const runWithInspectError = (error: unknown, diagnostic: RegExp) => {
-    let calls = 0;
-    Interpreter.prototype.inspect = function (values) {
-      calls++;
-      if (calls === 1) return original.call(this, values);
-      throw error;
-    };
-    try {
+    withOperandInspect(error, () => {
       const report = run("assert 1 == 2");
       assert.equal(report.status, "failed");
       assert.match(report.message, diagnostic);
       assert.doesNotMatch(report.message, /cannot be printed/);
-      assert.ok(calls > 1);
-    } finally {
-      Interpreter.prototype.inspect = original;
-    }
+    });
   };
   runWithInspectError(
     new Error("unexpected inspect failure"),
@@ -109,7 +130,7 @@ test("operand observation stops after every assertion, including an unprintable 
   };
   try {
     const report = run(
-      "assert (1 / 3) == (1 / 3)\n  assert (1 / 3) == (2 / 3)\n  assert 1 == 1",
+      "assert (x -> x) .matches Any\n  assert (x -> x) .matches String\n  assert 1 == 1",
     );
     assert.deepEqual(
       report.checks.map((c) => c.status),
