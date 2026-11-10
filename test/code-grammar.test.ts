@@ -97,7 +97,7 @@ test("macro results require interpreted Code, not a similarly spelled tag", () =
   assert.equal(run("macro :answer Args() Code` 42\nanswer Args()"), "42");
   assert.equal(run("macro :answer Args() Code` 42\nanswer Args()"), "42");
   assert.throws(
-    () => run("macro :fake Args()\n  :Code(42)\nend\nfake Args()"),
+    () => run("macro :fake Args()\n  :(Code(42))\nend\nfake Args()"),
     (e: unknown) =>
       e instanceof LanguageError && e.diagnostic.code === "E_MACRO_RESULT",
   );

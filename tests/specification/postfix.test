@@ -52,8 +52,8 @@ test "Postfix values can be type factory arguments"
   def Box(x) type :Box(x)
   t = Box(1@)
   assert t == parse(Type)(toString(Type)(t))
-  assert :Box(1@) .matches t
-  assert not(:Box(Postfix(:@, 1)) .matches t)
+  assert parse(t)("Box(1@)") .matches t
+  assert not(:(Box(Postfix(:@, 1))) .matches t)
 end
 
 test "Postfix percent remains punctuation; hash is a comment"

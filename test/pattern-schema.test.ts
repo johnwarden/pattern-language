@@ -14,16 +14,16 @@ test("documented schema is the exact runtime bootstrap source", () => {
 });
 
 test("language schema gates descriptor shapes without consulting the user scope", () => {
-  for (const source of ["Type(:(String(:A)))", "Type(:|(:A,:B))"])
+  for (const source of ["Type(:(String(:A)))", "Type(:(|(:A,:B)))"])
     assert.throws(() => run(source), /invalid type-description shape/);
   assert.equal(
     run(
-      "def ordinaryHead(h) False\ndef TypeDescription type :Nope\nType(:Box(Int)) == (type :Box(Int))",
+      "def ordinaryHead(h) False\ndef TypeDescription type :Nope\nType(:(Box(Int))) == (type :Box(Int))",
     ),
     "True",
   );
   assert.throws(
-    () => run("def ordinaryHead(h) True\nType(:|(:A,:B))"),
+    () => run("def ordinaryHead(h) True\nType(:(|(:A,:B)))"),
     /invalid type-description shape/,
   );
 });
@@ -35,7 +35,7 @@ test("schema validation work budgets reset across operations and sessions", () =
       assert.equal(
         displayResults(
           interpreter.run(
-            "Type(:Box(:A,:B,:C,:D,:E,:F,:G,:H)) == (type :Box(:A,:B,:C,:D,:E,:F,:G,:H))",
+            "Type(:(Box(:A,:B,:C,:D,:E,:F,:G,:H))) == (type :Box(:A,:B,:C,:D,:E,:F,:G,:H))",
           ),
         ),
         "True",

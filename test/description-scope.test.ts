@@ -90,9 +90,9 @@ test("recursive indexes skip ordinary type scopes and select the intended binder
     "True",
   );
   for (const source of [
-    "Type(:Recur(0))",
-    "Type(:Recursive(Box(Type(Recur(1)))))",
-    "Type(:Recursive(Box(Type(Recursive(Pair(Recur(0),Recur(2)))))))",
+    "Type(:(Recur(0)))",
+    "Type(:(Recursive(Box(Type(Recur(1))))))",
+    "Type(:(Recursive(Box(Type(Recursive(Pair(Recur(0),Recur(2))))))))",
   ])
     assert.throws(() => run(source), /outside its binder/);
 });

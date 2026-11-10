@@ -8,6 +8,8 @@ test "Code preserves applications with non-callable heads"
   expect parse(Code)("f(True(1))") result f(True(1)) :: Code
   expect parse(Code)("True(missing())") result True(missing()) :: Code
   expect parse(Code)("Bool(1)") result Bool(1) :: Code
+  expect parse(Code)(":Tag(1)") result :Tag(1) :: Code
+  expect parse(Code)("Tag(1)(2)") result Tag(1)(2) :: Code
 
   expect
     Code` True(1)
@@ -28,10 +30,16 @@ test "Evaluating a numeric or String head reports not callable"
 end
 
 test "Evaluating ReservedSymbol heads reports not callable"
-  todo expect Bool(1) error "E_NOT_CALLABLE"
+  expect Bool(1) error "E_NOT_CALLABLE"
+  expect Int(1) error "E_NOT_CALLABLE"
+  expect Any(1) error "E_NOT_CALLABLE"
+  expect Expression(1) error "E_NOT_CALLABLE"
 
   head = Bool
   expect head(1) error "E_NOT_CALLABLE"
+  typeHead = Type
+  expect typeHead(String) error "E_NOT_CALLABLE"
+  expect String([65]) result "A" :: String
 end
 
 test "Evaluating a Bool head must not reinterpret its payload as a Symbol"
@@ -50,13 +58,17 @@ end
 test "A tag value is not implicitly a callable head"
   def Tagged type :Tag(Rational)
   expect Tag(1) :: Tagged result Tag(1) :: Tagged
-  todo expect (:Tag)(1) :: Tagged error "E_NOT_CALLABLE"
+  expect (:Tag)(1) :: Tagged error "E_NOT_CALLABLE"
+  expect :Tag(1) error "E_NOT_CALLABLE"
+  expect :(Tag(1)) result Tag(1) :: Expression
 
   head = :Tag :: UpperCamelSymbol
-  todo expect head(2) error "E_NOT_CALLABLE"
+  expect head(2) error "E_NOT_CALLABLE"
 
   head2 = :foo :: LowerCamelSymbol
-  todo expect head2(2) error "E_NOT_CALLABLE"
+  expect head2(2) error "E_NOT_CALLABLE"
+  head3 = :+ :: PunctuationSymbol
+  expect head3(2) error "E_NOT_CALLABLE"
 end
 
 test "A head expression may evaluate to a function"
@@ -86,6 +98,6 @@ test "Any raw expression can go in head position"
   expect v(2) result Tag(1)(2) :: Expression
   expect Tag(1)(2) result Tag(1)(2) :: Expression
 
-  todo expect 1 .Plus 2 result Tag(1)(2) :: Expression
+  expect 1 .Plus 2 result Plus(1)(2) :: Expression
 end
 

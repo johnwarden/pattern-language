@@ -19,13 +19,14 @@ const fails = (source: string, code: string) =>
 
 test("quotation yields structural data without evaluating the application", () => {
   assert.equal(
-    run("def f(x) 2 * x\nb = :f(1)\nc = :(f(1))\n(b == c,b)"),
+    run("def f(x) 2 * x\nb = :(f(1))\nc = parse(Expression)(\"f(1)\")\n(b == c,b)"),
     "(True, f(1))",
   );
   assert.equal(run(":(f(unknown))"), "f(unknown)");
   assert.equal(run("x = 7\n:(Box(x))"), "Box(x)");
-  assert.equal(run(":f()"), "f()");
-  assert.equal(run("(:f == :f())"), "False");
+  assert.throws(() => run(":f()"), /not callable/);
+  assert.equal(run(":(f())"), "f()");
+  assert.equal(run("(:f == :(f()))"), "False");
 });
 test("ordinary functions may return quoted data without becoming macros", () => {
   assert.equal(run("def data(x) :(f(x))\ndata(7)"), "f(x)");

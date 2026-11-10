@@ -1914,11 +1914,6 @@ export class Interpreter {
           throw new LanguageError("malformed numeric source literal", n.span);
         return this.ascribeRational(valRational(r.n, r.d));
       }
-      return singleton({
-        kind: "term",
-        head: valSymbol(n.head.name),
-        body: this.evaluateFields(n.body, env),
-      });
     }
     const lookup = lexicalScopes.get(n.head) ?? env;
     const methods =
@@ -1964,7 +1959,7 @@ export class Interpreter {
         });
       }
       if (
-        !constantNames.has(n.head.name) &&
+        ordinarySymbolCategory(n.head.name) &&
         (/^\p{Lu}/u.test(n.head.name) ||
           [...n.head.name].every((c) => punctuation.has(c)))
       ) {
@@ -2498,14 +2493,8 @@ export class Interpreter {
   private invoke(fn: Value, args: Field<Value>[], env?: Scope): Field<Value>[] {
     this.tick();
     const head = slotValue(fn);
-    if (
-      head.kind === "symbol" ||
-      head.kind === "term" ||
-      (head.kind === "view" &&
-        head.base.kind === "symbol" &&
-        concreteSpace(head)?.name === ordinarySymbolCategory(head.base.name))
-    )
-      return singleton({ kind: "term", head: unwrap(head), body: args });
+    if (head.kind === "term")
+      return singleton({ kind: "term", head, body: args });
     fn = unwrap(fn);
     const candidates =
       fn.kind === "overload"

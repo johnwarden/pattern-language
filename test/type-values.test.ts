@@ -122,7 +122,7 @@ test("postfix values can be type-factory arguments", () => {
   assert.equal(
     displayResults(
       i.run(
-        "t = Box(1@)\n(t == parse(Type)(toString(Type)(t)), :Box(1@) .matches t, :Box(Postfix(:@, 1)) .matches t)",
+        "t = Box(1@)\n(t == parse(Type)(toString(Type)(t)), parse(t)(\"Box(1@)\") .matches t, :(Box(Postfix(:@, 1))) .matches t)",
       ),
     ),
     "(True, True, False)",
@@ -131,7 +131,7 @@ test("postfix values can be type-factory arguments", () => {
   assert.equal(
     displayResults(
       j.run(
-        "t = parse(Type)(text)\n(x :: t) = :Box(1@)\n(:Box(1@) .matches t, :Box(Postfix(:@, 1)) .matches t, parse(t)(toString(t)(x)) == x)",
+        "t = parse(Type)(text)\n(x :: t) = parse(t)(\"Box(1@)\")\n(parse(t)(\"Box(1@)\") .matches t, :(Box(Postfix(:@, 1))) .matches t, parse(t)(toString(t)(x)) == x)",
       ),
     ),
     "(True, False, True)",

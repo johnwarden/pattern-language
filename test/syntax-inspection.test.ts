@@ -40,7 +40,7 @@ test("ordinary patterns inspect computed heads and complete argument packs", () 
 test("inspection distinguishes symbols, empty calls and successive packs", () => {
   assert.equal(
     run(
-      "a = syntaxTree(:f)\nb = syntaxTree(:f())\nc = syntaxTree(:f(1)(2))\nd = syntaxTree(:f(1,2))\n(a,b,c == d)",
+      "a = syntaxTree(:f)\nb = syntaxTree(Code` f())\nc = syntaxTree(Code` f(1)(2))\nd = syntaxTree(Code` f(1,2))\n(a,b,c == d)",
     ),
     '(Name("f", False), Apply(Name("f", False), []), False)',
   );

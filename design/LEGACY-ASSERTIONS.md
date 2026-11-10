@@ -43,7 +43,6 @@ ordinary assertion if the intended result is already implemented.
 | `examples/grammars#test-dsl-with-typed-code` | `e(expected(check(t)))` | D03 / milestone 5b: numeric syntax in a raw expected operand versus evaluated numeric identity. |
 | `examples/grammars#test-dsl-with-typed-code` | `type(expected(check(t)))` | D02/D03: reserved primitive names in raw syntax versus evaluated type values. |
 | `examples/macros#typed-code-recursive-for-each-macro` | `value` | D03 / milestone 5b: inferred concrete result spaces for unannotated nested lists and empty branches. |
-| `examples/quotation#quoted-expression-values` | `b` | D03 / milestone 5b: the concrete representation of raw quoted data; permitting runtime Expressions does not settle every syntax/descriptor mapping. |
 | `examples/types#canonical-type-alternatives` | `toString(Type)(a)` | Type-value representation: final public descriptor text; structural equality and round trips remain ordinary assertions. |
 | `examples/types#factory-defaults-and-complete-types` | `toString(Type)(type Rectangle)` | Type-value representation: final descriptor encoding, including primitive names and nested spaces. |
 | `examples/types#inspect-a-pattern-union` | `left` | Type-value representation: concrete interpretation of a projected pattern descriptor. |
