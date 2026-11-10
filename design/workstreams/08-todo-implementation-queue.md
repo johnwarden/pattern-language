@@ -9,14 +9,19 @@ to distinguish their actual blockers from their titles.
 
 Use current master and the linked `.test` cases before claiming work; other
 agents are actively migrating tests. This queue must not become a parallel prose
-specification. No implementation branches or PRs have been opened for these scopes.
+specification. Drafts [#61](https://github.com/johnwarden/pattern-language/pull/61)
+and [#62](https://github.com/johnwarden/pattern-language/pull/62) implement the first
+two scopes. The mirrored-row-spreading branch implements scope 4's single-template
+reconstruction slice; its focused [source contracts](../../tests/spreading/vertical-values.test)
+cover dimensions without the original evaluated-Code assert blocker. These are
+implementation statuses, not merge authorizations.
 
 | Proposed PR | Target contracts and observed blocker | Scope and dependencies |
 | --- | --- | --- |
 | 1. Reject non-callable application heads during evaluation | Six todos in [application-heads.test](../../tests/specification/application-heads.test): Bool and constructed-value heads currently succeed as raw construction. | Preserve concrete identity in `runtime.ts::invoke`; retain real Symbol heads, functions, complete packs and inert Code. Validate evaluation-phase failure with `test/application-heads.test.ts`. Ready independently of grammar expansion. |
 | 2. Simple angle-parameter type declarations/applications | Remaining C05/C18 and the C12 absence-designation assertion: seven generic-dependent trials stop at tight-angle parsing; five appear independent of extraction coverage. | Shared parser/grammar and existing type factories. Implement the accepted Box<T>/Box<String> slice without variadics, constraints, family recovery or runtime-pack flattening. Validate comparison spacing, canonical/inert Code and independent structural interop. |
 | 3. Refinement declaration surface | Eight C07–C10 todos in [refinements.test](../../tests/specification/refinements.test) stop at declaration recognition first. | Follow #48's structural elaboration into existing refinement construction. Add focused base-identity/no-accessor controls. Coordinate with PR 2's grammar owner; do not claim evidence checking or introduce predicate-based overload fallback. |
-| 4. Mirrored vertical spreading | Four remaining C20 assertions in [spreading.test](../../tests/specification/spreading.test) reach a value-side vertical marker and report E_PATTERN_MARKER. | Collection/field evaluation: reconstruct rows from Float32** captures, preserving every dimension and empty matrix versus empty row. Three original scenarios also contain unsupported evaluated-Code assert; add focused controls rather than claiming those complete automatically. |
+| 4. Mirrored vertical spreading | C20 reconstruction in [spreading.test](../../tests/specification/spreading.test) is ordinary coverage. The three remaining scenarios require evaluated-Code assert. | The single-row-template slice and focused [source cases](../../tests/spreading/vertical-values.test) preserve dimensions, ragged rows, empty matrices and empty rows. Broader row templates remain work. |
 | 5. Concrete boundary in ordinary constructor bindings | [raw-expressions.test](../../tests/specification/raw-expressions.test), “Ordinary constructor bindings do not project a concrete value,” currently succeeds. | Audit existing ordinary fixtures first, especially interpreted Rect destructuring in `tests/bindings/defaults.test`. Preserve their default/capture observations through explicit match; separately enforce binding rejection. Retain raw Expression destructuring, whole-value binding and one-boundary match. |
 | 6. Closed single-definition function values | All 17 todos in [named-function-values.test](../../tests/specification/named-function-values.test) currently stop at E_FUNCTION_NOT_VALUE. | Representation preflight first: complete immutable definition/dependency values, captures, recursive groups, labels/rest/packs/defaults and structural identity. A name handle or hidden ambient closure is insufficient. Overloaded constants, group selection and public Function/Library text remain pending. |
 

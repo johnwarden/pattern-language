@@ -16,6 +16,7 @@ import {
   syntaxKey,
   listLayer,
   symbol,
+  isName,
   isTypeSpecification,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
@@ -512,6 +513,15 @@ export class Grammar {
         // Only the final operand can consume an unparenthesized macro tail.
         const mayConsume = i === n.body.length - 1;
         const v = field.value;
+        // An empty collection row block is data, not an empty executable body.
+        if (
+          n.kind === "apply" &&
+          (isName(n.head, "[]") || isName(n.head, "{}")) &&
+          n.body.length === 1 &&
+          v.kind === "block" &&
+          !v.lines.length
+        )
+          return field;
         if (
           mayConsume &&
           v.kind === "symbol" &&

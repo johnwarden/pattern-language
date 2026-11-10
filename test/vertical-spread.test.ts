@@ -23,6 +23,70 @@ function rejects(source: string, code: string) {
   );
 }
 
+test("a vertical spread evaluates its row-list operand once", () => {
+  const interpreter = new Interpreter();
+  const rows = single(
+    interpreter.run(
+      "type Matrix concrete [\n cells... :: Float32**\n ...\n]\n" +
+        "source = ([\n 0.5, 1\n 2\n] :: Matrix)\nsource.cells",
+    ),
+  );
+  let calls = 0;
+  interpreter.env.functions.set("nextRows", [
+    {
+      kind: "native",
+      id: -1,
+      name: "nextRows",
+      arities: [0],
+      test: (args) => args.length === 0,
+      invoke: () => {
+        calls++;
+        return [{ label: "_1", value: rows }];
+      },
+    },
+  ]);
+
+  assert.equal(
+    displayResults(
+      interpreter.run(
+        "rebuilt = ([\n nextRows()...\n ...\n] :: Matrix)\nrebuilt.cells",
+      ),
+    ),
+    "[[0.5, 1], [2]]",
+  );
+  assert.equal(calls, 1);
+});
+
+test("empty collection rows do not admit empty executable programs", () => {
+  assert.equal(
+    run(
+      "type Matrix concrete [\n cells... :: Float32**\n ...\n]\n" +
+        "([\n] :: Matrix).cells",
+    ),
+    "[]",
+  );
+  rejects("", "E_SYNTAX");
+});
+
+test("invalid vertical value dimensions fail with a located language error", () => {
+  for (const [source, line] of [
+    ["rows = 1\n[\n rows...\n ...\n]", 3],
+    ["rows = [1, 2]\n[\n rows...\n ...\n]", 3],
+    ["[\n ...\n]", 2],
+  ] as const) {
+    assert.throws(
+      () => run(source),
+      (error: unknown) => {
+        assert.ok(error instanceof LanguageError);
+        assert.equal(error.diagnostic.code, "E_VERTICAL_SPREAD");
+        assert.equal(error.diagnostic.primary?.line, line);
+        assert.equal(error.diagnostic.primary?.column, 2);
+        return true;
+      },
+    );
+  }
+});
+
 test("row boundaries survive canonical source without flattening comma packs", () => {
   for (const source of [
     "[\n  1,2\n  3,4\n]",
