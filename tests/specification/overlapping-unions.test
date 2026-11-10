@@ -126,11 +126,3 @@ test "Concrete duplicate alternatives still reject"
     0
   fails "E_AMBIGUOUS_PATTERN"
 end
-
-test "Overlapping abstract facet members retain spaces"
-  def Colored type :Rect(Float, Float, color: String)
-  def Rectangular type :Rect(w :: Float, h :: Float, **)
-
-  # Legacy: the Facet(Apply(OpenFields(...))) descriptor encoding; the replacement descriptor data for this pattern is not specified (see design/LEGACY-ASSERTIONS.md).
-  legacy expect UnionType(type Rectangular, type Colored) is UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
-end

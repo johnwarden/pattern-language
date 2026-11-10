@@ -246,7 +246,7 @@ nested-Body examples were reused rather than duplicated.
 | Former host block | Current source case(s) | Coverage retained |
 | --- | --- | --- |
 | pattern-schema: documented schema is the exact runtime bootstrap source | — | File vs `TYPE_SCHEMA` stays |
-| pattern-schema: language schema gates descriptor shapes | types/descriptions#explicit-apply-describes-a-literal-reserved-head | Invalid-shape throws and user-scope `TypeDescription` gating stay |
+| pattern-schema: language schema gates descriptor shapes | — | Invalid-shape throws and user-scope `TypeDescription` gating stay on host |
 | pattern-schema: work budgets; TypeDescription matcher; decoder agreement | — | Matcher/compiler schema checks stay |
 | pattern-schema: quoted operator heads across matching contexts | matching/quoted-heads#* | Binding, function, match, type and quoted name |
 | pattern-schema: alternative branch captures; String constructor round trips | types/descriptions#alternative-branch-captures-erase-without-shared-slots; types/descriptions#string-constructor-patterns-round-trip-without-becoming-string-literals | Original programs |

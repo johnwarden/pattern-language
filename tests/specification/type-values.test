@@ -191,3 +191,12 @@ test "Patterns normalize when evaluated"
   assert (abstract Int | String) .matches Type
   assert (concrete :B | :A) .matches Type
 end
+
+# Jonathan: a concrete type cannot be open; open structural facets (**) are abstract.
+# Rejected as an invalid type description, like the primitive-wrapping forms above.
+test "A concrete type cannot be open"
+  todo expect ConcreteType({**}) fails "E_TYPE_DESCRIPTION"
+  todo expect
+    concrete {**}
+  fails "E_TYPE_DESCRIPTION"
+end
