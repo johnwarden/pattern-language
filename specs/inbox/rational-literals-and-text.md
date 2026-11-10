@@ -129,38 +129,13 @@ end
 
 ## Typed text
 
-The following candidate keeps the PR's existing decimal/hex preferences and uses
-parenthesized reduced fractions for the remaining values. The 16-place cutoff
-and binary64 hexadecimal preference still need approval.
-
-The candidate selection order is:
-
-1. Print an exact terminating decimal if it needs at most 16 digits after the
-   decimal point. This is not a significant-digit limit and performs no rounding;
-   the integer part can contain any number of digits.
-2. Otherwise, print hexadecimal if the Rational is exactly representable as a
-   finite binary64 value. Approximation to binary64 is not permitted here.
-3. Otherwise, print the reduced parenthesized fraction with a positive denominator.
-
-For a reduced denominator `2^a * 5^b`, the terminating decimal needs `max(a, b)`
-fractional places. Any other prime factor makes it nonterminating. Thus `1/10^16`
-uses decimal, `1/10^17` uses a fraction, and `1/2^20` uses hexadecimal despite
-having a terminating decimal expansion. This is a printing preference, not a
-limit on literal precision or arithmetic.
+[Shortest exact Rational text](../approved/rational-canonical-text.md) is now
+approved. It replaces the 16-place cutoff and the preference for exact binary64
+hexadecimal output with shortest exact spelling across decimal, `0f`, hexadecimal,
+binary and reduced fraction forms, including exponent forms. That record defines the
+deterministic tie-breaks and owns the canonical spelling examples.
 
 ```pattern
-test "Candidate canonical Rational text covers every exact value"
-  expect toString(Rational)((2/4)) is "0.5" :: String
-  expect toString(Rational)((3/1)) is "3" :: String
-  expect toString(Rational)((0/5)) is "0" :: String
-  expect toString(Rational)((1/3)) is "(1/3)" :: String
-  expect toString(Rational)(-(2/6)) is "-(1/3)" :: String
-  expect toString(Rational)((1/10000000000000000)) is "0.0000000000000001" :: String
-  expect toString(Rational)((1/100000000000000000)) is "(1/100000000000000000)" :: String
-  expect toString(Rational)((1/1048576)) is "0x1p-20" :: String
-  expect toString(Rational)(0f0.1) is "0x1.999999999999Ap-4" :: String
-end
-
 test "Typed Rational text reconstructs the same exact value"
   assert parse(Rational)(toString(Rational)((1/3))) == (1/3)
   assert parse(Rational)(toString(Rational)(-(2/6))) == -(2/6)
@@ -194,9 +169,6 @@ end
   nondecimal spelling. The slash touching both components is settled; ordinary
   division requires spaces on both sides. State the exponent marker, sign, digit
   and adjacency rules explicitly.
-- Ratify the canonical text selection order and its limits. The examples propose
-  short decimal, then exact binary64 hexadecimal, then reduced fraction; spell out
-  the 16-place cutoff and hexadecimal normalization if retained.
 - State the typed Rational reader's sign grammar. It must accept the chosen
   negative canonical text without evaluating arbitrary Code, while source Code
   continues to represent negation as an ordinary prefix application.
