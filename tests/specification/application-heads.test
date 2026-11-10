@@ -79,13 +79,13 @@ test "A constructed value is not implicitly a callable head"
 
   def data() Tag(1) :: Tagged
   expect data()(2) error "E_NOT_CALLABLE"
-
-  v = Tag(1)
-  todo expect v(2) error "E_NOT_CALLABLE"
-
-  todo expect Tag(1)(2) error "E_NOT_CALLABLE"
-
 end
 
+test "Any raw expression can go in head position"
+  v = Tag(1)
+  expect v(2) result Tag(1)(2) :: Expression
+  expect Tag(1)(2) result Tag(1)(2) :: Expression
 
+  todo expect 1 .Plus 2 result Tag(1)(2) :: Expression
+end
 
