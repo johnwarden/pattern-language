@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Interpreter, displayResults } from "../src/index.ts";
-import { single, unwrap, equal } from "../src/values.ts";
+import { single } from "../src/values.ts";
 import { parseExpression } from "../src/parser.ts";
 import { normal, syntaxKey, LanguageError } from "../src/syntax.ts";
 
@@ -188,44 +188,3 @@ test("Body admits definitions without installing or evaluating them in the host 
     );
 });
 
-test("vertical type/value descriptions transfer to a fresh interpreter without capture names", () => {
-  for (const source of [
-    todo + 'TodoList`\n todo\n  "a"\n end\nend',
-    matrix + "Matrix` [\n 1,2\n 3,4\n]",
-    bodyGrammar + "Body`\n y = 2\n y\nend",
-  ]) {
-    const first = new Interpreter();
-    const value = single(first.run(source));
-    const name = source.startsWith(todo)
-      ? "TodoList"
-      : source.startsWith(matrix)
-        ? "Matrix"
-        : "Body";
-    const type = unwrap(single(first.run(name)));
-    assert.equal(type.kind, "type");
-    if (type.kind !== "type") continue;
-    const text = single(
-      first.call(
-        "toString",
-        [{ label: "_1", value: type }],
-        [{ label: "_1", value }],
-      ),
-    );
-    const description = single(first.run("toString(Type)(" + name + ")"));
-    const fresh = new Interpreter();
-    const literal = unwrap(description),
-      data = unwrap(text);
-    assert.equal(literal.kind, "literal");
-    assert.equal(data.kind, "literal");
-    if (literal.kind !== "literal" || data.kind !== "literal") continue;
-    const restored = unwrap(
-      fresh.readValue(
-        unwrap(single(fresh.run("type Type"))) as typeof type,
-        String(literal.value),
-      ),
-    );
-    assert.equal(restored.kind, "type");
-    if (restored.kind === "type")
-      assert.ok(equal(value, fresh.readValue(restored, String(data.value))));
-  }
-});

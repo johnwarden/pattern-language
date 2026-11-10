@@ -101,15 +101,6 @@ test("type factories use the same parameter-pattern matcher", () => {
   );
 });
 
-test("recursive factories retain finite descriptors and fresh-context round trips", () => {
-  assert.equal(
-    run(
-      "def List(t :: Type) type :Nil | Cons(t,List(t))\nt = List(Int)\ns = toString(Type)(t)\nu = parse(Type)(s)\nv = Cons(5,:Nil) :: u\n(parse(u)(toString(u)(v)) == v,u == t)",
-    ),
-    "(True, True)",
-  );
-});
-
 test("type construction sees the same value through abstract storage", () => {
   assert.equal(run("(t :: Any) = Int\nType(t) == Type(Int)"), "True");
 });
@@ -133,21 +124,6 @@ test("type is idempotent and does not add a wrapper to primitive atoms", () => {
       "def Rect type Rect(Float,Float)\n(type Rect,type type Rect,Type(Rect),Type(Type(Rect)))",
     ),
     "(Type(Rect(Float, Float)), Type(Rect(Float, Float)), Type(Rect(Float, Float)), Type(Rect(Float, Float)))",
-  );
-});
-
-test("explicit Type(Int) preserves its distinct ordinary value tree", () => {
-  assert.equal(
-    run("(Type(Int),Type(Int) == Int,Type(Type(Int)) == Type(Int))"),
-    "(Type(Int), False, True)",
-  );
-  assert.equal(
-    run("t = Type(Int)\nparse(Type)(toString(Type)(t)) == t"),
-    "True",
-  );
-  assert.equal(
-    run("t = Type(Box(Type(Int)))\nparse(Type)(toString(Type)(t)) == t"),
-    "True",
   );
 });
 

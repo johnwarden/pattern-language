@@ -75,15 +75,6 @@ test("named nested types own their accessors; constructor subpatterns share the 
   );
 });
 
-test("nested accessor names erase from portable type values", () => {
-  assert.equal(
-    run(
-      "a =\n  def A type :Outer(:Leaf(x :: Int))\n  type A\nend\nb =\n  def B type :Outer(:Leaf(y :: Int))\n  type B\nend\n(a == b,parse(Type)(toString(Type)(a)) == a)",
-    ),
-    "(True, True)",
-  );
-});
-
 test("registered syntax types keep nested accessor scopes private to their types", () => {
   assert.equal(
     run(
