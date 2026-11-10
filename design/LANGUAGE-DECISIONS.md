@@ -186,11 +186,11 @@ does not depend on specialization. See
 
 Independently scoped declarations with equivalent capture-free descriptions exchange equal values without a shared nominal declaration or importing accessor names. Consumers may destructure their known shapes. This does not yet specify source modules, simultaneous imports or duplicate local accessor policy. **Sources:** I; A structural identity; O.
 
-### D15. Repetition dimensions are consistent; new spreading/rest features are proposals
+### D15. Repetition dimensions are consistent; broader rest features remain proposals
 
 The horizontal/vertical capture contract is retained: one repeated dimension contributes one list layer to the aggregate capture. A horizontal rest alone has `T*`; horizontal rest repeated over rows has `T**`. The author corrected the specialization Matrix example's `N*` to the two-dimensional rule. Zero rows, one empty row and a flat empty pack remain distinct.
 
-R proposes mirrored row spreading/capture and a keyword remainder represented by an actual typed record preserving its field labels and concrete field types. These are **intended proposals, not implemented guarantees**. Postfix `...` is preferred; prefix keyword-rest/spread `**rest` / `**(x)` / `**rest: {**}`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
+The single-template mirrored row-spreading slice is exercised by [vertical-values.test](../tests/spreading/vertical-values.test), alongside C20. Broader row templates and R's keyword remainder represented by an actual typed record remain **intended proposals, not implemented guarantees**. Postfix `...` is preferred; prefix keyword-rest/spread `**rest` / `**(x)` / `**rest: {**}`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
 
 ### D16. constructedBy is tabled entirely — deferred by latest decision
 
@@ -382,8 +382,11 @@ capture. Independent `...`/`**` openness retains the original pack/constructed d
 
 ### C20 — horizontal plus vertical capture/spread has two dimensions
 
-Capture dimensions are retained; mirrored vertical spreading is R's proposed extension.
-Todo. `cells... :: Float32**` over repeated rows is `[[0.5, 1], [2, 4]]`, not
+Capture dimensions and single-template mirrored reconstruction are covered by
+[focused source cases](../tests/spreading/vertical-values.test). C20's first
+reconstruction assertion is ordinary coverage; its three larger scenario todos
+also require evaluated-Code assert, which remains unsupported in this slice.
+`cells... :: Float32**` over repeated rows is `[[0.5, 1], [2, 4]]`, not
 `Float32*`. Spreading those rows rebuilds the same Matrix. Zero rows `[]` differ
 from one empty row `[()]`. The annotation describes the aggregate capture. Row
 widths need not be equal without a separate constraint.

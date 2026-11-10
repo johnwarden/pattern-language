@@ -202,10 +202,12 @@ and preferred display names is deferred. The author explicitly retains equivalen
 declarations and accessor collisions as errors for now. This temporary guard does
 not block capture-free type construction or independently scoped structural interop.
 
-Typed keyword remainders and mirrored vertical spreading are intended extensions.
-The remainder is an actual typed record preserving labels and field types; it is
+Single-template mirrored vertical spreading reconstructs collection rows; see
+[the source contracts](tests/spreading/vertical-values.test). Broader row templates
+and typed keyword remainders remain intended extensions. The remainder is an
+actual typed record preserving labels and field types; it is
 not intrinsically a homogeneous map and does not require specialization to exist.
-Their exact capture/spread spelling and unknown-shape typing remain provisional.
+The keyword capture/spread spelling and unknown-shape typing remain provisional.
 
 ## Text and portability
 

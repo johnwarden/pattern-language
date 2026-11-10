@@ -1546,23 +1546,64 @@ export class Interpreter {
       n.body.length === 1 &&
       n.body[0].value.kind === "block"
     ) {
-      const rows = n.body[0].value.lines.map((line) => {
-        if (line.kind === "sequence" && line.items.length === 1)
-          line = line.items[0];
-        const fields = this.evaluateFields(packOf(line), env);
+      const rows: Field<Value>[] = [];
+      const appendRow = (fields: Field<Value>[], packed = false) => {
         const value: Value =
-          line.kind === "pack" || fields.length !== 1
+          packed || fields.length !== 1
             ? { kind: "pack", body: fields }
             : fields[0].value;
-        return {
-          label: "_1",
-          value: {
-            kind: "term" as const,
-            head: valSymbol("syntaxSequence"),
-            body: singleton(value),
-          },
-        };
-      });
+        rows.push({
+          label: "_" + (rows.length + 1),
+          value: term("syntaxSequence", value),
+        });
+      };
+      const lines = n.body[0].value.lines.map((line) =>
+        line.kind === "sequence" && line.items.length === 1
+          ? line.items[0]
+          : line,
+      );
+      for (let index = 0; index < lines.length; index++) {
+        const line = lines[index],
+          next = lines[index + 1];
+        if (line.kind === "symbol" && !line.quoted && line.name === "…")
+          throw new LanguageError(
+            "vertical ... requires a preceding horizontal spread row",
+            line.span,
+            { code: "E_VERTICAL_SPREAD" },
+          );
+        if (next?.kind === "symbol" && !next.quoted && next.name === "…") {
+          const operand = spread(line);
+          if (!operand)
+            throw new LanguageError(
+              "vertical value spreading currently requires a single horizontal spread row",
+              line.span,
+              { code: "E_VERTICAL_SPREAD" },
+            );
+          const list = (value: Value) => {
+            const raw = unwrap(value);
+            if (
+              raw.kind !== "term" ||
+              raw.head.kind !== "symbol" ||
+              raw.head.name !== "[]" ||
+              raw.body.some((field) => !positional(field.label))
+            )
+              throw new LanguageError(
+                "vertical spreading requires a positional list of row lists",
+                operand.span,
+                { code: "E_VERTICAL_SPREAD" },
+              );
+            return raw.body;
+          };
+          const captured = single(
+            this.evaluate(operand, env),
+            "vertical spread",
+          );
+          for (const row of list(captured)) appendRow(list(row.value));
+          index++;
+          continue;
+        }
+        appendRow(this.evaluateFields(packOf(line), env), line.kind === "pack");
+      }
       return singleton({
         kind: "term",
         head: valSymbol(n.head.name),
@@ -1572,7 +1613,7 @@ export class Interpreter {
             value: {
               kind: "term",
               head: valSymbol("syntaxBlock"),
-              body: rows.map((row, i) => ({ ...row, label: "_" + (i + 1) })),
+              body: rows,
             },
           },
         ],

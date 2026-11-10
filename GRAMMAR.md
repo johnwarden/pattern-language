@@ -153,7 +153,6 @@ A standalone ... pattern row repeats its preceding row. Each repeated dimension
 adds one list layer to the complete capture annotation:
 
 ```text
-# Target declaration spelling; row matching already exists in the bootstrap.
 type Matrix concrete [
   cells... :: Float32**
   ...
@@ -166,8 +165,10 @@ remain significant. Rows are not flattened into commas or promoted to tuple valu
 Zero rows, one explicit () row, and flat [] remain distinct. The bootstrap preserves
 rows after an opening newline, except comma continuation of the same pack.
 
-Mirrored vertical spreading and typed keyword remainders are planned extensions,
-not yet shipped. General arbitrary sidefix repetition/alternation remains outside the
+Single-template mirrored vertical spreading is covered by
+[source contracts](tests/spreading/vertical-values.test). Broader row templates
+and typed keyword remainders remain planned extensions. General arbitrary
+sidefix repetition/alternation remains outside the
 bounded grammar. [BODY-GRAMMAR.md](design/BODY-GRAMMAR.md) retains the working Body
 subset, ordinary source grammar and exact current empty-layout spellings.
 

@@ -125,7 +125,7 @@ figures into this document.
 | Scoped sidefix registration, typed grammar quotes, interpolation and diagnostics | No full prepare-once elaborator or source evaluator |
 | Source-defined Test data and shared playground/CLI corpus | Grouped .test files, setup/check steps and executed todo/legacy assertions; full executable nested suites remain deferred |
 | Mutually recursive declaration groups and typed code inspection | Code still uses its public SyntaxNode/TreeGrammar bridge |
-| Vertical collection matching and bounded source Body grammar | General Code coverage, vertical value spreading and keyword capture remain work |
+| Vertical collection matching, single-template mirrored row spreading and bounded source Body grammar | General Code coverage, broader row templates and keyword capture remain work |
 
 ### Bootstrap behaviors superseded by the intended design
 
@@ -309,7 +309,8 @@ Remaining alignment slices:
 - Unambiguous DSL certification, separate from the implemented overlapping abstract unions.
 - Extend numeric family/width support without choosing deferred IEEE details or implicit rounding.
 - Extend the implemented designation/projection subset with checking evidence in milestone 7.
-- Approved mirrored spreading/keyword remainder rules after their grammar is settled.
+- Extend mirrored spreading beyond the single-row-template slice; settle keyword
+  remainder grammar before implementation.
 
 **Complete when each slice:** its approved assertions pass and can lose todo; supported
 values/descriptors round-trip without identity changes; superseded bootstrap tests

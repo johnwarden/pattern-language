@@ -89,7 +89,7 @@ test "C20 row capture and spreading are mirror images"
     )
   end
 
-  todo assert
+  assert
     type Matrix concrete [
       cells... :: Float32**
       ...
