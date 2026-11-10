@@ -117,9 +117,14 @@ implicit normalization is part of these forms.
 
 Numeric literals denote exact Rational values. `0f0.1` selects the Float64-rounded
 Rational; it does not create a Float64-typed variable. Explicit converters return
-typed values. Precision families, canonical numeric spelling and rounding edges remain
-provisional; IEEE special identities remain deferred. Ordinary execution interprets
-numeric spellings as exact Rationals; the specification reader still stores them as
+typed values. Unspaced `integer/positive-integer` (`1/3`) is a Rational literal;
+reading reduces it, `3/1` is `3`, and `1/0` is a malformed numeric source literal.
+Negative fractions use prefix minus (`-1/3`). Canonical print prefers a short
+terminating decimal, then reduced `n/d`, except exact binary64 values that are not
+short decimals keep hexadecimal. Spaced `1 / 3` remains infix division. Precision
+families, remaining canonical spelling and rounding edges remain provisional; IEEE
+special identities remain deferred. Ordinary execution interprets numeric spellings
+as exact Rationals; the specification reader still stores `0f`/`0x`/`0b` spellings as
 inert NumericSource data until an operand is reparsed.
 
 Input removes one leading BOM and normalizes CRLF to LF in one pass. Word symbols

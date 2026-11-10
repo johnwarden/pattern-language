@@ -967,6 +967,21 @@ test("numeric syntax-tree schema transport distinguishes exact and rounded value
   assert.equal(run(setup + "parse(Tree)(text) == exact"), "True");
 });
 
+test("fraction Rational text round-trips in a fresh interpreter", () => {
+  const i = new Interpreter();
+  const text = stringResult(i, "toString(Rational)(1 / 3)");
+  assert.equal(text, "1/3");
+  assert.equal(run("parse(Rational)(text)", transfer(text)), "1/3");
+  assert.equal(run("parse(Rational)(toString(Rational)(1/3)) == 1/3"), "True");
+  assert.equal(
+    run("parse(Code)(toString(Code)(Code` 1/3)) == Code` 1/3"),
+    "True",
+  );
+  const tree = parseExpression("1/3");
+  assert.equal(normal(tree), "1/3");
+  assert.equal(syntaxKey(tree), syntaxKey(parseExpression(normal(tree))));
+});
+
 
 // From test/binding-defaults.test.ts
 

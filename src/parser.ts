@@ -426,7 +426,9 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
         kind = ":";
         text = ":";
       }
-    } else if ((m = source.slice(i).match(/^\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/))) {
+    } else if (
+      (m = source.slice(i).match(/^\d+(?:\/\d+|(?:\.\d+)?(?:[eE][+-]?\d+)?)?/))
+    ) {
       text = m[0];
       i += text.length;
       kind = "number";

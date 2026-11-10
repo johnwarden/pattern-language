@@ -182,6 +182,12 @@ export function parseNumericSpelling(text: string): Rational | undefined {
     if (split.length > 2) return;
     return parseBinaryPower(split[0], 2, split[1]);
   }
+  const fraction = /^([0-9]+)\/([0-9]+)$/.exec(t);
+  if (fraction) {
+    const d = BigInt(fraction[2]);
+    if (d === 0n) return;
+    return reduceRational(BigInt(fraction[1]), d);
+  }
   return parseDecimalExact(t);
 }
 export function rationalFromSyntax(
@@ -263,7 +269,7 @@ function formatFloat64Hex(x: number): string {
     sign + "0x" + mantissa[0] + (rest ? "." + rest : "") + "p" + (exp - 1023)
   );
 }
-/** Canonical text for a supported Rational; unsupported spellings stay uninvented. */
+/** Canonical text for every Rational: short decimal, exact binary64 hex, or reduced n/d. */
 export function formatRational(r: Rational): string {
   const decimal = finiteDecimal(r);
   if (decimal !== undefined) return decimal;
@@ -272,11 +278,9 @@ export function formatRational(r: Rational): string {
     const back = float64ToRational(x);
     if (back.n * r.d === back.d * r.n) return formatFloat64Hex(x);
   }
-  throw new LanguageError(
-    "value has no structural representation yet",
-    undefined,
-    { code: "E_VALUE_SERIALIZATION" },
-  );
+  const sign = r.n < 0n ? "-" : "";
+  const n = r.n < 0n ? -r.n : r.n;
+  return sign + n.toString() + "/" + r.d.toString();
 }
 export function tryFormatRational(r: Rational): string | undefined {
   try {

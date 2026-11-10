@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Interpreter, displayResults, LanguageError } from "../src/index.ts";
-import { float64ToRational, rationalToNumber } from "../src/rational.ts";
+import {
+  float64ToRational,
+  formatRational,
+  parseNumericSpelling,
+  rationalToNumber,
+  reduceRational,
+} from "../src/rational.ts";
 
 const run = (s: string) => displayResults(new Interpreter().run(s));
 
@@ -34,17 +40,20 @@ test("numeric syntax payloads preserve large integers and unary-minus structure"
   );
 });
 
-test("unspellable 1/3 is an exact serialization failure", () => {
+test("non-terminating Rationals print as reduced fraction literals", () => {
   assert.equal(
     run("NumberLiteral(n) = NumberLiteral((1 / 3) * 1)\n(n * 3) == 1"),
     "True",
   );
-  assert.throws(
-    () => run("1 / 3"),
-    (e: unknown) =>
-      e instanceof LanguageError &&
-      e.diagnostic.code === "E_VALUE_SERIALIZATION",
-  );
+  assert.equal(run("1 / 3"), "1/3");
+  assert.equal(run("1/3"), "1/3");
+  assert.equal(run("toString(Rational)(1 / 3)"), '"1/3"');
+  assert.equal(run("syntaxTree(1/3)"), "NumberLiteral(1/3)");
+  assert.deepEqual(parseNumericSpelling("1/3"), { n: 1n, d: 3n });
+  assert.deepEqual(parseNumericSpelling("2/4"), { n: 1n, d: 2n });
+  assert.equal(parseNumericSpelling("1/0"), undefined);
+  assert.equal(formatRational(reduceRational(1n, 3n)), "1/3");
+  assert.equal(formatRational(reduceRational(-2n, 6n)), "-1/3");
 });
 
 test("0.5 :: Int remains a generic mismatch until D07 integer designation", () => {

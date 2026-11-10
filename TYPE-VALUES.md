@@ -28,8 +28,9 @@ ordered first-match interpretation. Match-arm order is a different policy.
 Values stay distinct from the expressions that evaluate to them. Distinct source
 syntax may evaluate to the same primitive; quotation/printing of source and
 inspection of values keep those roles separate. Numeric literals denote
-exact Rationals; ordinary strings, Bool values and symbolic values have intrinsic
-interpretations. Reserved primitive atoms cannot simultaneously become ordinary
+exact Rationals, including unspaced fraction literals such as `1/3`; ordinary
+strings, Bool values and symbolic values have intrinsic interpretations.
+Reserved primitive atoms cannot simultaneously become ordinary
 UpperCamelSymbol values because of their spelling. `Symbol` is a prelude union,
 not a reserved primitive. The prelude also defines `not : Bool -> Bool` as
 `def not(x :: Bool) x == False`.
