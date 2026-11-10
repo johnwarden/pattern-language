@@ -1,0 +1,5 @@
+test "Unprintable exact Rational operands do not change passing assertions"
+  assert (1 / 3) == (1 / 3)
+  assert not((1 / 3) != (1 / 3))
+  assert True
+end
