@@ -1,6 +1,7 @@
 import { descriptionAtoms } from "./primitive-names.ts";
 import { compare, isRational, integerValue } from "./values.ts";
 import { LanguageError, canonicalFields } from "./syntax.ts";
+import type { Field } from "./syntax.ts";
 import type { Pattern } from "./pattern.ts";
 import type { TypeValue, Value } from "./values.ts";
 import { isOpenPattern, orderedParts } from "./pattern-captures.ts";
@@ -302,6 +303,36 @@ export function typeDescription(
     : result;
 }
 
+/**
+ * The fixed part of a facet that is open to extra labeled fields (`**`) but not to
+ * extra positions: Facet(Apply(head, OpenFields(Fields(...), labels: True, positional: False))).
+ */
+export function openLabelFacet(
+  description: Value,
+): { head: Value; fixed: Field<Value>[] } | undefined {
+  if (!hasHead(description, "Facet") || description.kind !== "term")
+    return undefined;
+  const apply = description.body[0]?.value;
+  if (!apply || !hasHead(apply, "Apply") || apply.kind !== "term")
+    return undefined;
+  const [head, open] = apply.body.map((f) => f.value);
+  if (!open || !hasHead(open, "OpenFields") || open.kind !== "term")
+    return undefined;
+  const flag = (name: string) => {
+    const v = open.body.find((f) => f.label === name)?.value;
+    return v?.kind === "symbol" && v.name === "True";
+  };
+  const fields = open.body[0]?.value;
+  if (
+    !flag("labels") ||
+    flag("positional") ||
+    !fields ||
+    !hasHead(fields, "Fields") ||
+    fields.kind !== "term"
+  )
+    return undefined;
+  return { head, fixed: fields.body };
+}
 /** Alternatives as the right-nested `|` chain, in the given order. */
 const alternativeChain = (values: Value[]): Value =>
   values.slice(0, -1).reduceRight(

@@ -11,8 +11,8 @@ import {
   type LayoutForms,
 } from "./parser.ts";
 import { syntaxData, codeSource } from "./syntax-values.ts";
-import { LanguageError, normal } from "./syntax.ts";
-import type { Syntax } from "./syntax.ts";
+import { LanguageError, normal, binary } from "./syntax.ts";
+import type { Syntax, Field } from "./syntax.ts";
 import type { TypeValue, Value } from "./values.ts";
 import {
   unwrap,
@@ -33,6 +33,8 @@ import {
   typeData,
   typeDescription,
   concreteHead,
+  openLabelFacet,
+  term,
   sym,
   lit,
 } from "./type-data.ts";
@@ -188,6 +190,60 @@ export function valueText(
       }
     }
   }
+  /**
+   * A value in an `abstract` open facet prints its payload with a `::` type on each
+   * extra field the facet does not fix, and no trailing tag: the fixed fields and
+   * the annotated extras together determine the concrete type again. Anything
+   * else keeps the tagged form.
+   */
+  function openFacetSyntax(
+    v: Extract<Value, { kind: "slot" }>,
+  ): Syntax | undefined {
+    const space = concreteSpace(v);
+    const facet = v.type.abstractFacet
+      ? openLabelFacet(typeDescription(v.type))
+      : undefined;
+    const payload = unwrap(v.value);
+    if (!space || !facet || payload.kind !== "term") return undefined;
+    const described = typeDescription(space);
+    if (described.kind !== "term" || described.head.kind !== "symbol")
+      return undefined;
+    const fixed = new Set(facet.fixed.map((f) => f.label));
+    const types = new Map<string, string>();
+    for (const field of payload.body) {
+      if (fixed.has(field.label) || /^_\d+$/.test(field.label)) continue;
+      const atom = described.body.find((f) => f.label === field.label)?.value;
+      if (atom?.kind !== "symbol" || !descriptionAtoms.has(atom.name))
+        return undefined;
+      types.set(field.label, atom.name);
+    }
+    const text = parseExpression(valueText(v.value, domain, space), true);
+    if (text.kind !== "apply") return undefined;
+    return {
+      ...text,
+      body: text.body.map((f) => {
+        const name = types.get(f.label);
+        return name
+          ? {
+              ...f,
+              value: {
+                kind: "apply" as const,
+                head: {
+                  kind: "apply" as const,
+                  head: { kind: "symbol" as const, name: "::", quoted: false },
+                  body: singleton(f.value),
+                },
+                body: singleton({
+                  kind: "symbol" as const,
+                  name,
+                  quoted: false,
+                }),
+              },
+            }
+          : f;
+      }),
+    };
+  }
   function syntax(v: Value, root = false, inert = false): Syntax {
     if (++steps > 10000)
       throw new LanguageError("value exceeds serialization budget", undefined, {
@@ -223,6 +279,8 @@ export function valueText(
     if (v.kind === "slot") {
       const code = unwrap(v.value);
       if (code.kind === "code") return syntax(code);
+      const open = openFacetSyntax(v);
+      if (open) return open;
       // Omit `::` when untagged printed text designates a unique member.
       if (v.type.unionMembers && concreteSpace(v) && implicit.has(v))
         return parseExpression(
@@ -550,6 +608,68 @@ export function valueText(
       }));
   const text = normal(root);
   return grouped ? "(" + text + ")" : text;
+}
+
+/**
+ * Text of an `abstract` open facet value carries `::` types on its extra fields
+ * instead of a trailing tag. Rewrite it to the tagged form the decoder reads:
+ * the fixed fields plus the annotated extras describe the concrete type.
+ * Returns undefined when the text is not in that spelling.
+ */
+export function tagOpenFacetText(
+  facet: TypeValue,
+  text: string,
+  domain: TextDomain,
+): string | undefined {
+  const parts = facet.abstractFacet
+    ? openLabelFacet(typeDescription(facet))
+    : undefined;
+  if (!parts || parts.head.kind !== "symbol") return undefined;
+  let tree = parseSurface(text, "serialized value", {
+    layoutForms: emptyLayoutForms(),
+  });
+  if (tree.kind === "block" && tree.lines.length === 1) tree = tree.lines[0];
+  if (tree.kind === "sequence" && tree.items.length === 1) tree = tree.items[0];
+  if (
+    tree.kind !== "apply" ||
+    tree.head.kind !== "symbol" ||
+    tree.head.quoted ||
+    tree.head.name !== parts.head.name
+  )
+    return undefined;
+  const fixed = new Set(parts.fixed.map((f) => f.label));
+  const extras: Field<Value>[] = [];
+  const body: Field<Syntax>[] = [];
+  for (const field of tree.body) {
+    const annotation = binary(field.value, "::");
+    const atom = annotation?.[1];
+    if (
+      annotation &&
+      atom?.kind === "symbol" &&
+      !atom.quoted &&
+      descriptionAtoms.has(atom.name) &&
+      !fixed.has(field.label) &&
+      !/^_\d+$/.test(field.label)
+    ) {
+      extras.push({ label: field.label, value: sym(atom.name) });
+      body.push({ ...field, value: annotation[0] });
+    } else if (fixed.has(field.label) || /^_\d+$/.test(field.label))
+      body.push(field);
+    else return undefined;
+  }
+  if (!extras.length) return undefined;
+  const concrete = domain.type(
+    term("Type", {
+      kind: "term",
+      head: parts.head,
+      body: [...parts.fixed, ...extras],
+    }),
+  );
+  return (
+    normal({ ...tree, body }) +
+    " :: " +
+    valueText(concrete, domain, undefined, true)
+  );
 }
 
 /** Decodes the small data-constructor algebra; it has no evaluator or environment. */

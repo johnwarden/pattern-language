@@ -4,9 +4,7 @@
 # (specs/approved/retire-legacy-type-definition-syntax.md, "Open patterns migrate to
 # abstract"). The facet fixes the Float fields, so their annotations are omitted; the
 # open color field keeps its String annotation.
-# Whole-case todo: today `p.w` is unbound, and toString(Rectangular)(p) prints
-# `Rect(2 :: Float, 3 :: Float, color: "black" :: String) :: Type(...)`.
-todo test "Open structural facet"
+test "Open structural facet"
   type ColoredRect concrete Rect(Float, Float, color: String)
   type Rectangular abstract Rect(w :: Float, h :: Float, **)
   r = Rect(2, 3, color: "black") :: ColoredRect

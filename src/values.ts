@@ -63,6 +63,8 @@ export interface TypeValue {
   packaged?: boolean;
   /** Structural facet: preserves the actual concrete space of its input. */
   facet?: boolean;
+  /** Declared with `abstract`: text omits the facet-fixed field types and the :: tag. */
+  abstractFacet?: boolean;
   numeric?: "int64" | "float32" | "float64" | "rational";
   arguments?: Field<Value>[];
   /** An explicit Type(Int) is distinct from the primitive Int atom. */

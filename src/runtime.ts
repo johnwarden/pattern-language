@@ -53,7 +53,7 @@ import {
   descriptionKey,
   term,
 } from "./type-data.ts";
-import { valueText, parseValueText } from "./value-text.ts";
+import { valueText, parseValueText, tagOpenFacetText } from "./value-text.ts";
 import type { TextDomain } from "./value-text.ts";
 import { Grammar, DEFAULT_GRAMMAR, syntaxGrammars } from "./grammar.ts";
 import {
@@ -608,6 +608,9 @@ export class Interpreter {
   ): Field<Value>[] {
     this.parsingDataDepth++;
     try {
+      const domain = this.textDomain(env);
+      if (type.abstractFacet)
+        text = tagOpenFacetText(type, text, domain) ?? text;
       return this.check(
         type,
         type.treeGrammar || type.baseType?.treeGrammar
@@ -1806,9 +1809,23 @@ export class Interpreter {
               ? [...alternatives(parts[0]), ...alternatives(parts[1])]
               : [this.typeFromSyntax(pattern, env)];
           };
-          return singleton(
-            this.unionType(alternatives(this.capture(n, "pattern"))),
-          );
+          const operand = this.capture(n, "pattern");
+          const members = alternatives(operand);
+          // `abstract` of one open structural facet is that facet: a union of one
+          // member adds nothing, and the facet's named fields stay accessors.
+          const first = n.items[0];
+          if (
+            members.length === 1 &&
+            members[0].facet &&
+            first?.kind === "symbol" &&
+            !first.quoted &&
+            first.name === "abstract"
+          ) {
+            // A fresh pattern only; an existing facet keeps its own spelling.
+            if (operand.kind !== "symbol") members[0].abstractFacet = true;
+            return singleton(members[0]);
+          }
+          return singleton(this.unionType(members));
         }
         case "IfExpression": {
           const cond = unwrap(
@@ -4495,6 +4512,7 @@ export class Interpreter {
       this.pendingDefinitions.set(type, decl);
     } catch (error) {
       this.types.delete(key);
+      type.abstractFacet = target.abstractFacet;
       throw error;
     } finally {
       this.buildingTypes--;
