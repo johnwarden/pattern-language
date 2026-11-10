@@ -131,12 +131,3 @@ test("a failed type-default declaration leaves no binding or accessor behind", (
   assert.throws(() => interpreter.run("R().x"), /unbound name/);
 });
 
-test("factory defaults and type descriptions remain separate ordinary values", () => {
-  assert.equal(
-    run(
-      factory +
-        "t = type Rectangle\n(toString(Type)(t),parse(Type)(toString(Type)(t)) == t)",
-    ),
-    '("Type(Rect(Int, Int, color: String))", True)',
-  );
-});

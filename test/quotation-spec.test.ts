@@ -4,12 +4,9 @@ import {
   Interpreter,
   parseSurface,
   parseExpression,
-  normal,
   LanguageError,
 } from "../src/index.ts";
-import { unwrap, single, equal, displayResults } from "../src/values.ts";
-import { syntaxKey } from "../src/syntax.ts";
-import { stringSource } from "../src/string-format.ts";
+import { unwrap, single, displayResults } from "../src/values.ts";
 import { decodeSource } from "../src/source-encoding.ts";
 
 function text(source: string): string {
@@ -274,72 +271,4 @@ test("UTF-8 decoding is strict and leaves exactly-one-BOM normalization to the p
   const encoded = new TextEncoder().encode("\uFEFF\uFEFF1");
   assert.equal(decodeSource(encoded), "\uFEFF\uFEFF1");
   assert.throws(() => parseSurface(decodeSource(encoded)), LanguageError);
-});
-test("canonical String spelling is total, inert and idempotent", () => {
-  const i = new Interpreter(),
-    domain = unwrap(single(i.run("type String")));
-  assert.equal(domain.kind, "type");
-  if (domain.kind !== "type") return;
-  const pieces = [
-    "",
-    "'",
-    '"',
-    "\\",
-    "$name",
-    "$$",
-    "\0",
-    "\u0001",
-    "\t",
-    "\n",
-    "\r",
-    "\u0085",
-    "\u2028",
-    "é",
-    "e\u0301",
-    "🙂",
-  ];
-  for (const a of pieces)
-    for (const b of pieces) {
-      const value = a + b,
-        source = stringSource(value);
-      assert.equal(text(source), value);
-      assert.equal(stringSource(text(source)), source);
-      const parsed = i.readValue(domain, source);
-      assert.ok(equal(parsed, { kind: "literal", value }));
-    }
-});
-test("templates and staged quotes survive public tree and fresh Code text round trips", () => {
-  for (const source of [
-    '$"Hi, $name"',
-    '$"Hi, $$name"',
-    '$"literal \\u0024name / $x"',
-    "Code$` $$x",
-    "Code` $x",
-    'html$"<p>$x</p>"',
-  ]) {
-    const i = new Interpreter(),
-      code = single(i.run("Code` (" + source + ")"));
-    i.env.bindings.set("original", code);
-    assert.equal(
-      run("c = Code` (" + source + ")\nparse(Code)(toString(Code)(c)) == c"),
-      "True",
-      source,
-    );
-    assert.equal(
-      displayResults(
-        i.run(
-          "syntaxTree(original) == syntaxTree(syntaxExpression(syntaxTree(original)))",
-        ),
-      ),
-      "True",
-      source,
-    );
-    const tree = parseExpression(source);
-    assert.equal(
-      syntaxKey(parseExpression(normal(tree))),
-      syntaxKey(tree),
-      source,
-    );
-  }
-  assert.equal(syntaxKey(parseSurface('"a"')), syntaxKey(parseSurface("'a'")));
 });

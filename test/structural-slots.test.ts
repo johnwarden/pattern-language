@@ -8,7 +8,6 @@ import {
   parseExpression,
   LanguageError,
 } from "../src/index.ts";
-import { TYPE_SCHEMA } from "../src/type-schema.ts";
 import { single, unwrap, valLiteral } from "../src/values.ts";
 
 const run = (source: string) => displayResults(new Interpreter().run(source));
@@ -230,44 +229,6 @@ test("abstract fields expose the original concrete type through normal typed nar
   );
 });
 
-test("facet descriptions are ordinary reconstructible values", () => {
-  assert.equal(
-    run(
-      full +
-        "t = type Rectangular\nu = parse(Type)(toString(Type)(t))\nFacet(pattern) = t\n(t == u,Facet(pattern) == t)",
-    ),
-    "(True, True)",
-  );
-});
-
-test("facet descriptors and values transfer to an environment with no source type names", () => {
-  const producer = new Interpreter();
-  const values = producer.run(
-    full + "(toString(Type)(type Rectangular),toString(Rectangular)(r))",
-  );
-  const other = new Interpreter();
-  other.env.bindings.set("typeText", single([values[0]]));
-  other.env.bindings.set("valueText", single([values[1]]));
-  assert.equal(
-    displayResults(
-      other.run(
-        "t = parse(Type)(typeText)\nv = parse(t)(valueText)\n(toString(t)(v) == valueText,toString(Type)(t) == typeText)",
-      ),
-    ),
-    "(True, True)",
-  );
-});
-
-test("local facet text uses names while global text remains structural", () => {
-  assert.equal(
-    run(
-      full +
-        "(p :: Rectangular) = r\n(toStringLocal(Rectangular)(p),parseLocal(Rectangular)(toStringLocal(Rectangular)(p)) == p)",
-    ),
-    '("Rect(2, 3, color: \\"black\\") :: Colored", True)',
-  );
-});
-
 test("concrete Type cannot disguise an open constraint", () => {
   assert.throws(
     () =>
@@ -333,25 +294,6 @@ test("concrete meta-type slots unbox abstract storage and omit redundant annotat
   );
 });
 
-test("recursive facets preserve concrete children and survive descriptor reconstruction", () => {
-  const source =
-    'def Full type :Nil | :Cons(Float,Full,meta: String)\ndef Sequence type :Nil | :Cons(first :: Float,next :: Sequence,**)\nr = Cons(2,:Nil,meta: "x") :: Full\n';
-  assert.equal(
-    run(
-      source +
-        "(p :: Sequence) = r\nt = toString(Sequence)(p)\n(p.first,p.next,p == r,parse(Sequence)(t) == r,parse(Type)(toString(Type)(type Sequence)) == (type Sequence))",
-    ),
-    "(2, Nil, True, True, True)",
-  );
-  assert.equal(
-    run(
-      source +
-        "t = parse(Type)(toString(Type)(type Sequence))\n(p :: t) = r\ntoString(t)(p) == toString(Sequence)(r)",
-    ),
-    "True",
-  );
-});
-
 test("serialized abstract fields require concrete tags through facets and Any", () => {
   assert.throws(() => run('parse(Any)("3")'), /explicit concrete/);
   assert.throws(() => run('parse(Any)("Int")'), /explicit concrete/);
@@ -372,42 +314,12 @@ test("named repetition cannot be smuggled through a portable field description",
   );
 });
 
-test("literal punctuation remains distinct from the labeled-rest marker in portable data", () => {
-  for (const value of [":(R(:**))", ":(R(**))", ":**"])
-    assert.equal(
-      run("v = " + value + "\nparse(Expression)(toString(Expression)(v)) == v"),
-      "True",
-      value,
-    );
-  for (const pattern of [":**", ":**(Int)"])
-    assert.equal(
-      run(
-        "v =\n  type\n    " +
-          pattern +
-          "\n  end\nend\nparse(Expression)(toString(Expression)(v)) == v",
-      ),
-      "True",
-      pattern,
-    );
-  rejects("def f(**fields) fields\nf(foo: 1)", "E_KEYWORD_REST_UNSUPPORTED");
-});
-
 test("REPL inspection retains abstract field metadata in otherwise concrete values", () => {
   const interpreter = new Interpreter();
   const result = interpreter.run(
     "def Box type :Box(Any)\nBox(3 :: Int) :: Box",
   );
   assert.equal(interpreter.inspect(result), "Box(3 :: Int) :: Box");
-});
-
-test("type-description grammar is a structural facet over cached and reconstructed type values", () => {
-  assert.equal(
-    run(
-      TYPE_SCHEMA +
-        "\na = type :R(Int)\nb = parse(Type)(toString(Type)(a))\n(a == b,a .matches (type TypeDescription),b .matches (type TypeDescription))",
-    ),
-    "(True, True, True)",
-  );
 });
 
 test("Facet construction normalizes root type aliases without creating a concrete space", () => {

@@ -9,10 +9,11 @@ language contracts.
 ## Representation backout: #68
 
 The five representation/decoding cases migrated by #60 are removed from
-[types/value-trees.test](../tests/types/value-trees.test). Their original host
-blocks are restored in `test/type-atoms.test.ts` and
-`test/value-representation.test.ts`, including portable subassertions in mixed
-blocks. [The coverage map](TEST-MIGRATION.md#type-identity-and-value-tree-migration)
+[types/value-trees.test](../tests/types/value-trees.test). #68 restored the
+original host blocks in `test/type-atoms.test.ts` and
+`test/value-representation.test.ts`. Print→parse transport from those restored
+blocks now lives in `test/round-trip-parsing.test.ts`.
+[The coverage map](TEST-MIGRATION.md#type-identity-and-value-tree-migration)
 records their homes. Identity tests, the other semantic value-tree cases and the
 Boolean-assertion cleanup remain.
 
@@ -20,9 +21,9 @@ Boolean-assertion cleanup remain.
 
 [Exact numeric values and Code text](../tests/numeric/exact-values.test) now
 replace source tests of bootstrap `syntaxTree` and `NumberLiteral` encodings.
-Host checks in `test/rational-primitives.test.ts` retain native schema/payload
-transport, quoted- and value-tree round trips, and decimal, zero, large-integer
-and rounded-hex display goldens. The [coverage map](TEST-MIGRATION.md#numeric-destination-contract-correction)
+Host checks in `test/rational-primitives.test.ts` retain native helpers and
+display goldens. Quoted- and value-tree print→parse transport lives in
+`test/round-trip-parsing.test.ts`. The [coverage map](TEST-MIGRATION.md#numeric-destination-contract-correction)
 records the split.
 
 ## Remaining cleanup

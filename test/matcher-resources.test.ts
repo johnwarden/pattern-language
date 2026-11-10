@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { Matcher, Mismatch } from "../src/pattern.ts";
 import type { Pattern, Adapter } from "../src/pattern.ts";
 import { LanguageError } from "../src/syntax.ts";
-import { Interpreter, displayResults } from "../src/index.ts";
 
 type Tree = string | { head: Tree; body: { label: string; value: Tree }[] };
 const adapter: Adapter<Tree> = {
@@ -100,15 +99,3 @@ test("the total work budget reports a language diagnostic and unwinds pending gu
   assert.equal(matcher.active.length, 0);
 });
 
-test("nested portable type descriptions survive schema validation and round trips", () => {
-  const depth = 20;
-  const pattern = "Box(".repeat(depth) + "Int" + ")".repeat(depth);
-  assert.equal(
-    displayResults(
-      new Interpreter().run(
-        "t = Type(:(" + pattern + "))\nparse(Type)(toString(Type)(t)) == t",
-      ),
-    ),
-    "True",
-  );
-});

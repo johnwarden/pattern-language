@@ -1,9 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { loadTests, runTest } from "../src/test-suite.ts";
-import { TEST_SCHEMA } from "../src/test-schema.ts";
 import { Interpreter } from "../src/runtime.ts";
-import { equal, single, singleton, unwrap } from "../src/values.ts";
 
 const read = (body: string) =>
   loadTests({ "inbox/future.test": `todo test "Future"\n${body}\nend` })[0];
@@ -128,16 +126,3 @@ test("whole-test todo never absorbs fixture, host, malformed-file or missing-che
     assert.throws(() => loadTests({ "bad.test": source }));
 });
 
-test("whole-test todo file values survive the published schema's typed-text transport", () => {
-  const value = read("  expect missing() result 3 :: MissingType");
-  const interpreter = new Interpreter();
-  const type = unwrap(single(interpreter.run(TEST_SCHEMA)));
-  if (type.kind !== "type") assert.fail();
-  const text = unwrap(
-    single(
-      interpreter.call("toString", singleton(type), singleton(value.fileValue)),
-    ),
-  );
-  if (text.kind !== "literal" || typeof text.value !== "string") assert.fail();
-  assert.ok(equal(interpreter.readValue(type, text.value), value.fileValue));
-});

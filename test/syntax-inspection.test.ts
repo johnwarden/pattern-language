@@ -72,37 +72,3 @@ test("syntax reconstruction is inert and rejects malformed fields and variants",
     assert.throws(() => run(source), LanguageError);
 });
 
-test("quote and sidefix/block variants survive a fresh-context round trip", () => {
-  const producer = new Interpreter();
-  const consumer = new Interpreter();
-  const samples = [
-    ":x",
-    "f()(1,color: :Red)",
-    "Code` x + 1",
-    "if True 1 else 2",
-    "(\n  x = 2\n  x + 1\n)",
-  ];
-  for (const source of samples) {
-    const tree = producer.run(`syntaxTree(Expression$\` ${source})`)[0].value;
-    consumer.env.bindings.set("tree", tree);
-    const result = consumer.run("syntaxTree(syntaxExpression(tree)) == tree");
-    assert.equal(displayResults(result), "True", source);
-  }
-});
-
-test("typed tree text reconstructs in a fresh interpreter without provenance", () => {
-  const producer = new Interpreter();
-  const text = producer.run(
-    "(Tree :: Type) = syntaxSchema()\nt = syntaxTree(:(f(1)(color: :Red)))\ntoString(Tree)(t)",
-  )[0].value;
-  const consumer = new Interpreter();
-  consumer.env.bindings.set("text", text);
-  assert.equal(
-    displayResults(
-      consumer.run(
-        "(Tree :: Type) = syntaxSchema()\ntree = parse(Tree)(text)\nsyntaxExpression(tree)",
-      ),
-    ),
-    "f(1)(color: Red)",
-  );
-});

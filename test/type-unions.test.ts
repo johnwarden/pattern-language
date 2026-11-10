@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Interpreter, displayResults } from "../src/index.ts";
-import { single, unwrap, valLiteral } from "../src/values.ts";
+import { valLiteral } from "../src/values.ts";
 const run = (s: string) => displayResults(new Interpreter().run(s));
 
 test("the type-description syntax schema is defined in the source language", () => {
@@ -58,28 +58,6 @@ test("type unions flatten, deduplicate, and have order independent canonical tex
     "UnionType(Int, String)",
   );
   assert.equal(run("UnionType(Int,Int)"), "UnionType(Int)");
-});
-
-test("type union values reconstruct in a fresh interpreter", () => {
-  const first = new Interpreter();
-  const text = unwrap(
-    single(
-      first.run(
-        "def List(t :: Type) type :Nil | :Cons(t,List(t))\ntoString(Type)(UnionType(type List(Int),type String))",
-      ),
-    ),
-  );
-  assert.equal(text.kind, "literal");
-  const other = new Interpreter();
-  other.env.bindings.set("text", text);
-  assert.equal(
-    displayResults(
-      other.run(
-        "def List(t :: Type) type :Nil | :Cons(t,List(t))\nt = parse(Type)(text)\n(x :: t) = (Cons(1,:Nil) :: List(Int))\n(toString(Type)(t) == text,parse(t)(toString(t)(x)) == x)",
-      ),
-    ),
-    "(True, True)",
-  );
 });
 
 test("concrete pattern unions remain distinct from abstract type unions", () => {

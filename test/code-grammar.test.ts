@@ -138,63 +138,6 @@ test("failed host Code evaluation rolls back scoped declarations", () => {
   assert.throws(() => i.run("local(1)"), /unbound|not callable/);
 });
 
-test("closed Code has fresh-context inert text round trips", () => {
-  for (const expression of [
-    "f",
-    "f()",
-    "f(1,2)",
-    "f(1)(2)",
-    "(if True f else g)(1)",
-    "if True 1 else missing(1 / 0)",
-    ":x",
-    "Code` x + 1",
-    "(\n  x = 3\n  x + 2\n)",
-  ]) {
-    const producer = new Interpreter();
-    const code = producer.run("Code` " + expression)[0].value;
-    producer.env.bindings.set("c", code);
-    const text = producer.run("toString(Code)(c)")[0].value;
-    const consumer = new Interpreter();
-    consumer.env.bindings.set("text", text);
-    consumer.env.bindings.set("original", code);
-    assert.equal(
-      displayResults(
-        consumer.run("restored = parse(Code)(text)\nrestored == original"),
-      ),
-      "True",
-      expression,
-    );
-  }
-});
-
-test("typed Code fields and abstract slots reconstruct without evaluation", () => {
-  assert.equal(
-    run(
-      "def Box type Box(Code)\nc = Box(Code` x + 1) :: Box\ns = toString(Box)(c)\nparse(Box)(s) == c",
-    ),
-    "True",
-  );
-  assert.equal(
-    run(
-      "c = Code` x + 1\n(v :: Any) = c\ns = toString(Any)(v)\nparse(Any)(s) == v",
-    ),
-    "True",
-  );
-});
-
-test("Test data can contain typed Code and deferred expected syntax", () => {
-  const source =
-    'def ExpectedOutput type\n  (e :: Expression) ::: (type :: Expression)\nend\ndef Test type :test name :: String code :: Code :expect expected :: ExpectedOutput\nt = Test`\n  test "body"\n    x = 3\n    x + 1\n  end\n  expect 4 :: Int\nend\n';
-  assert.equal(
-    run(
-      source +
-        "text = toString(Test)(t)\nu = parse(Test)(text)\n(t == u,u.name,u.expected.e)",
-    ),
-    '(True, "body", 4)',
-  );
-  assert.equal(evaluate(source + "t.code"), "4");
-});
-
 test("ordinary patterns inspect application syntax in Code", () => {
   assert.equal(
     run(

@@ -8,6 +8,16 @@ test "An explicit inner absence projects once without becoming outer absence"
   end
 end
 
+test "An explicit outer absence does not project as inner absence"
+  (x :: String??) = :None
+
+  expect
+    match x
+      (inner :: String?) -> inner
+    end
+  error "E_PATTERN_MISMATCH"
+end
+
 test "A direct constructor arm wins over an inward path"
   type Inner concrete :Box(String) | :Absent
   type Outer concrete Inner | :Box(String)
@@ -47,6 +57,14 @@ end
 
 test "Peer optional absence is ambiguous regardless of branch order"
   type MyType concrete Float? | String?
+
+  expect
+    :None :: MyType
+  error "E_AMBIGUOUS_PATTERN"
+end
+
+test "Peer optional absence is ambiguous when String? precedes Float?"
+  type MyType concrete String? | Float?
 
   expect
     :None :: MyType

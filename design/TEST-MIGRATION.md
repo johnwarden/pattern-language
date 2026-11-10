@@ -47,12 +47,12 @@ No failing placeholder is substituted for an unspecified target result.
 | --- | --- |
 | Pattern metadata, compiler captures and Grammar rest maps | test/pattern-bindings.test.ts; portable matching/hygiene moved to tests/matching; host keeps compiled capture metadata |
 | Default host invocation counters, declaration rollback and exact source diagnostics | test/binding-defaults.test.ts; API/state/span observations need host access |
-| Type identity, abstract slots, caches, unsupported host environments and transport | existing type/value/abstract tests; retain direct representation/fresh-process checks |
+| Type identity, abstract slots, caches, unsupported host environments and transport | type/value/abstract tests keep representation and local-alias checks; print→parse and fresh-Interpreter transport live in test/round-trip-parsing.test.ts |
 | Numeric exactness/conversion, overlapping unions and remaining type/evidence behavior | host and tests/numeric/*.test regressions; supported slices replace their corresponding legacy expectations |
 | Typed quotes, byte normalization and raw syntax encode/decode | tests/quotes/evaluation.test plus host quotes/postfix files; kind/key/encode-decode, empty preludes and hole locations stay |
-| Vertical matching, row keys, ambiguity, descriptor transfer | tests/spreading/*.test plus test/vertical-spread.test.ts; host keeps dimensions, Float32 text, locations, ambiguous partitions and fresh-interpreter transport |
+| Vertical matching, row keys, ambiguity, descriptor transfer | tests/spreading/*.test plus test/vertical-spread.test.ts; host keeps dimensions, Float32 text, locations and ambiguous partitions. Fresh-interpreter transfer lives in test/round-trip-parsing.test.ts |
 | Canonical source behavior of the former test/cases suite | test/source-suite.test.ts; canonicalizes then runs the same DSL expectation |
-| Test schema round trips, execution/isolation traps, fixtures and error phases | test/test-suite.test.ts; checks the harness rather than language examples |
+| Test schema round trips, execution/isolation traps, fixtures and error phases | test/test-suite.test.ts keeps harness isolation; typed-text transport of test-file values lives in test/round-trip-parsing.test.ts |
 | Recursive discovery, CLI process status and expected-failure reporting | test/test-cli.test.ts; needs filesystem/process observations |
 | Actual controls, sorting and old/new storage restoration | test/playground.test.ts; every executable example exercised through DOM controls |
 | Resource limits, staging rollback, build/schema synchronization | test/staging.test.ts plus tests/macros/staging.test; host keeps parse-only, REPL reuse after failure and transactional rollback |
@@ -60,6 +60,7 @@ No failing placeholder is substituted for an unspecified target result.
 | PR9 layout behavior (EOF/`end`/quoted clauses/mixed indent/incomplete infix/extra `end`) | tests/layout/*.test via live eval and `expect parse(Code)(text) error`; host keeps Grammar-object `parseSurface`, session-macro probe/then success and extra-`end` parse failure, REPL completeness, and indent-prefix unit checks |
 | Parse-failure harness (`parse(Code)` of quoted payload, ordinary `expect … error`) | test/test-suite.test.ts plus tests/layout/explicit-ends.test `infix` |
 | Suffix wrap order, prefix `+Int`/`+(Int)` identity, tight `Int+` not prefix `+` | tests/specification/postfix-suffixes.test |
+| Print→parse and fresh-Interpreter transport | test/round-trip-parsing.test.ts; the `.test` DSL cannot observe a second Interpreter or host `env.bindings` |
 
 No whole-file migration is claimed for candidate files outside the selected batch.
 A smaller TypeScript-only suite does not imply lost semantic coverage; expected failures
@@ -224,7 +225,7 @@ are reused rather than duplicated.
 | postfix: keyword rest is prefix `**` and postfix `rest**` | — | Tree shape plus exact `E_KEYWORD_REST_UNSUPPORTED` stay |
 | postfix: postfix `T*` / `T**` and prefix `**x` do not share a spaced tree | tests/specification/postfix.test already covers the portable `parse(Code)` equalities | Host `parseExpression` kind/`normal`/`syntaxKey` stay |
 | postfix-conventions: postfix question mark has no optional meaning without a source definition | postfix/values#an-ordinary-postfix-question-mark-definition-coexists-with-the-optional-convention | Empty-prelude `Interpreter` checks stay |
-| postfix-conventions: every accepted suffix survives syntax and typed value transport | — | Encode/decode and empty-prelude parse/toString stay |
+| postfix-conventions: every accepted suffix survives syntax and typed value transport | — | Moved to test/round-trip-parsing.test.ts |
 | postfix-conventions: bootstrap list and result conventions remain usable | language/types#option; language/types result; specification/postfix-suffixes#the-bootstrap-list-convention-retains-list-matching | Already present |
 | postfix-conventions: hash always starts a comment | specification/postfix#postfix-percent-remains-punctuation-hash-is-a-comment; quotes/evaluation#interpolating-a-postfix-percent-preserves-its-spelling | `normal(parseExpression("x#"))` stays |
 
@@ -260,17 +261,17 @@ nested-Body examples were reused rather than duplicated.
 | vertical-spread: canonical row trees | — | `parseExpression` `syntaxKey` stays |
 | vertical-spread: TodoList/Matrix/Body examples | examples/grammars#vertical-spreading-* | Existing source counterparts |
 | vertical-spread: empty/evaluated rows; application-row capture | spreading/vertical#* | Spaced `todo (` syntax stays on the host |
-| vertical-spread: Float32 reconstruction; dimension codes; locations; ambiguous partitions; fresh-interpreter transfer | — | Representation, exact codes and transport stay |
+| vertical-spread: Float32 reconstruction; dimension codes; locations; ambiguous partitions; fresh-interpreter transfer | — | Representation, exact codes and mixed Float32 serialization stay; fresh-interpreter transfer lives in test/round-trip-parsing.test.ts |
 | vertical-spread: Body final row and unevaluated definitions | spreading/body#*; host session `E_UNBOUND_NAME` after capturing Body | Round trip moved; session non-installation stays |
 
-Host remainder is schema/decoder identity, Grammar objects, encode/decode, exact dimension/duplicate/type-description codes, Float32 serialization, ambiguous row partitions and fresh-interpreter transport. No expected-failure or legacy marker was added or changed. Keyword-rest grammar was not selected.
+Host remainder is schema/decoder identity, Grammar objects, encode/decode, exact dimension/duplicate/type-description codes, Float32 serialization and ambiguous row partitions. Fresh-interpreter typed-text transfer lives in test/round-trip-parsing.test.ts. No expected-failure or legacy marker was added or changed. Keyword-rest grammar was not selected.
 
 ## Nested-option and concrete-union migration
 
 The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) grouped
 `test/nested-option-designation.test.ts` and `test/concrete-unions.test.ts` as
-already having source counterparts. Shared positives stay in
-`tests/bindings/nested-option-designation.test` and
+already having source counterparts. Those host files are deleted. Shared
+positives stay in `tests/bindings/nested-option-designation.test` and
 `tests/specification/concrete-unions.test`. Unique remaining evaluations now run
 under `tests/unions/concrete.test`. `#31` has landed; `#48` was not edited.
 
@@ -278,18 +279,18 @@ under `tests/unions/concrete.test`. `#31` has landed; `#48` was not edited.
 | --- | --- | --- |
 | nested-option: unwrapped Nested / String?? designate a unique String | bindings/nested-option-designation#unwrapped-nested-option-designates-a-unique-string; bindings/nested-option-designation#nested-postfix-string-designates-a-unique-string | Existing counterparts |
 | nested-option: match projects one option boundary | bindings/nested-option-designation#match-projects-one-unwrapped-option-boundary; bindings/nested-option-designation#match-projects-one-postfix-option-boundary | Existing counterparts |
-| nested-option: ordinary binding/dispatch and match-arm defaults/predicates | bindings/nested-option-designation ordinary-binding and match-arm cases | Exact `E_PATTERN_MISMATCH` / `E_NO_METHOD` stay |
-| nested-option: source optional convention | bindings/nested-option-designation#the-source-optional-convention-is-unwrapped-t-none | Exact tagged-`Some` `E_PATTERN_MISMATCH` stays |
+| nested-option: ordinary binding/dispatch and match-arm defaults/predicates | bindings/nested-option-designation ordinary-binding and match-arm cases | Exact `E_PATTERN_MISMATCH` / `E_NO_METHOD` live in the source cases |
+| nested-option: source optional convention | bindings/nested-option-designation#the-source-optional-convention-is-unwrapped-t-none | Exact tagged-`Some` `E_PATTERN_MISMATCH` lives in the source case |
 | nested-option: nested postfix absence, including `:None :: String??` | bindings/nested-option-designation#nested-postfix-absence-preserves-explicit-member-evidence | Added the missing `same` ascription equality |
 | concrete-unions: binding and expression annotations choose the same outer arm | specification/concrete-unions#a-direct-union-arm-takes-precedence-over-inward-designation | Existing counterpart |
-| concrete-unions: explicit inner absence projects once | unions/concrete#an-explicit-inner-absence-projects-once-without-becoming-outer-absence | Exact outer-absence `E_PATTERN_MISMATCH` stays |
-| concrete-unions: explicit members survive fresh-interpreter transport | — | Host typed-text transfer stays |
-| concrete-unions: peer ambiguity does not depend on source order | unions/concrete#peer-optional-absence-is-ambiguous-regardless-of-branch-order; specification/concrete-unions already covers String? or Float? order | Exact `E_AMBIGUOUS_PATTERN` for both orders stays |
+| concrete-unions: explicit inner absence projects once | unions/concrete#an-explicit-inner-absence-projects-once-without-becoming-outer-absence; unions/concrete#an-explicit-outer-absence-does-not-project-as-inner-absence | Outer-absence match failure is `expect … error "E_PATTERN_MISMATCH"` |
+| concrete-unions: explicit members survive fresh-interpreter transport | — | test/round-trip-parsing.test.ts |
+| concrete-unions: peer ambiguity does not depend on source order | unions/concrete#peer-optional-absence-is-ambiguous-regardless-of-branch-order; unions/concrete#peer-optional-absence-is-ambiguous-when-string-precedes-float | Both `Float? \| String?` and `String? \| Float?` orders |
 | concrete-unions: direct constructor arm vs inward path | unions/concrete#a-direct-constructor-arm-wins-over-an-inward-path; unions/concrete#a-direct-constructor-arm-wins-regardless-of-branch-order | Both branch orders |
 | concrete-unions: already typed payloads designated inward | unions/concrete#already-typed-payloads-can-be-designated-inward-without-binding-projection | Original program |
-| concrete-unions: nested annotation payloads remain data in the test DSL | — | Harness `expect` expected-data stays unevaluated |
+| concrete-unions: nested annotation payloads remain data in the test DSL | — | test/test-suite.test.ts keeps the harness `expect` expected-data unevaluated |
 
-Host remainder is exact diagnostic codes, fresh-interpreter typed-text transport and test-harness expected-data. No expected-failure or legacy marker was added or changed.
+Those two host files are gone. Exact diagnostic codes live in the source cases. Fresh-interpreter typed-text transport lives in `test/round-trip-parsing.test.ts`. Nested expected-data isolation lives in `test/test-suite.test.ts`. No expected-failure or legacy marker was added or changed.
 
 ## Rational-primitive membership migration
 
@@ -321,8 +322,8 @@ new numeric spelling.
 
 | Audited source case | Retained language observation | Retained host observation |
 | --- | --- | --- |
-| NumberLiteral payload is the denoted Rational | Exact decimal arithmetic, rounded-value distinction and zero. | `numeric syntax adapters preserve exact decimal and zero payloads` in `test/rational-primitives.test.ts`: native node payloads, schema membership, bridge inversion, quoted-tree text round trip and decimal/zero display goldens. |
-| syntaxTree distinguishes 0.1 from 0f0.1 and round-trips | Numeric/Code inequality and established Code text round trips. | `numeric syntax-tree schema transport distinguishes exact and rounded values`: value-tree text round trip; existing exact Float64-rounded adapter display golden and syntax-inspection transport checks. |
+| NumberLiteral payload is the denoted Rational | Exact decimal arithmetic, rounded-value distinction and zero. | `numeric syntax adapters preserve exact decimal and zero payloads` in `test/round-trip-parsing.test.ts`: native node payloads, schema membership, bridge inversion, quoted-tree text round trip and decimal/zero display goldens. |
+| syntaxTree distinguishes 0.1 from 0f0.1 and round-trips | Numeric/Code inequality and established Code text round trips. | `numeric syntax-tree schema transport distinguishes exact and rounded values` in `test/round-trip-parsing.test.ts`: value-tree text round trip; existing exact Float64-rounded adapter display golden stays in `test/rational-primitives.test.ts`. |
 | NumberLiteral keeps integers beyond 2^53 and signed values | Neighboring large integers and signed arithmetic. | `numeric syntax payloads preserve large integers and unary-minus structure`: node payloads, prefix AST decomposition and large-integer display golden. |
 | Unspellable 1/3 stays exact as a NumberLiteral payload | Exact arithmetic and explicit `toString(Rational)(n)` serialization failure. | `test/rational-primitives.test.ts` retains construction and destructuring of the native `NumberLiteral` carrier, plus exact `E_VALUE_SERIALIZATION` when printing the bare `1 / 3` program result. |
 
@@ -357,12 +358,12 @@ the other semantic source cases remain.
 | type-atoms: postfix type ≠ prefix quotation | types/value-trees#postfix-type-descriptions-are-not-prefix-quotation | syntax kind/key/`normal` stay |
 | type-atoms: reserved Int/True redeclarations | types/value-trees#reserved-primitive-names-cannot-be-redeclared; types/value-trees#reserved-constants-cannot-be-redeclared | `env.bindings.delete` stays |
 | type-atoms: type defaults | types/value-trees#ordinary-type-construction-rejects-binding-defaults | Exact `E_TYPE_DEFAULT` and binding-default positive stay |
-| type-atoms/value-representation: compiled vs quoted trees | —; source case removed in #68 | Original canonical-string, explicit Type(Int), nested equality and global-text/Expression transport blocks restored in both host files |
-| value-representation: quoted type tree as a named type | —; source case removed in #68 | test/value-representation.test.ts: original type-position block restored intact, including `.where` and bound matcher checks |
-| value-representation: invalid type-shaped data | —; source case removed in #68 | test/value-representation.test.ts: original malformed Primitive/UnionType matching and transport block restored |
+| type-atoms/value-representation: compiled vs quoted trees | —; source case removed in #68 | Nested equality stays in `test/value-representation.test.ts`; explicit Type(Int) and global-text/Expression transport live in test/round-trip-parsing.test.ts |
+| value-representation: quoted type tree as a named type | —; source case removed in #68 | Original type-position block, including `.where` and bound matcher checks, lives in test/round-trip-parsing.test.ts |
+| value-representation: invalid type-shaped data | —; source case removed in #68 | Original malformed Primitive/UnionType matching and quoted UnionType text transport live in test/round-trip-parsing.test.ts |
 | value-representation: bound type value is a matcher | types/value-trees#a-bound-type-value-is-a-matcher | — |
 
-Host remainder is `inspect`, REPL abbreviation, `parseExpression` trees, lexical-storage surgery, Expression text transport, exact diagnostic codes, and concrete-identity incomparability. No expected-failure or legacy marker was added or changed. abstract-values and structural-slots were not selected.
+Host remainder is `inspect`, REPL abbreviation, `parseExpression` trees, lexical-storage surgery, exact diagnostic codes, and concrete-identity incomparability. Expression and Type(Int) text transport live in test/round-trip-parsing.test.ts. No expected-failure or legacy marker was added or changed. abstract-values and structural-slots keep mixed print/parse assertions incidental to identity and facet checks.
 
 ## Existing source cases
 

@@ -2,14 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadTests, runTest, type AssertionMode } from "../src/test-suite.ts";
 import { Interpreter } from "../src/runtime.ts";
-import { TEST_SCHEMA } from "../src/test-schema.ts";
 import {
   displayResults,
   singleton,
   valLiteral,
-  single,
-  unwrap,
-  equal,
 } from "../src/values.ts";
 import { LanguageError } from "../src/diagnostics.ts";
 
@@ -91,6 +87,19 @@ test("expected values are data rather than expressions to evaluate", () => {
   );
   assert.equal(wrong.passed, false);
   assert.equal(wrong.phase, "expectation");
+});
+test("nested annotation payloads remain data in the test DSL", () => {
+  const [value] = loadTests({
+    "inner.test": `test "Inner"
+  type Box concrete :Box(Rational)
+  type Outer concrete Box | :None
+  (x :: Outer) = Box(2) :: Box
+  expect x result (Box(1 + 1) :: Box) :: Outer
+end`,
+  });
+  const result = runTest(value);
+  assert.equal(result.passed, false);
+  assert.equal(result.phase, "expectation");
 });
 test("each result requires the stated type and canonical data spelling", () => {
   assert.equal(
@@ -261,17 +270,6 @@ test("invalid test data reports its source file and position", () => {
       error instanceof LanguageError &&
       error.diagnostic.primary?.source?.name === "broken.test",
   );
-});
-test("test-file values retain unresolved operands through data round trips", () => {
-  const value = sample("missing()", "result 3 :: MissingType", "todo");
-  const i = new Interpreter(),
-    type = unwrap(single(i.run(TEST_SCHEMA)));
-  if (type.kind !== "type") assert.fail();
-  const text = unwrap(
-    single(i.call("toString", singleton(type), singleton(value.fileValue))),
-  );
-  if (text.kind !== "literal" || typeof text.value !== "string") assert.fail();
-  assert.ok(equal(i.readValue(type, text.value), value.fileValue));
 });
 test("files require nonempty test blocks and stable IDs", () => {
   const a = 'test "First case"\n expect 1 result 1 :: Expression\nend';
@@ -448,4 +446,18 @@ test("each expectation has its own actual and expected output", () => {
     r.checks.map((c) => c.expected),
     ["1 :: Rational", "Widget :: UpperCamelSymbol"],
   );
+});
+
+test("nested annotation payloads remain data in the test DSL", () => {
+  const [value] = loadTests({
+    "inner.test": `test "Inner"
+  type Box concrete :Box(Rational)
+  type Outer concrete Box | :None
+  (x :: Outer) = Box(2) :: Box
+  expect x result (Box(1 + 1) :: Box) :: Outer
+end`,
+  });
+  const result = runTest(value);
+  assert.equal(result.passed, false);
+  assert.equal(result.phase, "expectation");
 });
