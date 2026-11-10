@@ -4,6 +4,14 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
+# Git hooks (pre-commit, pre-push) export GIT_DIR and friends. Inside a linked
+# worktree GIT_DIR names the worktree's private gitdir, so the throwaway
+# `git init` below would otherwise rewrite the shared .git/config of the real
+# repository (core.bare = true). Run every git command against its own repo.
+while read -r git_env_var; do
+	unset "$git_env_var"
+done < <(git rev-parse --local-env-vars)
+
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
