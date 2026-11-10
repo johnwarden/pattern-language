@@ -707,13 +707,19 @@ function watchOperands(interpreter: Interpreter, subject: Syntax) {
     stop,
     report(): OperandReport | undefined {
       if (!seen.left || !seen.right) return;
-      // Printing is diagnostic work. Some valid values (such as exact 1 / 3)
-      // have no source spelling, so formatting must not change the check result.
+      // Printing is diagnostic work. Exact 1 / 3 has no source spelling:
+      // E_VALUE_SERIALIZATION becomes a placeholder. Any other inspect error
+      // must fail the test.
       const inspect = (values: Field<Value>[]) => {
         try {
           return interpreter.inspect(values);
-        } catch {
-          return "<value cannot be printed>";
+        } catch (error) {
+          if (
+            error instanceof LanguageError &&
+            error.diagnostic.code === "E_VALUE_SERIALIZATION"
+          )
+            return "<value cannot be printed>";
+          throw error;
         }
       };
       return {

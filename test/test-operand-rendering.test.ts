@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Interpreter } from "../src/runtime.ts";
+import { LanguageError } from "../src/syntax.ts";
 import { loadTests, runTest } from "../src/test-suite.ts";
 
 const run = (body: string) =>
@@ -62,6 +63,37 @@ test("fulfilled todo reports its source and later assertions still execute", () 
   assert.match(report.message, /remove todo/);
   assert.match(report.message, /todo assert \(1 \/ 3\) == \(1 \/ 3\)/);
   assert.equal(report.checks[0].operands, undefined);
+});
+
+test("an unexpected inspect exception while printing operands fails the test", () => {
+  const original = Interpreter.prototype.inspect;
+  const runWithInspectError = (error: unknown, diagnostic: RegExp) => {
+    let calls = 0;
+    Interpreter.prototype.inspect = function (values) {
+      calls++;
+      if (calls === 1) return original.call(this, values);
+      throw error;
+    };
+    try {
+      const report = run("assert 1 == 2");
+      assert.equal(report.status, "failed");
+      assert.match(report.message, diagnostic);
+      assert.doesNotMatch(report.message, /cannot be printed/);
+      assert.ok(calls > 1);
+    } finally {
+      Interpreter.prototype.inspect = original;
+    }
+  };
+  runWithInspectError(
+    new Error("unexpected inspect failure"),
+    /unexpected inspect failure/,
+  );
+  runWithInspectError(
+    new LanguageError("other inspect failure", undefined, {
+      code: "E_UNBOUND_NAME",
+    }),
+    /E_UNBOUND_NAME: other inspect failure/,
+  );
 });
 
 test("operand observation stops after every assertion, including an unprintable one", () => {
