@@ -2,8 +2,8 @@ test "Anonymous horizontal repetition checks every element"
   type Numbers concrete [... :: Float32*]
 
   assert Numbers == (concrete [_... :: Float32*])
-  expect [0.5, 1] :: Numbers result [0.5, 1] :: Numbers
-  expect [] :: Numbers result [] :: Numbers
+  expect [0.5, 1] :: Numbers is [0.5, 1] :: Numbers
+  expect [] :: Numbers is [] :: Numbers
   assert not([0.1] .matches Numbers)
   assert not(["wrong"] .matches Numbers)
 end
@@ -62,7 +62,7 @@ test "Anonymous positional repetition can precede labeled fields"
   type Packet concrete Packet(... :: Float32*, note: String)
   packet = Packet(0.5, 1, note: "kept") :: Packet
 
-  expect packet.note result "kept" :: String
+  expect packet.note is "kept" :: String
   assert not(Packet(0.1, note: "wrong") .matches Packet)
 end
 
@@ -72,7 +72,7 @@ test "Anonymous matrix repetition still needs one list layer per dimension"
       ... :: Float32*
       ...
     ]
-  error "E_SPREAD_DIMENSION"
+  fails "E_SPREAD_DIMENSION"
 end
 
 test "An expected matrix type keeps its vertical repetition"
@@ -85,7 +85,7 @@ test "An expected matrix type keeps its vertical repetition"
       ... :: Float32**
       ...
     ])
-  result
+  is
     [
       ()
       0.5
