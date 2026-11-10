@@ -2,8 +2,9 @@
 
 Proposed on 10 November 2026 from [PR #76](https://github.com/johnwarden/pattern-language/pull/76),
 reviewed at `5539bc2bc6901dbad6557ed4c70e75abbc761019`. This record is
-**awaiting design approval**. The fraction spelling, canonical printing choices
-and spacing consequence below are proposals, even where the PR already implements
+**awaiting design approval**. The mixed-arithmetic grouping rule is now approved
+separately. The fraction spelling, remaining fraction-grouping restriction and
+canonical printing choices below remain proposals, even where the PR implements
 them.
 
 ## Existing contract and intended change
@@ -47,7 +48,7 @@ test "Fraction literals denote exact reduced Rational values"
   expect 01/003 is 1/3 :: Rational
   expect 9007199254740993/1 is 9007199254740993 :: Rational
   assert 2/6 == 1/3
-  assert (1/3 * 3) == 1
+  assert ((1/3) * 3) == 1
   assert ((-1/3) * 3) == -1
 end
 
@@ -60,7 +61,7 @@ end
 These source-reading errors are distinct from evaluating the infix division
 expression `1 / 0`; this proposal does not redefine arithmetic division errors.
 
-## Slash syntax and the spacing decision
+## Slash syntax and the agreed arithmetic grouping
 
 Spaced slash remains the existing infix operator. One-sided spacing such as
 `1 /3` or `1/ 3` remains invalid. Names still require infix spaces: `a/b`
@@ -80,29 +81,33 @@ test "Fraction syntax preserves the existing slash boundaries"
 end
 ```
 
-**A design decision is required before approval.** Equal-precedence infix
-operators associate to the right, while a fraction literal is an atomic operand.
-The PR therefore gives these larger expressions different meanings when spaces
-around the slash change:
+Jonathan has now approved [parentheses when mixing arithmetic
+operators](../approved/arithmetic-operator-grouping.md): preserve equal precedence
+and right associativity; reject an unparenthesized arithmetic chain that mixes
+different operators. Thus `a + (b * c)` is valid and `a + b * c` rejects.
 
-| Source | Grouped interpretation under the PR | Exact result |
+**Fraction-literal integration still needs one boundary decision.** A validator
+that sees `1/3` only as a numeric atom would not count its slash when checking
+`1/3 + 1`. Even counting that slash does not settle repeated division:
+
+| Source under the original PR | Grouped interpretation | Exact result |
 | --- | --- | --- |
-| `1/3 * 3` | `(1/3) * 3` | `1` |
-| `1 / 3 * 3` | `1 / (3 * 3)` | `1/9` |
-| `1/3 + 1` | `(1/3) + 1` | `4/3` |
-| `1 / 3 + 1` | `1 / (3 + 1)` | `1/4` |
+| `1/2 / 3` | `(1/2) / 3` | `1/6` |
+| `1 / 2 / 3` | `1 / (2 / 3)` | `3/2` |
 
-These outcomes were verified against the PR's parser and Rational changes.
-They follow the existing [infix contract](../../tests/specification/language.test)
-and need to be reconciled with the [formatting-safety contract](../../design/WHITESPACE.md).
-The PR's observation that unspaced fractions were previously illegal does not
-resolve this consequence: both spellings become legal, differently grouped forms
-after the change.
+Both forms use only division. The newly agreed mixed-operator restriction alone
+does not distinguish them. These consequences follow the existing
+[infix contract](../../tests/specification/language.test) and still need to meet
+the [formatting-safety contract](../../design/WHITESPACE.md).
 
-Decide whether this fraction spelling is an explicit permitted spacing-sensitive
-form, or revise the spelling before approval. This draft approves neither an
-exception to formatting safety nor an alternative notation, and does not change
-infix associativity.
+Proposed completion: require parentheses around an atomic fraction literal used
+as an operand of a larger arithmetic expression, even if that expression also
+uses division. Write `(1/2) / 3` or `1 / (2/3)`. This additional restriction
+awaits Jonathan's decision; it is not silently included in the approved rule.
+
+The same decision must be applied by the Code reader and canonical printer.
+Preserve a standalone `1/3` atom, and print whatever grouping its enclosing
+arithmetic context requires after that boundary is settled.
 
 Inputs such as `1/3/2`, `1.0/3`, `1/3e2`, `1/3.5`, `1_0/3` and
 `1/3_0` are rejected by the proposed implementation. Focused contracts should
@@ -196,14 +201,14 @@ remain host observations rather than new destination-language concepts.
 
 ## Migration and approval checklist
 
-- After the spelling and spacing decision is accepted, add or revise the focused
+- After the remaining fraction-grouping boundary is accepted, add or revise the focused
   executable contracts, starting with the PR's
   [fractions.test](https://github.com/johnwarden/pattern-language/blob/5539bc2bc6901dbad6557ed4c70e75abbc761019/tests/numeric/fractions.test).
   Preserve the infix and prefix controls above.
 - Replace the explicit Rational serialization-failure expectation for `1 / 3`
   in [exact-values.test](../../tests/numeric/exact-values.test) with exact-value
   and canonical-text observations. Preserve the arithmetic observation that
-  multiplying by three yields one.
+  multiplying the explicitly grouped value by three yields one.
 - Update [rational-primitives.test.ts](../../test/rational-primitives.test.ts) and
   [round-trip-parsing.test.ts](../../test/round-trip-parsing.test.ts) for the
   native syntax/transport boundary; preserve their distinct coverage.
