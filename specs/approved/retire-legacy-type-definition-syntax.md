@@ -51,6 +51,31 @@ Likewise, clarify `def` constants that merely refer to an existing Type value.
 Do not infer a blanket ban on Type-valued computation, or make indirect `def`
 aliases a new declaration mechanism, before that boundary is agreed in chat.
 
+## Open patterns migrate to `abstract`
+
+Approved by Jonathan in the project chat on 2026-11-10. The retired
+`def Name type pattern` and `type pattern` forms constructed an abstract type
+when the pattern was open, that is, when it included `...` or `**` (an open
+structural facet). Migrate such definitions to `abstract`, never `concrete`:
+
+```pattern
+type Rectangular abstract Rect(w :: Float, h :: Float, **)
+```
+
+replaces `def Rectangular type :Rect(w :: Float, h :: Float, **)`. A concrete
+type cannot be open: `ConcreteType({**})` is an error, and the same holds for
+the `concrete` pattern form. The mass edit must therefore classify each retired
+declaration by whether its pattern is open instead of rewriting every `type` to
+`concrete`. The diagnostic is not selected here; the implementation tests choose
+it (`E_TYPE_DESCRIPTION`, the invalid type description code, is the working
+choice).
+
+Pending clarification: how this rule applies to an annotated typed repetition
+such as `... :: Float32*`, which the approved
+[anonymous repeated patterns](anonymous-repeated-patterns.md) record builds as a
+concrete type (`type Numbers concrete [... :: Float32*]`). Do not migrate
+declarations containing `...` until that is confirmed in chat.
+
 ## Implementation and test prerequisites
 
 Existing positive controls are C04/C05 in
