@@ -52,6 +52,8 @@ ordinary assertion if the intended result is already implemented.
 | `examples/types#types-as-ordinary-values` | `toString(Type)(t)` | Type-value representation: final global descriptor encoding. |
 | `examples/types#local-recursive-type-block` | `x` | Type-value representation: canonical text of a recursive descriptor; the expected type parses the old `Type(Recursive(...))` spelling. |
 | `examples/types#type-normalization-and-wrappers` | `Type(Int)` | Retired wrapper: the approved replacement `Int :: PrimitiveType` is a todo beside it, but the subject changes, so the host pairing cannot match. |
+| `examples/types#type-normalization-and-wrappers` | `Type(Rect)` | Retired wrapper applied to a declared type name: the table gives no replacement for `Type(Rect)` (only for the full descriptor). |
+| `examples/types#type-normalization-and-wrappers` | `Type(Type(Rect))` | Retired nested wrapper: no approved replacement. |
 | `examples/types#types-are-ordinary-values` | `Type(Int)` | Retired wrapper: the approved replacement `Int :: PrimitiveType` is a todo beside it, but the subject changes, so the host pairing cannot match. |
 | `examples/types#types-as-ordinary-values` | `Type(pattern) == t` | Public descriptor-field extraction: the old wrapper-specific destructuring is retired and no replacement is approved. |
 | `postfix/values#optional-type-descriptions-print-as-none-unions` | `toString(Type)(type String?)` | Type-value representation: canonical text; old `Type(...)` text migrates only after the format is chosen. |
