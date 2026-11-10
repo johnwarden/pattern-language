@@ -102,7 +102,7 @@ test "C17 defaults belong to bindings and explicit factories"
     (Rect(2, 3) :: Rectangle)
   fails "required color field is absent"
 
-  todo expect
+  expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32, color: String)
     def rectangle(w :: Float32, h :: Float32, color: String = "black")
       (Rect(w, h, color: color) :: Rectangle)

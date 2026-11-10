@@ -1,4 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+# specs/approved/type-values.md: whole-case todo. Blocked on legacy deprecation: the final assertion needs `Type(...)` to be a raw Expression, but legacy `Type(...)` still constructs a Type value.
 todo test "Type value constructors differ from applying a type to data"
   type Rectangle concrete Rect(w :: Rational, h :: Rational)
   t = ConcreteType(Rect(Rational, Rational))

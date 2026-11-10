@@ -411,21 +411,18 @@ export function unionData(members: Value[]): Value {
 }
 
 /**
- * An AbstractType keeps the member order it was built with. The canonical
- * order is spelled UnionType(...); any other order is AbstractType(...), so the
- * two spellings are different values unless the orders coincide.
+ * An AbstractType keeps the members it was built with: no reordering, merging
+ * or deduplication. The canonical members are spelled UnionType(...); any other
+ * list is AbstractType(...), so the two spellings are different values unless
+ * the lists coincide.
  */
 export function orderedUnionData(members: Value[]): Value {
-  const unique = [
-    ...new Map(
-      members.flatMap(unionMembersOf).map((v) => [descriptionKey(v), v]),
-    ).values(),
-  ];
-  const canonical = unionData(unique);
+  const canonical = unionData(members);
   return canonical.kind === "term" &&
-    canonical.body.every((f, i) => f.value === unique[i])
+    canonical.body.length === members.length &&
+    canonical.body.every((f, i) => f.value === members[i])
     ? canonical
-    : term("AbstractType", ...unique);
+    : term("AbstractType", ...members);
 }
 
 /** Stable keys for the public, capture-free description; no host object IDs. */

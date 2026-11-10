@@ -265,7 +265,7 @@ test "Types are ordinary values"
   expect Int is Int :: ReservedSymbol
   expect Float is Float :: ReservedSymbol
   legacy expect Type(Int) is Type(Int) :: Type
-  todo expect Int is Int :: PrimitiveType
+  expect Int is Int :: PrimitiveType
   (r, value, Int, Float, Type(Int))
 end
 
@@ -288,7 +288,7 @@ test "Type normalization and wrappers"
   expect observedTypeInt is Int :: Type
   expect observedTypeTypeInt is Int :: Type
   legacy expect Type(Int) is Type(Int) :: Type
-  todo expect Int is Int :: PrimitiveType
+  expect Int is Int :: PrimitiveType
   legacy expect observedRect is Type(Rect(Float, Float)) :: Type
   todo expect observedRect is ConcreteType(Rect(Float, Float)) :: Type
   legacy expect observedTypeRect is Type(Rect(Float, Float)) :: Type

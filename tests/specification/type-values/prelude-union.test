@@ -1,5 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
-todo test "Type is a prelude union, not a reserved symbol"
+test "Type is a prelude union, not a reserved symbol"
   assert :Type .matches UpperCamelSymbol
   assert not(Type .matches ReservedSymbol)
   assert Int .matches Type

@@ -1,5 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
-todo test "A plain descriptor does not install an accessor"
+test "A plain descriptor does not install an accessor"
   t = ConcreteType(Rect(width: Rational, height: Rational))
   value = Rect(width: 2, height: 3) :: t
   expect value.width fails "unbound name"

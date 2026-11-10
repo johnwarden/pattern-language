@@ -1,5 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
-todo test "Abstract members remain their concrete types"
+test "Abstract members remain their concrete types"
   type Either abstract Rational | String
   a = AbstractType(Rational | String)
   assert Either == a

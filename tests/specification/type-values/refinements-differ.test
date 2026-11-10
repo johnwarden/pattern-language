@@ -1,4 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+# specs/approved/type-values.md: whole-case todo. Upstream: a defined function name cannot be used as a value (E_FUNCTION_NOT_VALUE); see specs/approved/named-function-values.md.
 todo test "Different refinements are not equated merely by their base"
   def positive(n :: Rational) n > 0
   def nonZero(n :: Rational) n != 0

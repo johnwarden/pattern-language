@@ -306,7 +306,15 @@ export class Grammar {
           if (
             value.kind === "symbol" &&
             !value.quoted &&
-            this.keywords.get(value.name)?.includes("TypeExpression")
+            this.keywords
+              .get(value.name)
+              ?.some((form) =>
+                [
+                  "TypeExpression",
+                  "ConcreteTypeExpression",
+                  "AbstractTypeExpression",
+                ].includes(form),
+              )
           )
             return this.readForm(items, pos, matcher);
           const taken = this.takeOpaqueSequence(items, pos, {

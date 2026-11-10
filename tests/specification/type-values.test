@@ -55,13 +55,13 @@ test "C06 equal spellings can belong to different concrete spaces"
   fails "E_INCOMPARABLE_TYPES"
 end
 
-# Cases below capture specs/approved/type-values.md. Cases that need the new
-# kind constructors (ConcreteType, AbstractType, RefinementType) in their setup
-# are whole-case todos in tests/specification/type-values/, one per file because
-# a file may hold only one todo test. Here only cases with working setup appear.
+# Cases below capture specs/approved/type-values.md. Further cases live in
+# tests/specification/type-values/, one per file because a file may hold only one
+# todo test; the todos there wait on refinement declaration syntax, named function
+# values and the legacy Type(...) deprecation.
 
 test "A primitive is already a type value"
-  todo expect Int is Int :: PrimitiveType
+  expect Int is Int :: PrimitiveType
   assert Int .matches Type
   expect :Int fails "E_QUOTED_PRIMITIVE"
 end
@@ -76,7 +76,7 @@ test "An independently declared descriptor interops"
     Shape
   )
   assert first == second
-  todo assert first == ConcreteType(Rect(Rational, Rational))
+  assert first == ConcreteType(Rect(Rational, Rational))
   value = (Rect(2, 3) :: first)
   assert value .matches second
 end
@@ -99,11 +99,11 @@ test "A declaration registers its accessors"
   type Rectangle concrete Rect(w :: Rational, h :: Rational)
   value = Rect(2, 3) :: Rectangle
   expect value.w is 2 :: Rational
-  todo assert Rectangle == ConcreteType(Rect(Rational, Rational))
+  assert Rectangle == ConcreteType(Rect(Rational, Rational))
 end
 
 test "A type constructor cannot declare captures"
-  todo expect
+  expect
     ConcreteType(Rect(w :: Rational, h :: Rational))
   fails "ordinary type construction cannot declare captures/accessors"
 end
@@ -137,26 +137,26 @@ end
 # so no declaration, pattern form or constructor wraps one. E_TYPE_DESCRIPTION (the
 # invalid-type-description code) is the chosen code for every rejection below.
 test "A primitive is not wrapped"
-  todo expect
+  expect
     concrete Int
   fails "E_TYPE_DESCRIPTION"
-  todo expect
+  expect
     abstract Int
   fails "E_TYPE_DESCRIPTION"
-  todo expect
+  expect
     concrete concrete Int
   fails "E_TYPE_DESCRIPTION"
-  todo expect
+  expect
     ConcreteType(Int)
   fails "E_TYPE_DESCRIPTION"
-  todo expect
+  expect
     AbstractType(Int)
   fails "E_TYPE_DESCRIPTION"
-  todo expect
+  expect
     type X concrete Int
     X
   fails "E_TYPE_DESCRIPTION"
-  todo expect
+  expect
     type Y abstract Int
     Y
   fails "E_TYPE_DESCRIPTION"
@@ -166,9 +166,7 @@ end
 
 # specs/approved/type-values.md "Construction and identity": ConcreteType(...) and
 # AbstractType(...) never reorder, merge or deduplicate their alternatives.
-# Distinctness is the ordinary structural comparison of the resulting values. Today
-# the constructor calls are raw Expressions, so the != assertions hold for that
-# reason; the todo membership assertions pin that they are Type values.
+# Distinctness is the ordinary structural comparison of the resulting values.
 # `AbstractType(Int | Int)` is not used: AbstractType(Int) is rejected
 # ("A primitive is not wrapped"), and an Int | Int alternative list is not a spec example.
 test "Kind constructors never reorder or deduplicate"
@@ -178,10 +176,10 @@ test "Kind constructors never reorder or deduplicate"
   assert ConcreteType(:A | :B | :A) != ConcreteType(:A | :B)
   assert AbstractType(Int | String) == AbstractType(Int | String)
   assert ConcreteType(:B | :A) == ConcreteType(:B | :A)
-  todo assert AbstractType(Int | String) .matches Type
-  todo assert AbstractType(String | Int) .matches Type
-  todo assert ConcreteType(:B | :A) .matches Type
-  todo assert ConcreteType(:A | :B | :A) .matches Type
+  assert AbstractType(Int | String) .matches Type
+  assert AbstractType(String | Int) .matches Type
+  assert ConcreteType(:B | :A) .matches Type
+  assert ConcreteType(:A | :B | :A) .matches Type
 end
 
 # Normalization happens when a `concrete` or `abstract` pattern is evaluated, so
@@ -200,8 +198,8 @@ end
 # Jonathan: a concrete type cannot be open; open structural facets (**) are abstract.
 # Rejected as an invalid type description, like the primitive-wrapping forms above.
 test "A concrete type cannot be open"
-  todo expect ConcreteType({**}) fails "E_TYPE_DESCRIPTION"
-  todo expect
+  expect ConcreteType({**}) fails "E_TYPE_DESCRIPTION"
+  expect
     concrete {**}
   fails "E_TYPE_DESCRIPTION"
 end
@@ -209,11 +207,9 @@ end
 # specs/approved/type-values.md "A lone primitive is not wrapped": the rule concerns
 # a lone primitive, not reuse of an existing type. A union of primitives is valid, and
 # an existing type value (an abstract union, a refinement) can be made concrete. The
-# `concrete` pattern form works today; the ConcreteType(...) constructor call is
-# still a raw Expression (not a Type), so its todo assertions fail on `.matches Type`.
 # Value checks use annotated numbers: an unannotated 3 matches both Int and Float.
 test "A union or an existing type value can be made concrete"
-  todo assert ConcreteType(Rational | String) .matches Type
+  assert ConcreteType(Rational | String) .matches Type
   assert (concrete Int | Float) .matches Type
 
   a = abstract Int | Float
@@ -222,14 +218,14 @@ test "A union or an existing type value can be made concrete"
   assert (3 :: Int) .matches b
   assert (0.5 :: Float) .matches b
   assert not("x" .matches b)
-  todo assert ConcreteType(a) .matches Type
+  assert ConcreteType(a) .matches Type
 
   r = Int .where (n -> n > (0 :: Int))
   s = concrete r
   assert s .matches Type
   assert (3 :: Int) .matches s
   assert not((0 :: Int) .matches s)
-  todo assert ConcreteType(r) .matches Type
+  assert ConcreteType(r) .matches Type
 end
 
 test "Concrete descriptors keep their alternatives in the given order"

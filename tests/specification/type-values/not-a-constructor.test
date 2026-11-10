@@ -1,5 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
-todo test "A type value is not a function that constructs its members"
+test "A type value is not a function that constructs its members"
   t = ConcreteType(Box(String))
   expect t("hi") fails "E_NOT_CALLABLE"
   expect Box("hi") :: t is Box("hi") :: t

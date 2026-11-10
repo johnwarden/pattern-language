@@ -1,5 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
-todo test "AbstractType values don't automatically normalize"
+test "AbstractType values don't automatically normalize"
   type Either abstract String | Rational
   a = AbstractType(Rational | String)
   b = AbstractType(String | Rational)

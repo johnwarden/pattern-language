@@ -265,7 +265,7 @@ export class PatternCompiler<T> {
       const { pattern: base, fallback } = fieldPattern(original.value);
       if (fallback && this.domain.allowDefaults === false)
         throw new LanguageError(
-          "defaults are only allowed in binding patterns, not type definitions; use an ordinary factory function",
+          "defaults are forbidden in type descriptions: defaults are only allowed in binding patterns, not type definitions; use an ordinary factory function",
           original.value.span,
           { code: "E_TYPE_DEFAULT", phase: "declaration" },
         );

@@ -1,5 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
-todo test "Supported type values round trip under the prelude Type"
+test "Supported type values round trip under the prelude Type"
   c = ConcreteType(Rect(Rational))
   a = AbstractType(Rational | String)
   assert parse(Type)(toString(Type)(c)) == c

@@ -617,7 +617,7 @@ export class Interpreter {
           ? syntaxData(readCode(text))
           : parseValueText(
               text,
-              this.textDomain(env),
+              domain,
               typeIdentity(type) === typeIdentity(this.primitives.get("Type")!),
               this.layoutFormsFromPattern(type.pattern()),
             ),
@@ -1801,7 +1801,7 @@ export class Interpreter {
             n.name === "MacroRegistration",
           );
         case "TypeExpression":
-          return singleton(this.anonymousType(this.capture(n, "pattern"), env));
+          return singleton(this.typeExpression(n, env));
         case "UnionTypeExpression": {
           const alternatives = (pattern: Syntax): TypeValue[] => {
             const parts = binary(pattern, "|");
@@ -3341,24 +3341,33 @@ export class Interpreter {
         { code: "E_TYPE_DESCRIPTION", phase: "declaration" },
       );
   }
-  /** A ConcreteType value must be of a concrete type. */
+  /** `type pattern`, or `concrete pattern`, which elaborates to the same form. */
+  private typeExpression(
+    n: Extract<Syntax, { kind: "form" }>,
+    env: Scope,
+  ): TypeValue {
+    const type = this.anonymousType(this.capture(n, "pattern"), env);
+    const first = n.items[0];
+    return first?.kind === "symbol" &&
+      !first.quoted &&
+      first.name === "concrete"
+      ? this.concreteOf(type)
+      : type;
+  }
+  /**
+   * ConcreteType(...) and `concrete` make a pattern or an existing type value
+   * concrete. A concrete type cannot be open, and a lone primitive is already a
+   * type value, so neither is wrapped.
+   */
   private concreteOf(type: TypeValue): TypeValue {
     this.rejectPrimitive(type, "ConcreteType");
-    switch (this.typeKind(type)) {
-      case "concrete":
-        return type;
-      default:
-        throw new LanguageError(
-          "ConcreteType requires a concrete type pattern, not " + type.name,
-          undefined,
-          {
-            code: "E_EXPECTED_TYPE",
-            notes: [
-              "Use AbstractType(...) for unions of member types and RefinementType(base, predicate) for refinements.",
-            ],
-          },
-        );
-    }
+    if (type.facet)
+      throw new LanguageError(
+        "a concrete type cannot be open; an open structural facet is declared abstract",
+        undefined,
+        { code: "E_TYPE_DESCRIPTION", phase: "declaration" },
+      );
+    return type;
   }
   private concreteType(description: Value): TypeValue {
     const type = this.materializeType(description);
@@ -4503,6 +4512,7 @@ export class Interpreter {
       type.transparent = target.transparent;
       type.packaged = target.packaged;
       type.facet = target.facet;
+      type.abstractFacet = target.abstractFacet;
       type.unionMembers = target.unionMembers;
       type.treeGrammar = target.treeGrammar;
       const produced =
@@ -4512,7 +4522,6 @@ export class Interpreter {
       this.pendingDefinitions.set(type, decl);
     } catch (error) {
       this.types.delete(key);
-      type.abstractFacet = target.abstractFacet;
       throw error;
     } finally {
       this.buildingTypes--;
@@ -4653,7 +4662,7 @@ export class Interpreter {
       return result;
     }
     if (n.kind === "form" && n.name === "TypeExpression")
-      return this.anonymousType(this.capture(n, "pattern"), env);
+      return this.typeExpression(n, env);
     if (n.kind === "symbol" && !n.quoted) {
       const value = single(this.evaluate(n, env), "type expression");
       const type = this.materializeType(value);

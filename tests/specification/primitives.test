@@ -27,7 +27,7 @@ test "C01 intrinsic primitive values"
   todo expect
     type Bool
   is Bool :: PrimitiveType
-  todo expect PrimitiveType is PrimitiveType :: PrimitiveType
+  expect PrimitiveType is PrimitiveType :: PrimitiveType
 end
 
 test "Literal and computed Booleans share one Bool type"

@@ -1,5 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
-todo test "Concrete descriptors are capture-free and structural"
+test "Concrete descriptors are capture-free and structural"
   type Rectangle concrete Rect(w :: Rational, h :: Rational)
   x = ConcreteType(Rect(Rational, Rational))
   y = ConcreteType(Rect(Rational, Rational))

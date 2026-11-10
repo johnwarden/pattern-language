@@ -1,4 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
+# specs/approved/type-values.md: whole-case todo. Upstream: the `type X refinement Base .where predicate` declaration syntax is not implemented.
 todo test "A refinement has a base and predicate, and keeps its base space"
   def nonZero(n :: Rational) n != 0
   type NonZero refinement Rational .where nonZero

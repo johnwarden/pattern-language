@@ -1,5 +1,4 @@
-# specs/approved/type-values.md: whole-case todo (setup needs the prelude kind constructors).
-todo test "A stored type flows through ordinary calls and returns"
+test "A stored type flows through ordinary calls and returns"
   def make(T :: Type) ConcreteType(Box(T))
   def use(T :: Type)(x :: T) x
   saved = make(String)
