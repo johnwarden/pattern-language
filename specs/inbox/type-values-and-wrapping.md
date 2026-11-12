@@ -48,23 +48,57 @@ expect (type Int | :None) is Type(Int | :None)
 expect (type Wrap(Int)) is Type(Wrap(Int))
 ```
 
-`Type(P)` is the direct descriptor form for a pattern. In this form the
-argument is interpreted as a pattern, and any exposed descriptor payload must
-be typed pattern data. The public form can represent both a plain pattern and
-a wrapped one. `ConcreteType(...)`, `AbstractType(...)` and
-`RefinementType(...)` are superseded as descriptor kinds. An ordinary type
-value can be stored, passed to a function, or used in a type annotation.
+`Type(P)` is a type descriptor literal. It reads its argument as a pattern
+and preserves the descriptor as written, including the order of alternatives.
+The `type` macro returns the normal form of the described type. A literal
+descriptor can describe a type whose normal form is a primitive atom.
+`Type(Int)` is a descriptor of type `Type`; `type Int` yields the primitive
+value `Int :: PrimitiveType`.
 
-Type identity remains structural. Local names and capture names do not affect
-identity. Physical field labels, predicate identity and each wrapper boundary
-participate. Type declarations can install accessors. A plain type expression
-or direct descriptor construction has no declaration effects. Defaults remain
-excluded from type descriptions.
+```pattern
+expect Type(Int) is Type(Int) :: Type
+assert Type(Int | Float) != Type(Float | Int)
+expect (type Int | Float) is Type(Int | Float) :: Type
+expect (type Float | Int) is Type(Int | Float) :: Type
+```
 
-The direct spelling of a primitive descriptor (`Type(Int)`), any difference
-in normalization between `type P` and `Type(P)`, and the public schema for
-descriptor inspection and round trips remain open. `type Int` is settled
-independently of those decisions.
+Descriptor value equality compares the stored pattern structure. Normalized
+types compare by their normal forms. Thus two descriptors can describe the
+same type and still differ as literal values. Local aliases and capture names
+do not affect normalized type identity. Physical field labels, predicate
+identity and wrapper boundaries participate.
+
+Type values can be stored, passed to functions and used in annotations.
+`ConcreteType(...)`, `AbstractType(...)` and `RefinementType(...)` are
+superseded as descriptor kinds. Type declarations can install accessors from
+captures. Plain type expressions and descriptor literals have no declaration
+effects. Defaults remain excluded from type descriptions.
+
+### Literal values round-trip
+
+Every literal denotes a specific value. Printing that value as literal text
+and reading the result in the appropriate type yields the same exact value.
+This holds for non-normal descriptors as well. Printing or reading a
+`Type(P)` literal preserves its descriptor value. Normalization is the
+operation of the `type` macro.
+
+```pattern
+d = Type(Float | Int)
+text = toString(Type)(d)
+assert parse(Type)(text) == d
+assert parse(Type)(text) != Type(Int | Float)
+
+intDescriptor = Type(Int)
+assert parse(Type)(toString(Type)(intDescriptor)) == intDescriptor
+
+primitive = Int
+assert parse(PrimitiveType)(toString(PrimitiveType)(primitive)) == primitive
+```
+
+Descriptor inspection means extracting the pattern from an existing
+`Type(P)` value for use in a program, for example extracting the two arms
+of a union. The literal round-trip guarantee is independent of the syntax
+and value representation used to expose those pieces.
 
 ## Wrapping and unwrapping
 
@@ -104,13 +138,50 @@ assert (unwrap m) == n
 expect (unwrap n) is 5 :: Int
 ```
 
-A wrapped refinement checks its predicate before wrapping. A wrapped open
-facet can take an existing concrete struct as its base value. Unwrapping then
-recovers that struct. For a bare constructor designator against a wrapped open
-facet, the intended example is `Rect(3, 5, color: :Red) ::
-WrappedAugmentedRectangle`. Specify how the concrete base struct is inferred
-when the facet leaves fields open, and what diagnostic to report when that
-inference is ambiguous. An explicitly typed base struct avoids this question.
+A wrapped refinement checks its predicate before wrapping.
+
+## Open facets retain the concrete value
+
+An open facet is an abstract type that can match multiple concrete struct
+types. Assigning to a facet requires the right-hand side to resolve to one
+unambiguous concrete value. The binding has the facet as its static type.
+At runtime, where the concrete type is not statically known, the binding
+carries the value and a reference to its concrete type, as with a Go
+interface.
+
+Wrapping a facet makes one new concrete type with an abstract payload. Each
+payload retains its own concrete type. `unwrap` recovers that concrete
+value, with the facet as the static type of the result.
+
+```pattern
+type Color :Red | :Green | :Blue
+type Rectangle Rect(Int, Int)
+type ColoredRectangle Rect(Int, Int, color: Color)
+type RedRectangle Rect(Int, Int, color: :Red)
+type Rectangular Rect(Int, Int, **)
+type WrappedRectangular Wrap(Rectangular)
+
+plain = Rect(3, 5) :: Rectangle
+painted = Rect(3, 5, color: :Red) :: ColoredRectangle
+
+(a :: Rectangular) = plain
+(b :: Rectangular) = painted
+expect a is Rect(3, 5) :: Rectangle
+expect b is Rect(3, 5, color: :Red) :: ColoredRectangle
+assert a != b
+
+(wa :: WrappedRectangular) = a
+(wb :: WrappedRectangular) = b
+expect (unwrap wa) is Rect(3, 5) :: Rectangle
+expect (unwrap wb) is Rect(3, 5, color: :Red) :: ColoredRectangle
+```
+
+The bare designator `Rect(3, 5, color: :Red)` can designate either a
+`ColoredRectangle` or a `RedRectangle`. The facet supplies no unique closed
+type for that designator. Supply the concrete type on the right-hand side
+before binding to either `Rectangular` or `WrappedRectangular`. For
+example, `Rect(3, 5, color: :Red) :: RedRectangle` would carry the concrete
+type `RedRectangle` through both the facet binding and the wrapper.
 
 ## Destructuring, match and overloads
 
@@ -181,21 +252,9 @@ assert a != b
 assert a == c
 ```
 
-The same rule applies to an open facet. Two bindings annotated with that facet
-can be compared even when one holds a Rectangle and the other a
-ColoredRectangle. Their original concrete types remain available to pattern
-matching.
-
-```pattern
-type Color :Red | :Green | :Blue
-type Rectangle Rect(Int, Int)
-type ColoredRectangle Rect(Int, Int, color: Color)
-type Rectangular Rect(Int, Int, **)
-
-(a :: Rectangular) = Rect(3, 5) :: Rectangle
-(b :: Rectangular) = Rect(3, 5, color: :Red) :: ColoredRectangle
-assert a != b
-```
+The `a != b` assertion in the open-facet example above uses the same rule.
+Both bindings have static type `Rectangular`, and their exact values have
+different concrete types.
 
 Two operands of different concrete static types cannot be compared. Both
 `==` and `!=` reject a direct comparison between a wrapped value and its
@@ -224,5 +283,6 @@ plain constructor pattern. An abstract union, refinement, or facet becomes a
 plain pattern of the corresponding form. A concrete union becomes
 `Wrap(P | Q)`. A former concrete carveout becomes `Wrap(P .where predicate)`.
 A bare primitive and an explicitly wrapped primitive are both valid and have
-distinct type identities. Review typed text, recursive descriptor syntax, and
-accessor installation on wrapped declarations before migrating those contracts.
+distinct type identities. Apply the literal round-trip rule to typed text.
+Review recursive descriptor syntax and accessor installation on wrapped
+declarations before migrating those contracts.
