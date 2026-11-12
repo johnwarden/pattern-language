@@ -3,18 +3,16 @@
 Draft for review. On approval, this supersedes [Type values without a reserved
 Type](../approved/type-values.md).
 
-## One pattern language
+## Plain patterns and `Wrap(P)`
 
-Type descriptions, parameter patterns, destructuring bindings and match arms
-use the same pattern compiler and matching semantics. Each context supplies its
-own inputs and consumes the result. A declaration can register accessors from
-captures, a binding introduces captures into scope, and a call resolves all
-eligible overloads.
-
-A type description accepts a singleton value, a reference to a type, a
-constructor pattern, an alternative, a predicate refinement, or a pattern with
-a positional rest or open labeled fields. Any of these can appear inside
-`Wrap(...)`, including in a nested field type.
+[VALUE-SPACES.md’s interpretation roles](../../VALUE-SPACES.md#three-interpretation-roles)
+and [D06](../../design/LANGUAGE-DECISIONS.md#d06-concrete-refinement-and-abstract-interpretations-have-different-effects--confirmed-direction)
+use `concrete`, `refinement` and `abstract` as type-producing qualifiers.
+This proposal replaces those qualifiers with plain patterns and an explicit
+`Wrap(P)` boundary. A closed constructor pattern establishes a struct space
+by itself. A union or facet describes the concrete types it admits, and a
+predicate restricts the values admitted by its base. `Wrap(P)` can wrap any
+of these patterns, including a singleton, a type reference or a field type.
 
 | Pattern | Plain type | Wrapped type |
 | --- | --- | --- |
@@ -25,62 +23,71 @@ a positional rest or open labeled fields. Any of these can appear inside
 | `Int .where isPositive` | Refinement preserving the base type | Carveout |
 | `Rect(Int, Int, **)` | Open structural facet | Concrete type designated by structs that satisfy the facet |
 
-A closed constructor pattern describes a concrete struct, including when a
-field has an abstract type. A rest or open field pack makes a constructor
-pattern a facet. For example, `Some(Int) | :None` has a concrete struct member
-and a singleton symbol member. Neither requires a raw expression tree as a
-runtime value. Constructor-shaped source can designate a struct in an expected
-type context. Source represented as `Code` retains its separate identity.
+For example, the plain union `Some(Int) | :None` contains the struct type
+`Some(Int)` and the singleton symbol `:None`.
+
+The proposed runtime model also supersedes [the raw-expression
+contract](../implemented/raw-expression-values.md), D03 and C04. A bare
+constructor shape can serve as source for designation into a concrete struct,
+but it cannot evaluate to a raw expression tree when no concrete type is
+resolved. A closed type description such as `Rect(Int, Int)` describes the
+struct directly. The parser’s `Expression` migration in D03 is a separate
+source representation decision.
+
+The [approved open-pattern migration](../approved/retire-legacy-type-definition-syntax.md#open-patterns-migrate-to-abstract)
+sent open declarations to `abstract` and rejected open `concrete` descriptions.
+Under this draft, `type Rectangular Rect(Int, Int, **)` declares the facet,
+and `type WrappedRectangular Wrap(Rectangular)` declares a concrete wrapper
+over it. This rule is about open shape constraints. The interpretation of
+[typed repetitions](../approved/anonymous-repeated-patterns.md) is a separate
+decision from choosing whether to wrap a pattern.
 
 ## Constructing and storing type values
 
-`type P` compiles and normalizes a type description. A lone type reference
-resolves to the referenced type. In particular, a primitive type value stays
-a primitive type value.
+[The approved type-values record](../approved/type-values.md) retires
+`Type(P)` in favor of `ConcreteType(P)`, `AbstractType(P)` and
+`RefinementType(T, predicate)`. This draft replaces the three kinds with
+the literal `Type(P)`. `Type` in a type-valued parameter such as
+`T :: Type` accepts both primitive atoms and descriptor literals. The
+[prelude kind schemas](prelude-type-kind-patterns.md) describe the earlier
+model.
+
+The `type P` macro returns the normal form of the described type. This
+reverses the [retirement of `type P` in expression
+position](../approved/retire-legacy-type-definition-syntax.md). Named
+declarations use `type Name P`; the old `def Name type P` spelling remains
+retired. A bare primitive normalizes to the primitive itself. A direct
+`Type(P)` literal preserves the descriptor's structure, including alternative
+order, and can describe a primitive.
 
 ```pattern
-t = (type Int)
-expect t is Int :: PrimitiveType
-
-expect (type :None) is Type(:None)
-expect (type Rect(Int, Int)) is Type(Rect(Int, Int))
-expect (type Int | :None) is Type(Int | :None)
-expect (type Wrap(Int)) is Type(Wrap(Int))
-```
-
-`Type(P)` is a type descriptor literal. It reads its argument as a pattern
-and preserves the descriptor as written, including the order of alternatives.
-The `type` macro returns the normal form of the described type. A literal
-descriptor can describe a type whose normal form is a primitive atom.
-`Type(Int)` is a descriptor of type `Type`; `type Int` yields the primitive
-value `Int :: PrimitiveType`.
-
-```pattern
+expect (type Int) is Int :: PrimitiveType
 expect Type(Int) is Type(Int) :: Type
+expect (type :None) is Type(:None) :: Type
+expect (type Rect(Int, Int)) is Type(Rect(Int, Int)) :: Type
+expect (type Wrap(Int)) is Type(Wrap(Int)) :: Type
+
 assert Type(Int | Float) != Type(Float | Int)
 expect (type Int | Float) is Type(Int | Float) :: Type
 expect (type Float | Int) is Type(Int | Float) :: Type
 ```
 
-Descriptor value equality compares the stored pattern structure. Normalized
-types compare by their normal forms. Thus two descriptors can describe the
-same type and still differ as literal values. Local aliases and capture names
-do not affect normalized type identity. Physical field labels, predicate
-identity and wrapper boundaries participate.
-
-Type values can be stored, passed to functions and used in annotations.
-`ConcreteType(...)`, `AbstractType(...)` and `RefinementType(...)` are
-superseded as descriptor kinds. Type declarations can install accessors from
-captures. Plain type expressions and descriptor literals have no declaration
-effects. Defaults remain excluded from type descriptions.
+[D05](../../design/LANGUAGE-DECISIONS.md#d05-structural-descriptor-identity-remains-the-rule--confirmedretained)
+and [TYPE-VALUES.md](../../TYPE-VALUES.md#identity-is-structural) describe
+identity in terms of normalized structural descriptors. That identifies
+the **type described**. Equality of **literal descriptor values** compares
+the stored structure, even when their descriptions have the same normal form.
+The D20 example of `type Int` already returns the primitive value. This draft
+specifies `PrimitiveType` as its type, as in the approved type-values record;
+D20 uses `ReservedSymbol`.
 
 ### Literal values round-trip
 
-Every literal denotes a specific value. Printing that value as literal text
-and reading the result in the appropriate type yields the same exact value.
-This holds for non-normal descriptors as well. Printing or reading a
-`Type(P)` literal preserves its descriptor value. Normalization is the
-operation of the `type` macro.
+[The existing typed-text rule](../../VALUE-SPACES.md#text-and-portability)
+expresses round trips for supported types. The guarantee applies to every
+literal by definition. Printing its value as literal text and reading it
+back under the appropriate type yields the same exact value. For a
+`Type(P)` literal, that includes the original alternative order.
 
 ```pattern
 d = Type(Float | Int)
@@ -97,17 +104,20 @@ assert parse(PrimitiveType)(toString(PrimitiveType)(primitive)) == primitive
 
 Descriptor inspection means extracting the pattern from an existing
 `Type(P)` value for use in a program, for example extracting the two arms
-of a union. The literal round-trip guarantee is independent of the syntax
-and value representation used to expose those pieces.
+of a union. The extraction syntax and representation remain open.
 
 ## Wrapping and unwrapping
+
+The [approved type-values record’s primitive rule](../approved/type-values.md#a-lone-primitive-is-not-wrapped)
+rejects wrapping a lone primitive. Here `Wrap(Int)` and repeated wrappers
+are valid. Each added boundary changes the concrete type.
 
 `Wrap(P)` creates a concrete type disjoint from its base. An input that
 designates a value under `P` can designate a value of `Wrap(P)` when that
 wrapped type is expected. The resulting value belongs to `Wrap(P)`. A wrapped
 value cannot designate a value in its base type. `unwrap` removes one
 boundary and yields the concrete base value, including the selected union
-member. Nested wrappers each add a distinct concrete type.
+member.
 
 ```pattern
 t = (type Wrap(:None))
@@ -138,20 +148,17 @@ assert (unwrap m) == n
 expect (unwrap n) is 5 :: Int
 ```
 
-A wrapped refinement checks its predicate before wrapping.
+Designation into a wrapped refinement requires evidence for its predicate.
 
 ## Open facets retain the concrete value
 
-An open facet is an abstract type that can match multiple concrete struct
-types. Assigning to a facet requires the right-hand side to resolve to one
-unambiguous concrete value. The binding has the facet as its static type.
-At runtime, where the concrete type is not statically known, the binding
-carries the value and a reference to its concrete type, as with a Go
-interface.
-
-Wrapping a facet makes one new concrete type with an abstract payload. Each
-payload retains its own concrete type. `unwrap` recovers that concrete
-value, with the facet as the static type of the result.
+[Abstract storage](../../VALUE-SPACES.md#binding-views-and-abstract-storage)
+already retains the actual concrete type of an abstract slot where it is
+needed at runtime. The new case is `Wrap(Facet)`: the wrapper is one
+concrete type, and its payload can be any of the concrete structs admitted
+by the facet. Binding to either type requires the right-hand side to resolve
+to one unambiguous concrete value. The facet supplies the static type of the
+unwrapped result; the result retains the concrete type of the stored payload.
 
 ```pattern
 type Color :Red | :Green | :Blue
@@ -185,10 +192,14 @@ type `RedRectangle` through both the facet binding and the wrapper.
 
 ## Destructuring, match and overloads
 
-The same compiler recognizes a closed struct in a destructuring binding, a
-parameter or a match arm. The outer wrapper boundary is visible to all these
-uses. A plain struct pattern can destructure the base after an explicit
-`unwrap`. A whole-value typed pattern can bind the wrapped value itself.
+[C04](../../design/LANGUAGE-DECISIONS.md#c04--raw-expressions-and-explicit-concrete-interpretation)
+requires explicit projection to destructure a typed struct. In this draft a
+plain constructor pattern destructures a closed struct directly in a binding,
+parameter or match arm. With `Wrap(P)`, a whole-value typed pattern binds the
+wrapper. To match or destructure its payload, apply `unwrap` first. This
+replaces the match-based extraction shown for wrapper-like types in
+[C11](../../design/LANGUAGE-DECISIONS.md#c11--explicit-projection-crosses-one-boundary-only);
+each `unwrap` still crosses exactly one boundary.
 
 ```pattern
 type Rectangle Rect(Int, Int)
@@ -207,13 +218,16 @@ expect f(a) fails "ambiguous"
 expect f(b) is "Wrapped Rectangle"
 ```
 
-Overload resolution considers every applicable definition using the shared
-matcher, including candidates accepted by designation. Direct membership
-has no priority over designation across overloads. If both definitions above
-are in scope, the call with `a` is ambiguous. The call with `b` has one
-candidate because designation cannot unwrap `b`. Adding an applicable
-overload can expose an ambiguity and leave the author in control of how to resolve it. This rule concerns overload candidates. Ambiguous member
-interpretations within an expected type keep their own diagnostic.
+The [existing direct-arm precedence](../../VALUE-SPACES.md#constructiondesignation-and-projection--settled)
+selects a designation path within a single expected type. Across overloads,
+both direct membership and designation make a candidate applicable. Thus
+`f(a)` is ambiguous and `f(b)` selects the wrapped overload. An annotation
+can make the chosen value explicit. [D10’s evidence
+rule](../../design/LANGUAGE-DECISIONS.md#d10-where-constraints-need-evidence-refinement-qualified-functions-are-allowed--retainedclarified)
+continues to govern predicate requirements: overload resolution cannot
+speculatively evaluate predicates to manufacture evidence. The overload
+ambiguity here is distinct from [ambiguous designation within an expected
+type](../approved/ambiguous-values.md).
 
 ```pattern
 type Some(T :: Type) Some(T)
@@ -236,9 +250,10 @@ remains open. A plain match on `x` cannot inspect which member is inside it.
 
 ## Equality uses the operands' static type
 
-Two variables can be compared under the same static type, including an
-abstract type. Their values are equal when the exact values are equal under
-that shared static type. An abstract annotation preserves the concrete member
+[Binding views and abstract storage](../../VALUE-SPACES.md#binding-views-and-abstract-storage)
+already identify a shared abstract comparison domain. The draft pins down
+the equality rule for that domain. Two variables of the same static type can be compared,
+including when that type is abstract. Equality requires the same exact value. An abstract annotation preserves the concrete member
 value. It supplies the comparison type even when the two members have different
 concrete types. The concrete member type is part of the exact value being
 compared, so values from distinct concrete members compare unequal.
@@ -276,13 +291,20 @@ value in `t`; it does not compare the wrapped value to an already typed
 symbol. How comparison handles a contextual literal or operands with
 different but overlapping abstract static types is a separate rule.
 
-## Migration
+## Contract migration
 
-Translate existing contracts by behavior. A legacy concrete struct becomes a
-plain constructor pattern. An abstract union, refinement, or facet becomes a
-plain pattern of the corresponding form. A concrete union becomes
-`Wrap(P | Q)`. A former concrete carveout becomes `Wrap(P .where predicate)`.
-A bare primitive and an explicitly wrapped primitive are both valid and have
-distinct type identities. Apply the literal round-trip rule to typed text.
-Review recursive descriptor syntax and accessor installation on wrapped
-declarations before migrating those contracts.
+| Existing contract | Replacement case |
+| --- | --- |
+| [C04 and raw-expression tests](../../tests/specification/raw-expressions.test) | Construct a struct in concrete context, destructure it directly, and reject a shape that would otherwise evaluate to a raw tree. |
+| [C05–C06 and descriptor contracts](../../tests/specification/type-values.test) | Use plain struct patterns, literal descriptors and explicit normalization with `type P`. Test distinct descriptor orders before normalization and equal results after it. Keep the concrete-union comparison cases using explicit wrappers. |
+| [C11–C12](../../tests/specification/interpretations.test) | Use `Wrap(P \| Q)` for concrete unions and `Wrap(P .where predicate)` for carveouts. Exercise one boundary per `unwrap` and preserve the immediate-member designation cases. |
+| [C13 and C15](../../tests/specification/interpretations.test) | Use plain unions and facets. Add the wrapped-facet case that recovers the original concrete payload. |
+| [Optional convention](../../design/POSTFIX.md#nested-concrete-unions) | Express the concrete optional recipe as `type T? Wrap(T \| :None)` and preserve nested absence semantics. |
+| [C23 and typed text](../../VALUE-SPACES.md#text-and-portability) | Round-trip non-normal `Type(P)` values without reordering alternatives. |
+
+The changes above replace the affected type forms and projection examples in
+[GRAMMAR.md](../../GRAMMAR.md#type-producing-forms-and-declarations) and
+[the roadmap’s immediate conformance targets](../../ROADMAP.md#immediate-priority-implement-the-executable-specification)
+when the replacement contracts are adopted. Recursive descriptor spelling
+and accessor installation on wrapped declarations need decisions before
+migrating those specific contracts.
