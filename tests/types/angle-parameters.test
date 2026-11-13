@@ -1,0 +1,28 @@
+test "Angle applications preserve complete type packs and nesting"
+  type Box<T> concrete Box(T)
+  type Pair<A, B> concrete Pair(A, B)
+  assert Box<String> == (concrete Box(String))
+  assert Box<Box<String>> == Box<Box<String>>
+  assert
+    Pair<String, String> == Pair<String, String>
+  end
+  assert
+    Pair<String, Box<String>> != Pair<Box<String>, String>
+  end
+end
+
+test "Angle arguments require types, and runtime constructor packs stay separate"
+  type Box<T> concrete Box(T)
+  expect
+    Box<"hello">
+  fails "type arguments must be Type values"
+  expect
+    Box<String, String>
+  fails "pattern did not match"
+  assert (Box("hello") :: Box<String>) == (Box("hello") :: (concrete Box(String)))
+end
+
+test "Spaced comparisons retain their ordinary meaning"
+  assert 1 < 2
+  assert 2 > 1
+end

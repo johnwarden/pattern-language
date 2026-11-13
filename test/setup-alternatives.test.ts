@@ -14,9 +14,9 @@ test("a todo result pack remains a trial instead of becoming playground output",
   assert.match(report.message, /setup now succeeds/);
 });
 
-test("future generic setup uses its source schema and keeps the current definition", () => {
+test("unsupported constrained generic setup uses its source schema and keeps the current definition", () => {
   const value = read(`  legacy def Color type :Black | :White
-  todo type Color<T> concrete :Black | :White
+  todo type Color<T :: Type> concrete :Black | :White
   expect Color is Type(:Black | :White) :: Type`);
   assert.deepEqual(
     value.steps.map((s) => [s.kind, s.mode]),

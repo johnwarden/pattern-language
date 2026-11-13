@@ -16,6 +16,7 @@ import {
   syntaxKey,
   listLayer,
   symbol,
+  apply,
   isName,
   isTypeSpecification,
 } from "./syntax.ts";
@@ -412,17 +413,44 @@ export class Grammar {
       return n;
     const signature = n.captures.get("signature");
     const name = signature?.fields[0]?.value;
+    const generic = name?.kind === "apply" && name.typeArguments;
+    const typeName = generic ? name.head : name;
     if (
-      !name ||
-      name.kind !== "symbol" ||
-      name.quoted ||
-      !/^\p{Lu}/u.test(name.name)
+      !typeName ||
+      typeName.kind !== "symbol" ||
+      typeName.quoted ||
+      !/^\p{Lu}/u.test(typeName.name) ||
+      (generic &&
+        (!name.body.length ||
+          name.body.some(
+            (field) =>
+              !/^_\d+$/.test(field.label) ||
+              field.value.kind !== "symbol" ||
+              field.value.quoted ||
+              !/^\p{Lu}/u.test(field.value.name),
+          )))
     )
       throw new LanguageError(
-        "type declaration requires a bare UpperCamel name; parameterized declarations remain unsupported",
-        name?.span ?? n.span,
+        "type declaration requires an UpperCamel name and simple Type parameters",
+        typeName?.span ?? n.span,
         { code: "E_TYPE_DECLARATION_SIGNATURE", phase: "declaration" },
       );
+    const definitionSignature = generic
+      ? {
+          ...apply(
+            typeName!,
+            name.body.map((field) => ({
+              ...field,
+              value: apply(
+                apply(symbol("::"), [{ label: "_1", value: field.value }]),
+                [{ label: "_1", value: symbol("Type") }],
+              ),
+            })),
+          ),
+          typeArguments: true,
+          angleDeclaration: true,
+        }
+      : name!;
     const pattern = n.captures.get("pattern")!;
     const body: Syntax = {
       kind: "form",
@@ -439,7 +467,7 @@ export class Grammar {
       name: "Definition",
       items: sourceItems,
       captures: new Map([
-        ["signature", signature!],
+        ["signature", { ...signature!, fields: [entry(definitionSignature)] }],
         ["body", { rest: false, fields: [entry(body)] }],
       ]),
     };

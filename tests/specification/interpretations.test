@@ -52,7 +52,7 @@ test "C11 projection is one explicit concrete boundary"
 end
 
 test "C12 designation is recursive only when unambiguous"
-  todo expect
+  expect
     type Option<T> concrete T | :None
     (outer :: Option<Option<String>>) = "Hello"
     text = match outer
@@ -80,13 +80,19 @@ test "C12 designation is recursive only when unambiguous"
     )
   end
 
-  todo assert
+  assert
     type Option<T> concrete T | :None
     (outer :: Option<Option<String>>) = :None
     (explicitOuter :: Option<Option<String>>) = :None :: Option<Option<String>>
     (inner :: Option<Option<String>>) = :None :: Option<String>
+    (outer == explicitOuter)
+  end
 
-    assert outer == explicitOuter
+  assert
+    type Option<T> concrete T | :None
+    (outer :: Option<Option<String>>) = :None
+    (explicitOuter :: Option<Option<String>>) = :None :: Option<Option<String>>
+    (inner :: Option<Option<String>>) = :None :: Option<String>
     (outer != inner)
   end
 

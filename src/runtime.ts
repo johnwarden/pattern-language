@@ -312,6 +312,7 @@ export class Interpreter {
   private expansionDepth = 0;
   private compileTimeDepth = 0;
   private buildingTypes = 0;
+  private constructingDeclarationNames: string[] = [];
   private inlineTypeDepth = 0;
   private parsingDataDepth = 0;
   private interpretingDepth = 0;
@@ -1729,14 +1730,27 @@ export class Interpreter {
       }
       switch (n.name) {
         case "MacroRegistration":
-        case "Definition":
+        case "Definition": {
           this.grammar.registerDefinition(n);
+          const signature = this.capture(n, "signature");
+          if (
+            n.name === "Definition" &&
+            isName(n.items[0], "def") &&
+            signature.kind === "apply" &&
+            signature.typeArguments
+          )
+            throw new LanguageError(
+              "angle type parameters require a type declaration",
+              n.span,
+              { code: "E_TYPE_DECLARATION_SIGNATURE", phase: "declaration" },
+            );
           return this.define(
-            this.capture(n, "signature"),
+            signature,
             this.capture(n, "body"),
             env,
             n.name === "MacroRegistration",
           );
+        }
         case "TypeExpression":
           return singleton(this.anonymousType(this.capture(n, "pattern"), env));
         case "UnionTypeExpression": {
@@ -1836,6 +1850,28 @@ export class Interpreter {
       throw new LanguageError("unknown or incomplete macro form", n.span);
     if (n.kind !== "apply")
       throw new LanguageError("unresolved syntax reached evaluator");
+    if (n.typeArguments) {
+      if (n.head.kind !== "symbol" || n.head.quoted)
+        throw new LanguageError(
+          "type application requires a named type factory",
+          n.span,
+          { code: "E_TYPE_ARGUMENTS" },
+        );
+      const lookup = lexicalScopes.get(n.head) ?? env;
+      const declaration = lookup.get(n.head.name);
+      if (!declaration || "kind" in declaration || !declaration.parameterized)
+        throw new LanguageError(
+          "type application requires a parameterized type factory",
+          n.span,
+          { code: "E_TYPE_ARGUMENTS" },
+        );
+      const args = this.evaluateFields(n.body, env);
+      if (args.some((arg) => !this.materializeType(arg.value)))
+        throw new LanguageError("type arguments must be Type values", n.span, {
+          code: "E_TYPE_ARGUMENTS",
+        });
+      return singleton(this.instantiate(declaration, args));
+    }
     if (n.head.kind === "symbol" && !n.head.quoted && n.head.name === "$")
       throw new LanguageError("$ is only valid inside quotation", n.span, {
         code: "E_UNQUOTE_CONTEXT",
@@ -2299,6 +2335,16 @@ export class Interpreter {
       return [];
     }
     const packs: Field<Syntax>[][] = [];
+    if (
+      signature.kind === "apply" &&
+      signature.typeArguments &&
+      !signature.angleDeclaration
+    )
+      throw new LanguageError(
+        "angle type parameters require a type declaration",
+        signature.span,
+        { code: "E_TYPE_DECLARATION_SIGNATURE", phase: "declaration" },
+      );
     let head: Syntax = this.callableSignature(signature);
     while (head.kind === "apply") {
       packs.unshift(head.body);
@@ -2349,6 +2395,8 @@ export class Interpreter {
           name: head.name,
           parameters: packs[0] ?? [],
           parameterized: packs.length > 0,
+          angleParameters:
+            signature.kind === "apply" && !!signature.angleDeclaration,
           body,
           env: local,
           captures: declaredCaptures,
@@ -2854,7 +2902,17 @@ export class Interpreter {
               n.head.kind === "symbol" && !n.head.quoted
                 ? lookup(n.head).get(n.head.name)
                 : undefined;
-            if (binding && !("kind" in binding) && binding.parameterized) {
+            if (
+              binding &&
+              !("kind" in binding) &&
+              binding.parameterized &&
+              !(
+                typeMode &&
+                !n.typeArguments &&
+                this.constructingDeclarationNames.at(-1) ===
+                  (n.head.kind === "symbol" ? n.head.name : undefined)
+              )
+            ) {
               if (
                 [...validatePatternCaptures(n.body.map((f) => f.value))].some(
                   (name) => !lookup(n).get(name),
@@ -3548,6 +3606,12 @@ export class Interpreter {
     if (n.kind === "postfix")
       return !!env?.visible(postfixMethodName(n.operator)).length;
     if (n.kind !== "apply") return false;
+    if (
+      !n.typeArguments &&
+      n.head.kind === "symbol" &&
+      this.constructingDeclarationNames.at(-1) === n.head.name
+    )
+      return false;
     let head: Syntax = n.head;
     while (head.kind === "apply") head = head.head;
     return (
@@ -4216,6 +4280,7 @@ export class Interpreter {
     this.buildingTypes++;
     const outerTypeDepth = this.inlineTypeDepth;
     this.inlineTypeDepth = 0;
+    if (decl.angleParameters) this.constructingDeclarationNames.push(decl.name);
     try {
       const result = single(
         this.evaluate(decl.body, local),
@@ -4271,6 +4336,7 @@ export class Interpreter {
       this.types.delete(key);
       throw error;
     } finally {
+      if (decl.angleParameters) this.constructingDeclarationNames.pop();
       this.buildingTypes--;
       this.inlineTypeDepth = outerTypeDepth;
     }
