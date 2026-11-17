@@ -2,8 +2,27 @@
 
 Proposed replacement for the earlier
 [approved mixed-operator restriction](../approved/arithmetic-operator-grouping.md).
-This draft gives `* /` higher precedence than `+ -`, with left associativity
-within each tier. [Fraction literals](rational-literals-and-text.md) are separate.
+
+This draft gives precedence to infix operators in the following order:
+  - `* /` (left-associative)
+  - other infix operators (right-associative)
+  - `+ -` (left-associative)
+  -  `=`, `==`, and any other operator ending in `=` (right associative)
+
+[Fraction literals](rational-literals-and-text.md) are separate.
+
+TOOD: examples with arithmetic operators mixed with non-arithmetic infix operators
+  expect
+    assert (Code` a + b == c + d) == Code` (a + b) == (c + d)
+    assert (Code` a .and b * c) == Code` a .and (b - c)
+    assert (Code` a * b .and c) == Code` (a * b) .and c
+
+    assert (Code` a .and b - c) == Code` a .and (b - c)
+
+    # This one is tricky. is - higher precedence or equal precedence
+    assert (Code` a - b .and c) == Code` a - (b .and c)
+    assert (Code` a - b .and c - d) == Code` (a - (b .and (c - d))
+
 
 ```pattern
 test "Multiplication and division bind more tightly than addition and subtraction"
@@ -86,5 +105,4 @@ test "Canonical Code retains parentheses needed to reconstruct its tree"
 end
 ```
 
-Open: placement of exponentiation, comparisons and custom infix operators.
-This is a proposal, not a claim that the current parser implements these rules.
+
