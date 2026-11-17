@@ -12,6 +12,14 @@ For example this should never be true:
 
 Where CONTEXT[...] can be any expression where an un-quoted value expression can be filled in.
 
+Comparison is permitted whenever the operands' static types admit at least
+one concrete type in common. For example, `Number` and `Float64` overlap
+because `Number` includes `Float64`. Equality then compares the exact values,
+including their concrete types, without designation. A `Number` holding
+an `Int` zero therefore compares unequal to a `Float64` zero. The
+substitution rule above applies when the expressions have the same static
+type. See [existing abstract/concrete comparison coverage](../../test/abstract-values.test.ts#L25-L43).
+
 This creates a problem. We intuitively want fixed-precision numbers to be comparable to exact rationals (number literals)
 
 	x = 0 :: Int
@@ -73,10 +81,10 @@ A numeric literal by itself has type ExactRational and is not exactly equal to a
 	INCOMPARABLE: x == y
 
 	# Don't define sqrt over exact rationals, because it needs a finite-precision result. Only define over floats/decimal floats where a precision is implicit in the type.
-	assert sqrt(2) fails "Undefined sqrt(ExactRational)"
-	sqrt(2 :: Float) => Float
+	expect sqrt(2) fails "ambiguous"
+	sqrt(2 :: Float64) => Float64
 	x + 1        # Int because +(Int)(ExactRational) is explicitly defined
-	x + 1 :: Int # Int
+	(x + 1) :: Int # Int
 	1 / 3        # ExactRational
 	(1 :: ExactRational) / (3 :: ExactRational)	
 
@@ -86,14 +94,20 @@ The fixed-precision prelude specifies the [`Number` union and numeric
 equality](fixed-precision-numbers.md#number-and-numeric-equality) and the
 [addition definitions](fixed-precision-numbers.md#prelude-definitions-for-addition).
 
-The `sqrt(2)` error above assumes the call requires a floating argument
-with an existing concrete type. The designation fallback below could
-otherwise designate the exact literal into a float. How `sqrt` requires
-that existing type remains open.
+Each fixed-precision floating type supplies a `sqrt` overload. An exact
+argument such as `2` can designate both `Float32` and `Float64`, making the
+call ambiguous. `sqrt(2 :: Float64)` selects the Float64 overload.
 
 # Designation and Ambiguity
 
-Can we allow a value of inner type to designate value of outer type?
+Overloads must have disjoint sets of directly admitted values. For
+example, `f(x :: Int)` and `f(x :: Number)` cannot coexist because
+`Number` includes every `Int`. Different concrete formats such as
+`Float32` and `Float64` admit disjoint values, even though the same
+exact rational can designate a value of either format at a call site.
+
+An inner value can designate an outer value. The examples below explain
+how that affects overload selection.
 
 # DISCARDED OPTION 1: An outer type can be designated by a value of it's inner type only if unambiguous. Fail or require explicit type otherwise.
 

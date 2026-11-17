@@ -610,7 +610,12 @@ An expression tree pattern can match a value directly with a deconstructing bind
   r = Rect(2, 3) :: Rectangle
   Rect(w, h) = r
 
-`match` macro matches over both wrapped and unwrapped union
+The `match` macro handles abstract and concrete unions. An abstract union
+carries an already typed member. A match against a concrete union can
+select its active alternative and bind its typed payload. A symbolic
+alternative can select an arm without producing a raw symbol value.
+An explicit match projects one concrete boundary at a time. Ordinary
+bindings and function arguments still respect that boundary.
 
 Match over concrete union:
 
@@ -626,15 +631,12 @@ Match over concrete union:
 
   expect v "5"
 
-  type Int concrete Rational .where fitsFloat64
-
   (x :: Int) = 10
 
-  match x y :: Rational
-  expect y is 10 :: Rational
-
-  match x i :: Rational
-  expect i is 10 :: Rational
+  y = match x
+    (value :: ExactRational) -> value
+  end
+  expect y is 10 :: ExactRational
 
 Match over abstract union
 
@@ -647,16 +649,39 @@ Match over abstract union
     else "String"
   end
 
-Match over facet? Doesn't have to be a union
+A constructor pattern tests the concrete types held in abstract fields.
+A `Rectangle` whose two `Num` fields hold Int values matches
+`pattern Rect(Int, Int)`. The `Rectangle` keeps its concrete type. A
+rectangle with a Float in the second field reaches the other arm.
 
-  type Rectangular pattern Rect(width :: Num, height :: Num)
+```pattern
+test "A rectangle matches the concrete members held in its fields"
+  type Num pattern Int | Float
+  type Rectangle concrete Rect(Num, Num)
 
-  (r :: Rectangle) = IntRectangle(5, 5)
+  ints = Rect(5 :: Int, 5 :: Int) :: Rectangle
+  mixed = Rect(5 :: Int, 5 :: Float) :: Rectangle
 
-  match r
-    when Rect(Int, Int) "Int, Int"
-    else "Something else"
+  def classify(r :: Rectangle)
+    match r
+      Rect(Int, Int) -> "Int, Int"
+      _ -> "Something else"
+    end
   end
+
+  expect classify(ints) is "Int, Int"
+  expect classify(mixed) is "Something else"
+end
+
+test "A match selects absence without binding a raw symbol"
+  absent = :None :: Int?
+  result = match absent
+    :None -> "absent"
+    (value :: Int) -> "present"
+  end
+  expect result is "absent"
+end
+```
 
 Match over enum
 

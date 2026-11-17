@@ -52,10 +52,8 @@ their exact mathematical values in the finite numeric model. Numeric
 inequality is its Boolean complement. `==` and `!=` keep their
 [functional equality contract](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#strong-functional-equality).
 
-The spellings `=#=` and `!#=` are proposed. A spaced `= #=` could
-currently be a binding followed by a comment and an indented value, so
-the lexer policy still needs a decision under the [formatting safety
-rule](../../GRAMMAR.md#formatting-safety).
+The proposed spellings `=#=` and `!#=` use the token and comment rules in
+the [infix precedence draft](arithmetic-precedence.md#numeric-equality-tokens-and-comments).
 
 ## Operator calls and exact literals
 
@@ -83,12 +81,24 @@ When the first pack is an `ExactRational`, its definition can return an
 ```pattern
 def (+)(a :: Int)(b :: Int | ExactRational)
   right = b :: Int
-  addExact(unwrap(a), unwrap(right)) :: Int
+  leftValue = match a
+    (value :: ExactRational) -> value
+  end
+  rightValue = match right
+    (value :: ExactRational) -> value
+  end
+  addExact(leftValue, rightValue) :: Int
 end
 
 def (+)(a :: Float64)(b :: Float64 | ExactRational)
   right = b :: Float64
-  float64(addExact(unwrap(a), unwrap(right)))
+  leftValue = match a
+    (value :: ExactRational) -> value
+  end
+  rightValue = match right
+    (value :: ExactRational) -> value
+  end
+  float64(addExact(leftValue, rightValue))
 end
 
 def (+)(a :: ExactRational)(b :: ExactRational | Int | Float64)
@@ -128,12 +138,27 @@ The arithmetic policies and alias defaults are proposals for review. In
 particular, checked integer arithmetic, truncating integer division, finite
 floating overflow and which formats to support initially remain choices
 to ratify. Mixed ordering still needs operator signatures. The current [`sqrt` proposal](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#decision-fixed-precision-number-types-are-wrapped-exactrationals)
-defines the operation only for floating types. Its argument rule still needs
-to address designation from `ExactRational`.
+defines the operation only for fixed-precision floating types. When more
+than one floating overload accepts the designation of an `ExactRational`,
+the call is ambiguous. An explicit float ascription selects its format.
 
 ## Candidate contracts
 
 ```pattern
+test "Value equality compares Number with a concrete member"
+  (n :: Number) = 0 :: Float64
+  (i :: Number) = 0 :: Int
+  f = 0 :: Float64
+
+  assert n == f
+  assert i != f
+end
+
+test "Square root requires disambiguation between floating formats"
+  expect sqrt(2) fails "ambiguous"
+  expect sqrt(4 :: Float64) is 2 :: Float64
+end
+
 test "Ordering accepts an exact literal beside an Int"
   n = 41 :: Int
   expect n < 42 is True
