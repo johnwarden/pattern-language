@@ -123,6 +123,18 @@ The [partial-application contract](../../tests/inbox/mixed-addition-partial-appl
 checks the infix, successive-pack, and saved-partial forms, including a stored
 ExactRational operand and an ExactRational first pack called with two different types.
 
+## Exponentiation
+
+The Code prelude exposes exponentiation as `pow(base, exponent)`. Supply
+both positional arguments in one pack, for example `pow(2, 3)`. The prelude
+leaves `^` available for language-specific operator definitions. See the [infix precedence draft](arithmetic-precedence.md).
+
+```pattern
+test "Exponentiation uses one complete argument pack"
+  expect pow(2, 3) is 8 :: ExactRational
+end
+```
+
 ## Proposed arithmetic policy
 
 | Operations | Integers | Binary and decimal floats | Fixed-size ratios |
