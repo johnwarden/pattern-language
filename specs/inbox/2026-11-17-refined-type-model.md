@@ -323,14 +323,18 @@ An abstract symbol pattern can admit a value from a different concrete enum:
     expect takesPrimary(s) fails "no definition for `takesPrimary(Status)`"
 
 `takesPrimary(s)` requires a `PrimaryColor` value. The abstract symbol
-pattern also respects the concrete wrapper boundary. Use `unwrap` to match
-the symbol inside `Status`.
+pattern also respects the concrete wrapper boundary. 
 
-    expect takesRed(s) fails "no definition for `takesRed(Status)`"
-    expect takesRed(unwrap s) is "red pattern"
+  expect takesRed(s) fails "no definition for `takesRed(Status)`"
 
+Use `match` to get at the symbol inside `Status`.
 
-  # Value of outer type cannot designate value of inner type
+  match s c :: Color
+
+  expect takesRed(c) is "red pattern"
+
+Value of outer type cannot designate value of inner type
+
   expect
     (u :: Color) = s
   fails "value of type `Concrete(Color)` does not designate a value of type `Color`"
