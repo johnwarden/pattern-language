@@ -1,13 +1,12 @@
 
 # Strong Functional Equality
 
-Functional equality requires that: 
-
-	(x == y) ⟹ ∀f f(x) != f(y)
-
-Here we assume the same set of functions must be defined over x and y.
-
-The *strong* version of this is true not only for any *value*, but for any *expression*. I should not be able to plugin any expression x or y and allow the above to be true.
+Strong functional equality is a substitution rule. If two expressions are
+valid in the same typed value context and evaluate to the same exact value
+with the same static type, substituting one for the other preserves the
+result. In particular, an applicable function in that context produces equal
+results for the two expressions. Quoting the expressions as source compares
+a different kind of value.
 
 This creates a problem. We intuitively want fixed-precision numbers to be comparable to exact rationals (number literals)
 
@@ -69,7 +68,7 @@ A numeric literal by itself has type ExactRational and is not exactly equal to a
 
 	INCOMPARABLE: x == y
 
-	sqrt(2)      # ExactRational 
+	sqrt(2)      # Result policy for irrational roots remains open 
 	sqrt(2 :: Float) => Float
 	x + 1        # Int because +(Int)(ExactRational) is explicitly defined
 	x + 1 :: Int # Int
@@ -92,39 +91,63 @@ This if formatting safe because "x = #= comment" wouldn't compile. Oh yes it cou
 
 When people try to use x == 0 when x is one of the fixed-precision types they will get a compile error (comparing different concrete types)
 
-# Definition of `Number` Union type
+# Definition of `Number` union type
 
-But what if we define Number as a union of fixed precision types? 
+Whether `Number` includes `ExactRational` is independent of strict
+equality. An operand statically typed as `Number` and a bare literal of
+type `ExactRational` have different static types. A comparison can
+explicitly put both operands in a common domain. Within that domain,
+equal magnitudes in different concrete number types are unequal.
+Numeric equality compares magnitudes across the supported number types.
 
-	def FixedPrecisionNumber Float32 | Float64 | Int32 | ...
-	def Number FixedPrecisionNumber | ExactRational
+## Prelude definitions for addition
 
-	def foo(x :: Number) x == 0
+Draft for `ExactRational`, `Int` (the Int64 alias), and `Float64`.
+The result of mixing one fixed-precision operand with an `ExactRational`
+has the fixed operand's type, in either order. Check exact representability
+of the Rational operand before adding. Integer results are checked for
+overflow. Float64 results are rounded once. Different fixed formats need
+an explicit conversion for these overloads.
 
-Since the definition of Number includes ExactRational, then this would be *false* for all numbers except 
+Each first pack selects one definition. A union in the second pack keeps
+both supported operand types available after saving a partial application.
+When the first pack is an `ExactRational`, its definition can return an
+`ExactRational`, `Int`, or `Float64` according to the second operand.
 
-	Problem: foo(0 :: Int) == False
+```pattern
+def (+)(a :: Int)(b :: Int | ExactRational)
+  right = b :: Int
+  addExact(unwrap(a), unwrap(right)) :: Int
+end
 
-But if Number excludes ExactRational, then 
+def (+)(a :: Float64)(b :: Float64 | ExactRational)
+  right = b :: Float64
+  float64(addExact(unwrap(a), unwrap(right)))
+end
 
-	def Number FixedPrecisionNumber
+def (+)(a :: ExactRational)(b :: ExactRational | Int | Float64)
+  match b
+    (q :: ExactRational) -> addExact(a, q)
+    (i :: Int) -> (+(i)(a))
+    (f :: Float64) -> (+(f)(a))
+  end
+end
+```
 
-	expect def foo(x :: Number) x == 0 error "Number and ExactRational are disjoint..."
+`addExact` denotes the prelude's internal exact addition primitive
+(the bootstrap already implements this operation as `addRationals`). The
+delegating arms use the same checked conversions as the fixed-left
+definitions. Match recognizes the concrete member held by `b`.
+The `:: Int` and `:: Float64` checks on `right` explicitly designate
+the operand, independent of whether it originated as a literal or a variable.
+For example, the Int arm rejects a rational `0.5` even when the final sum
+could be rounded. This is an explicit mixed-operand signature for addition,
+replacing the homogeneous-only addition proposal in the
+[fixed-precision draft](fixed-precision-numbers.md).
 
-Then this works.
-
-	def foo(x :: Number) x =#= 0
-
-As well as the arithmetic operators so `x + 1` etc work.
-
-Number Union would need to define
-
-	def +(x :: Number | ExactRational)(y :: Number | ExactRational) ...
-	def -(x :: Number | ExactRational)(y :: Number | ExactRational) ...
-	def *(x :: Number | ExactRational)(y :: Number | ExactRational) ...
-	def /(x :: Number | ExactRational)(y :: Number | ExactRational) ...
-	def (<)(x :: Number | ExactRational)(y :: Number | ExactRational) ...
-	etc.
+The [partial-application contract](../../tests/inbox/mixed-addition-partial-application.test)
+checks the infix, successive-pack, and saved-partial forms, including a stored
+Rational operand and a Rational first pack called with two different types.
 
 # Designation and Ambiguity
 
@@ -237,42 +260,29 @@ Now, a value of type String?? can take on values `:None :: String?` or `:None ::
 
 We have a rule where that when a value can designate a value of both the outer and inner type, as in the case of :None in the context of String??,
 assume the value of outer type. This interacts with the rule that in the case of ambiguous overloaded functions, the function over the inner type
-takes precedence. This seems to contradict but it really doesn't. Here's a complete example showing the interaction.
+takes precedence. These rules apply at different points. Once the expected type
+is `String??`, bare `:None` chooses its direct outer arm. The existing test
+[“Nested postfix absence preserves explicit member evidence”](../../tests/bindings/nested-option-designation.test#L126-L136)
+checks that rule. With both overloads in scope, the proposed rule additionally
+prefers `String?` for bare syntax accepted by the two nested types. Peer
+options such as `String?` and `Int?` are still ambiguous. The example below
+checks the call behavior.
 
-test "String?? scenario: Interaction of ambiguity rules"
-	(s :: String??) = :None
-	expect s is :None :: String??
-
-	(t :: String??) = :None :: String?
-	(u :: String??) = :None :: String??
-	assert s != t
-	assert s == u
-
-	test "Start with defining function over outer type"
-		def foo(v :: String??) "Outer: " ++ toString(String??)(v)
-
-		expect foo(:None) is "Outer: :None"
-		# NOTE: if the rule were that the inner type takes priority in case of ambiguity in type definition, the above test would be:
- 		# expect foo(:None) is "Outer: :None :: String?"
-
-		expect foo(:None :: String?) is "Outer: :None :: String?"
-		expect foo(:None :: String??) is "Outer: :None"
-		expect foo((:None :: String?) :: String??) is "Outer: :None :: String?"
-
-		test "Overloaded function over inner type"
-			def foo(v :: String?) toString(String?)(v)
-
-			# Then the definition for the inner type takes precedence
-			expect foo(:None) is "Inner: :None"
-			expect foo(:None :: String?) is "Inner: :None"
-			expect foo(:None :: String??) is "Outer: :None"
-			expect foo((:None :: String?) :: String??) is "Outer: :None :: String?"
-		end
-	end
+```pattern
+test "A lone outer overload supplies the expected option type"
+  def foo(v :: String??) "Outer"
+  expect foo(:None) is "Outer"
+  expect foo(:None :: String?) is "Outer"
+  expect foo(:None :: String??) is "Outer"
 end
 
+test "Inner overload takes priority for nested option designation"
+  def foo(v :: String??) "Outer"
+  def foo(v :: String?) "Inner"
 
-
-
-
-
+  expect foo(:None) is "Inner"
+  expect foo(:None :: String?) is "Inner"
+  expect foo(:None :: String??) is "Outer"
+  expect foo((:None :: String?) :: String??) is "Outer"
+end
+```
