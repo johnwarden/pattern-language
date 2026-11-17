@@ -332,6 +332,24 @@ The earlier inventory describes the migration history; this correction restores
 type-descriptor adapter cleanup remain separate scopes. No legacy-inventory
 entry changes in this numeric batch.
 
+## Source syntaxTree cleanup
+
+Source `.test` files no longer call `syntaxTree` or `syntaxExpression`, or name
+`SyntaxNode` constructors. The AST-shape assertions moved verbatim to
+`test/syntax-inspection.test.ts`; the source cases state the same language
+observations with quoted patterns (`:f(arg)`, `:(pattern = value)`), Code text
+and Code equality. The `legacy expect syntaxExpression(changed)` moved to host
+with its exact expectation and its row left
+[LEGACY-ASSERTIONS.md](LEGACY-ASSERTIONS.md). Existing case ids are unchanged; one
+case is added.
+
+| Former source assertion | Source observation now | Host coverage |
+| --- | --- | --- |
+| layout/call-label-spacing#tight-f-x-is-application-empty-f-is-empty-apply: `syntaxTree(:(f(x)))` / `:(f())` shapes | Evaluation of `f(3)` and `g()`, quoted patterns `:f(a)` / `:f()` that accept only the matching call shape, Code text, Code inequality of `f()`, `f` and `f(x)` | `syntaxTree of :(f(x)) …` and `syntaxTree of :(f()) …` |
+| layout/call-label-spacing#a-field-colon-must-touch-its-label: four `Rect(w …)` shapes | Quoted label pattern `:Rect(w: n)` accepts `w: 1`, `w:1`, `w: (1)` and rejects `w :(1)`; Code text and equality | the four `syntaxTree of :(Rect(…)) …` cases |
+| examples/expressions#inspect-and-rebuild-syntax: `syntaxTree` destructure, rebuilt `Apply`, `legacy expect syntaxExpression(changed)` | Quoted-head destructuring `:factory(first)(second, color: tint)`, Code splice rebuild, `expect rebuilt is factory(1)(3, color: :Red) :: Code` and its text | `syntaxTree destructures an application and syntaxExpression rebuilds it` |
+| examples/types#inspect-a-typed-code-binding-without-evaluating-it: `match syntaxTree(e)` predicate and `Apply(Apply(_, left), right)` destructure | `:(_ = _)` Binding predicate, `:(pattern = value)` destructure, same text expectations, non-binding Code rejected; non-evaluation is the new case quotes/evaluation#matching-a-quoted-binding-does-not-evaluate-it (`f` stays unbound) | `a typed Code binding is inspected through its syntaxTree without evaluation` |
+
 ## Type identity and value-tree migration
 
 #60 moved the identity and value-tree slice into source tests. #68 restores

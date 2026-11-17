@@ -9,6 +9,18 @@ test "Whole-expression quotation is inert; typed interpolation supplies values"
   (whole, expanded)
 end
 
+test "Matching a quoted binding does not evaluate it"
+  code = Code` f = x -> x * 2
+
+  expect
+    match code
+      :(_ = _) -> True
+      _ -> False
+    end
+  is True :: Bool
+  expect f fails "E_UNBOUND_NAME"
+end
+
 test "Typed quote blocks expand macro templates with explicit interpolation"
   macro :addOne Args(x)
     Code$`
