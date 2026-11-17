@@ -1,12 +1,16 @@
 
 # Strong Functional Equality
 
-Strong functional equality is a substitution rule. If two expressions are
-valid in the same typed value context and evaluate to the same exact value
-with the same static type, substituting one for the other preserves the
-result. In particular, an applicable function in that context produces equal
-results for the two expressions. Quoting the expressions as source compares
-a different kind of value.
+
+Strong functional equality is a substitution rule. If two expressions evaluate to the same exact value
+with the same static type (`==` equality), substituting one for the other in any context preserves the
+result.
+
+For example this should never be true:
+
+	(E1 == E2) && (CONTEXT[E1] != CONTEXT[E2])
+
+Where CONTEXT[...] can be any expression where an un-quoted value expression can be filled in.
 
 This creates a problem. We intuitively want fixed-precision numbers to be comparable to exact rationals (number literals)
 
@@ -68,7 +72,8 @@ A numeric literal by itself has type ExactRational and is not exactly equal to a
 
 	INCOMPARABLE: x == y
 
-	sqrt(2)      # Result policy for irrational roots remains open 
+	# Don't define sqrt over exact rationals, because it needs a finite-precision result. Only define over floats/decimal floats where a precision is implicit in the type.
+	assert sqrt(2) fails "Undefined sqrt(ExactRational)"
 	sqrt(2 :: Float) => Float
 	x + 1        # Int because +(Int)(ExactRational) is explicitly defined
 	x + 1 :: Int # Int

@@ -168,14 +168,14 @@ A structural facet such as `pattern Rect(Num, Num)` can admit it as is.
 Assigning `i` to `Rectangle` would have to reinterpret the struct as a
 different concrete type. Assigning it to `WrappedIntRectangle` preserves
 `i` inside the new wrapper because that descriptor explicitly names
-`IntRectangle` as its payload type.
+`concrete Rect(Int, Int)` as its inner type.
 
 A concrete union whose alternatives explicitly reference closed concrete
 types can likewise preserve the chosen member inside the wrapper. This is
 different from a struct with abstract fields. The concrete identities are
 different and direct comparison between instances is an error.
 
-Also note the difference here:
+Note the difference here:
 
   type Num pattern Int | Float
   type NumRectangle concrete Rect(concrete Num, concrete Num)
@@ -187,9 +187,8 @@ Also note the difference here:
 
   assert x == y fails "Values of disjoint types `Rectangle` and `IntRectangle` cannot be equal"
 
-  # Why does this fail? Rectangular matches Rect(Int, Int), Rect(Int, Float), etc...
-  # e.g. any type where both width and height are concrete fixed-precisions numbers
-  # concrete Num is not one of those.
+Why does the following fail? Rectangular matches Rect(Int, Int), Rect(Int, Float), etc...e.g. any type where both width and height are concrete fixed-precisions numbers concrete Num is not one of those.
+
   expect (z :: Rectangular) = x fails "value of type `NumRectangle` does not designate a value of type `Rectangular`"
 
   (z :: Rectangular) = y
@@ -251,7 +250,7 @@ This is odd and probably not a good idea. But it is coherent:
 
 These types can only take on a single value.
 
-## abstract Singleton
+## abstract symbol patterns
 
   t = pattern :None
   expect (v :: t) = :None fails "...no concrete type for `:None`"
@@ -309,7 +308,7 @@ These types can only take on a single value.
   # Explicitly wrap designator so values have same concrete type
   assert s == c :: Status
 
-A symbol shape can admit a value from a different concrete enum:
+An abstract symbol pattern can admit a value from a different concrete enum:
 
     type TrafficLight concrete :Red | :Amber | :Green
     type RedShape pattern :Red
@@ -321,11 +320,14 @@ A symbol shape can admit a value from a different concrete enum:
     expect takesRed(light) is "red shape"
     expect takesPrimary(light) fails "no method"
 
-There is a separate boundary question for `Status`. A call to
-`takesPrimary(s)` cannot implicitly unwrap `s`. For `takesRed(s)` to
-succeed, the shape matcher must look through the extra wrapper. This
-draft leaves that case open. `takesRed(unwrap s)` explicitly supplies a
-`PrimaryColor` value with the red shape.
+    expect takesPrimary(s) fails "no definition for `takesPrimary(Status)`"
+
+A call to `takesPrimary(s)` cannot implicitly unwrap `s`. For `takesRed(s)` to
+succeed, the shape matcher must look through the extra wrapper. It should NOT do this.
+
+    expect takesRed(s) fails "no definition for `takesPrimary(Status)`"
+    expect takesRed(unwrap s) is "red shape"
+
 
   # Value of outer type cannot designate value of inner type
   expect
@@ -470,10 +472,10 @@ A pattern with ... is abstract: it can match a variety of concrete struct types.
 
   type WrappedAugmentedRectangle concrete Rect(width :: Number, height :: Number, properties... :: {...})
 
-  # Can designate a wrapped type by unwrapped value of base type
-  (z :: WrappedAugmentedRectangle) = Rect(3, 5, color: :Red)
+  # Can designate a concrete rectangle with any expression matching the defining pattern.
+  (z :: WrappedAugmentedRectangle) = Rect(3, 5, color: :Red :: Color)
 
-  expect z is Rect(3, 5, color: :Red) :: WrappedAugmentedRectangle
+  expect z is Rect(3, 5, color: :Red :: Color) :: WrappedAugmentedRectangle
 
   x = Rect(3, 5, color: :Red) :: ColoredRectangle
 
