@@ -7,7 +7,12 @@ A type is defined by a pattern. The `concrete`, `pattern` macros construct Concr
   type Baz pattern Int .where nonZero             # Refinement type (over Int) 
   type Boo concrete Int .where nonZero            # Carveout
 
-Use `Concrete(...)` and `Pattern(...)` for type values.
+Use `Concrete(...)` and `Pattern(...)` for type values. The descriptor
+forms inherit the implemented Type [normalization and identity
+rules](../../TYPE-VALUES-BOOTSTRAP.md#normalization-and-identity) and
+[type-directed text round trips](../../TYPE-VALUES-BOOTSTRAP.md#global-and-local-typed-text).
+A descriptor printed and read under its type recovers the same value.
+An explicit nested concrete boundary remains part of type identity.
 
   expect Foo is Pattern(Int | String)
   expect Bar is Concrete(Int | String)
@@ -138,42 +143,37 @@ Now Rectangular can match one of many concrete types (Rect(Int, Int), Rect(Int, 
   (x :: Rectangular) = Rect(2, 2) :: Rect(Int, Int)
   expect s is Rect(2, 2) :: Rect(Int, Int)
 
-A pattern with a nested union pattern could be expressed in denormalized form:
+The field choices describe the same admissible rectangle shapes as an
+explicit union of `Rect(Int, Int)`, `Rect(Int, Float)`, `Rect(Float, Int)`
+and `Rect(Float, Float)`. Use matching to show that equivalence. Descriptor
+identity uses the existing [structural normalization and identity
+rules](../../TYPE-VALUES-BOOTSTRAP.md#normalization-and-identity). There is
+no new normalization rule that distributes a union across fields.
 
-  Rectangular = pattern Rect(Num, Num)
-  assert Rectangular == pattern Rect(Int | Float, Int | Float)
-  assert Rectangular == pattern Rect(Int, Int) | Rect(Int, Float) | Rect(Float, Int) | Rect(Float, Float)
+A constructor shape and a reference to a concrete type have different
+roles in a concrete description:
 
-Should we normalize these type defs? So the local printed form is more readable? Maybe at some point in the future but not for now.
+    type Rectangle concrete Rect(Num, Num)
+    type IntRectangle concrete Rect(Int, Int)
+    type WrappedIntRectangle concrete IntRectangle
 
-  assert pattern Rect(Int, Int) | Rect(Int, Float) | Rect(Float, Int) | Rect(Float, Float) is Pattern(Num, Num)
+    (r :: Rectangle) = Rect(2 :: Int, 2 :: Int)
+    (i :: IntRectangle) = Rect(2 :: Int, 2 :: Int)
+    (w :: WrappedIntRectangle) = i
 
-Making a facet concrete defines a new value space.
+The first two declarations define structs from field patterns. The source
+`Rect(2 :: Int, 2 :: Int)` can construct either struct in the corresponding
+expected type. Once constructed, `i` already has a concrete identity.
+A structural facet such as `pattern Rect(Num, Num)` can admit it as is.
+Assigning `i` to `Rectangle` would have to reinterpret the struct as a
+different concrete type. Assigning it to `WrappedIntRectangle` preserves
+`i` inside the new wrapper because that descriptor explicitly names
+`IntRectangle` as its payload type.
 
-  Rectangle = concrete Rect(Num, Num)
-
-Is the same as:
-
-  assert concrete Rect(Int, Int) | Rect(Int, Float) | Rect(Float, Int) | Rect(Float, Float)
-
-And so
-
-  IntRectangle = concrete Rect(Int, Int)
-
-  (x :: Rectangle) = Rect(2 :: Int, 2 :: Int)
-  (y :: IntRectangle) = Rect(2 :: Int, 2 :: Int)
-  assert (z :: Rectangle) = y fails "value of type `IntRectangle` does not designate a value of type `Rectangle`"
-
-Note the subtlety here.
-
-  Rectangular2 = concrete (concrete Rect(Int, Int)) | (concrete Rect(Int, Float)) | ...
-
-  # Value of inner type can designate value of outer type if unambiguous
-  (x :: Rectangle) = Rect(2 :: Int, 2 :: Int)
-  (v :: Rectangular2) = x
-
-  # But they are not equal values
-  assert v != x
+A concrete union whose alternatives explicitly reference closed concrete
+types can likewise preserve the chosen member inside the wrapper. This is
+different from a struct with abstract fields. The concrete identities are
+different and direct comparison between instances is an error.
 
 Also note the difference here:
 
@@ -262,7 +262,7 @@ These types can only take on a single value.
 
   t = concrete :None
   (v :: t) = :None
-  assert v != :None :: Int?
+  expect (v != (:None :: Int?)) fails "disjoint types"
 
 ## enums: Unions of Single-Symbol Patterns
 
@@ -288,24 +288,44 @@ These types can only take on a single value.
   def Status concrete PrimaryColor
 
   # Wrapping a concrete type in concrete creates a nested concrete type.
-  assert Status = Concrete(Concrete(:Red | :Green | :Blue)) 
+  assert Status == Concrete(Concrete(:Red | :Green | :Blue))
 
   # Outer types do not inherit functions from inner types
-  expect describe(status) fails "describe(Status) not defined"
 
   # Value can be designated by *expression* from inner type if unambiguous
   (s :: Status) = :Red
   expect s is (:Red :: PrimaryColor) :: Status
 
   # Value of outer type cannot designate value of inner type
-  (c :: Color) = :Red
-  expect (s :: Status) = c fails "value of type `Status` does not designate a value of type `PrimaryColor`"
+  (c :: PrimaryColor) = :Red
+  expect
+    (underlying :: PrimaryColor) = s
+    underlying
+  fails "does not designate a value of type"
 
   # Can't compare wrapped value with it's designator
   expect s == c fails "Values of disjoint types `Status` and `PrimaryColor` cannot be equal"
 
   # Explicitly wrap designator so values have same concrete type
   assert s == c :: Status
+
+A symbol shape can admit a value from a different concrete enum:
+
+    type TrafficLight concrete :Red | :Amber | :Green
+    type RedShape pattern :Red
+
+    def takesRed(x :: RedShape) "red shape"
+    def takesPrimary(x :: PrimaryColor) "primary color"
+
+    light = :Red :: TrafficLight
+    expect takesRed(light) is "red shape"
+    expect takesPrimary(light) fails "no method"
+
+There is a separate boundary question for `Status`. A call to
+`takesPrimary(s)` cannot implicitly unwrap `s`. For `takesRed(s)` to
+succeed, the shape matcher must look through the extra wrapper. This
+draft leaves that case open. `takesRed(unwrap s)` explicitly supplies a
+`PrimaryColor` value with the red shape.
 
   # Value of outer type cannot designate value of inner type
   expect
@@ -343,14 +363,14 @@ These types can only take on a single value.
   expect t is Pattern(String | :None)
 
   u = pattern String | :None
-  assert t != u
+  assert t == u
 
-  (a :: t) = :None
-  (b :: t) = :None
-  INCOMPERABLE: a != b
+  (a :: t) = :None :: String?
+  (b :: t) = "hello"
 
-  expect a is :None :: t
-  expect b is :None :: u
+  expect a is None :: String?
+  expect b is "hello" :: String
+  assert a != b
 
 ## Wrapped: Concrete Unions
 
@@ -601,9 +621,9 @@ Match macro matches over *unwrapped* unions
   wrapped = concrete Int | String
   y :: wrapped = 5
 
-  assert y != 5
+  expect (y != 5) fails "disjoint types"
 
-  (z :: unwrapped) = unwrap x
+  (z :: unwrapped) = unwrap y
   assert z == 5
 
   v = match unwrap y
@@ -636,7 +656,7 @@ We can embed "concrete" in any type expression:
   # Positive int can designate value of wrapped type.
   u = {name: "John", id: 5} :: User
 
-  assert u.id != 5
+  expect (u.id != 5) fails "disjoint types"
   assert u.id == 5 :: concrete PositiveInt
 
   test "Structural match of wrapped integer"
