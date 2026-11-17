@@ -606,51 +606,85 @@ An expression tree pattern can match a value directly with a deconstructing bind
   r = Rect(2, 3) :: Rectangle
   Rect(w, h) = r
 
-Match macro matches over *unwrapped* unions
+`match` macro matches over both wrapped and unwrapped union
 
-  unwrapped = pattern Int | String
+Match over concrete union:
 
-  x :: unwrapped = 5
+  concreteUnion = concrete Int | String
+  y :: concreteUnion = 5
 
-  v = match x
+  expect y == 5 :: Int fails "disjoint types"
+
+  v = match y
     when i :: Int $"$i"
-    else "None"
+    else "String"
   end
 
   expect v "5"
-
-`unwrap` to directly unwrap a value
-
-  wrapped = concrete Int | String
-  y :: wrapped = 5
-
-  expect (y != 5) fails "disjoint types"
-
-  (z :: unwrapped) = unwrap y
-  assert z == 5
-
-  v = match unwrap y
-    when i :: Int $"$i"
-    else "None"
-  end
-
-  expect v "5"
-
-  expect
-    v = match y
-      ...
-    end
-  fails "Must unwrap `Concrete(Int | String)` before pattern match"
-
 
   type Int concrete Rational .where fitsFloat64
 
   (x :: Int) = 10
-  y = unwrap x
+
+  match x y :: Rational
   expect y is 10 :: Rational
 
-  match unwrap x i :: Rational
+  match x i :: Rational
   expect i is 10 :: Rational
+
+Match over abstract union
+
+  abstractUnion = pattern Int | String
+
+  x :: abstractUnion = 5
+
+  v = match x
+    when i :: Int $"$i"
+    else "String"
+  end
+
+Match over facet? Doesn't have to be a union
+
+  type Rectangular pattern Rect(width :: Num, height :: Num)
+
+  (r :: Rectangle) = IntRectangle(5, 5)
+
+  match r
+    when Rect(Int, Int) "Int, Int"
+    else "Something else"
+  end
+
+Match over enum
+
+  type TrafficLight concrete :Red | :Amber | :Green
+
+  x = :Green :: TrafficLight
+
+  s = x match
+    case :Red "Red"
+    case :Green "Green"
+    case :Blue "Blue"
+  end
+
+  expect s is "Green"
+
+Match over abstract symbol pattern
+
+  type RedPattern pattern :Red
+  (y :: RedPattern) = :Red :: TrafficLight
+
+  y match :Red
+
+Note can't capture raw symbols
+
+  expect y match (symbol :: :Red) fails "..."
+
+  (r :: Rectangle) = IntRectangle(5, 5)
+  expect r match (_ :: Symbol)(Float, Float) fails "..."
+
+TO CONSIDER: consider not allowing matching against abstract symbol patterns. The patterns are necessary in definitions of concrete types like enums and option. But maybe they can't stand alone.
+
+
 
 We can embed "concrete" in any type expression:
 
