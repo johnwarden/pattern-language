@@ -82,77 +82,14 @@ A numeric literal by itself has type ExactRational and is not exactly equal to a
 
 	x > 0 # Okay
 
-The downside is that we can't just say
+The fixed-precision prelude specifies the [`Number` union and numeric
+equality](fixed-precision-numbers.md#number-and-numeric-equality) and the
+[addition definitions](fixed-precision-numbers.md#prelude-definitions-for-addition).
 
-	x == 0
-	x != 0
-
-But we can define a new numeric Equality operator that
-
-  x =#= 0
-  x !#= 0
-
-This if formatting safe because "x = #= comment" wouldn't compile. Oh yes it could if continued on indented next line. So we just say comments that start with `=` or `# =` aren't allowed (at least not directly after =) .
-
-When people try to use x == 0 when x is one of the fixed-precision types they will get a compile error (comparing different concrete types)
-
-# Definition of `Number` union type
-
-Whether `Number` includes `ExactRational` is independent of strict
-equality. An operand statically typed as `Number` and a bare literal of
-type `ExactRational` have different static types. A comparison can
-explicitly put both operands in a common domain. Within that domain,
-equal magnitudes in different concrete number types are unequal.
-Numeric equality compares magnitudes across the supported number types.
-
-## Prelude definitions for addition
-
-Draft for `ExactRational`, `Int` (the Int64 alias), and `Float64`.
-The result of mixing one fixed-precision operand with an `ExactRational`
-has the fixed operand's type, in either order. Check exact representability
-of the Rational operand before adding. Integer results are checked for
-overflow. Float64 results are rounded once. Different fixed formats need
-an explicit conversion for these overloads.
-
-Each first pack selects one definition. A union in the second pack keeps
-both supported operand types available after saving a partial application.
-When the first pack is an `ExactRational`, its definition can return an
-`ExactRational`, `Int`, or `Float64` according to the second operand.
-
-```pattern
-def (+)(a :: Int)(b :: Int | ExactRational)
-  right = b :: Int
-  addExact(unwrap(a), unwrap(right)) :: Int
-end
-
-def (+)(a :: Float64)(b :: Float64 | ExactRational)
-  right = b :: Float64
-  float64(addExact(unwrap(a), unwrap(right)))
-end
-
-def (+)(a :: ExactRational)(b :: ExactRational | Int | Float64)
-  match b
-    (q :: ExactRational) -> addExact(a, q)
-    (i :: Int) -> (+(i)(a))
-    (f :: Float64) -> (+(f)(a))
-  end
-end
-```
-
-`addExact` denotes the prelude's internal exact addition primitive
-(the bootstrap already implements this operation as `addRationals`). The
-delegating arms use the same checked conversions as the fixed-left
-definitions. Match recognizes the concrete member held by `b`.
-The `:: Int` and `:: Float64` checks on `right` explicitly designate
-the operand, independent of whether it originated as a literal or a variable.
-For example, the Int arm rejects a rational `0.5` even when the final sum
-could be rounded. This is an explicit mixed-operand signature for addition,
-replacing the homogeneous-only addition proposal in the
-[fixed-precision draft](fixed-precision-numbers.md).
-
-The [partial-application contract](../../tests/inbox/mixed-addition-partial-application.test)
-checks the infix, successive-pack, and saved-partial forms, including a stored
-Rational operand and a Rational first pack called with two different types.
+The `sqrt(2)` error above assumes the call requires a floating argument
+with an existing concrete type. The designation fallback below could
+otherwise designate the exact literal into a float. How `sqrt` requires
+that existing type remains open.
 
 # Designation and Ambiguity
 

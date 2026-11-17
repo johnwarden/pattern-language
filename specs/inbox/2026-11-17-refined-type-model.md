@@ -143,14 +143,14 @@ Now Rectangular can match one of many concrete types (Rect(Int, Int), Rect(Int, 
   (x :: Rectangular) = Rect(2, 2) :: Rect(Int, Int)
   expect s is Rect(2, 2) :: Rect(Int, Int)
 
-The field choices describe the same admissible rectangle shapes as an
+The four combinations of concrete field types can also be written as an
 explicit union of `Rect(Int, Int)`, `Rect(Int, Float)`, `Rect(Float, Int)`
 and `Rect(Float, Float)`. Use matching to show that equivalence. Descriptor
 identity uses the existing [structural normalization and identity
 rules](../../TYPE-VALUES-BOOTSTRAP.md#normalization-and-identity). There is
 no new normalization rule that distributes a union across fields.
 
-A constructor shape and a reference to a concrete type have different
+A constructor pattern and a reference to a concrete type have different
 roles in a concrete description:
 
     type Rectangle concrete Rect(Num, Num)
@@ -311,22 +311,23 @@ These types can only take on a single value.
 An abstract symbol pattern can admit a value from a different concrete enum:
 
     type TrafficLight concrete :Red | :Amber | :Green
-    type RedShape pattern :Red
+    type RedPattern pattern :Red
 
-    def takesRed(x :: RedShape) "red shape"
+    def takesRed(x :: RedPattern) "red pattern"
     def takesPrimary(x :: PrimaryColor) "primary color"
 
     light = :Red :: TrafficLight
-    expect takesRed(light) is "red shape"
+    expect takesRed(light) is "red pattern"
     expect takesPrimary(light) fails "no method"
 
     expect takesPrimary(s) fails "no definition for `takesPrimary(Status)`"
 
-A call to `takesPrimary(s)` cannot implicitly unwrap `s`. For `takesRed(s)` to
-succeed, the shape matcher must look through the extra wrapper. It should NOT do this.
+`takesPrimary(s)` requires a `PrimaryColor` value. The abstract symbol
+pattern also respects the concrete wrapper boundary. Use `unwrap` to match
+the symbol inside `Status`.
 
-    expect takesRed(s) fails "no definition for `takesPrimary(Status)`"
-    expect takesRed(unwrap s) is "red shape"
+    expect takesRed(s) fails "no definition for `takesRed(Status)`"
+    expect takesRed(unwrap s) is "red pattern"
 
 
   # Value of outer type cannot designate value of inner type
