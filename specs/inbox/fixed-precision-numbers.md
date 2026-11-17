@@ -154,6 +154,56 @@ defines the operation only for fixed-precision floating types. When more
 than one floating overload accepts the designation of an `ExactRational`,
 the call is ambiguous. An explicit float ascription selects its format.
 
+## Mixed comparison contracts
+
+These cases build on [#79](https://github.com/johnwarden/pattern-language/pull/79).
+Support mixed `Int` and `ExactRational` ordering in both operand positions
+through the prelude signatures. The same signature and checks apply to a literal,
+a bound value, and an arithmetic result with the same exact value.
+
+```pattern
+test "Mixed ordering accepts the same exact value in every form"
+  n = 2 :: Int
+  one = 1
+  sum = 1 + 0
+
+  expect n > 0 is True
+  expect n < 10 is True
+  expect n >= 2 is True
+  expect 0 < n is True
+  expect n > -1 is True
+
+  expect n > 1 is True
+  expect n > one is True
+  expect n > (1 + 0) is True
+  expect n > sum is True
+  expect one < n is True
+end
+
+test "An Int refinement can order its input against an exact zero"
+  type PositiveInt pattern Int .where (n -> n > 0)
+
+  expect (2 :: Int) .matches PositiveInt is True
+  expect (0 :: Int) .matches PositiveInt is False
+end
+
+test "Numeric equality applies to literal and bound ExactRationals"
+  n = 2 :: Int
+  two = 2
+  expect (n == 2) fails "E_INCOMPARABLE_TYPES"
+  expect (n == two) fails "E_INCOMPARABLE_TYPES"
+  expect (n == (2 :: Int)) is True
+  expect (n =#= 2) is True
+  expect (two =#= n) is True
+end
+```
+
+The mixed signatures still need to settle whether to order the exact magnitudes
+or require the rational to fit the fixed format. Exercise that decision with
+`n > 0.5` and `n < 9223372036854775808`, and with the same rationals bound to
+names, for an `Int` value `n`. Mixed ordering between distinct fixed formats,
+such as `Int` and `Float64`, also needs a signature decision.
+
 ## Candidate contracts
 
 ```pattern
@@ -169,11 +219,6 @@ end
 test "Square root requires disambiguation between floating formats"
   expect sqrt(2) fails "ambiguous"
   expect sqrt(4 :: Float64) is 2 :: Float64
-end
-
-test "Ordering accepts an exact literal beside an Int"
-  n = 41 :: Int
-  expect n < 42 is True
 end
 
 test "Float64 operands designate exactly and results round"
