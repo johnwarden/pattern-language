@@ -1,11 +1,13 @@
-# Ambiguous values report `E_AMBIGUOUS_VALUE`
+# Ambiguous value designators report `E_AMBIGUOUS_VALUE_DESIGNATOR`
 
-Approved by Jonathan in the project chat on 10 November 2026. This renames
-`E_AMBIGUOUS_PATTERN` and changes what its message says.
+Approved by Jonathan in the project chat on 10 November 2026; renamed from
+`E_AMBIGUOUS_VALUE` on 17 November. This renames `E_AMBIGUOUS_PATTERN` and
+changes what its message says.
 
-When more than one member of an expected type can designate a value, the value
-is ambiguous. The error is the same however the expected type reaches the value,
-and it blames the value, not the pattern:
+An expression that designates a value, such as the literal `3` or `:None`, is a
+value designator. When more than one member of an expected type can accept the
+designator, it is ambiguous. The error is the same however the expected type
+reaches the designator, and it blames the designator, not the pattern:
 
 ```pattern
 b = abstract Int | Float
@@ -17,22 +19,34 @@ type Foo concrete String? | Float?
 (x :: Foo) = :None
 ```
 
-Each of these fails with `E_AMBIGUOUS_VALUE`. The message lists the possible
-interpretations so the author can choose one, for example "please specify
-`3 :: Int` or `3 :: Float`". Each interpretation is written as `value :: Type`
-for a member that would accept the value. The exact surrounding wording is not
-pinned; every candidate interpretation must appear in it.
+Each of these fails with `E_AMBIGUOUS_VALUE_DESIGNATOR`. The message lists the
+possible interpretations so the author can choose one, for example "ambiguous
+value designator 3: please specify `3 :: Int` or `3 :: Float`". Each
+interpretation is written as source, `designator :: Type`, for a member that
+accepts it. The exact surrounding wording is not pinned; every candidate
+interpretation must appear in it. When more than two interpretations match, the
+message lists the first two and ends with `...and N others`.
+
+A member accepts a designator only if every condition of the member holds,
+including a refinement's predicate. If exactly one member accepts it, the
+designator is not ambiguous and selects that member. With
+`p = Int .where (n -> n > (5 :: Int))`, `u = abstract p | Float` and
+`def f(n :: u) n`, `f(3)` is not ambiguous (only `Float` accepts `3`), while
+`f(7)` is (both do). Choosing `3 :: p` explicitly fails with the failed predicate
+named in the error.
 
 `E_AMBIGUOUS_PATTERN` is retired: existing assertions that expect it are renamed
-to `E_AMBIGUOUS_VALUE`, preserving their subjects. This does not change which
-programs are ambiguous. It also does not change designation or literal typing:
-`3` stays ambiguous between `Int` and `Float` here because both designate it.
+to `E_AMBIGUOUS_VALUE_DESIGNATOR`, preserving their subjects. A declaration with
+repeated alternatives is not ambiguous: `type :A | :A` normalizes to `type :A`.
+This does not change designation or literal typing: `3` stays ambiguous between
+`Int` and `Float` here because both designate it.
 
 ## Contracts
 
-The legacy/todo pairs in `tests/specification/expected-type-context.test`
-(PR #77) express this decision: each keeps the old code as a legacy assertion
-and adds the new code and the `3 :: Int` / `3 :: Float` message check as todos.
-The implementation PR renames the remaining `E_AMBIGUOUS_PATTERN` assertions in
-the corpus, removes the legacy lines once the todos pass, and moves this record
-to `../implemented/` with links.
+The implementation PR (#80) writes the three examples above, the routes that list
+interpretations, the truncation and the refinement dispatch cases in
+`tests/specification/ambiguous-values.test`, renames the remaining
+`E_AMBIGUOUS_PATTERN` assertions in the corpus, and moves this record to
+`../implemented/` with links. The legacy/todo pairs in
+`tests/specification/expected-type-context.test` (PR #77) carry the earlier
+spelling and must follow the rename or be dropped when it lands.
