@@ -1,17 +1,21 @@
 # Arithmetic and infix precedence
 
-These rules apply to ordinary Code, Code quotations, and text read as Code.
-A typed grammar uses these rules in positions it reads as Code. Tight prefix,
-postfix, dot and call syntax bind before infix grouping. Explicit
-parentheses, argument fields and grammar-delimited operands start
-independent expressions. A [fraction literal](rational-literals-and-text.md)
+Infix grouping belongs to the surface syntax of expression trees and
+applies to every expression, regardless of its type. The surface reader
+groups the operators to form a tree. Domain-specific grammars, including
+Code, recognize and interpret those trees. See [the two interpretation
+stages](../../GRAMMAR-BOOTSTRAP.md#two-interpretation-stages).
+
+Tight prefix, postfix, dot and call syntax bind before infix grouping.
+Explicit parentheses, argument fields and grammar-delimited operands
+start independent expressions. A [fraction literal](rational-literals-and-text.md)
 is read as an atom.
 
 Each infix operator still applies to two successive argument packs.
 Exponentiation is the named prelude function `pow(base, exponent)` with
 two positional arguments in one pack. Infix `^` is available as an
 ordinary operator for individual languages built on the surface syntax.
-See the [Code expression and pack rules](../../GRAMMAR.md#one-surface-tree)
+See the [surface expression and pack rules](../../GRAMMAR.md#one-surface-tree)
 and the [numeric prelude draft](fixed-precision-numbers.md#exponentiation).
 
 ## Precedence and associativity
@@ -26,8 +30,8 @@ and the [numeric prelude draft](fixed-precision-numbers.md#exponentiation).
 Tighter expressions form operands first. Within each unparenthesized
 chain at one tier, operators must have the same associativity. If two
 neighbors in that chain disagree, report a syntax error at the second
-operator and identify the first one. For a chain with two operators, show
-both ways to add parentheses. A tighter expression between the operators
+operator and identify the first one. When the chain has two operators at
+that tier, show both parenthesized spellings. A tighter expression between the operators
 still counts as a single operand. For example, `a - b * c .and d` has
 the conflicting shared-tier operators `-` and `.and`.
 
@@ -35,9 +39,9 @@ Success cases compare direct Code quotations. Parentheses around the first
 quote delimit it before the assertion's `==`. Rejection cases read strings
 inside the assertion so malformed Code can produce the expected diagnostic.
 
-## Printing Code
+## Printing expression trees
 
-The Code printer groups an infix child in a weaker tier than its parent.
+The expression printer groups an infix child in a weaker tier than its parent.
 At the same tier, group a child of different associativity on either side.
 For operators of the same associativity, group a right child under a
 left-associative parent and a left child under a right-associative parent.
@@ -46,7 +50,7 @@ The printed text reads back to the same application tree.
 ## Numeric equality tokens and comments
 
 The proposed numeric equality operators `=#=` and `!#=` count as
-comparisons. In code, the reader recognizes those complete tokens before
+comparisons. The surface reader recognizes those complete tokens before
 treating `#` as a comment opener. As with other infix operators, whitespace is
 required on both sides of the token.
 
@@ -61,6 +65,23 @@ and [formatting safety](../../GRAMMAR.md#formatting-safety).
 ## Test cases
 
 ```pattern
+test "A DSL field reads the same expression tree"
+  type Rule concrete Check(expr :: Expression)
+  tree = Expression` 1 * 2 + 3
+  rule = Rule` Check(1 * 2 + 3)
+
+  assert tree == Expression` +(*(1)(2))(3)
+  assert rule.expr == tree
+  expect parse(Rule)("Check(a - b .and c)") fails "Parentheses required. Write `(a - b) .and c` or `a - (b .and c)` (mixed associativity)."
+end
+
+test "Expression printing preserves infix grouping"
+  tree = Expression` 10 - (3 - 2)
+  text = toString(Expression)(tree)
+  expect text contains "(3 - 2)"
+  assert parse(Expression)(text) == tree
+end
+
 test "Multiplication and division bind more tightly than addition and subtraction"
   expect 1 + 2 * 3 is 7 :: Rational
   expect 2 * 3 + 4 is 10 :: Rational
@@ -90,11 +111,11 @@ test "Default operators associate right and take multiplicative operands"
 end
 
 test "Same-tier operators with different associativity ask for grouping"
-  expect parse(Code)("a - b .and c") fails "Cannot mix `-` (left-associative) and `.and` (right-associative) at the same precedence. Write `(a - b) .and c` or `a - (b .and c)`."
-  expect parse(Code)("a .and b - c") fails "Cannot mix `.and` (right-associative) and `-` (left-associative) at the same precedence. Write `(a .and b) - c` or `a .and (b - c)`."
-  expect parse(Code)("a - b .and c - d") fails "Cannot mix `-` (left-associative) and `.and` (right-associative) at the same precedence."
-  expect parse(Code)("a - b * c .and d") fails "Cannot mix `-` (left-associative) and `.and` (right-associative) at the same precedence."
-  expect parse(Code)("x + 1 :: Int") fails "Cannot mix `+` (left-associative) and `::` (right-associative) at the same precedence. Write `(x + 1) :: Int` or `x + (1 :: Int)`."
+  expect parse(Code)("a - b .and c") fails "Parentheses required. Write `(a - b) .and c` or `a - (b .and c)` (mixed associativity)."
+  expect parse(Code)("a .and b - c") fails "Parentheses required. Write `(a .and b) - c` or `a .and (b - c)` (mixed associativity)."
+  expect parse(Code)("a - b .and c - d") fails "Parentheses required (mixed associativity)."
+  expect parse(Code)("a - b * c .and d") fails "Parentheses required. Write `(a - b * c) .and d` or `a - (b * c .and d)` (mixed associativity)."
+  expect parse(Code)("x + 1 :: Int") fails "Parentheses required. Write `(x + 1) :: Int` or `x + (1 :: Int)` (mixed associativity)."
 
   assert (Code` (a - b) .and c) == Code` and(-(a)(b))(c)
   assert (Code` a - (b .and c)) == Code` -(a)(and(b)(c))
