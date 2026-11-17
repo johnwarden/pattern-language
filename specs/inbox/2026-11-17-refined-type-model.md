@@ -22,10 +22,11 @@ An explicit nested concrete boundary remains part of type identity.
 Wrapping a pattern in concrete/Concrete creates a new value space, with values that are disjoint from but designated by values matching the wrapped pattern.
 
 
-A nested `pattern` disappears
+Nested `pattern` forms collapse. A lone type reference resolves to the
+referenced type, so applying `pattern` to it again returns that same type.
 
   expect concrete pattern Int | String is Concrete(Int | String)
-  expect pattern pattern Int is Pattern(Int)
+  assert (pattern pattern Int) == Int
 
   type Foo pattern Int | String
   Woo = concrete Foo
@@ -246,11 +247,14 @@ This is odd and probably not a good idea. But it is coherent:
 
 # Examples
 
-# Single-Symbol Patterns (singletons)
+# Single-symbol patterns
 
-These types can only take on a single value.
+An abstract symbol pattern such as `pattern :Red` can stand alone as a
+type. It admits values from concrete types with that symbol at the
+matched boundary and preserves their concrete identity. A concrete
+singleton has one value in its own value space.
 
-## abstract symbol patterns
+## Abstract symbol patterns
 
   t = pattern :None
   expect (v :: t) = :None fails "...no concrete type for `:None`"
@@ -312,6 +316,8 @@ An abstract symbol pattern can admit a value from a different concrete enum:
 
     type TrafficLight concrete :Red | :Amber | :Green
     type RedPattern pattern :Red
+    redPattern = pattern :Red
+    assert RedPattern == redPattern
 
     def takesRed(x :: RedPattern) "red pattern"
     def takesPrimary(x :: PrimaryColor) "primary color"
@@ -711,8 +717,6 @@ Note can't capture raw symbols
   (r :: Rectangle) = IntRectangle(5, 5)
   expect r match (_ :: Symbol)(Float, Float) fails "..."
 
-TO CONSIDER: consider not allowing matching against abstract symbol patterns. The patterns are necessary in definitions of concrete types like enums and option. But maybe they can't stand alone.
-
 
 
 We can embed "concrete" in any type expression:
@@ -730,6 +734,21 @@ We can embed "concrete" in any type expression:
     assert toString(u.id) is "5 :: Id"
   end
 
+
+## Test migration
+
+Once this spec is finalized, update the source suite and its setup to
+reflect the new type and value rules. The earlier
+[raw-expression contract](../implemented/raw-expression-values.md)
+accepts bare runtime constructor values such as `r = Rect(2, 2)`.
+Migrate those cases, keeping separate coverage for construction with
+an expected concrete type and for quotation as expression syntax.
+
+Use `legacy` for bootstrap behavior that still needs a passing check
+during the transition. Use `todo` for the intended behavior that the
+interpreter has yet to implement. Preserve coverage of each behavior
+that matters and consolidate assertions that cover the same contract.
+Keep unresolved design questions with the relevant spec or test.
 
 # POssible Future Goal:
 
