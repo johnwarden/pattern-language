@@ -135,7 +135,8 @@ const significand = (digit: string) => {
   const run = digits(digit);
   return `${run}(?:\\.${run})?`;
 };
-const binaryExponent = `[+-]?${decimalDigits}`;
+// Binary `p` exponents share decimal-integer digit rules with `e` (no leading zeros).
+const binaryExponent = `[+-]?${decimalInteger}`;
 const binary = significand("[01]");
 const hex = significand("[0-9a-fA-F]");
 const decimalSpelling = new RegExp(`^${decimal}$`);
@@ -148,6 +149,29 @@ const numericPrefix = new RegExp(
   "y",
 );
 
+/**
+ * Cap on the magnitude of a written decimal `e` or binary `p` exponent.
+ * Float64 needs at most 308 decimal / 1023 binary; 10000 leaves headroom for
+ * exact Rationals beyond that range while keeping `10n ** power` / `2n ** power`
+ * fast. Larger written exponents are rejected before any bigint exponentiation.
+ */
+export const MAX_NUMERIC_EXPONENT = 10000;
+
+function checkWrittenExponent(raw: string): void {
+  const digitsOnly = stripNumericUnderscores(raw).replace(/^[+-]/, "");
+  // Digit-length gate rejects 1e999999999 without building a bigint power.
+  if (
+    digitsOnly.length > 5 ||
+    Number(digitsOnly) > MAX_NUMERIC_EXPONENT
+  ) {
+    throw new LanguageError(
+      `numeric exponent exceeds ${MAX_NUMERIC_EXPONENT}`,
+      undefined,
+      { code: "E_SYNTAX", phase: "parse" },
+    );
+  }
+}
+
 export function matchNumericSource(
   source: string,
   start: number,
@@ -158,6 +182,7 @@ export function matchNumericSource(
 function parseDecimalExact(spelling: string): Rational | undefined {
   const match = decimalSpelling.exec(spelling);
   if (!match) return;
+  if (match[3] !== undefined) checkWrittenExponent(match[3]);
   const frac = stripNumericUnderscores(match[2] ?? "");
   const combined = BigInt(stripNumericUnderscores(match[1]) + frac);
   const scale =
@@ -169,15 +194,17 @@ function parseDecimalExact(spelling: string): Rational | undefined {
 function parseBinaryPower(
   significand: string,
   base: 2 | 16,
-  exp = "0",
+  exp?: string,
 ): Rational | undefined {
   const pattern = base === 16 ? hexSpelling : bitSpelling;
-  if (!pattern.test(significand) || !exponentSpelling.test(exp)) return;
+  const written = exp ?? "0";
+  if (!pattern.test(significand) || !exponentSpelling.test(written)) return;
+  if (exp !== undefined) checkWrittenExponent(exp);
   const clean = stripNumericUnderscores(significand);
   const [int, frac = ""] = clean.split(".");
   const combined = BigInt((base === 16 ? "0x" : "0b") + int + frac);
   const power =
-    BigInt(stripNumericUnderscores(exp)) -
+    BigInt(stripNumericUnderscores(written)) -
     BigInt(frac.length * (base === 16 ? 4 : 1));
   return power >= 0n
     ? reduceRational(combined * 2n ** power, 1n)
@@ -191,6 +218,7 @@ export function parseNumericSpelling(text: string): Rational | undefined {
     const n = BigInt(stripNumericUnderscores(parts[1]));
     const d = BigInt(stripNumericUnderscores(parts[2]));
     if (d === 0n) return;
+    if (parts[3] !== undefined) checkWrittenExponent(parts[3]);
     const power = BigInt(stripNumericUnderscores(parts[3] ?? "0"));
     return power >= 0n
       ? reduceRational(n * 10n ** power, d)
@@ -208,7 +236,9 @@ export function parseNumericSpelling(text: string): Rational | undefined {
 function parseUnsignedNumeric(t: string): Rational | undefined {
   if (/^0[fF]/.test(t)) {
     const rest = t.slice(2);
-    if (!decimalSpelling.test(rest)) return;
+    const match = decimalSpelling.exec(rest);
+    if (!match) return;
+    if (match[3] !== undefined) checkWrittenExponent(match[3]);
     const rounded = Number(stripNumericUnderscores(rest));
     if (!Number.isFinite(rounded)) return;
     return float64ToRational(rounded);
@@ -311,7 +341,10 @@ function positionalSpelling(
     point <= available;
     point++
   ) {
-    const exponent = exponentText(power + (count - point) * step, marker);
+    const placedExponent = power + (count - point) * step;
+    // Printer candidates must stay within the reader exponent cap so text round-trips.
+    if (Math.abs(placedExponent) > MAX_NUMERIC_EXPONENT) continue;
+    const exponent = exponentText(placedExponent, marker);
     const length =
       (point <= 0 ? count + 2 - point : point < count ? count + 1 : point) +
       exponent.length;
@@ -448,6 +481,7 @@ export function formatRational({ n, d }: Rational): string {
   const coreLogLowerBound =
     significantDigits + denominator.core.toString().length - 2;
   const fractionAt = (power: number) => {
+    if (Math.abs(power) > MAX_NUMERIC_EXPONENT) return;
     const a = twos - power,
       b = fives - power;
     const exponent = exponentText(power, "e");
@@ -494,8 +528,6 @@ export function formatRational({ n, d }: Rational): string {
   if (!negative) return text;
   return family === "fraction" ? "(-" + text.slice(1) : "-" + text;
 }
-
-export const tryFormatRational = formatRational;
 
 /** Syntax number literal whose payload is the exact Rational. */
 export function syntaxNumber(

@@ -41,7 +41,10 @@ Use these canonical lexical choices before comparing:
 - ASCII digits; lowercase `0f`, `0x`, `0b`, `e` and `p`; uppercase hexadecimal digits.
 - No spaces, underscores, redundant leading zeros, exponent `+`, or zero
   exponent. Keep the required integer digit before a decimal or hexadecimal
-  point (`0.5`, not `.5`). No trailing fractional zeros.
+  point (`0.5`, not `.5`). No trailing fractional zeros. Do not emit an `e` or
+  `p` exponent whose magnitude exceeds the reader cap of `10000` from
+  [Rational literals](rational-literals-and-text.md); prefer another exact
+  candidate so printed text always round-trips.
 - Fractions have coprime components and denominator greater than one. Their
   parentheses are part of the spelling. Each component uses plain decimal
   integer digits. The sign rule below applies to negative values.
