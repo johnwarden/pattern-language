@@ -1,25 +1,41 @@
-# Parenthesized Rational literals — archived draft
+# Rational literals and exact text
 
-Archived on 18 November 2026. The approved spacing and canonical-text
-decisions remain linked below.
+Every numeric value must have a source spelling that round-trips to the
+same exact value. Include a type annotation when needed to recover the
+concrete numeric format. A value such as one third has no terminating
+decimal or binary expansion, so exact numeric text needs a fraction
+spelling. The typed reader must be able to recover that value directly
+from its spelling.
 
-Latest proposal from the 10 November 2026 discussion of
-[PR #76](https://github.com/johnwarden/pattern-language/pull/76):
-`(n/d)` is one exact Rational atom, optionally followed by a touching decimal
-exponent. The slash touches both integer components. The parentheses belong to
-the literal. This replaces the PR's proposed bare `n/d` spelling.
+## Source spelling
 
-[Agreed spacing clarification](../rational-literal-spacing.md): `(1 / 3)` is ordinary
-grouped division, not a literal. `(1/3)` and `(1 / 3)` yield the same Rational
-under ordinary exact division, but their Code trees differ. Formatting safety
-allows this value-preserving distinction; it no longer requires identical Code
-trees for these two spellings. A zero denominator in the spaced expression is
-an evaluation error, not a source-reading error. Ordinary Code printing can keep
-using spaced division and grouping parentheses.
+A fraction literal is one numeric atom, such as `(1/3)` or `(-1/3)`.
+The parentheses and slash belong to the literal. Both components are ASCII
+decimal integers. Only the numerator may have a sign, and that sign is `-`.
+The denominator must be positive. Bare `1/3`, `(1/-3)`, and `(0x1/3)` are
+invalid fraction spellings.
 
-[Arithmetic precedence](https://github.com/johnwarden/pattern-language/blob/spec/arithmetic-precedence/specs/arithmetic-precedence.md) is a separate decision.
-These tests propose syntax; they do not approve the remaining lexical/printing
-choices or claim current implementation support.
+In fraction components and plain decimal literals, the integer part is `0`
+or starts with a nonzero digit. A single `_` may separate two digits in either
+fraction component or in a decimal digit run. For example, `(1_000/3_001)`
+and `1_000.0_5` are valid. `(01/3)`, `01.5`, and `(1_/3)` are invalid.
+A touching `-` is part of the numeric literal. For a plain decimal, hexadecimal,
+binary or `0f` spelling, it goes first, as in `-0.5` or `-0x1p-20`.
+
+An optional `e` or `E` immediately after the closing parenthesis scales the
+entire fraction by a power of ten. It takes a decimal integer exponent with
+an optional `+` or `-` and the same digit rules. For example, `(1/3)e10`
+scales `1/3` by ten billion. Whitespace is forbidden throughout the literal,
+including between the closing parenthesis and the exponent.
+
+`(1 / 3)` is grouped division. It yields the same Rational as `(1/3)` under
+exact Rational division. Formatting safety permits the different Code trees
+because the value is the same. Partial infix spacing is invalid. Reading or
+quoting `(1 / 0)` succeeds, and evaluating the division fails. Reading `(1/0)`
+fails immediately. The Code printer keeps the spaces in grouped division.
+
+The implementation in [#76](https://github.com/johnwarden/pattern-language/pull/76)
+needs to adopt the parenthesized spelling.
 
 ## Values
 
@@ -33,6 +49,7 @@ test "Fraction literals denote exact reduced Rationals"
   expect (3/1) is 3 :: Rational
   expect (0/5) is 0 :: Rational
   expect (9007199254740993/1) is 9007199254740993 :: Rational
+  expect (1_000/3_000) is (1/3) :: Rational
 
   assert (2/6) == (1/3)
 end
@@ -50,18 +67,20 @@ test "Reading a fraction exponent produces the same exact Code atom"
   assert parse(Code)("(3/4)e2") == Code` 75
 end
 
-test "Negative fractions use ordinary prefix negation"
-  expect -(1/3) is
-    -(1/3) :: Rational
-  end
-  expect -(1/3)e2 is
-    -(100/3) :: Rational
-  end
-  assert parse(Code)("-(1/3)") == Code` -((1/3))
+test "The minus in a negative literal belongs to the numeric atom"
+  expect (-1/2) is -0.5 :: Rational
+  expect (-1/3)e2 is (-100/3) :: Rational
+  assert parse(Code)("(-1/2)") == parse(Code)("-0.5")
+  assert parse(Code)("-(1/2)") != parse(Code)("(-1/2)")
+  assert parse(Code)("-(0.5)") != parse(Code)("-0.5")
+  expect -(1/2) is -0.5 :: Rational
 end
 ```
 
 ## Reading and formatting
+
+The minus operator still works in prefix applications such as `-(0.5)` and
+`-(1/3)`, and in infix subtraction with spaces on both sides.
 
 ```pattern
 test "Spaced division preserves its application tree"
@@ -108,10 +127,6 @@ test "Spaced division by zero is inert while reading and in unused defaults"
 end
 ```
 
-Only integer components form this literal; arbitrary expressions are not evaluated
-by its reader. Signed components, leading zeros, underscores and exponent
-whitespace need an explicit lexical decision before approval.
-
 ## Packs and calls
 
 ```pattern
@@ -132,16 +147,23 @@ end
 
 ## Typed text
 
-[Shortest exact Rational text](../rational-canonical-text.md) is now
+[Shortest exact Rational text](rational-canonical-text.md) is now
 approved. It replaces the 16-place cutoff and the preference for exact binary64
 hexadecimal output with shortest exact spelling across decimal, `0f`, hexadecimal,
 binary and reduced fraction forms, including exponent forms. That record defines the
 deterministic tie-breaks and owns the canonical spelling examples.
 
+`parse(Rational)` reads a numeric literal with the same spelling rules as
+source, including `(-1/3)` and `-0.5`. Expression evaluation is outside this
+reader's grammar. Use `parse(Code)` to read prefix negation or grouped division
+as Code.
+
 ```pattern
 test "Typed Rational text reconstructs the same exact value"
   assert parse(Rational)(toString(Rational)((1/3))) == (1/3)
-  assert parse(Rational)(toString(Rational)(-(2/6))) == -(2/6)
+  assert parse(Rational)(toString(Rational)((-2/6))) == (-1/3)
+  assert parse(Rational)("(-1/3)") == (-1/3)
+  assert parse(Rational)("-0.5") == (-1/2)
   assert parse(Rational)(toString(Rational)((9007199254740993/1))) == 9007199254740993
 
   scaled = (1/3)e20
@@ -150,11 +172,13 @@ test "Typed Rational text reconstructs the same exact value"
 end
 
 test "Code printing reconstructs numeric atoms and prefix negation"
-  atom = Code` (1/3)
+  atom = Code` (-1/3)
   assert parse(Code)(toString(Code)(atom)) == atom
 
-  negative = Code` -(1/3)
-  assert parse(Code)(toString(Code)(negative)) == negative
+  negation = Code` -(1/3)
+  assert parse(Code)(toString(Code)(negation)) == negation
+  decimalNegation = Code` -(0.5)
+  assert parse(Code)(toString(Code)(decimalNegation)) == decimalNegation
 end
 
 test "Code printing preserves ordinary grouped division"
@@ -165,18 +189,9 @@ test "Code printing preserves ordinary grouped division"
 end
 ```
 
-## Remaining review decisions
-
-- Specify the remaining component grammar: signs, leading zeros, underscores and
-  whitespace next to the delimiters, including whether either component may use a
-  nondecimal spelling. The slash touching both components is settled; ordinary
-  division requires spaces on both sides. State the exponent marker, sign, digit
-  and adjacency rules explicitly.
-- State the typed Rational reader's sign grammar. It must accept the chosen
-  negative canonical text without evaluating arbitrary Code, while source Code
-  continues to represent negation as an ordinary prefix application.
+## Implementation handoff
 
 After approval, revise the PR's literal cases and the old serialization-failure
-case in [exact-values.test](../../tests/numeric/exact-values.test).
+case in [exact-values.test](../tests/numeric/exact-values.test).
 Keep native syntax/transport checks in host tests. Other numeric families and
 general function/type serialization retain their existing boundaries.
