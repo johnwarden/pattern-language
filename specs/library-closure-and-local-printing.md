@@ -41,14 +41,14 @@ valid aliases is not settled here.
 
 ## Contracts and remaining conversion
 
-[named-function-values.test](../../tests/specification/named-function-values.test)
+[named-function-values.test](../tests/specification/named-function-values.test)
 contains todo checks for captured values, transitive referenced definitions,
 finite recursive calls, successive packs, label/rest binders, captured/lazy
 defaults, returned captures, local type/accessor definitions and
 structural identity, alongside the original callable-use cases. Those behavioral
 tests alone do not prove a portable representation without a hidden environment.
 
-The [test proposal](../inbox/named-function-value-tests.md) names the remaining
+The [test proposal](https://github.com/johnwarden/pattern-language/blob/spec/function-values/specs/named-function-value-tests.md) names the remaining
 snapshot, fresh-context and printing checks and the decisions needed to express
 them. Keep this record approved until those representation-level obligations
 are captured as actual tests. No public Function/Library schema, export policy,

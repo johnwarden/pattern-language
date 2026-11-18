@@ -1,4 +1,4 @@
-# Acceptance input for specs/implemented/expect-predicates.md.
+# Acceptance input for specs/expect-predicates.md.
 # test/expect-predicates.test.ts runs this file and checks every report.
 
 test "Equality expectation uses is"

@@ -44,10 +44,10 @@ configuration. Analysis never executes open programs or tests.
 - [Decision record and 27 design cases](design/LANGUAGE-DECISIONS.md): reasons,
   statuses and decision-to-case coverage.
 - [Test-suite milestone](design/TEST-SUITE.md): revised DSL, todo and selective migration.
-- [Development workflow](design/TESTING-WORKFLOW.md): specification-first changes,
-  todo promotion and inbox triage.
-- [Spec lifecycle](specs/README.md): inbox proposals, chat-approved decisions and
-  conversion into executable tests.
+- [Development workflow](design/TESTING-WORKFLOW.md): spec branches, active tests
+  and implementation PRs.
+- [Language specifications](specs/README.md): accepted decisions and how to
+  propose changes.
 - [Executable specification](tests/specification/README.md): authoritative `.test`
   contracts and adjacent explanatory notes.
 - [Vision](VISION.md) and [engineering checklist](TODO.md).
@@ -103,8 +103,7 @@ for binding defaults, type accessors, ordered match arms and macro staging.
 Milestone **5a.1 is implemented**. Test files use `.test`, live in broad groups
 under `tests/`, and contain one or more `test` or `todo test` blocks. A file may
 contain only a single todo test. The runner recursively discovers `.test` files
-(excluding the optional inbox unless directly selected); the playground embeds runnable cases
-from `tests/examples/`.
+under `tests/`. The playground embeds runnable cases from `tests/examples/`.
 
 ```text
 test "Current and future text result types"
@@ -186,8 +185,7 @@ just test
 just test tests/examples/patterns.test # one source test file
 just test tests/examples              # source tests in a directory
 just test test/indent-prefix.test.ts  # one host test file
-just test tests/inbox                 # opt in to draft inbox tests
-just test-language                   # scans tests/**/*.test, excluding inbox
+just test-language                   # scans tests/**/*.test
 just test-language --list
 just test-language tests/bindings
 ```
@@ -196,7 +194,5 @@ The browser and CLI use the same TypeScript modules. Host tests retain implement
 invariants and actual-control checks for every playground example in fresh and
 restored sessions. Todo failures are counted separately from passing assertions.
 
-`tests/inbox/` is an optional staging area. Default host and source suite runs
-(including pre-push checks) exclude it. Select `tests/inbox` or a file inside it
-explicitly to run drafts. Source test runs print each `.test` filename before its
-cases; malformed files report the filename and source diagnostic.
+Source test runs print each `.test` filename before its cases. Malformed files
+report the filename and source diagnostic.

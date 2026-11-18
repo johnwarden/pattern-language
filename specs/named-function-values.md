@@ -12,7 +12,7 @@ hidden lexical environment. Parameter and local binders are bound variables, not
 free references. Captured values and transitive referenced function/type/accessor
 dependencies must be included or closed over as value/definition data. A symbolic
 reference to an arbitrary ambient user function is not the complete implementation.
-The existing [closed-definition design](../../design/FUNCTION-VALUES.md) explains
+The existing [closed-definition design](../design/FUNCTION-VALUES.md) explains
 this direction and finite recursive dependency groups.
 
 The [subsequent closed-value and printing decision](library-closure-and-local-printing.md)
@@ -31,10 +31,10 @@ definitions in the original inbox example, both `.where (r -> isSquare(r))` and
 `.where isSquare` accept a predicate; the latter no longer requires a wrapper.
 
 Partial conversion on master:
-[named-function-values.test](../../tests/specification/named-function-values.test)
+[named-function-values.test](../tests/specification/named-function-values.test)
 captures callable uses, captured values and definitions, recursion, packs, default
 laziness and structural identity as todos, with a supported lambda control.
-The [test proposal](../inbox/named-function-value-tests.md) maps remaining
+The [test proposal](https://github.com/johnwarden/pattern-language/blob/spec/function-values/specs/named-function-value-tests.md) maps remaining
 representation and selection obligations. These tests do not prove portable
 closure representation. Keep
 this record approved until actual tests also cover the complete implementation

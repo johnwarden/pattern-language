@@ -9,9 +9,9 @@ and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
 The executable [`.test` specification](tests/specification/README.md) is the
 language contract. This roadmap and the linked prose explain its decisions and
 track implementation, rather than maintain an independent specification. Discuss
-new rules in the project chat, record settled changes in `specs/approved/`, then
-open a PR to write or revise their tests before changing implementation. See
-[the specification lifecycle](specs/README.md).
+new rules in the project chat and draft them in `specs/` on a topic branch.
+Once settled, review the active test updates before changing implementation.
+See [the specification lifecycle](specs/README.md).
 
 ## Vision and accepted direction
 
@@ -63,7 +63,7 @@ must test composition and state role differences explicitly.
 - Refinement-qualified functions are legal. Missing evidence is a checking failure;
   overlapping base/refinement overloads do not gain priority by evaluating predicates.
 - Raw runtime Expressions are allowed for now; an expected type can establish a
-  concrete interpretation. [C04 and the raw-expression cases](specs/implemented/raw-expression-values.md)
+  concrete interpretation. [C04 and the raw-expression cases](specs/raw-expression-values.md)
   cover the distinction and explicit projection. Distinct
   source syntax evaluating to the same primitive is not a type-equality exception.
   The parser destination is Expression, not a lasting parallel syntax tree:
@@ -83,7 +83,7 @@ must test composition and state role differences explicitly.
 - A named function resolves to a self-contained function value, without free user
   variables. Binding, argument, return and predicate uses have
   [source todos](tests/specification/named-function-values.test); the complete
-  portable representation remains [approved work](specs/approved/named-function-values.md).
+  portable representation remains [approved work](specs/named-function-values.md).
 
 ### Deliberately deferred or provisional
 
@@ -153,8 +153,7 @@ rewrite their current observations as if all target changes were shipped.
 Development is specification first: write or update focused `.test` contracts for
 accepted behavior, then implement against them. Prioritize the accepted todo
 cases already under `tests/specification/` over unrelated new foundations. See
-[TESTING-WORKFLOW.md](design/TESTING-WORKFLOW.md) for the implementation loop and
-inbox triage. A todo failing at an unsupported declaration does not demonstrate
+[TESTING-WORKFLOW.md](design/TESTING-WORKFLOW.md) for the implementation loop. A todo failing at an unsupported declaration does not demonstrate
 that the deeper rule in that assertion has been implemented correctly.
 
 The current declaration syntax includes these targets:
@@ -172,8 +171,7 @@ The current declaration syntax includes these targets:
 #31's value alignment and #32's declaration-product separation are integrated.
 #39's inbox handoff is closed; accepted parts now have contracts and remaining
 questions return to the project chat. #48's non-generic concrete/abstract
-syntax is integrated. The spec queue is committed directly to master under
-`specs/`; #52 is retired. The [proposed todo implementation queue](design/workstreams/08-todo-implementation-queue.md)
+syntax is integrated. #52 is retired. The [proposed todo implementation queue](design/workstreams/08-todo-implementation-queue.md)
 links the remaining generic, refinement, spreading and value-boundary slices.
 Implement them against their existing cases and isolate recognition from later
 evidence obligations so failures identify the actual missing feature. Preserve current

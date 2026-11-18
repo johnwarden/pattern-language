@@ -96,8 +96,7 @@ rendering continues to use the separate highlighting grammar.
 - `.test` files use the specification surface reader. Only the shared `Test` and
   `TodoTest` envelope declarations are selected from `TEST_SCHEMA` and recognized
   structurally. Assertions, setup, expected values/types and todo operands remain
-  inert source data. A file containing a single `todo test` works. Open inbox
-  files are analyzed directly, independent of default test discovery.
+  inert source data. A file containing a single `todo test` works.
 - Ordinary code outside the fixed test envelopes reports `E_TEST_FILE` at the
   offending source location. This validates file structure without evaluating
   assertions, setup or future operands.
@@ -151,7 +150,7 @@ node --disable-warning=ExperimentalWarning --test test/lsp*.test.ts
 
 The tests cover lifecycle, incremental unsaved edits, parse-error clearing,
 version supersession, close/cancel races, workers that cannot respond to a token,
-capability negotiation, authored outlines, inbox/whole-test todo, ranges and
+capability negotiation, authored outlines, whole-test todo, ranges and
 runtime canaries. They exercise the built server, not Sublime's Python client.
 
 **Native Sublime 4166 smoke verification is pending.** On that actual build:

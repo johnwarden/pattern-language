@@ -112,13 +112,13 @@ in `test/fixtures` when host tests consume them.
 Implemented in [#71](https://github.com/johnwarden/pattern-language/pull/71),
 squash commit `92791e4`, on the current `result`/`error` spelling:
 
-- [test-runner-diagnostics.test.ts](../../test/test-runner-diagnostics.test.ts)
+- [test-runner-diagnostics.test.ts](../test/test-runner-diagnostics.test.ts)
   consumes the deliberately failing inputs in
-  [test-runner-diagnostics.test](../../test/fixtures/test-runner-diagnostics.test)
+  [test-runner-diagnostics.test](../test/fixtures/test-runner-diagnostics.test)
   and covers all three predicates (`==`, `!=`, `.matches`), operand evaluation
   counts/order, thrown operands, multiline ranges, repeated runs, quiet expected
   todos and every failing assertion in a file.
-- [expected-types.test](../../tests/language/expected-types.test) holds the
+- [expected-types.test](../tests/language/expected-types.test) holds the
   passing optional-type examples; the failing type/value mismatch and inert
   expected-data cases are host fixtures.
 - Direct `assert not(a == b)` forms were rewritten as `assert a != b`; the `not`

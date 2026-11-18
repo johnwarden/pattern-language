@@ -94,7 +94,7 @@ test("CLI rejects empty, malformed, and unsupported explicit files", () =>
     assert.equal(invoke(other).status, 1);
   }));
 
-test("CLI names a malformed inbox file and still runs valid files", () =>
+test("CLI discovers nested tests and reports malformed files alongside valid cases", () =>
   temporary((dir) => {
     const inbox = join(dir, "inbox");
     mkdirSync(inbox);
@@ -103,8 +103,11 @@ test("CLI names a malformed inbox file and still runs valid files", () =>
       join(dir, "valid.test"),
       'test "Valid"\n  expect 4 is 4 :: Rational\nend',
     );
-    assert.deepEqual(Object.keys(collectTestFiles([dir])), ["valid.test"]);
-    const result = invoke(inbox, join(dir, "valid.test"));
+    assert.deepEqual(Object.keys(collectTestFiles([dir])), [
+      "inbox/broken.test",
+      "valid.test",
+    ]);
+    const result = invoke(dir);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /FAIL inbox\/broken\.test/);
     assert.match(result.stderr, /inbox\/broken\.test:\d+:\d+/);
@@ -142,34 +145,4 @@ test("CLI runs and lists a file containing a single todo test", () =>
     assert.equal(fulfilled.status, 1);
     assert.match(fulfilled.stdout, /FAIL future#future/);
     assert.match(fulfilled.stdout, /This test now passes; remove todo/);
-  }));
-
-test("inbox is excluded from broad discovery but explicit file and directory paths opt in", () =>
-  temporary((dir) => {
-    const inbox = join(dir, "inbox");
-    mkdirSync(inbox);
-    const draft = join(inbox, "draft.test");
-    writeFileSync(draft, 'test "Draft"\n  (\nend');
-    writeFileSync(
-      join(dir, "stable.test"),
-      'test "Stable"\n expect 4 is 4 :: Rational\nend',
-    );
-    assert.deepEqual(Object.keys(collectTestFiles([dir], dir)), [
-      "stable.test",
-    ]);
-    assert.deepEqual(Object.keys(collectTestFiles([inbox], dir)), [
-      "inbox/draft.test",
-    ]);
-    assert.deepEqual(Object.keys(collectTestFiles([draft], dir)), [
-      "inbox/draft.test",
-    ]);
-    const standard = invoke(dir);
-    assert.equal(standard.status, 0, standard.stderr + standard.stdout);
-    assert.match(standard.stdout, /FILE stable\.test/);
-    assert.doesNotMatch(standard.stdout + standard.stderr, /draft\.test/);
-    const explicit = invoke(inbox);
-    assert.equal(explicit.status, 1);
-    assert.match(explicit.stdout, /FILE draft\.test/);
-    assert.match(explicit.stderr, /FAIL draft\.test/);
-    assert.equal(invoke(draft).status, 1);
   }));

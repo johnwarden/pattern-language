@@ -18,9 +18,9 @@ proceed independently with explicit ownership around shared runtime/grammar code
 
 | Work | Current state | Next step |
 | --- | --- | --- |
-| Ordinary type values | [Approved type-values decision](../../specs/approved/type-values.md); [prelude-pattern draft](../../specs/inbox/prelude-type-kind-patterns.md) | Convert the approved examples into focused contracts. Settle the ordinary construction rule and required supporting domains before claiming the full prelude implementation is ready. No angle syntax is required. |
-| Closed named function values | [Approved decision](../../specs/approved/named-function-values.md), [closed immutable values](../../specs/approved/library-closure-and-local-printing.md), and 17 todos in [named-function-values.test](../../tests/specification/named-function-values.test) | Representation preflight first: complete immutable captured values/dependencies, finite recursion, packs, labels/rest/defaults and structural identity. A name handle or hidden ambient closure is insufficient. Public Function/Library grammar, admissible captures and overloaded-name selection remain design work. |
-| Retiring legacy type-definition syntax | [Approved retirement](../../specs/approved/retire-legacy-type-definition-syntax.md) | Coordinate replacement construction/declaration support with prelude/corpus migration before removing compatibility. The newer type-values decision already permits ordinary Type-valued functions. |
+| Ordinary type values | [Approved type-values decision](../../specs/type-values.md); [prelude-pattern draft](https://github.com/johnwarden/pattern-language/blob/spec/prelude-type-kinds/specs/prelude-type-kind-patterns.md) | Convert the approved examples into focused contracts. Settle the ordinary construction rule and required supporting domains before claiming the full prelude implementation is ready. No angle syntax is required. |
+| Closed named function values | [Approved decision](../../specs/named-function-values.md), [closed immutable values](../../specs/library-closure-and-local-printing.md), and 17 todos in [named-function-values.test](../../tests/specification/named-function-values.test) | Representation preflight first: complete immutable captured values/dependencies, finite recursion, packs, labels/rest/defaults and structural identity. A name handle or hidden ambient closure is insufficient. Public Function/Library grammar, admissible captures and overloaded-name selection remain design work. |
+| Retiring legacy type-definition syntax | [Approved retirement](../../specs/retire-legacy-type-definition-syntax.md) | Coordinate replacement construction/declaration support with prelude/corpus migration before removing compatibility. The newer type-values decision already permits ordinary Type-valued functions. |
 
 ## Parked angle-bracket syntax
 
@@ -46,7 +46,7 @@ milestones 5a.2 or 5b.
   compatibility rules and C22's typed keyword remainder need design work first.
 - Numeric-width, lifting and public QuotedSymbol cases have their own vocabulary
   dependencies. C26 contains deliberate harness fixtures, not language backlog.
-- [Arithmetic precedence](../../specs/inbox/arithmetic-precedence.md) is under
+- [Arithmetic precedence](https://github.com/johnwarden/pattern-language/blob/spec/arithmetic-precedence/specs/arithmetic-precedence.md) is under
   review. The [parenthesized fraction-literal proposal](../../specs/archive/rational-literals-and-text.md)
   is archived.
 - Foundation drafts #43, #44 and #45 remain parked.

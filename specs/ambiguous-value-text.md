@@ -1,8 +1,8 @@
 # Ambiguous values use the existing type-directed text contract
 
 The author's 9 November clarification points back to the existing contract, not
-a new printing policy. See [TYPE-VALUES.md](../../TYPE-VALUES.md#global-and-local-typed-text)
-and [the bootstrap reference](../../TYPE-VALUES-BOOTSTRAP.md#global-and-local-typed-text).
+a new printing policy. See [TYPE-VALUES.md](../TYPE-VALUES.md#global-and-local-typed-text)
+and [the bootstrap reference](../TYPE-VALUES-BOOTSTRAP.md#global-and-local-typed-text).
 
 `toString(T)(v)` prints data for the decoder `parse(T)`. Retain member/type
 information where it is needed to reconstruct the same value and concrete
@@ -17,9 +17,9 @@ entire concrete `String??` value. A trailing `:: String` in the old draft is not
 a contract to retype that value as a String.
 
 The initial specification-queue commit on master captures the String example in
-[concrete-unions.test](../../tests/specification/concrete-unions.test),
+[concrete-unions.test](../tests/specification/concrete-unions.test),
 including reconstruction under both `String??` and `Any`. Existing cases there
-and in [overlapping-unions.test](../../tests/specification/overlapping-unions.test)
+and in [overlapping-unions.test](../tests/specification/overlapping-unions.test)
 cover direct arms, inner members, overlapping abstract spaces and annotation
 omission. Use those tests rather than independently evolving expected prose text.
 

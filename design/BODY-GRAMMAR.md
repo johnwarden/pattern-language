@@ -16,7 +16,7 @@ Capture dimensions and one required final Code result row remain valid. A test-b
 DSL has its own setup/check grammar; adding tests must not weaken the Code Body rule.
 [The next small milestone](TEST-SUITE.md) adds pending conformance and selective
 migration before more Code coverage. Raw runtime Expressions are allowed for now;
-the [current contracts](../specs/implemented/raw-expression-values.md) supersede
+the [current contracts](../specs/raw-expression-values.md) supersede
 the earlier optional-runtime decision without choosing public descriptor decoding.
 
 ## Goal and boundary

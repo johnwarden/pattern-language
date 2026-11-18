@@ -4,7 +4,7 @@
 
 The later design record introduces no new string/quote surface rule. Redundant
 primitive quotation remains provisional. Raw runtime Expressions are now allowed
-for now under [their current contracts](../specs/implemented/raw-expression-values.md);
+for now under [their current contracts](../specs/raw-expression-values.md);
 that does not settle the complete public syntax/descriptor mapping.
 The test-suite milestone adds pending inert forms before source code.evaluate.
 General type-value changes are in LANGUAGE-DECISIONS.md; the implementation scope

@@ -14,21 +14,21 @@ and other values are not implicitly converted to text. Matching is literal;
 regular expressions, collection membership and structural matching are outside
 this first scope.
 
-The [draft fixtures](../../test/fixtures/expect-contains.test) illustrate matching
+The [draft fixtures](../test/fixtures/expect-contains.test) illustrate matching
 at the beginning, middle and end, computed String subjects, absent/noncontiguous
 text, literal punctuation, and rejection of non-String subjects/needles. Their
-[expected outcomes](../../test/fixtures/expect-contains.md) distinguish passing
+[expected outcomes](../test/fixtures/expect-contains.md) distinguish passing
 checks, failed substring comparisons and operand type errors.
 
 ## Captured as tests
 
 Implemented with the [coordinated migration](expect-predicates.md) in
 [#70](https://github.com/johnwarden/pattern-language/pull/70), squash commit
-`40645dd`. The [fixtures](../../test/fixtures/expect-contains.test) are consumed by
-[expect-predicates.test.ts](../../test/expect-predicates.test.ts), which asserts
+`40645dd`. The [fixtures](../test/fixtures/expect-contains.test) are consumed by
+[expect-predicates.test.ts](../test/expect-predicates.test.ts), which asserts
 every authored outcome (passing checks, failed substring comparisons and operand
 type errors, the latter as `E_TEST_OPERAND_TYPE`) and the todo/legacy modes. Passing
-language examples are in [expectations.test](../../tests/language/expectations.test).
+language examples are in [expectations.test](../tests/language/expectations.test).
 The String-only contract is preserved: no regular expressions, membership or
 structural matching. Empty needle and special Unicode edge cases remain
 unillustrated.

@@ -86,9 +86,9 @@ declarations containing `...` until that is confirmed in chat.
 ## Implementation and test prerequisites
 
 Existing positive controls are C04/C05 in
-[type-values.test](../../tests/specification/type-values.test), C13 in
-[interpretations.test](../../tests/specification/interpretations.test) and C16 in
-[declarations.test](../../tests/specification/declarations.test). Add focused
+[type-values.test](../tests/specification/type-values.test), C13 in
+[interpretations.test](../tests/specification/interpretations.test) and C16 in
+[declarations.test](../tests/specification/declarations.test). Add focused
 negative cases for the retired forms before changing recognition/evaluation.
 
 This is a coordinated breaking change. Audit the source prelude, default/source

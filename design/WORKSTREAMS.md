@@ -31,8 +31,7 @@ type-producing counterpart, and parameterized C05/C12/C18 cases are explicit
 roadmap targets. #31's value alignment and #32's declaration-product separation
 are integrated. #39's inbox handoff is closed pending clarification in the project
 chat and approved spec records; its branch is preserved for reference. #48's
-non-generic concrete/abstract syntax is integrated. The spec queue lives directly
-in `specs/` on master; #52's draft is retired. See the
+non-generic concrete/abstract syntax is integrated. #52's draft is retired. See the
 [proposed todo implementation queue](workstreams/08-todo-implementation-queue.md)
 for the next coherent slices and their dependencies.
 
@@ -42,13 +41,10 @@ independent review and passing CI. Its
 non-generic C05/C06/C13/C16 assertions and remaining obligations. The separate
 test-migration agent retains its own workstream.
 
-Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): discuss decisions in the project
-chat, commit them to `specs/approved/` on master, write or revise executable contracts,
-then implement and remove fulfilled todos. Move a decision to `specs/implemented/`
-when actual tests capture it; that does not claim runtime completion. Claim an
-implementation by naming its existing cases and shared methods. If a contract is
-missing, write it before implementing. A documentation-only draft and a green
-expected-failure count are not feature progress.
+Follow [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): review proposals on topic
+branches, write or revise active tests once the spec is settled, then implement
+the tests and remove fulfilled todos. Claim an implementation by naming its
+cases and shared methods.
 
 The following later handoffs are **parked**, unclaimed and not active implementation
 work. Do not start them until the current specification priorities are addressed
@@ -59,13 +55,6 @@ and each proposed slice has executable acceptance tests.
 | [#43](https://github.com/johnwarden/pattern-language/pull/43) | Internal unambiguous-grammar analysis | Public qualifier/protocol remains provisional; preserve general overlapping unions |
 | [#44](https://github.com/johnwarden/pattern-language/pull/44) | Expected-grammar fields beyond String | Current specification todos have priority over this expansion                      |
 | [#45](https://github.com/johnwarden/pattern-language/pull/45) | Internal one-or-more matching         | `T+` source integration and public representation remain open                      |
-
-Inbox submissions are inputs to this process, not a parallel implementation queue.
-Route confirmed bugs to regressions/fixes, accepted changes to specification todo
-tests, and supported usage to runnable examples. Record unclear semantics and the
-missing decision; do not manufacture behavior to empty the inbox. Keep inbox
-optional by default and runnable explicitly. See its
-[triage register](../tests/inbox/README.md).
 
 ## Shared files
 
@@ -103,7 +92,7 @@ The earlier authorization for #27/#28 does not authorize these new PRs.
   construction from declaration effects.
 - Intrinsic String behavior is accepted. It does not choose the PrimitiveType
   metatype, descriptor equality/decoding or new syntax. Raw runtime Expressions
-  are separately allowed for now; see [their contracts](../specs/implemented/raw-expression-values.md).
+  are separately allowed for now; see [their contracts](../specs/raw-expression-values.md).
 - The public inspection/decoding examples belong to the author. If a workstream
   genuinely depends on that decision, report the smallest concrete example and
   continue independent work; do not invent the boundary.

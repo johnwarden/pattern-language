@@ -109,16 +109,11 @@ spaced_dir_out="$(just test "$tmp/source suite")"
 grep -q '0 tests failed' <<<"$spaced_dir_out" ||
 	fail "just test with a spaced directory failed: $spaced_dir_out"
 
-mkdir -p "$tmp/source suite/inbox"
-printf 'test "Draft"\n  (\nend\n' >"$tmp/source suite/inbox/draft.test"
+mkdir -p "$tmp/source suite/nested"
+printf 'todo test "Future"\n  assert False\nend\n' >"$tmp/source suite/nested/future.test"
 broad_out="$(just test "$tmp/source suite")"
-grep -q '0 tests failed' <<<"$broad_out" ||
-	fail "inbox drafts must not break broad source discovery: $broad_out"
-if just test "$tmp/source suite/inbox" >"$tmp/inbox.out" 2>&1; then
-	fail "explicit inbox selection must run the malformed draft"
-fi
-grep -q 'draft.test' "$tmp/inbox.out" ||
-	fail "explicit inbox failure did not name the draft file"
+grep -q '1 todo tests failed as expected' <<<"$broad_out" ||
+	fail "recursive discovery must run nested todo tests: $broad_out"
 
 host_test_out="$(just test test/indent-prefix.test.ts)"
 grep -q 'fail 0' <<<"$host_test_out" ||

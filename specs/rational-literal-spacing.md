@@ -2,7 +2,7 @@
 
 Approved by Jonathan in the project chat on 10 November 2026. This settles the
 spacing distinction within the
-[archived parenthesized Rational proposal](../archive/rational-literals-and-text.md), without
+[archived parenthesized Rational proposal](archive/rational-literals-and-text.md), without
 approving its remaining lexical details or canonical printing policy.
 
 `(1 / 3)` is ordinary grouped division, equivalent in Code to `/(1)(3)`. It is

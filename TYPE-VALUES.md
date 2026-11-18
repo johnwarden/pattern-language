@@ -45,7 +45,7 @@ which write `type String(:A)` rather than `type :String(:A)` (D20). `True` and
 values.
 
 Raw expressions are allowed at runtime for now, including `e = Rect(2, 2)`;
-[C04 and its follow-up contracts](specs/implemented/raw-expression-values.md)
+[C04 and its follow-up contracts](specs/raw-expression-values.md)
 cover raw captures and concrete interpretation. An Expression descriptor does not
 automatically equal the result of evaluating it. The exact public descriptor
 decoding operation remains unsettled.

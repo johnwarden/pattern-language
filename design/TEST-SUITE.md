@@ -5,8 +5,7 @@ execute; the suite does not install source code.evaluate or runtime introspectio
 
 Development follows [TESTING-WORKFLOW.md](TESTING-WORKFLOW.md): turn accepted
 specifications into executable tests before implementation, prioritize existing
-specification todos, and triage inbox submissions into regressions, todo contracts
-or runnable examples. Inbox is optional in default runs and runnable explicitly.
+specification todos, and put new contracts in the active suite.
 
 ## Files and basic forms
 
@@ -48,7 +47,7 @@ def ContainsExpectation type :expect subject :: Expression :contains needle :: E
 `is`, `fails` and `contains` are the expectation predicates; each exists in plain,
 `legacy` and `todo` forms, and a later predicate such as `isApprox` is another
 clause beside them. `contains` accepts only a String subject and an authored String
-needle; see [expect-contains](../specs/implemented/expect-contains.md). The `is` delimiter is required. There are no value/type keyword clauses or results
+needle; see [expect-contains](../specs/expect-contains.md). The `is` delimiter is required. There are no value/type keyword clauses or results
 pack expectations. Multiple expect lines describe distinct scalar observations.
 Malformed inner source stays inside a string passed to `parse(Code)`; see Parse
 failures of quoted source below.

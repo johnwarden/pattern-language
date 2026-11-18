@@ -14,13 +14,13 @@ an explicit match crosses one concrete boundary and yields the Int fields.
 
 Contracts:
 
-- [C04 in type-values.test](../../tests/specification/type-values.test): ordinary
+- [C04 in type-values.test](../tests/specification/type-values.test): ordinary
   raw construction and Rational captures; the separate new declaration syntax
   remains todo.
-- [raw-expressions.test](../../tests/specification/raw-expressions.test): concrete
+- [raw-expressions.test](../tests/specification/raw-expressions.test): concrete
   interpretation, constructor-binding rejection (todo), and explicit matching.
-- [defaults.test](../../tests/bindings/defaults.test) and
-  [expressions.test](../../tests/examples/expressions.test): raw Symbol-headed
+- [defaults.test](../tests/bindings/defaults.test) and
+  [expressions.test](../tests/examples/expressions.test): raw Symbol-headed
   construction is supported behavior rather than a legacy/rejection pair.
 
 Raw expression values, parsed Code and values obtained by evaluating Code remain

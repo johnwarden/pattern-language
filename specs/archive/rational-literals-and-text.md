@@ -9,7 +9,7 @@ Latest proposal from the 10 November 2026 discussion of
 exponent. The slash touches both integer components. The parentheses belong to
 the literal. This replaces the PR's proposed bare `n/d` spelling.
 
-[Agreed spacing clarification](../approved/rational-literal-spacing.md): `(1 / 3)` is ordinary
+[Agreed spacing clarification](../rational-literal-spacing.md): `(1 / 3)` is ordinary
 grouped division, not a literal. `(1/3)` and `(1 / 3)` yield the same Rational
 under ordinary exact division, but their Code trees differ. Formatting safety
 allows this value-preserving distinction; it no longer requires identical Code
@@ -17,7 +17,7 @@ trees for these two spellings. A zero denominator in the spaced expression is
 an evaluation error, not a source-reading error. Ordinary Code printing can keep
 using spaced division and grouping parentheses.
 
-[Arithmetic precedence](../inbox/arithmetic-precedence.md) is a separate decision.
+[Arithmetic precedence](https://github.com/johnwarden/pattern-language/blob/spec/arithmetic-precedence/specs/arithmetic-precedence.md) is a separate decision.
 These tests propose syntax; they do not approve the remaining lexical/printing
 choices or claim current implementation support.
 
@@ -132,7 +132,7 @@ end
 
 ## Typed text
 
-[Shortest exact Rational text](../approved/rational-canonical-text.md) is now
+[Shortest exact Rational text](../rational-canonical-text.md) is now
 approved. It replaces the 16-place cutoff and the preference for exact binary64
 hexadecimal output with shortest exact spelling across decimal, `0f`, hexadecimal,
 binary and reduced fraction forms, including exponent forms. That record defines the

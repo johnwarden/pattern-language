@@ -1,7 +1,7 @@
 # Contains predicate fixtures
 
 These cases specify the assertion runner's behavior for the
-[approved String-substring predicate](../../specs/implemented/expect-contains.md).
+[approved String-substring predicate](../../specs/expect-contains.md).
 They are runner input, not a default source suite. Some must report failed
 checks; running this file is not expected to produce an all-green test report.
 

@@ -64,8 +64,7 @@ TextMate/Shiki remains the Markdown-rendering path; it does not need an LSP serv
 1. Handle initialize/shutdown/exit and open/change/save/close for `.pattern` and
    `.test`, including unsaved buffers. Advertise incremental text synchronization
    but initially reanalyze the whole current document; incremental parsing is not
-   required. Open files under `tests/inbox/` receive the same editor analysis even
-   though inbox discovery is optional in the default suite.
+   required. Analyze open test files directly, including unsaved buffers.
 2. Read `.pattern` with an isolated `Grammar(DEFAULT_GRAMMAR)` syntax snapshot;
    audit its registration path before exposing it. Use the Test reader for `.test`
    structure and preserve its specification-reader distinction. Never call
@@ -138,7 +137,7 @@ formatter, or new public reflection API. Use existing build/test conventions.
 The spawned-server tests cover: initialize → open invalid
 source → change to valid → diagnostics clear → close → shutdown. Cover stale jobs,
 cancel/close races, optional span endpoints, BOM/CRLF/astral ranges, unsaved files,
-inbox tests, raw/typed quotes, custom clauses, and malformed/incomplete declarations.
+whole-test todos, raw/typed quotes, custom clauses, and malformed/incomplete declarations.
 Use a canary fixture whose setup/macro/runtime body would fail if executed; assert
 analysis never invokes those paths. Check outlines against authored source ranges.
 Native diagnostics, outline, edits and restart still need smoke verification on actual

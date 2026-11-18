@@ -19,7 +19,7 @@ try {
       fixture = decodeSource(readFileSync(path), path);
     } else if (arg === "--help") {
       console.log(
-        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: recursively scan tests/**/*.test, excluding tests/inbox. Select tests/inbox or a file inside it to opt in. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
+        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: recursively scan tests/**/*.test. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
       );
       process.exit(0);
     } else if (arg.startsWith("--")) throw new Error("unknown option " + arg);

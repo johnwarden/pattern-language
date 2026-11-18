@@ -8,9 +8,8 @@ This is the integrated decision record authorized by the author. Confirmed and r
 
 The `.test` files are the language specification. This record preserves rationale
 and links to cases; it must not evolve into a competing prose contract. New rules
-are discussed in the project chat and recorded directly in `specs/approved/` on
-master. The queue and validated test-only contract changes live there; feature
-implementation uses PRs. Write or revise executable contracts before implementation,
+are discussed in the project chat and proposed under `specs/` on topic branches.
+Once settled, write or revise active executable contracts before implementation,
 with adjacent explanations where needed. See [the lifecycle](../specs/README.md) and
 [the specification index](../tests/specification/README.md).
 
@@ -87,7 +86,7 @@ is allowed as a raw runtime Expression; an explicit annotation, typed quotation
 or sufficient expected context can establish a concrete interpretation such as
 Rectangle. Raw fields are Rational values; interpreted fields follow the concrete
 type. Ordinary binding does not implicitly unwrap that concrete boundary. See
-[C04 and the raw-expression contracts](../specs/implemented/raw-expression-values.md).
+[C04 and the raw-expression contracts](../specs/raw-expression-values.md).
 
 The parser destination is Expression. Number literals in that domain are exact Rationals (D04). The bootstrap currently has three trees: host `Syntax` (parser product, including quote/sequence/block/form), runtime `Value` (`term` ≈ `apply`, plus packs/literals/symbols), and public `SyntaxNode` transport (`NumberLiteral(Rational) | Apply | Postfix | …`, via `syntaxTree` / `syntaxExpression` / `parseSyntax`). Exact numeric syntax transport is implemented. Those Syntax layers are adapters to remove after staged consumer migration with behavior preserved. The migration is not implemented yet and is not a prerequisite for distinct postfix application.
 
@@ -180,7 +179,7 @@ passed, returned and supplied directly to `where`. Primitive callable references
 are the baseline; the exact admissible prelude/standard-library vocabulary and
 the rule for a name with multiple definitions remain unspecified. This decision
 does not depend on specialization. See
-[the approved record and partial contracts](../specs/approved/named-function-values.md).
+[the approved record and partial contracts](../specs/named-function-values.md).
 
 ### D14. Interoperability follows structural descriptors — confirmed intent
 

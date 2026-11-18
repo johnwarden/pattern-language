@@ -1,13 +1,11 @@
 # Executable language specification
 
-The `.test` files in this directory define the language contracts, including
-accepted behavior that remains todo. Implementation PRs should name the files
-and cases they implement. Discuss new rules in the project chat, then record the
-agreed change directly in [`specs/approved/`](../../specs/approved/) on master.
-The queue and validated test-only updates stay on master; feature implementation
-uses PRs. Write or revise missing tests before changing implementation. When those
-tests exist, move the record to `specs/implemented/` on master and link the cases; todo
-tests still describe unfinished runtime behavior. See [the spec lifecycle](../../specs/README.md).
+The `.test` files in this directory define executable language contracts,
+including behavior that remains todo. Settle spec changes on a topic branch
+first, then update the active tests. Implementation PRs should name the cases
+they make pass and remove fulfilled todos. Follow the
+[spec lifecycle](../../specs/README.md) and
+[development workflow](../../design/TESTING-WORKFLOW.md).
 
 Adjacent notes, such as [application-heads.md](application-heads.md), explain a
 test's intent, phase boundary or unresolved question when the code alone is not

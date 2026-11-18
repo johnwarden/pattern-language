@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { decodeSource } from "./source-encoding.ts";
 
 export const TEST_ROOT = fileURLToPath(new URL("../tests/", import.meta.url));
-/** Stable keys; inbox is opt-in by a direct path. No symlinks or duplicates. */
+/** Stable keys. No symlinks or duplicates. */
 export function collectTestFiles(
   paths: string[] = [TEST_ROOT],
   root?: string,
@@ -40,14 +40,8 @@ export function collectTestFiles(
     )
       root = dirname(root);
   }
-  const inbox = join(root, "inbox");
-  const includeInbox = inputs.some((path) => {
-    const name = relative(inbox, path);
-    return name !== ".." && !name.startsWith(".." + sep);
-  });
   const found = new Map<string, string>();
   const visit = (path: string) => {
-    if (path === inbox && !includeInbox) return;
     const info = statSync(path);
     if (info.isDirectory()) {
       for (const entry of readdirSync(path, { withFileTypes: true }).sort(

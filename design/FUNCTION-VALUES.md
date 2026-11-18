@@ -5,9 +5,9 @@
 A named function now resolves to a function value: it can be bound, passed,
 returned or supplied to `where` without an anonymous wrapper. That value contains
 the complete implementation with no free user variables. The
-[approved record](../specs/approved/named-function-values.md) links the current
+[approved record](../specs/named-function-values.md) links the current
 callable-use todos and identifies the still-missing portable representation tests.
-The [closed-value and local-printing decision](../specs/approved/library-closure-and-local-printing.md)
+The [closed-value and local-printing decision](../specs/library-closure-and-local-printing.md)
 also confirms immutable snapshots and exact-value abbreviation. Referenced
 definitions are ordinary definitions; "helper" is not a language category.
 

@@ -9,7 +9,7 @@ rows. Existing rows before and after the spread retain their order.
 The cases cover ragged and singleton rows, zero rows versus one empty row,
 interpreted Float32 elements, and brace collections. Expected values use the
 named Matrix/Table row patterns. The exact concrete type returned by a repeated
-capture accessor remains [pending](../../specs/approved/anonymous-repeated-patterns.md);
+capture accessor remains [pending](../../specs/anonymous-repeated-patterns.md);
 these checks specify reconstruction without choosing a conversion rule.
 
 This slice supports a single horizontal spread in the repeated row. More complex

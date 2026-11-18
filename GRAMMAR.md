@@ -96,7 +96,7 @@ must remain ordinary tree patterns or an explicitly documented bootstrap seed.
 
 Raw structured expressions are allowed at runtime for now. An annotation, typed
 quote or sufficient expected context can give that expression a concrete
-interpretation. [C04 and the raw-expression contracts](specs/implemented/raw-expression-values.md)
+interpretation. [C04 and the raw-expression contracts](specs/raw-expression-values.md)
 record the distinction. Parsed Code and evaluated raw values are separate roles;
 automatic descriptor decoding and the public inspection API remain unsettled.
 

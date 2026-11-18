@@ -109,7 +109,7 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 | `just watch FILE` | Re-run FILE when it, `default.pattern`, or `src/**/*.ts` change (`entr`). |
 | `just repl` | Interactive CLI (`--repl`). |
 | `just test [path]` | A `.test` file or directory runs source-language tests; a TypeScript file runs host tests. No path runs host tests plus Dockerfile/devbox alignment and finite recipe smokes. |
-| `just test-language` | Source suite (`tests/**/*.test`, excluding inbox). `just test-language --list` lists cases. |
+| `just test-language` | Source suite (`tests/**/*.test`). `just test-language --list` lists cases. |
 | `just typecheck` | `tsc --noEmit`. |
 | `just build` | Generate browser bundles and the Node-only language server. |
 | `just lsp` | Start the built stdio language server for editor clients. |
@@ -118,11 +118,9 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 
 On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
-The source suite is tests/**/*.test, grouped by topic. `tests/inbox` is optional:
-default host/source runs and pre-push exclude it. Run `just test tests/inbox`
-or select an inbox file to opt in. Source runs print each filename. Assertions use
-expect subject is expected [:: Type], expect subject contains "needle" (String
-substring), assert, and expect subject fails "reason".
+The source suite is tests/**/*.test, grouped by topic. Source runs print each
+filename. Assertions use expect subject is expected [:: Type], expect subject
+contains "needle" (String substring), assert, and expect subject fails "reason".
 Expected results are data, not expressions to execute; without :: Type they take
 the actual subject's type. `todo test` marks a whole expected-failure case, including language failures in its shared setup; it runs
 and must fail as a unit. A file may contain only one todo test. Todo assertions
@@ -135,31 +133,19 @@ Use the common pattern compiler/matcher and source schemas. Preserve complete
 argument-pack semantics and canonical printing, including spaces after commas.
 Keep credentials out of source and browser bundles. CI requires no application secrets.
 
-## Specification-first development and inbox triage
+## Specification-first development
 
-Follow [the development workflow](design/TESTING-WORKFLOW.md). Turn accepted
-specification changes into focused executable `.test` contracts before changing
-implementation. Existing accepted todos in `tests/specification/` take priority
-over new roadmap foundations. Name the target cases in each implementation PR;
-remove todo only when the intended behavior passes, not an unrelated setup failure.
+Follow [the development workflow](design/TESTING-WORKFLOW.md). Discuss new
+language rules with Jonathan. Start a topic branch and edit or add a document
+directly under `specs/`. Review the spec first, then write or revise contracts
+in the active `.test` suite in a subsequent PR. Use todo for expected failures
+and inspect the actual failure. An implementation PR names the cases it makes
+pass and removes their fulfilled todo markers. Keep a delivered slice's spec,
+tests and implementation together when it is ready for authorized squash merge.
 
-Discuss and clarify new language decisions with Jonathan in the project chat.
-Once agreed, commit the decision and examples directly to `specs/approved/` on
-`master`. The specification queue and test-only contract updates live on master,
-not a long-running queue branch or PR. Validate contract changes before committing;
-runtime implementation still uses feature PRs with separate merge authorization.
-New proposals belong in `specs/inbox/`;
-existing `tests/inbox/` drafts remain optional until triaged. Remove a corresponding
-inbox file when its content is fully captured; split out unresolved content first.
-
-When possible, every implementation PR implements named cases in a `.test` file.
-Add or revise the actual tests before changing implementation; the approved spec
-may illustrate a rule or require mass edits rather than add a new case. Move the
-spec to `specs/implemented/` on master with links to the actual tests and their
-commit or implementation PR when those tests are written.
-That records conversion into tests, not runtime completion: tests may remain todo.
-Existing cases on master satisfy the contract requirement. Tooling/host-only work
-should explain why its observation needs a host test rather than a language example.
+Existing cases on master can already satisfy the test contract requirement.
+A specification can require edits to many cases or just an illustrative example.
+Tooling and host work should explain the boundary checked by its host tests.
 
 Source `.test` contracts describe the destination language, not bootstrap
 implementation encodings. Keep native syntax/schema adapters, internal AST shapes,
@@ -169,18 +155,7 @@ make a prototype representation a language requirement. Do not ban ordinary
 constructor names or invent the pending public inspection boundary. Follow
 [the source-contract audit](design/TEST-CONTRACT-AUDIT.md) for cleanup and migration.
 
-The `.test` files are the executable language specification. Approved records guide
-changes not yet captured in tests; implemented records preserve decisions and link
-to the resulting cases. Keep necessary explanations adjacent to tests and update
-them together; do not maintain a competing prose specification.
-
-Triage inbox submissions into bug regressions/fixes, approved specs and their
-specification todo tests, or supported runnable examples. Record the destination
-and commit or PR; leave unclear
-semantics explicitly pending with the missing decision. Comments and placeholder
-assertions do not cover the proposal. Keep inbox optional in default runs and
-runnable by explicit path. Do not change an expected result to observed output.
-
-Do not comment out authored inbox cases or replace them with no-op assertions to
-get green checks. Inbox discovery is already optional; keep proposals visible
-and restore temporarily commented code before triage, preserving open questions.
+The `.test` files are the executable language specification. Keep the spec,
+its linked cases and needed explanations aligned as changes land. Keep open
+questions in the proposal. Treat an unrelated todo failure or a passing
+placeholder as a gap in coverage.

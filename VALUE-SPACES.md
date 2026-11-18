@@ -21,7 +21,7 @@ Type equality is ordinary structural value equality, not host identity, a declar
 ID, or extensional equivalence of arbitrary predicates. Evaluating distinct syntax
 can yield the same value. That does not imply that every inert syntax description
 is automatically the evaluated type/value it describes. Raw runtime Expressions
-are allowed for now; [the contracts](specs/implemented/raw-expression-values.md)
+are allowed for now; [the contracts](specs/raw-expression-values.md)
 separate them from interpreted concrete values. The public descriptor-decoding
 boundary remains undecided.
 
