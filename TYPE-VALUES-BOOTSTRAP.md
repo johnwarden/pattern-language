@@ -108,7 +108,8 @@ names, object identity and cached matchers do not participate. Pattern alternati
 are normalized using the ordinary structural order: bare symbols precede numbers,
 strings and applications. Thus :None/:Nil precede Some(...)/Cons(...). Numeric
 alternatives sort numerically. Ordered match arms and raw quoted trees are not sorted.
-Duplicate/ambiguous alternatives remain errors.
+The type macro removes alternatives with equal compiled type values. Ordered
+value patterns can still be ambiguous.
 
 ```text
 def Color type :Red | :Green

@@ -43,10 +43,14 @@ This does not change designation or literal typing: `3` stays ambiguous between
 
 ## Contracts
 
-The implementation PR (#80) writes the three examples above, the routes that list
-interpretations, the truncation and the refinement dispatch cases in
-`tests/specification/ambiguous-values.test`, renames the remaining
-`E_AMBIGUOUS_PATTERN` assertions in the corpus, and moves this record to
-`../implemented/` with links. The legacy/todo pairs in
-`tests/specification/expected-type-context.test` (PR #77) carry the earlier
-spelling and must follow the rename or be dropped when it lands.
+[PR #80](https://github.com/johnwarden/pattern-language/pull/80) implements the
+diagnostic in [ambiguous-values.test](../tests/specification/ambiguous-values.test).
+The cases cover numeric and optional designators, surviving alternatives,
+nested and recursive suggestions, truncation, and refinement checks after
+overload selection. Bound arguments and bound fields have todo cases for
+refinement evidence.
+
+[Overlapping union contracts](../tests/specification/overlapping-unions.test)
+cover normalization. Type macros remove repeated alternatives under ordinary type
+equality, including aliases and factory results. Explicit kind constructors
+retain their existing behavior.

@@ -158,14 +158,14 @@ test "Ambiguous patterns do not silently fall through match arms"
       (x | x) -> 10
       _ -> 20
     end
-  fails "ambiguous pattern"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "Ambiguous patterns do not silently dispatch"
   expect
     def f(x | x) 1
     f(1)
-  fails "ambiguous pattern"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "Infix needs spaces"

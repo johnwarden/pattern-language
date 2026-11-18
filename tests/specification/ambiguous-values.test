@@ -1,0 +1,398 @@
+# A value designator, such as the literal 3 or :None, is ambiguous when more than one member
+# of its expected type accepts it. It is reported as E_AMBIGUOUS_VALUE_DESIGNATOR however the
+# expected type reaches it (specs/ambiguous-values.md). The message lists each
+# interpretation as `designator :: Type`, written as source: the designator as source text and
+# the member as a type expression. Only the interpretation substrings are pinned, not the
+# "please specify" wording.
+test "An ambiguous numeric literal lists its interpretations"
+  b = abstract Int | Float
+  expect 3 .matches b fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect 3 .matches b fails "3 :: Int"
+  expect 3 .matches b fails "3 :: Float"
+
+  expect
+    (x :: b) = 3
+    x
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    (x :: b) = 3
+    x
+  fails "3 :: Int"
+  expect
+    (x :: b) = 3
+    x
+  fails "3 :: Float"
+end
+
+test "An ambiguous absence between peer options is an ambiguous value designator"
+  type Foo concrete String? | Float?
+  expect
+    (x :: Foo) = :None
+    x
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    (x :: Foo) = :None
+    x
+  fails ":None :: String?"
+  expect
+    (x :: Foo) = :None
+    x
+  fails ":None :: Float?"
+end
+
+test "Each suggested interpretation resolves the ambiguity when pasted back"
+  b = abstract Int | Float
+  type Foo concrete String? | Float?
+  expect
+    (x :: b) = 3 :: Int
+    x
+  is 3 :: Int
+  expect
+    (x :: b) = 3 :: Float
+    x
+  is 3 :: Float
+  assert (3 :: Int) .matches b
+  assert (3 :: Float) .matches b
+  expect
+    (x :: Foo) = (:None :: String?)
+    x
+  is (None :: String?) :: Foo
+  expect
+    (x :: Foo) = (:None :: Float?)
+    x
+  is (None :: Float?) :: Foo
+end
+
+test "Suggestions name each member as a type expression"
+  u = abstract Int* | Float*
+  expect [1, 2] .matches u fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect [1, 2] .matches u fails "[1, 2] :: Int*"
+  expect [1, 2] .matches u fails "[1, 2] :: Float*"
+  type Opt concrete Int? | Float?
+  expect
+    (x :: Opt) = :None
+    x
+  fails ":None :: Int?"
+  expect
+    (x :: Opt) = :None
+    x
+  fails ":None :: Float?"
+end
+
+test "Single-value routes report the same ambiguity"
+  b = abstract Int | Float
+  expect
+    def f(n :: b) n
+    f(3)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    def f(n :: b) n
+    f(3)
+  fails "3 :: Int"
+  expect
+    def f(n :: b) n
+    f(3)
+  fails "3 :: Float"
+  expect
+    g = (n :: b) -> n
+    g(3)
+  fails "3 :: Int"
+  expect
+    g = (n :: b) -> n
+    g(3)
+  fails "3 :: Float"
+  expect
+    match 3
+      (n :: b) -> n
+    end
+  fails "3 :: Int"
+  expect
+    match 3
+      (n :: b) -> n
+    end
+  fails "3 :: Float"
+end
+
+test "Nested and multi-value routes list their interpretations"
+  b = abstract Int | Float
+  expect
+    def f(n :: b, m :: Int) n
+    f(3, 4)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    def f(n :: b, m :: Int) n
+    f(3, 4)
+  fails "3 :: Int"
+  expect
+    def f(n :: b, m :: Int) n
+    f(3, 4)
+  fails "3 :: Float"
+  expect
+    (x :: b, y :: Int) = (3, 4)
+    x
+  fails "3 :: Int"
+  expect
+    (x :: b, y :: Int) = (3, 4)
+    x
+  fails "3 :: Float"
+  expect
+    (Box(x :: b)) = Box(3)
+    x
+  fails "3 :: Int"
+  expect
+    (Box(x :: b)) = Box(3)
+    x
+  fails "3 :: Float"
+  expect
+    (xs :: b*) = [3, 4]
+    xs
+  fails "3 :: Int"
+  expect
+    (xs :: b*) = [3, 4]
+    xs
+  fails "3 :: Float"
+  expect
+    (x :: b?) = 3
+    x
+  fails "3 :: Int"
+  expect
+    (x :: b?) = 3
+    x
+  fails "3 :: Float"
+end
+
+test "An ambiguity is reported even when the designator has no source text"
+  expect
+    def f(x | x) 1
+    f(n -> n)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    f = n -> n
+    match f
+      (x | x) -> 1
+    end
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+
+test "Ambiguity suggestions come from complete matches"
+  b = abstract Int | Float
+  c = abstract String? | Float?
+  expect
+    (Pair(x :: b, y :: Int) | Pair(x :: Rational, y) | Pair(x :: Rational, y :: String)) = Pair(3, "a")
+    x
+  fails "2 interpretations match"
+  expect
+    (Pair(x :: b, y :: String) | Pair(x :: Int, y :: c)) = Pair(3, :None)
+    x
+  fails ":None :: Float?"
+  expect
+    (Pair(x :: b, y :: String) | Pair(x :: Int, y :: c)) = Pair(3, :None)
+    x
+  fails ":None :: String?"
+end
+
+test "An untyped ambiguity can precede a typed interpretation"
+  b = abstract Int | Float
+  expect
+    def f((y | y), x :: b) x
+    f(4, 3)
+  fails "3 :: Int"
+end
+
+test "A nested union reports the outer member designations"
+  b = abstract Int | Float
+  u = abstract b* | Float64*
+  expect [3] .matches u fails "[3] :: Float64*"
+  expect [3] .matches u fails "[3 :: Float] :: (UnionType(Float, Int))*"
+  expect [3] .matches u fails "...and 1 other"
+  assert ([3] :: Float64*) .matches u
+  assert ([3 :: Float] :: (UnionType(Float, Int))*) .matches u
+end
+
+test "Recursive member suggestions use writable descriptor expressions"
+  def IntList type :Nil | :Cons(Int, IntList)
+  def FloatList type :Nil | :Cons(Float, FloatList)
+  u = abstract IntList | FloatList
+  expect :Nil .matches u fails ":Nil :: Type(:(Recursive(:Nil | Cons(Float, Recur(0)))))"
+  assert (:Nil :: Type(:(Recursive(:Nil | Cons(Float, Recur(0)))))) .matches u
+end
+
+test "A recursive suggestion preserves binders across nested types"
+  def A type :Leaf | :Node(B)
+  def B type :Empty | :Some(A)
+  other = type :Leaf | :Other
+  u = abstract A | other
+  expect :Leaf .matches u fails ":Leaf :: Type(:(Recursive(:Leaf | Node(Type(:Empty | Some(Recur(0)))))))"
+  assert (:Leaf :: Type(:(Recursive(:Leaf | Node(Type(:Empty | Some(Recur(0)))))))) .matches u
+end
+
+test "An abstract member with no disambiguating ascription uses the count"
+  u = abstract Any | String
+  expect
+    (x :: u) = "hi"
+    x
+  fails "2 interpretations match"
+end
+
+test "An oversized designator still reports ambiguity"
+  u = abstract Int* | Float*
+  expect [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30] .matches u fails "2 interpretations match"
+end
+
+# With more than two interpretations the message lists the first two, then counts the rest.
+test "Interpretations beyond the second are counted"
+  b = abstract Int | Float | Rational
+  expect 3 .matches b fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect 3 .matches b fails "...and 1 other"
+  c = abstract Int | Float | Rational | Float64 | Float32
+  expect 3 .matches c fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect 3 .matches c fails "...and 3 others"
+end
+
+# A member accepts a designator only if every condition of the member holds, including a
+# refinement's predicate. With p = Int .where (n -> n > 5) and u = abstract p | Float, 7 is
+# accepted by both members and is ambiguous; 3 is accepted only by Float and selects it.
+test "A refinement without a writable interpretation still contributes to ambiguity"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  expect
+    def f(n :: u) n
+    f(7)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    (x :: u) = 7
+    x
+  fails "2 interpretations match"
+  assert (7 :: p) .matches u
+end
+
+test "A refinement member that rejects the designator does not make it ambiguous"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  assert 3 .matches u
+  (x :: u) = 3
+  expect toString(u)(x) is "3 :: Float" :: String
+  def f(n :: u) toString(u)(n)
+  expect f(3) is "3 :: Float" :: String
+  g = (n :: u) -> toString(u)(n)
+  expect g(3) is "3 :: Float" :: String
+  expect
+    match 3
+      (n :: u) -> toString(u)(n)
+    end
+  is "3 :: Float" :: String
+end
+
+test "A designator is ambiguous on every route when both members accept it"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  expect 7 .matches u fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    (x :: u) = 7
+    x
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    g = (n :: u) -> n
+    g(7)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    match 7
+      (n :: u) -> n
+    end
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+
+test "A union of refinements selects the one member that accepts the designator"
+  p = Int .where (n -> n > (5 :: Int))
+  q = Float .where (x -> x > (2 :: Float))
+  w = abstract p | q
+  # 7 satisfies both refinements, 3 only q, 1 neither.
+  expect 7 .matches w fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    def h(n :: w) n
+    h(7)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  assert 3 .matches w
+  def f(n :: w) toString(w)(n)
+  expect f(3) is "3 :: Float" :: String
+  assert not(1 .matches w)
+  expect
+    def h(n :: w) n
+    h(1)
+  fails "does not satisfy subset"
+  expect
+    (x :: w) = 1
+    x
+  fails "does not satisfy subset"
+end
+
+test "A concrete union with a refinement member follows the same rule"
+  p = Int .where (n -> n > (5 :: Int))
+  type Foo concrete p | Float?
+  expect
+    def f(n :: Foo) n
+    f(7)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  assert 3 .matches Foo
+end
+
+test "A value that fails a refinement reports the failed predicate"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  expect
+    def f(n :: u) n
+    f(3 :: p)
+  fails "E_PATTERN_MISMATCH"
+  expect
+    def f(n :: u) n
+    f(3 :: p)
+  fails "value does not satisfy subset (n -> n > 5 :: Int)"
+end
+
+test "Literal designation checks refinements nested in lists, options and constructor fields"
+  p = Int .where (n -> n > (5 :: Int))
+  list = abstract p* | Float*
+  option = abstract p? | Float?
+  box = abstract (type :Box(p)) | (type :Box(Float))
+  def f(x :: list) x
+  g = (x :: option) -> x
+  def h(x :: box) x
+  expect toString(list)(f([3])) is "[3] :: Type([Repeat(Float)])" :: String
+  expect toString(option)(g(3)) is "3 :: Type(Float | :None)" :: String
+  expect toString(box)(h(Box(3))) is "Box(3) :: Type(Box(Float))" :: String
+  expect [7] .matches list fails "2 interpretations match"
+  expect 7 .matches option fails "2 interpretations match"
+end
+
+test "Overload selection does not use refinement predicate failures"
+  def big(s :: String) True
+  p = Int .where (n -> big(n))
+  u = abstract p | Float
+  def f(n :: u) "union"
+  def f(n :: Rational) "rational"
+  expect f(3) fails "E_AMBIGUOUS_CALL"
+end
+
+test "A predicate error in the selected definition retains its diagnostic"
+  def big(s :: String) True
+  p = Int .where (n -> big(n))
+  u = abstract p | Float
+  def f(n :: u) n
+  expect f(3) fails "no applicable function big"
+end
+
+test "A bound argument must already supply refinement evidence"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  def f(n :: u) n
+  n = 7 :: Int
+  todo expect f(n) fails "E_NO_METHOD"
+end
+
+test "A bound field in a literal still needs refinement evidence"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract (type :Box(p)) | (type :Box(Float))
+  def f(n :: u) "designated"
+  n = 7 :: Int
+  todo expect f(Box(n)) fails "missing"
+end

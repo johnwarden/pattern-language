@@ -13,7 +13,7 @@ import {
   symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
-import { any } from "./pattern.ts";
+import { any, combineMatchDetails } from "./pattern.ts";
 import type { Pattern } from "./pattern.ts";
 import { uniqueCaptures, patternCaptures } from "./pattern-captures.ts";
 import { isSelfEvaluating } from "./primitive-names.ts";
@@ -32,6 +32,7 @@ export interface PatternDomain<T> {
   allowIgnoredCaptures?: boolean;
   requireCaptureTypes?: boolean;
   allowDefaults?: boolean;
+  normalizeAlternatives?: (choices: Pattern<T>[]) => Pattern<T>;
   defaultValue?: (node: Syntax) => T;
   defaultIdentity?: (node: Syntax) => string;
   validateTypedCapture?: (name: string, annotation: Syntax) => void;
@@ -56,8 +57,17 @@ export class PatternCompiler<T> {
       return this.compile(quotePatternHead(n.value));
     }
     const union = binary(n, "|");
-    if (union)
-      return { kind: "union", choices: union.map((x) => this.compile(x)) };
+    if (union) {
+      if (!this.domain.normalizeAlternatives)
+        return { kind: "union", choices: union.map((x) => this.compile(x)) };
+      const alternatives = (x: Syntax): Syntax[] => {
+        const parts = binary(x, "|");
+        return parts ? parts.flatMap(alternatives) : [x];
+      };
+      return this.domain.normalizeAlternatives(
+        alternatives(n).map((x) => this.compile(x)),
+      );
+    }
     const annotation = binary(n, "::");
     if (annotation) {
       const anonymous = anonymousSpread(annotation[0]);
@@ -121,7 +131,14 @@ export class PatternCompiler<T> {
               .filter((r) => r.end === result.fields.length)
               .flatMap((r) => {
                 const captures = m.merge(result.captures, r.captures);
-                return captures ? [{ ...r, end: result.end, captures }] : [];
+                return captures
+                  ? [{
+                      ...r,
+                      ...combineMatchDetails(result, r),
+                      end: result.end,
+                      captures,
+                    }]
+                  : [];
               }),
           ),
       };

@@ -17,6 +17,8 @@ export interface Match<T> {
   end: number;
   fields: Field<T>[];
   captures: Captures<T>;
+  interpretations?: InterpretationTrace<T>;
+  skippedPredicate?: true;
 }
 export type Pattern<T> =
   | { kind: "any" }
@@ -70,6 +72,9 @@ export type Pattern<T> =
       dispatchIdentity?: () => string;
       facet?: boolean;
       wrappedPrimitive?: boolean;
+      /** The reference as an author would write it, for ambiguity diagnostics. */
+      describe?: () => string | undefined;
+      referent?: T;
     }
   | {
       kind: "map";
@@ -95,6 +100,11 @@ export type Pattern<T> =
     };
 export interface Adapter<T> {
   describe?: (value: T) => string;
+  /** The fields an alternative consumed as source text, for ambiguity diagnostics. */
+  source?: (
+    fields: Field<T>[],
+    annotations?: ReadonlyMap<Field<T>, string>,
+  ) => string;
   equal: (a: T, b: T) => boolean;
   decompose: (value: T) => { head: T; body: Field<T>[] } | undefined;
   rebuild: (value: T, head: T, body: Field<T>[]) => T;
@@ -113,6 +123,49 @@ export class Mismatch extends LanguageError {
     });
   }
 }
+interface UnionSite<T> {
+  consumed: Field<T>[];
+  alternatives: unknown[];
+}
+
+interface Interpretation<T> {
+  site: UnionSite<T>;
+  choice: Pattern<T>;
+  nested?: InterpretationTrace<T>;
+}
+
+type InterpretationTrace<T> =
+  | Interpretation<T>
+  | { left: InterpretationTrace<T>; right: InterpretationTrace<T> };
+
+function joinInterpretations<T>(
+  left?: InterpretationTrace<T>,
+  right?: InterpretationTrace<T>,
+): InterpretationTrace<T> | undefined {
+  return left && right ? { left, right } : (left ?? right);
+}
+
+export function combineMatchDetails<T>(a: Match<T>, b: Match<T>) {
+  return {
+    interpretations: joinInterpretations(a.interpretations, b.interpretations),
+    skippedPredicate: a.skippedPredicate ?? b.skippedPredicate,
+  };
+}
+
+function* interpretations<T>(trace?: InterpretationTrace<T>) {
+  const pending = trace ? [trace] : [];
+  while (pending.length) {
+    const next = pending.pop()!;
+    if ("site" in next) {
+      yield next;
+      if (next.nested) pending.push(next.nested);
+    } else pending.push(next.right, next.left);
+  }
+}
+
+const alternativeKey = <T>(p: Pattern<T>): unknown =>
+  p.kind === "ref" ? p.key : p;
+
 export interface MatchFailure {
   message: string;
   code: string;
@@ -142,6 +195,8 @@ export class Matcher<T> {
     Map<T | undefined, Set<number>>
   >();
   private recognizing = false;
+  private readonly unionSites = new WeakMap<Field<T>, UnionSite<T>[]>();
+  private readonly fieldOrigins = new WeakMap<Field<T>, Field<T>>();
   // A recognition-only hole is never returned to the caller or passed to tests.
   // It preserves an omitted constructed field through annotated destructuring.
   private readonly deferredDefault = {} as T;
@@ -274,7 +329,12 @@ export class Matcher<T> {
               if (result.end !== input.fields.length) continue;
               const merged = this.merge(input.captures, result.captures);
               if (merged)
-                results.push({ ...result, end: input.end, captures: merged });
+                results.push({
+                  ...result,
+                  ...combineMatchDetails(input, result),
+                  end: input.end,
+                  captures: merged,
+                });
             }
           }
           return results;
@@ -334,18 +394,49 @@ export class Matcher<T> {
           },
         );
       case "union": {
-        const matches: Match<T>[] = [];
+        const accepted: { choice: Pattern<T>; results: Match<T>[] }[] = [];
+        const consider = function* (
+          choice: Pattern<T>,
+        ): Generator<ScanRequest<T>, void, Match<T>[]> {
+          const results = yield { pattern: choice, items, position: pos };
+          if (results.length) accepted.push({ choice, results });
+        };
+        const done = () => {
+          if (
+            accepted.length < 2 ||
+            !this.adapter.source ||
+            !accepted.some(({ choice }) => choice.kind === "ref" && choice.describe)
+          )
+            return accepted.flatMap(({ results }) => results);
+          const alternatives = p.choices.map(alternativeKey);
+          return accepted.flatMap(({ choice, results }) =>
+            results.map((match) => {
+              if (match.end <= pos) return match;
+              const site = this.unionSite(
+                items.slice(pos, match.end),
+                alternatives,
+              );
+              return {
+                ...match,
+                interpretations: {
+                  site,
+                  choice,
+                  nested: match.interpretations,
+                },
+              };
+            }),
+          );
+        };
         if (p.preferred) {
-          for (const choice of p.preferred)
-            matches.push(...(yield { pattern: choice, items, position: pos }));
-          if (matches.length) return matches;
+          for (const choice of p.preferred) yield* consider(choice);
+          if (accepted.length) return done();
         }
         for (const choice of p.choices)
           if (!p.preferred?.includes(choice))
-            matches.push(...(yield { pattern: choice, items, position: pos }));
+            yield* consider(choice);
         // Both pattern and type unions require one interpretation. Do not
         // coalesce successful witnesses and silently conceal ambiguous branches.
-        return matches;
+        return done();
       }
       case "sequence": {
         let states: Match<T>[] = [
@@ -360,6 +451,7 @@ export class Matcher<T> {
               const captures = this.merge(state.captures, match.captures);
               if (captures)
                 next.push({
+                  ...combineMatchDetails(state, match),
                   end: match.end,
                   fields: state.fields.concat(match.fields),
                   captures,
@@ -410,8 +502,9 @@ export class Matcher<T> {
               return captures
                 ? [
                     {
+                      ...combineMatchDetails(s, m),
                       end: 0,
-                      fields: s.fields.concat(index < 0 ? [] : m.fields),
+                      fields: s.fields.concat(m.fields),
                       captures,
                     },
                   ]
@@ -443,6 +536,7 @@ export class Matcher<T> {
             return captures
               ? [
                   {
+                    ...combineMatchDetails(s, m),
                     end: items.length,
                     fields: canonicalFields([
                       ...s.fields,
@@ -496,8 +590,8 @@ export class Matcher<T> {
                 ? [
                     {
                       ...s,
+                      ...combineMatchDetails(s, m),
                       captures,
-                      fields: s.fields,
                     },
                   ]
                 : [];
@@ -512,6 +606,7 @@ export class Matcher<T> {
         return (yield { pattern: p.pattern, items: row, position: 0 })
           .filter((m) => m.end === row.length)
           .map((m) => ({
+            ...m,
             end: pos + 1,
             fields: [
               {
@@ -542,6 +637,7 @@ export class Matcher<T> {
               if (match.end <= state.end)
                 throw new LanguageError("repetition must consume an element");
               next.push({
+                ...combineMatchDetails(state, match),
                 end: match.end,
                 fields: state.fields.concat(match.fields),
                 captures: p.collect
@@ -605,12 +701,12 @@ export class Matcher<T> {
         this.active.push({ key: p.key, value: item?.value, position: pos });
         try {
           if (this.recognizing && p.dispatchBase) {
-            const base = p.dispatchBase();
-            return yield {
-              pattern: base,
+            const results = yield {
+              pattern: p.dispatchBase(),
               items,
               position: pos,
             };
+            return results.map((m) => ({ ...m, skippedPredicate: true }));
           }
           return yield { pattern: p.resolve(), items, position: pos };
         } finally {
@@ -629,11 +725,15 @@ export class Matcher<T> {
           pattern: p.pattern,
           items:
             p.input && item
-              ? items.map((field, index) =>
-                  index === pos
-                    ? { ...field, value: p.input!(field.value) }
-                    : field,
-                )
+              ? items.map((field, index) => {
+                  if (index !== pos) return field;
+                  const mapped = { ...field, value: p.input!(field.value) };
+                  this.fieldOrigins.set(
+                    mapped,
+                    this.fieldOrigins.get(field) ?? field,
+                  );
+                  return mapped;
+                })
               : items,
           position: pos,
         }).flatMap((m) =>
@@ -669,6 +769,7 @@ export class Matcher<T> {
             return captures
               ? [
                   {
+                    ...combineMatchDetails(h, b),
                     end: pos + 1,
                     fields: [
                       {
@@ -709,6 +810,7 @@ export class Matcher<T> {
             return captures
               ? [
                   {
+                    ...combineMatchDetails(h, b),
                     end: pos + 1,
                     fields: [
                       {
@@ -762,13 +864,136 @@ export class Matcher<T> {
         },
       );
     }
-    if (matches.length > 1)
+    // A complete structural match can make a definition applicable. If any
+    // complete interpretation needs a predicate, only the selected definition
+    // may decide that ambiguity when it binds its arguments.
+    if (
+      matches.length > 1 &&
+      !(this.recognizing && matches.some((m) => m.skippedPredicate))
+    )
       throw new LanguageError(
-        "ambiguous pattern: " + matches.length + " matches",
+        this.ambiguityMessage(matches),
         undefined,
-        { code: "E_AMBIGUOUS_PATTERN", phase: "match" },
+        { code: "E_AMBIGUOUS_VALUE_DESIGNATOR", phase: "match" },
       );
     return matches[0];
+  }
+
+  private unionSite(fields: Field<T>[], alternatives: unknown[]): UnionSite<T> {
+    const consumed = fields.map(
+      (field) => this.fieldOrigins.get(field) ?? field,
+    );
+    const first = consumed[0];
+    let sites = this.unionSites.get(first);
+    if (!sites) this.unionSites.set(first, (sites = []));
+    // A preceding ambiguous field can make the same typed field run more than
+    // once. Its input fields and alternatives identify it across those visits.
+    const previous = sites.find(
+      (site) =>
+        site.consumed.length === consumed.length &&
+        site.consumed.every((field, i) => field === consumed[i]) &&
+        site.alternatives.length === alternatives.length &&
+        site.alternatives.every((choice, i) => choice === alternatives[i]),
+    );
+    if (previous) return previous;
+    const site = { consumed, alternatives };
+    sites.push(site);
+    return site;
+  }
+
+  private interpretationType(choice: Pattern<T>): string | undefined {
+    const text = choice.kind === "ref" && choice.describe?.();
+    return text && text.length <= 160 && !text.includes("\n") ? text : undefined;
+  }
+
+  private ambiguityMessage(matches: Match<T>[]): string {
+    const generic =
+      "ambiguous value designator: " + matches.length + " interpretations match";
+    if (!this.adapter.source) return generic;
+
+    const candidates = new Map<UnionSite<T>, Map<unknown, Set<Interpretation<T>>>>();
+    for (const pick of interpretations(matches[0].interpretations))
+      candidates.set(
+        pick.site,
+        new Map([[alternativeKey(pick.choice), new Set([pick])]]),
+      );
+    for (let i = 1; i < matches.length && candidates.size; i++) {
+      const visited = new Set<UnionSite<T>>();
+      for (const pick of interpretations(matches[i].interpretations)) {
+        const choices = candidates.get(pick.site);
+        if (!choices) continue;
+        visited.add(pick.site);
+        const key = alternativeKey(pick.choice);
+        let variants = choices.get(key);
+        if (!variants) choices.set(key, (variants = new Set()));
+        variants.add(pick);
+      }
+      for (const site of candidates.keys())
+        if (!visited.has(site)) candidates.delete(site);
+    }
+
+    // Use the first position shared by every surviving match that has
+    // multiple interpretations. Look only at the alternatives they used.
+    for (const [site, choices] of candidates) {
+      if (choices.size < 2) continue;
+      try {
+        const value = this.adapter.source(site.consumed);
+        const suggestions = new Set<string>();
+        const types = new Set<string>();
+        alternatives: for (const key of site.alternatives) {
+          const variants = choices.get(key);
+          if (!variants) continue;
+          const type = this.interpretationType(variants.values().next().value!.choice);
+          if (!type || types.has(type)) break;
+
+          for (const pick of variants) {
+            // Count each distinct nested designation at this position.
+            // Unrelated decisions elsewhere in the match share a suggestion.
+            const annotations = new Map<Field<T>, string>();
+            for (const inner of interpretations(pick.nested)) {
+              const [field] = inner.site.consumed;
+              const annotation = this.interpretationType(inner.choice);
+              if (
+                inner.site.consumed.length !== 1 ||
+                !annotation ||
+                annotations.has(field)
+              ) break alternatives;
+              annotations.set(field, annotation);
+            }
+            const source = annotations.size
+              ? this.adapter.source(site.consumed, annotations)
+              : value;
+            suggestions.add("`" + source + " :: " + type + "`");
+          }
+          types.add(type);
+        }
+        if (types.size !== choices.size) continue;
+        const shown = [...suggestions].slice(0, 2);
+        const others = suggestions.size - shown.length;
+        return (
+          "ambiguous value designator " +
+          value +
+          ": please specify " +
+          (others
+            ? shown.join(", ") +
+              ", ...and " +
+              others +
+              (others === 1 ? " other" : " others")
+            : shown.join(" or "))
+        );
+      } catch (error) {
+        if (
+          !(error instanceof LanguageError) ||
+          ![
+            "E_VALUE_SERIALIZATION",
+            "E_TYPE_SERIALIZATION",
+            "E_SERIALIZATION_LIMIT",
+          ].includes(error.diagnostic.code)
+        )
+          throw error;
+      }
+    }
+    return generic;
   }
 }
 export const any = <T>(): Pattern<T> => ({ kind: "any" });
