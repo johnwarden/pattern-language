@@ -138,11 +138,14 @@ Three changes complete the table.
   draft keeps it inside the descriptor, as in `Pattern(Int .where nonZero)`.
   The predicate's expression belongs to the function-value records, which
   make a function value a closed definition that compares structurally.
-  Open choice 1 proposes a first slice. With it, `==`, `toString(Type)`,
-  typed value text and the removal of repeated alternatives start to work
-  for types that contain a refinement. Reading a refinement's text with
-  `parse(Type)` needs a reader for function text, and stays with the
-  type-values record.
+  Open choice 1 is decided as the first slice (2026-11-18): a lambda whose
+  body names only its parameters, literals and primitives is identified by
+  its syntax, and its expression is the parenthesized lambda. With that
+  identity, `==`, `toString(Type)`, typed value text and the removal of
+  repeated alternatives start to work for types that contain such a
+  refinement. Predicates outside the slice wait for the function-value
+  work. Reading a refinement's text with `parse(Type)` needs a reader for
+  function text, and stays with the type-values record.
 - **Printing composes.** `p*` prints the expression of `p` in parentheses and
   then `*`. A description that stands for a type on its own is printed with
   its constructor. The stored name is no longer printed where a type is
@@ -238,9 +241,11 @@ Jonathan's rulings on #80
 ([answers](https://github.com/johnwarden/pattern-language/pull/80#issuecomment-6979344843),
 [addendum](https://github.com/johnwarden/pattern-language/pull/80#issuecomment-6981505313))
 are that repeated alternatives are removed when they are equal type values,
-that `pattern :Box(Int) | Box(Int)` is one alternative whose redundant quote
-is dropped, and that normalization happens only in the `pattern` and
-`struct` macros.
+and that normalization happens only in the `pattern` and `struct` macros.
+A later ruling on 2026-11-18 supersedes the addendum's tentative drop of a
+redundant quote: when a quoted alternative and an unquoted one evaluate to
+equal types in the current scope, the `pattern`/`struct` macros report
+`E_REDUNDANT_QUOTE` instead of silently dropping the quote (Open choice 5).
 
 - The canonical expression uses the kind constructor, which keeps what it is
   given. So it reproduces every type exactly, including one that a
@@ -250,11 +255,15 @@ is dropped, and that normalization happens only in the `pattern` and
 - A macro form is a second expression for a type that is already normalized,
   which is every type the macros produce: `Type(:A | :B) == (type :B | :A)`.
   A message may print it under rule 2.
-- Removing repeats by value needs `==` on every alternative. For a
-  refinement that is the same missing identity. On master `type p | p` is
-  accepted, prints as `type p | p`, and makes `7` ambiguous.
-- A normalized type keeps no record of the quote, so its expression writes
-  the constructor head once. Open choice 5 covers the quote.
+- Removing repeats by value needs `==` on every alternative. Under Open
+  choice 1(a), a first-slice refinement (a lambda over parameters, literals
+  and primitives) has that identity; predicates outside the slice still lack
+  it. On master `type p | p` is accepted, prints as `type p | p`, and makes
+  `7` ambiguous.
+- A redundant quote is not normalized away. The macros reject the form when
+  the quoted and unquoted alternatives are equal types in scope; when they
+  differ (for example because `Box` names a type factory), both stand and the
+  factory body may need the quote. See Open choice 5.
 
 ## Suggestions in #80
 
@@ -269,12 +278,13 @@ is a type expression for the member.
 | Recursive | `:Nil :: Recursive(:Nil \| Cons(Float, Recur(0)))` | `:Nil :: Type(Recursive(:Nil \| Cons(Float, Recur(0))))` |
 
 The third pastes back today. The first two evaluate today, but they select
-the member only once a refinement has an identity. Until then Open choice 2
-applies. An `Any` member is Open choice 6.
+the member only once the first-slice predicate identity from Open choice 1(a)
+is implemented for `n -> n > (5 :: Int)`. Open choice 2 still covers a
+predicate outside that slice. An `Any` member is Open choice 6.
 
 Two repairs need nothing new, so #80 can make them now: print a description
-with its constructor, and stop printing the name. Identity for predicates is
-the larger piece.
+with its constructor, and stop printing the name. Implementing the first-slice
+predicate identity is the remaining larger piece for these suggestions.
 
 Every member has a type expression, so every surviving interpretation can be
 listed. What remains is the condition the record already sets: pasting a
@@ -284,8 +294,9 @@ as #80 already does for a long designator.
 
 ## Open choices
 
-1. **Identity for predicates.** The rule needs two evaluations of one
-   predicate expression to give equal function values. The
+1. **Identity for predicates.** Decided 2026-11-18: (a) first slice now.
+   The rule needs two evaluations of one predicate expression to give equal
+   function values. The
    [function-value design](../design/FUNCTION-VALUES.md) says a function
    value is its closed definition and compares structurally, with no
    alpha-equivalence. No contract yet covers a lambda that is evaluated
@@ -299,13 +310,15 @@ as #80 already does for a long designator.
      syntax, and its expression is the parenthesized lambda. That covers
      `n -> n > (5 :: Int)`. A predicate that captures a value, calls a user
      definition or is a named function waits for the function-value work.
+     **Decided.**
    - (b) Wait for the complete function-value representation. No refinement
-     has an expression until then.
+     has an expression until then. — not chosen.
 
-   I recommend (a). It is the smallest change that makes `p == p`,
-   `toString(Type)(p*)` and the suggestions above work.
-2. **A predicate that has no expression yet.** Under 1(a) this is a predicate
-   outside the first slice. Under 1(b) it is every predicate.
+   This is the smallest change that makes `p == p`, `toString(Type)(p*)` and
+   the suggestions above work once the slice is implemented.
+2. **A predicate that has no expression yet.** Under the decided 1(a), this
+   is a predicate outside the first slice (one that captures a value, calls a
+   user definition, or is a named function).
    - (a) Print a name in scope that denotes exactly that type or predicate,
      as the approved
      [local-printing record](library-closure-and-local-printing.md)
@@ -353,20 +366,40 @@ as #80 already does for a long designator.
    block that declares the type under a local name and returns it. It is a
    closed expression only where no equal type is declared. It fails with
    `E_DUPLICATE_TYPE` in the scopes where a suggestion is printed.
-5. **The redundant quote.** The ruling is that
-   `pattern :Box(Int) | Box(Int)` is one alternative and normalization drops
-   the quote. Making the redundant quote an error is the alternative that is
-   not decided.
-   - (a) Drop it.
-   - (b) Report it as an error.
+5. **The redundant quote.** Decided 2026-11-18: (b) error. This supersedes
+   the earlier tentative ruling on #80 that normalization drops the quote
+   ([addendum](https://github.com/johnwarden/pattern-language/pull/80#issuecomment-6981505313)).
+   - (a) Drop it. — superseded.
+   - (b) Report it as an error. **Decided.**
 
-   One fact bears on (b). The quote is redundant only where `Box` names no
-   type factory. With `def Box(T :: Type) type :Box(T)` in scope, master
-   reads `Box(Int)` as a call, `type :Box(Int) | Box(Int)` has two
-   alternatives, and the factory's own body needs the quote. So the error
-   would depend on what is in scope, and text printed for such a scope needs
-   the quoted head. Removing repeats by value gives the right answer in both
-   scopes without an error. I recommend (a).
+   The error fires only when the quoted and unquoted alternatives evaluate to
+   equal types in the current scope. With no type factory named `Box`,
+   `:Box(Int)` and `Box(Int)` denote the same alternative, so
+   `pattern :Box(Int) | Box(Int)` reports `E_REDUNDANT_QUOTE` during
+   `pattern`/`struct` macro normalization (the same site that removes
+   repeated equal alternatives). With `def Box(T :: Type) type :Box(T)` in
+   scope, `Box(Int)` is a call, the two alternatives differ, the factory body
+   needs the quote, and the error does not fire. The code sits beside
+   `E_QUOTED_PRIMITIVE` (quoting a primitive name); it is not that error.
+
+```pattern
+test "A redundant quote among equal alternatives is an error"
+  # Today rejects as E_AMBIGUOUS_PATTERN (duplicate alternatives); destination code is E_REDUNDANT_QUOTE.
+  todo expect (pattern :Box(Int) | Box(Int)) fails "E_REDUNDANT_QUOTE"
+  todo expect (type :Box(Int) | Box(Int)) fails "E_REDUNDANT_QUOTE"
+end
+
+test "A quote is not redundant when Box names a type factory"
+  def Box(T :: Type) type :Box(T)
+  # Alternatives differ in this scope; the factory body needs the quote.
+  # Today's spellings: type where the rulings say pattern/struct.
+  u = type :Box(Int) | Box(Int)
+  assert u == (type :Box(Int) | Box(Int))
+  todo u2 = pattern :Box(Int) | Box(Int)
+  todo assert u2 == u
+end
+```
+
 6. **A member that is abstract.** With `u = abstract Any | String`,
    `(x :: u) = "hi"` is ambiguous at #80 and on master. Both members accept
    the designator, and both would hold the same `"hi" :: String`, because an
