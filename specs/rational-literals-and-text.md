@@ -41,7 +41,10 @@ from the exponent's digit text before any bigint powering so forms such as
 is a source error with code `E_SYNTAX` and message
 `numeric exponent exceeds 10000`. The same cap applies to `0f` decimal
 exponents. Canonical printing never emits an `e` or `p` exponent outside this
-bound, so every printed numeric atom remains readable.
+bound: values whose shortest uncapped spelling would need a larger exponent
+use coefficient padding, a max-cap exponent, or full integer/fraction text
+instead, so every printed numeric atom remains readable and formatting
+terminates.
 
 `(1 / 3)` is grouped division. It yields the same Rational as `(1/3)` under
 exact Rational division. Formatting safety permits the different Code trees

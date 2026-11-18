@@ -43,8 +43,11 @@ Use these canonical lexical choices before comparing:
   exponent. Keep the required integer digit before a decimal or hexadecimal
   point (`0.5`, not `.5`). No trailing fractional zeros. Do not emit an `e` or
   `p` exponent whose magnitude exceeds the reader cap of `10000` from
-  [Rational literals](rational-literals-and-text.md); prefer another exact
-  candidate so printed text always round-trips.
+  [Rational literals](rational-literals-and-text.md). When the shortest uncapped
+  spelling would need a larger exponent, absorb the overflow into coefficient
+  digits (for example `100e9999` or a `…e10000` form) or fall back to the full
+  integer or reduced fraction text so printing always terminates with a
+  reader-accepted exact spelling.
 - Fractions have coprime components and denominator greater than one. Their
   parentheses are part of the spelling. Each component uses plain decimal
   integer digits. The sign rule below applies to negative values.

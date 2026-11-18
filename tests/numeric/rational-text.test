@@ -45,3 +45,22 @@ test "Reduced fraction text competes with decimal exponents and keeps its sign"
   assert parse(Rational)(toString(Rational)(scaled)) == scaled
   assert toString(Rational)(parse(Rational)("(1/3)e20")) == toString(Rational)(scaled)
 end
+
+test "Printing past the exponent cap absorbs overflow and still round-trips"
+  # Uncapped shortest forms would be 1e10001 / 1e20000; the reader rejects those.
+  product = 1e10000 * 10
+  squared = 1e10000 * 1e10000
+  third = 1e10000 * 10 / 3
+
+  expect toString(Rational)(product) is "100e9999" :: String
+  expect toString(Rational)(third) is "(10/3)e10000" :: String
+  expect toString(Code)(product) is "100e9999" :: String
+  expect toString(Code)(third) is "(10/3)e10000" :: String
+
+  assert parse(Rational)(toString(Rational)(product)) == product
+  assert parse(Rational)(toString(Rational)(squared)) == squared
+  assert parse(Rational)(toString(Rational)(third)) == third
+  assert parse(Code)(toString(Code)(product)) == parse(Code)("100e9999")
+  assert parse(Code)(toString(Code)(squared)) == parse(Code)(toString(Rational)(squared))
+  assert parse(Code)(toString(Code)(third)) == parse(Code)("(10/3)e10000")
+end

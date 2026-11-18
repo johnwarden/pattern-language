@@ -330,12 +330,34 @@ function positionalSpelling(
   const marker = family === "0x" || family === "0b" ? "p" : "e";
   const step = family === "0x" ? 4 : 1;
   let best: { point: number; exponent: string; length: number } | undefined;
-  // The integer coefficient with its exponent bounds the number of zeros
-  // worth considering on either side of the significant digits.
-  const available = Math.min(
-    limit - family.length,
-    count + exponentText(power, marker).length,
-  );
+  // When the raw power is a legal exponent, the integer coefficient with that
+  // exponent bounds how many zeros are worth trying. Past the reader cap that
+  // form is illegal, so absorb overflow into coefficient digits and search up
+  // to the shorter of the caller's limit and a finite expanded/capped length.
+  const uncappedLength = count + exponentText(power, marker).length;
+  let available: number;
+  if (Math.abs(power) <= MAX_NUMERIC_EXPONENT) {
+    available = Math.min(limit - family.length, uncappedLength);
+  } else {
+    const overflow = Math.abs(power) - MAX_NUMERIC_EXPONENT;
+    const overflowDigits = Math.ceil(overflow / step);
+    const cappedLength =
+      count +
+      overflowDigits +
+      exponentText(
+        power < 0 ? -MAX_NUMERIC_EXPONENT : MAX_NUMERIC_EXPONENT,
+        marker,
+      ).length;
+    const expandedLength =
+      count +
+      Math.ceil(Math.abs(power) / step) +
+      (power < 0 ? 2 : 0);
+    available = Math.min(
+      limit - family.length,
+      Math.max(cappedLength, expandedLength),
+    );
+  }
+  if (!Number.isFinite(available) || available < 1) return;
   for (
     let point = Math.min(1, count + 2 - available);
     point <= available;
@@ -443,6 +465,19 @@ export function formatRational({ n, d }: Rational): string {
   };
   const limit = () => selection.best?.text.length ?? Infinity;
 
+  // Seed a finite, reader-accepted spelling before any search. Without this,
+  // limit() stays Infinity, capped-exponent skips can leave no positional
+  // candidate, and the fraction distance loop grows 5n**b until OOM.
+  if (d === 1n) {
+    offer({ text: n.toString(), family: "", exponent: false });
+  } else {
+    offer({
+      text: `(${n}/${d})`,
+      family: "fraction",
+      exponent: false,
+    });
+  }
+
   const nTwos = trailingTwos(n),
     dTwos = trailingTwos(d);
   const odd = n >> BigInt(nTwos);
@@ -493,6 +528,13 @@ export function formatRational({ n, d }: Rational): string {
       3 +
       exponent.length;
     if (lengthLowerBound - 1 > limit()) return;
+    // Skip bigint work when the scaled denominator would stay 1 (not a fraction).
+    if (
+      denominator.core === 1n &&
+      Math.max(0, -a) === 0 &&
+      Math.max(0, -b) === 0
+    )
+      return;
     const num =
       power === 0
         ? n
@@ -514,9 +556,14 @@ export function formatRational({ n, d }: Rational): string {
   if (fives !== 0) fractionAt(0);
   // The product of the reduced coefficient's numerator and denominator is
   // smallest at power=fives. Every step away grows it by at least 5/2.
+  // Bound distance so |power| stays near the reader exponent cap; limit() is
+  // finite after the seed above, but keep an explicit ceiling as backstop.
   const minimum = coreLogLowerBound + Math.abs(twos - fives) * logTwo + 3;
+  const maxDistance =
+    Math.abs(fives) + MAX_NUMERIC_EXPONENT + 1;
   for (
     let distance = 1;
+    distance <= maxDistance &&
     minimum + distance * (logFive - logTwo) - 1 <= limit();
     distance++
   ) {
