@@ -140,8 +140,9 @@ language rules with Jonathan. Start a topic branch and edit or add a document
 directly under `specs/`. Review the spec first, then write or revise contracts
 in the active `.test` suite in a subsequent PR. Use todo for expected failures
 and inspect the actual failure. An implementation PR names the cases it makes
-pass and removes their fulfilled todo markers. Keep a delivered slice's spec,
-tests and implementation together when it is ready for authorized squash merge.
+pass and removes their fulfilled todo markers. Approved spec PRs and
+test-only PRs can land on `master` ahead of implementation. Each stage uses
+authorized squash merge.
 
 Existing cases on master can already satisfy the test contract requirement.
 A specification can require edits to many cases or just an illustrative example.

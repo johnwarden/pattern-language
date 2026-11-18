@@ -7,14 +7,18 @@ and motivating examples with the draft until the behavior is agreed.
 | Stage | Change on the topic | What to review |
 | --- | --- | --- |
 | Specification | Edit or add documents directly under `specs/` on the topic branch. | The proposed intended behavior, examples and migration impact. The branch's tests may still describe the previous rule. |
-| Tests | After the spec is settled, submit a test PR against the spec branch or its next stacked branch. Add or revise active `.test` files by topic. | The tests now describe the proposed behavior. Mark behavior that the current code cannot satisfy as `todo` and inspect the actual failures. |
+| Tests | After the spec is settled, add or revise active `.test` files by topic in a test PR. Base it on `master` if the spec has merged, or stack it on the spec branch for review. | The tests now describe the proposed behavior. Mark behavior that the current code cannot satisfy as `todo` and inspect the actual failures. |
 | Implementation | Implement a coherent slice and remove the todo markers from the cases it makes pass. | The spec, executable contracts and code agree for that slice. Follow-up cases can keep explicit todos. |
 
-Review successive stages in separate or stacked PRs when helpful. A stacked PR
-targets the preceding stage's branch so its diff shows just the new work. Keep the
-spec, tests and implementation that belong to the delivered slice together in the
-change proposed for `master`. PRs to `master` use squash merge when Jonathan
-authorizes the merge. Long-running topics can land in several coherent slices.
+Each stage can merge to `master` when reviewed and authorized. An approved
+spec can land before its tests. The test PR can land before implementation
+with unmet expectations marked `todo`. Later PRs can implement the contracts
+in several coherent slices.
+
+Stack PRs when it helps to review a stage before its prerequisite lands. Once
+the prerequisite is squash-merged, update the next PR on top of `master` so its
+diff contains only its own changes. PRs to `master` use squash merge when
+Jonathan authorizes the merge.
 
 ## Writing and validating contracts
 
