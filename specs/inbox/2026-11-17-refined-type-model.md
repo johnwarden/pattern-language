@@ -26,7 +26,7 @@ Nested `pattern` forms collapse. A lone type reference resolves to the
 referenced type, so applying `pattern` to it again returns that same type.
 
   expect concrete pattern Int | String is Concrete(Int | String)
-  assert (pattern pattern Int) == Int
+  assert (pattern pattern Int) === Int
 
   type Foo pattern Int | String
   Woo = concrete Foo
@@ -35,7 +35,11 @@ referenced type, so applying `pattern` to it again returns that same type.
 But a nested `concrete` does not.
   
   expect concrete Uint64 is Concrete(Uint64) 
-  assert Uint64 != concrete Uint64
+  assert Uint64 !== concrete Uint64
+
+Use `==` and `!=` for numeric equality and inequality. Use `===` and `!==`
+for exact equality and inequality. Exact comparison requires overlapping
+static domains and compares the value, including its concrete type.
 
 ## Grammar for Patterns
 
@@ -99,7 +103,7 @@ So for example this test now loos like this:
       1, 2
     ] :: Matrix)
 
-    assert Matrix == anonymous
+    assert Matrix === anonymous
     assert matrix .matches anonymous
   end
 
@@ -183,10 +187,10 @@ Note the difference here:
   type IntRectangle concrete Rect(Int, Int)
   type Rectangular pattern Rect(Num, Num)
 
-  (x :: NumRectangle) == Rect(1 :: Int, 1 :: Int)
-  (y :: IntRectangle) == Rect(1 :: Int, 1 :: Int)
+  (x :: NumRectangle) = Rect(1 :: Int, 1 :: Int)
+  (y :: IntRectangle) = Rect(1 :: Int, 1 :: Int)
 
-  assert x == y fails "Values of disjoint types `Rectangle` and `IntRectangle` cannot be equal"
+  expect x === y fails "disjoint types"
 
 Why does the following fail? Rectangular matches Rect(Int, Int), Rect(Int, Float), etc...e.g. any type where both width and height are concrete fixed-precisions numbers concrete Num is not one of those.
 
@@ -234,14 +238,14 @@ This is odd and probably not a good idea. But it is coherent:
 
   # AbstractOption<Int> admits any value that matches :None
   (w :: AbstractOption<Int>) = :None :: Int?
-  assert w == :None :: Int?
+  assert w === :None :: Int?
 
   (x :: AbstractOption<Int>) = 5 :: Int
-  assert x == 5 :: Int
+  assert x === 5 :: Int
 
   expect (y :: AbstractOption<Int>) = 5 :: Int? fails "value of type `Int?` does not designate a value of type `AbstractOption<Int>`"
 
-  assert x == 5 :: Int? fails "Values of disjoint types `Int` and `Int?` cannot be equal"
+  expect x === (5 :: Int?) fails "disjoint types"
 
 
 
@@ -259,13 +263,13 @@ singleton has one value in its own value space.
   t = pattern :None
   expect (v :: t) = :None fails "...no concrete type for `:None`"
   (v :: t) = :None :: Int?
-  assert v == :None :: Int?
+  assert v === :None :: Int?
 
 ## concrete singleton
 
   t = concrete :None
   (v :: t) = :None
-  expect (v != (:None :: Int?)) fails "disjoint types"
+  expect (v !== (:None :: Int?)) fails "disjoint types"
 
 ## enums: Unions of Single-Symbol Patterns
 
@@ -291,7 +295,7 @@ singleton has one value in its own value space.
   def Status concrete PrimaryColor
 
   # Wrapping a concrete type in concrete creates a nested concrete type.
-  assert Status == Concrete(Concrete(:Red | :Green | :Blue))
+  assert Status === Concrete(Concrete(:Red | :Green | :Blue))
 
   # Outer types do not inherit functions from inner types
 
@@ -307,17 +311,17 @@ singleton has one value in its own value space.
   fails "does not designate a value of type"
 
   # Can't compare wrapped value with it's designator
-  expect s == c fails "Values of disjoint types `Status` and `PrimaryColor` cannot be equal"
+  expect s === c fails "Values of disjoint types `Status` and `PrimaryColor` cannot be equal"
 
   # Explicitly wrap designator so values have same concrete type
-  assert s == c :: Status
+  assert s === c :: Status
 
 An abstract symbol pattern can admit a value from a different concrete enum:
 
     type TrafficLight concrete :Red | :Amber | :Green
     type RedPattern pattern :Red
     redPattern = pattern :Red
-    assert RedPattern == redPattern
+    assert RedPattern === redPattern
 
     def takesRed(x :: RedPattern) "red pattern"
     def takesPrimary(x :: PrimaryColor) "primary color"
@@ -376,14 +380,14 @@ Value of outer type cannot designate value of inner type
   expect t is Pattern(String | :None)
 
   u = pattern String | :None
-  assert t == u
+  assert t === u
 
   (a :: t) = :None :: String?
   (b :: t) = "hello"
 
   expect a is None :: String?
   expect b is "hello" :: String
-  assert a != b
+  assert a !== b
 
 ## Wrapped: Concrete Unions
 
@@ -391,7 +395,7 @@ Value of outer type cannot designate value of inner type
 
   expect Option(Int) is Concrete(Int | :None)
 
-  assert Option(Int) != Option(String)
+  assert Option(Int) !== Option(String)
 
   (a :: Option(Int)) = :None
   expect a is None :: Option(Int)
@@ -400,7 +404,7 @@ Value of outer type cannot designate value of inner type
   expect b is None :: Option(String)
 
   expect 
-    a == b
+    a === b
   fails "Values of disjoint types `Option(Int)` and `Option(String)` cannot be equal"
 
 ## Predicate
@@ -465,7 +469,7 @@ A pattern with ... is abstract: it can match a variety of concrete struct types.
   expdect y.properties is {} :: concrete {}
 
   # Comparison across value spaces works because x and y have same abstract type
-  assert x != y
+  assert x !== y
 
 ## Wrapped Abstract Expression Trees: Variadic Structs
 
@@ -491,7 +495,7 @@ A pattern with ... is abstract: it can match a variety of concrete struct types.
   x = Rect(3, 5, color: :Red) :: ColoredRectangle
 
   # But ColoredRectangle is a different concrete value space
-  expect z == x fails "Values of disjoint types `WrappedAugmentedRectangle` and `ColoredRectangle` cannot be equal"
+  expect z === x fails "Values of disjoint types `WrappedAugmentedRectangle` and `ColoredRectangle` cannot be equal"
 
 Now what is x.properties? I guess it has type.
 
@@ -534,11 +538,11 @@ So isSquare is defined over a pattern that matches many concrete types.
 Now Square is a pattern that matches a value of any concrete type that can be passed to isSquare and that satisies the isSquare predicate
 
   (t :: Square) = s
-  expect t == s
+  expect t === s
 
 Just like this:
 
-  def isNonZero(n :: Number) n !#= 0
+  def isNonZero(n :: Number) n != 0
   type NonZeroNumber pattern Number .where isNonZero
 
 These abstract types admit values of any concrete type that match the pattern and the predicate.
@@ -553,7 +557,7 @@ An alternative definition of nonzero
 
   y :: NonZeroNumber = 2 :: Int
   expect y is 2 :: Int .where isNonZero
-  expect x == y
+  expect x === y
 
 Note that we could define types with *just* the predicates
 
@@ -594,20 +598,24 @@ Same as
   (z :: Colored) = x
 
 
-Question: if I can do this:
+A facet name in a `concrete` declaration supplies its pattern. A constructor
+pattern gives the new concrete type its outer constructor and fields.
+A reference to a concrete type supplies a typed member.
 
   type Rectangular pattern Rect(Int, Int)
   type Rectangle concrete Rectangular
-  (x :: Rectagular) = 5 :: Rectangle
-
-Then why can't I do this:
+  (x :: Rectangular) = Rect(2, 3) :: Rectangle
 
   type Foo pattern Int
-  type Bar concrete Int
-  (x :: Foo) = 5 :: Bar
+  type Bar concrete Foo
 
-Because `concrete Int` wraps a concrete `Int`, but `concrete Rect(Int, Int)` does not wrap a concrete type. It instead coins a new concrete type in terms of matching expression trees. 
+  expect
+    (i :: Foo) = 5 :: Bar
+    i
+  fails "does not designate"
 
+`Foo` refers to `Int`, and the binding requires an `Int` as the whole
+value. The whole value has type `Bar`.
 
 # Pattern Matching Rules
 
@@ -628,7 +636,7 @@ Match over concrete union:
   concreteUnion = concrete Int | String
   y :: concreteUnion = 5
 
-  expect y == 5 :: Int fails "disjoint types"
+  expect y === 5 :: Int fails "disjoint types"
 
   v = match y
     when i :: Int $"$i"
@@ -719,6 +727,50 @@ Note can't capture raw symbols
 
 
 
+## Projection patterns and overloaded matching
+
+`.as` is lower implementation priority than the core type model. It
+makes the match-to-overload rewrite expressible with the same patterns.
+
+`P .as T` requires concrete type `T` and tests `P` at the boundary of
+its active alternative. Symbol and constructor patterns see the tag and
+fields declared at that boundary. A typed member pattern can bind the
+immediate stored value. Another `.as` can open that member’s boundary.
+On `Int??`, `:None .as Int??` selects outer absence, and
+`(:None .as Int?) .as Int??` selects stored inner absence.
+
+```pattern
+type SomeInt pattern (inner :: Int) .as Int?
+
+(i :: SomeInt) = 5 :: Int?
+expect i is 5 :: Int?
+expect i.inner is 5 :: Int
+```
+
+For `x` of concrete wrapper type `T`, the following match has the same
+behavior as a call to one local overloaded function when `P1` and `P2`
+are disjoint at that boundary.
+
+```pattern
+match x
+  when P1 V1
+  when P2 V2
+  default V3
+end
+
+def f(P1 .as T) V1
+def f(P2 .as T) V2
+def f(_ :: Remaining) V3
+f(x)
+```
+
+`Remaining` denotes the values of `T` that neither arm matches. If arms
+overlap, each later overload covers the part of its pattern left after
+the preceding arms. This preserves first-match order and keeps the
+effective overloads disjoint. The call evaluates `x` once and dispatches
+on the active alternative. A match on an abstract union uses the
+unprojected patterns as parameters.
+
 We can embed "concrete" in any type expression:
 
   type User {name: String, id: concrete PositiveInt}
@@ -726,8 +778,8 @@ We can embed "concrete" in any type expression:
   # Positive int can designate value of wrapped type.
   u = {name: "John", id: 5} :: User
 
-  expect (u.id != 5) fails "disjoint types"
-  assert u.id == 5 :: concrete PositiveInt
+  expect (u.id !== 5) fails "disjoint types"
+  assert u.id === 5 :: concrete PositiveInt
 
   test "Structural match of wrapped integer"
     type Id concrete PositiveInt 
