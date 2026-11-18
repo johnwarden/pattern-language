@@ -1,18 +1,19 @@
-# An ambiguous value is reported as E_AMBIGUOUS_VALUE however the expected type reaches
-# it (specs/approved/ambiguous-values.md). The message lists each interpretation as
-# `value :: Type`, written as source: the value as source text and the member as a type
-# expression. Only the interpretation substrings are pinned, not the "please specify"
-# wording.
+# A value designator, such as the literal 3 or :None, is ambiguous when more than one member
+# of its expected type accepts it. It is reported as E_AMBIGUOUS_VALUE_DESIGNATOR however the
+# expected type reaches it (specs/approved/ambiguous-values.md). The message lists each
+# interpretation as `designator :: Type`, written as source: the designator as source text and
+# the member as a type expression. Only the interpretation substrings are pinned, not the
+# "please specify" wording.
 test "An ambiguous numeric literal lists its interpretations"
   b = abstract Int | Float
-  expect 3 .matches b fails "E_AMBIGUOUS_VALUE"
+  expect 3 .matches b fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect 3 .matches b fails "3 :: Int"
   expect 3 .matches b fails "3 :: Float"
 
   expect
     (x :: b) = 3
     x
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
     (x :: b) = 3
     x
@@ -23,12 +24,12 @@ test "An ambiguous numeric literal lists its interpretations"
   fails "3 :: Float"
 end
 
-test "An ambiguous absence between peer options is an ambiguous value"
+test "An ambiguous absence between peer options is an ambiguous value designator"
   type Foo concrete String? | Float?
   expect
     (x :: Foo) = :None
     x
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
     (x :: Foo) = :None
     x
@@ -64,7 +65,7 @@ end
 
 test "Suggestions name each member as a type expression"
   u = abstract Int* | Float*
-  expect [1, 2] .matches u fails "E_AMBIGUOUS_VALUE"
+  expect [1, 2] .matches u fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect [1, 2] .matches u fails "[1, 2] :: Int*"
   expect [1, 2] .matches u fails "[1, 2] :: Float*"
   type Opt concrete Int? | Float?
@@ -83,7 +84,7 @@ test "Single-value routes report the same ambiguity"
   expect
     def f(n :: b) n
     f(3)
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
     def f(n :: b) n
     f(3)
@@ -117,7 +118,7 @@ test "Nested and multi-value routes list their interpretations"
   expect
     def f(n :: b, m :: Int) n
     f(3, 4)
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
     def f(n :: b, m :: Int) n
     f(3, 4)
@@ -164,35 +165,38 @@ test "An ambiguity is reported even when the value has no source text"
   expect
     def f(x | x) 1
     f(1 / 3)
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
     match 1 / 3
       (x | x) -> 1
     end
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
     (Box(n :: Rational) | Box(n :: Any)) = Box(1 / 3)
     n
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 # With more than two interpretations the message lists the first two, then counts the rest.
 test "Interpretations beyond the second are counted"
   b = abstract Int | Float | Rational
-  expect 3 .matches b fails "E_AMBIGUOUS_VALUE"
+  expect 3 .matches b fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect 3 .matches b fails "...and 1 other"
   c = abstract Int | Float | Rational | Float64 | Float32
-  expect 3 .matches c fails "E_AMBIGUOUS_VALUE"
+  expect 3 .matches c fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect 3 .matches c fails "...and 3 others"
 end
 
-test "A refinement member is listed when its predicate accepts the value"
+# A member accepts a designator only if every condition of the member holds, including a
+# refinement's predicate. With p = Int .where (n -> n > 5) and u = abstract p | Float, 7 is
+# accepted by both members and is ambiguous; 3 is accepted only by Float and selects it.
+test "A refinement member that accepts the designator is listed"
   p = Int .where (n -> n > (5 :: Int))
   u = abstract p | Float
   expect
     def f(n :: u) n
     f(7)
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
     def f(n :: u) n
     f(7)
@@ -212,19 +216,74 @@ test "A refinement member is listed when its predicate accepts the value"
   assert (7 :: p) .matches u
 end
 
-# A refinement whose predicate rejects the value is not offered as an interpretation,
-# but the call is still ambiguous: recognition does not run predicates.
-test "A refinement member that rejects the value is not listed"
+test "A refinement member that rejects the designator does not make it ambiguous"
   p = Int .where (n -> n > (5 :: Int))
   u = abstract p | Float
+  assert 3 .matches u
+  (x :: u) = 3
+  expect toString(u)(x) is "3 :: Float" :: String
+  def f(n :: u) toString(u)(n)
+  expect f(3) is "3 :: Float" :: String
+  g = (n :: u) -> toString(u)(n)
+  expect g(3) is "3 :: Float" :: String
   expect
-    def f(n :: u) n
-    f(3)
-  fails "E_AMBIGUOUS_VALUE"
+    match 3
+      (n :: u) -> toString(u)(n)
+    end
+  is "3 :: Float" :: String
+end
+
+test "A designator is ambiguous on every route when both members accept it"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  expect 7 .matches u fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
-    def f(n :: u) n
-    f(3)
-  fails "3 :: Float"
+    (x :: u) = 7
+    x
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    g = (n :: u) -> n
+    g(7)
+  fails "7 :: Float"
+  expect
+    match 7
+      (n :: u) -> n
+    end
+  fails "7 :: Int .where"
+end
+
+test "A union of refinements selects the one member that accepts the designator"
+  p = Int .where (n -> n > (5 :: Int))
+  q = Float .where (x -> x > (2 :: Float))
+  w = abstract p | q
+  # 7 satisfies both refinements, 3 only q, 1 neither.
+  expect 7 .matches w fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    def h(n :: w) n
+    h(7)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  assert 3 .matches w
+  def f(n :: w) toString(w)(n)
+  expect f(3) is "3 :: Float" :: String
+  assert not(1 .matches w)
+  expect
+    def h(n :: w) n
+    h(1)
+  fails "does not satisfy subset"
+  expect
+    (x :: w) = 1
+    x
+  fails "does not satisfy subset"
+end
+
+test "A concrete union with a refinement member follows the same rule"
+  p = Int .where (n -> n > (5 :: Int))
+  type Foo concrete p | Float?
+  expect
+    def f(n :: Foo) n
+    f(7)
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  assert 3 .matches Foo
 end
 
 test "A value that fails a refinement reports the failed predicate"

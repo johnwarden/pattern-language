@@ -171,7 +171,7 @@ export function valueText(
           !(error instanceof LanguageError) ||
           ![
             "E_PATTERN_MISMATCH",
-            "E_AMBIGUOUS_VALUE",
+            "E_AMBIGUOUS_VALUE_DESIGNATOR",
             "E_CONCRETE_TYPE_REQUIRED",
           ].includes(error.diagnostic.code)
         )

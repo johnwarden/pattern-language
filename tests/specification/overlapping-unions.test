@@ -58,7 +58,7 @@ test "Union text keeps :: when untagged print is ambiguous or a different value"
 
   expect
     parse(EitherFloat)("0.5")
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 
   expect
     parse(EitherFloat)("0.1")
@@ -71,7 +71,7 @@ test "Unannotated overlapping numeric values stay ambiguous"
   expect
     (x :: EitherFloat) = 0.5
     x
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "UnionType text distinguishes Float64 from Float"
@@ -88,7 +88,7 @@ test "Overlapping option unions construct; unannotated None is ambiguous"
     def U UnionType(Int?, String?)
     (x :: U) = :None
     x
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "Overlapping numeric and constructor unions construct"
@@ -105,7 +105,7 @@ test "Overlapping numeric and constructor unions construct"
     def U UnionType(type Int, type Float)
     (x :: U) = 3
     x
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "Same-space refinement unions reject without running predicates"
@@ -134,7 +134,7 @@ test "Repeated alternatives do not make a pattern alternative unambiguous"
   expect
     def f(x | x) 1
     f(1)
-  fails "E_AMBIGUOUS_VALUE"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "Overlapping abstract facet members retain spaces"

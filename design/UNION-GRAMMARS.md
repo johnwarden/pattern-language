@@ -52,7 +52,7 @@ implemented.
 
 Same-space refinement unions remain rejected. Alternatives written twice in a type
 declaration are one alternative: `type :A | :A` is `type :A`. Ambiguity belongs to a
-value that more than one member accepts, reported as `E_AMBIGUOUS_VALUE`.
+value that more than one member accepts, reported as `E_AMBIGUOUS_VALUE_DESIGNATOR`.
 
 [The bootstrap type reference](../TYPE-VALUES-BOOTSTRAP.md) documents working syntax.
 

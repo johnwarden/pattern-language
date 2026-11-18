@@ -345,32 +345,49 @@ export class Matcher<T> {
           },
         );
       case "union": {
-        const matches: Match<T>[] = [];
-        const accepting: Pattern<T>[] = [];
-        let end = pos;
+        const accepted: { choice: Pattern<T>; results: Match<T>[] }[] = [];
         const consider = function* (
           this: Matcher<T>,
           choice: Pattern<T>,
         ): Generator<ScanRequest<T>, void, Match<T>[]> {
           const results = yield { pattern: choice, items, position: pos };
-          if (results.length) {
-            accepting.push(choice);
-            for (const m of results) end = Math.max(end, m.end);
-          }
-          matches.push(...results);
+          if (results.length) accepted.push({ choice, results });
         };
-        // Remember which alternatives accepted the value, for E_AMBIGUOUS_VALUE.
         const done = () => {
-          if (accepting.length > 1 && end > pos)
-            this.ambiguities.push({
-              consumed: items.slice(pos, end),
-              choices: accepting,
-            });
-          return matches;
+          // Recognition matches a refinement by its base without running its predicate.
+          // Where that leaves more than one member, run each predicate once now and keep
+          // only the members that accept the value, so a member whose predicate rejects
+          // it never makes it ambiguous. If none accepts, the first stays so that
+          // selection reports its mismatch as it would for a lone refinement.
+          if (this.recognizing && accepted.length > 1) {
+            const accepting = accepted.filter(
+              ({ choice }) =>
+                choice.kind !== "ref" ||
+                !choice.dispatchBase ||
+                new Matcher(this.adapter).scan(choice, items, pos).length > 0,
+            );
+            accepted.splice(
+              0,
+              accepted.length,
+              ...(accepting.length ? accepting : [accepted[0]]),
+            );
+          }
+          // Remember which alternatives accepted the value, for E_AMBIGUOUS_VALUE_DESIGNATOR.
+          if (accepted.length > 1) {
+            const end = Math.max(
+              ...accepted.flatMap((x) => x.results.map((m) => m.end)),
+            );
+            if (end > pos)
+              this.ambiguities.push({
+                consumed: items.slice(pos, end),
+                choices: accepted.map((x) => x.choice),
+              });
+          }
+          return accepted.flatMap((x) => x.results);
         };
         if (p.preferred) {
           for (const choice of p.preferred) yield* consider.call(this, choice);
-          if (matches.length) return done();
+          if (accepted.length) return done();
         }
         for (const choice of p.choices)
           if (!p.preferred?.includes(choice))
@@ -799,18 +816,19 @@ export class Matcher<T> {
       throw new LanguageError(
         this.ambiguityMessage(matches.length),
         undefined,
-        { code: "E_AMBIGUOUS_VALUE", phase: "match" },
+        { code: "E_AMBIGUOUS_VALUE_DESIGNATOR", phase: "match" },
       );
     return matches[0];
   }
   /**
-   * Names the interpretations a union offered for the value it was ambiguous about,
+   * Names the interpretations a union offered for the designator it was ambiguous about,
    * from what the scan already recorded: nothing is matched again, so predicates and
    * defaults do not run twice and no work budget is spent. This only words an error
    * that is already decided, so any failure here falls back to the count.
    */
   private ambiguityMessage(count: number): string {
-    const generic = "ambiguous value: " + count + " interpretations match";
+    const generic =
+      "ambiguous value designator: " + count + " interpretations match";
     try {
       // The first ambiguous union whose alternatives account for the matches. Unions
       // in branches that later failed are recorded too; the count screens them out.
@@ -822,16 +840,6 @@ export class Matcher<T> {
       const types: string[] = [];
       for (const choice of found.choices) {
         if (choice.kind !== "ref" || !choice.describe) return generic;
-        // Recognition never ran refinement predicates, so it accepted members the
-        // value may not satisfy. Run each such predicate once, only to decide listing.
-        if (
-          this.recognizing &&
-          choice.dispatchBase &&
-          !new Matcher(this.adapter)
-            .scan(choice, found.consumed)
-            .some((m) => m.end === found.consumed.length)
-        )
-          continue;
         types.push(choice.describe());
       }
       if (!types.length) return generic;
@@ -840,7 +848,7 @@ export class Matcher<T> {
         .map((type) => "`" + value + " :: " + type + "`");
       const others = types.length - shown.length;
       return (
-        "ambiguous value " +
+        "ambiguous value designator " +
         value +
         ": please specify " +
         (others
