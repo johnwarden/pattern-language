@@ -12,11 +12,18 @@ start independent expressions. A [tight fraction literal](rational-literal-spaci
 is read as an atom.
 
 Each infix operator still applies to two successive argument packs.
+The Code grammar reads `(-(x))(y)`, the application tree for `x - y`,
+as subtraction. The one-pack form `-(x)` is negation. Binary subtraction
+cannot be partially applied. Use `y -> x - y` to save a function that
+subtracts from `x`.
+
 Exponentiation is the named prelude function `pow(base, exponent)` with
 two positional arguments in one pack. Infix `^` is available as an
 ordinary operator for individual languages built on the surface syntax.
+The surface reader groups `a * b ^ c` as `(a * b) ^ c`. A language that
+uses `^` for exponentiation needs `a * (b ^ c)` for the usual math grouping.
 See the [surface expression and pack rules](../GRAMMAR.md#one-surface-tree)
-and the [numeric prelude draft](https://github.com/johnwarden/pattern-language/blob/spec/numeric-semantics/specs/fixed-precision-numbers.md#exponentiation).
+and the [numeric prelude proposal in PR #86](https://github.com/johnwarden/pattern-language/pull/86).
 
 ## Precedence and associativity
 
@@ -24,22 +31,42 @@ and the [numeric prelude draft](https://github.com/johnwarden/pattern-language/b
 | --- | --- | --- |
 | Multiplicative | `*`, `/`, `%` | Left |
 | Shared | `+`, `-` | Left |
-| Shared | Other operators, including dot-infix names and `::` | Right |
-| Weakest | `=`, `<`, `>`, `->`, and punctuation ending in `=` | Right |
+| Shared | All remaining operators, including dot-infix names and `::` | Right |
+| Ordering | `<`, `<=`, `>`, `>=` | Right |
+| Equality | `==`, `!=`, `===`, `!==` | Right |
+| Binding and arrow | `=`, `->` | Right |
+
+The special tiers list individual operators. Operators such as `=>`,
+`<-`, `<<`, `|>`, `>>` and `+=` use the shared tier. Arithmetic binds before
+ordering, and ordering binds before equality. `->` binds as loosely as
+`=` so ordinary lambda bodies such as `x + 1` and `x == y` can follow the
+arrow directly, including in `f = x -> x + 1`.
 
 Tighter expressions form operands first. Within each unparenthesized
 chain at one tier, operators must have the same associativity. If two
 neighbors in that chain disagree, report a syntax error at the second
-operator. The conflicting operators are visible in the suggested grouping. When the chain has two operators at
-that tier, show both parenthesized spellings. A tighter expression between the operators
-still counts as a single operand. For example, `a - b * c .and d` has
-the conflicting shared-tier operators `-` and `.and`.
+operator. Show the conflicting operators in the suggested grouping. When
+the chain has two operators at that tier, show both parenthesized spellings.
+A tighter expression between the operators still counts as a single operand.
+For example, `a - b * c .and d` has the conflicting shared-tier operators
+`-` and `.and`.
 Dot-infix names such as `.div` and `.flDiv` follow the shared right-associative
-rule. Caret `^` also follows that rule.
+rule. The expression `a .div b * c` groups as `a .div (b * c)`.
+The expression `a / b * c` groups as `(a / b) * c`. Caret `^` also follows
+the shared rule.
+
+Use `(a == b) .and (c == d)` to combine the results of two comparisons.
+Dedicated logical operators are an open design choice. A possible extension
+would give `&&` and `||` tiers below equality and above `=` and `->`, with
+`&&` tighter than `||`. For example, `a == b && c == d || ready` would
+group as `((a == b) && (c == d)) || ready`. A future proposal would also
+specify whether and how those operators short-circuit.
 
 Success cases compare direct Code quotations. Parentheses around the first
-quote delimit it before the assertion's `===`. Rejection cases read strings
-inside the assertion so malformed Code can produce the expected diagnostic.
+quote delimit it before the assertion's `===`. Cases with multi-character
+operators that start with `<` or `>` read strings through `parse(Code)` to
+exercise the ordinary Code reader. Rejection cases also read strings inside
+the assertion so malformed Code can produce the expected diagnostic.
 
 ## Printing expression trees
 
@@ -72,7 +99,7 @@ test "Expression printing preserves infix grouping"
 end
 
 test "Multiplication and division bind more tightly than addition and subtraction"
-  expect 1 + 2 * 3 is 7
+  expect 1 + 2 * 3 is 7 :: Rational
   expect 2 * 3 + 4 is 10 :: Rational
   expect 20 / 5 + 2 is 6 :: Rational
   expect 10 - 6 / 3 is 8 :: Rational
@@ -97,6 +124,18 @@ test "Default operators associate right and take multiplicative operands"
   assert (Code` a .and b .or c) === Code` and(a)(or(b)(c))
   assert (Code` a .and b * c) === Code` and(a)(*(b)(c))
   assert (Code` a * b .and c) === Code` and(*(a)(b))(c)
+  assert (Code` a .div b * c) === Code` a .div (b * c)
+  assert (Code` a .flDiv b / c) === Code` a .flDiv (b / c)
+  assert (Code` a .div b .div c) === Code` a .div (b .div c)
+end
+
+test "Other punctuation uses the shared tier"
+  assert (Code` a => b => c) === Code` a => (b => c)
+  assert parse(Code)("a <- b * c") === parse(Code)("a <- (b * c)")
+  assert parse(Code)("a << b > c") === parse(Code)("(a << b) > c")
+  assert (Code` a |> b == c) === Code` (a |> b) == c
+  assert parse(Code)("a >> b >= c") === parse(Code)("(a >> b) >= c")
+  assert (Code` a += b == c) === Code` (a += b) == c
 end
 
 test "Same-tier operators with different associativity ask for grouping"
@@ -105,6 +144,7 @@ test "Same-tier operators with different associativity ask for grouping"
   expect parse(Code)("a - b .and c - d") fails "Parentheses required (mixed associativity)."
   expect parse(Code)("a - b * c .and d") fails "Parentheses required. Write `(a - b * c) .and d` or `a - (b * c .and d)` (mixed associativity)."
   expect parse(Code)("x + 1 :: Int") fails "Parentheses required. Write `(x + 1) :: Int` or `x + (1 :: Int)` (mixed associativity)."
+  expect parse(Code)("a .div b + c") fails "Parentheses required"
 
   assert (Code` (a - b) .and c) === Code` and(-(a)(b))(c)
   assert (Code` a - (b .and c)) === Code` -(a)(and(b)(c))
@@ -126,20 +166,30 @@ test "An inline refinement predicate groups its arrow"
   assert (Code` T .where p -> q) === Code` ->(where(T)(p))(q)
 end
 
-test "Bindings, arrows and comparisons take arithmetic operands"
+test "Arithmetic binds before ordering and ordering binds before equality"
   assert (Code` a + b == c + d) === Code` ==(+(a)(b))(+(c)(d))
   assert (Code` a - b == c .and d) === Code` ==(-(a)(b))(and(c)(d))
-  assert (Code` a == b .and c == d) === Code` ==(a)(==(and(b)(c))(d))
   assert (Code` a == b != c) === Code` ==(a)(!=(b)(c))
   assert (Code` a + b === c * d) === Code` ===(+(a)(b))(*(c)(d))
   assert (Code` a === b !== c) === Code` ===(a)(!==(b)(c))
   assert (Code` a + b < c * d) === Code` <(+(a)(b))(*(c)(d))
-  assert (Code` a + b <= c * d) === Code` <=(+(a)(b))(*(c)(d))
+  assert parse(Code)("a + b <= c * d") === parse(Code)("(a + b) <= (c * d)")
   assert (Code` a + b > c * d) === Code` >(+(a)(b))(*(c)(d))
-  assert (Code` a + b >= c * d) === Code` >=(+(a)(b))(*(c)(d))
+  assert parse(Code)("a + b >= c * d") === parse(Code)("(a + b) >= (c * d)")
+  assert (Code` a + b < c == d) === Code` ==(<(+(a)(b))(c))(d)
+  assert parse(Code)("a == b >= c * d") === parse(Code)("a == (b >= (c * d))")
+end
+
+test "A dot-infix connective takes grouped comparisons"
+  assert (Code` a == b .and c == d) === Code` ==(a)(==(and(b)(c))(d))
+  assert (Code` (a == b) .and (c == d)) === Code` and(==(a)(b))(==(c)(d))
+end
+
+test "Bindings and arrows take complete arithmetic and comparison expressions"
   assert (Code` r = a + b == c * d) === Code` =(r)(==(+(a)(b))(*(c)(d)))
   assert (Code` f = x -> x + 1) === Code` =(f)(->(x)(+(x)(1)))
   assert (Code` x -> x == y) === Code` ->(x)(==(x)(y))
+  assert (Code` x -> y -> x + y) === Code` ->(x)(->(y)(+(x)(y)))
 end
 
 test "Parentheses override precedence and associativity"
@@ -171,6 +221,21 @@ test "Prefix negation and complete application packs keep their existing groupin
   assert (Code` f(a - b, label: c .and d)) === Code` f(-(a)(b), label: and(c)(d))
 end
 
+test "One minus pack negates and two packs subtract"
+  x = 7 :: Rational
+  y = 2 :: Rational
+  expect (-(x))(y) is 5 :: Rational
+
+  negative = -(x)
+  expect negative is
+    -7 :: Rational
+  end
+
+  subtractFromX = n -> x - n
+  expect subtractFromX(y) is 5 :: Rational
+  assert (Code` x - y) === Code` (-(x))(y)
+end
+
 test "Power is a regular call and caret is ordinary infix syntax"
   assert (Code` pow(2, 3) * 4) === Code` *(pow(2, 3))(4)
   assert (Code` a ^ b) === Code` ^(a)(b)
@@ -181,7 +246,6 @@ end
 test "Remainder shares the multiplicative tier"
   assert (Code` a % b * c) === Code` *(%(a)(b))(c)
   assert (Code` a + b % c) === Code` +(a)(%(b)(c))
-  expect parse(Code)("a .div b + c") fails "Parentheses required"
 end
 
 test "Formatting preserves grouping or rejects malformed infix spacing"
