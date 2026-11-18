@@ -70,6 +70,27 @@ domain-specific expressions.
 If `&&` and `||` are added, they follow the same right-associative rule.
 Use `(a == b) && (c == d)` to compare both pairs before applying `&&`.
 
+## Ascriptions in infix chains
+
+In an accepted chain starting with `x :: T`, right association puts any
+following unparenthesized operator inside the type operand. Group the
+whole ascription to use it as the left operand of `=` or `->`.
+
+| Source | Right-associated reading | Spelling with a typed left operand |
+| --- | --- | --- |
+| `x :: Int = 5` | `x :: (Int = 5)` | `(x :: Int) = 5` |
+| `x :: Int -> 5` | `x :: (Int -> 5)` | `(x :: Int) -> 5` |
+| `f :: Int => Int = x -> x ^ 2` | `f :: (Int => (Int = (x -> (x ^ 2))))` | `(f :: Int => Int) = x -> x ^ 2` |
+
+The last example assumes a future grammar interprets `Int => Int` as
+a function type. Inside `(f :: Int => Int)`, right association already
+groups `Int => Int` as the type operand. The binding's right operand
+already groups as `x -> (x ^ 2)`.
+
+With arithmetic, `x + y :: Int` ascribes `y`, and `(x + y) :: Int`
+ascribes the sum. In `x - y :: Int`, the `-` rule requires a choice
+between `x - (y :: Int)` and `(x - y) :: Int`.
+
 ## Printing
 
 Keep parentheses around left infix children when printing infix syntax.
@@ -102,6 +123,7 @@ test "Subtraction, division, and remainder require explicit infix right operands
   expect parse(Code)("a % b % c") fails "Parentheses required between `%` and `%`"
   expect parse(Code)("a - b ^ c") fails "Parentheses required between `-` and `^`"
   expect parse(Code)("a - b .div c") fails "Parentheses required between `-` and `.div`"
+  expect parse(Code)("x - y :: Int") fails "Parentheses required between `-` and `::`"
 end
 
 test "Arithmetic and comparisons require grouping in either order"
@@ -139,25 +161,46 @@ test "Accepted infix chains still associate right"
   assert parse(Code)("(a * b) == (c + d)") == parse(Code)("==(*(a)(b))(+(c)(d))")
 end
 
-test "Printed infix Code shows the grouping of arithmetic operands"
+test "Ascriptions follow ordinary right association"
+  assert parse(Code)("x :: Int = 5") == parse(Code)("::(x)(=(Int)(5))")
+  assert parse(Code)("(x :: Int) = 5") == parse(Code)("=(::(x)(Int))(5)")
+  assert parse(Code)("x :: Int -> 5") == parse(Code)("::(x)(->(Int)(5))")
+  assert parse(Code)("(x :: Int) -> 5") == parse(Code)("->(::(x)(Int))(5)")
+
+  assert parse(Code)("f :: Int => Int = x -> x ^ 2") == parse(Code)("::(f)(=>(Int)(=(Int)(->(x)(^(x)(2)))))")
+  assert parse(Code)("(f :: Int => Int) = x -> x ^ 2") == parse(Code)("=(::(f)(=>(Int)(Int)))(->(x)(^(x)(2)))")
+
+  assert parse(Code)("x + y :: Int") == parse(Code)("+(x)(::(y)(Int))")
+  assert parse(Code)("(x + y) :: Int") == parse(Code)("::(+(x)(y))(Int)")
+  assert parse(Code)("x - (y :: Int)") == parse(Code)("-(x)(::(y)(Int))")
+  assert parse(Code)("(x - y) :: Int") == parse(Code)("::(-(x)(y))(Int)")
+end
+
+test "Printed infix Code shows the grouping of arithmetic operands and ascriptions"
   right = parse(Code)("+(a)(*(b)(c))")
   left = parse(Code)("*(+(a)(b))(c)")
   sameGroup = parse(Code)("-(a)(+(b)(c))")
   repeatedDivision = parse(Code)("/(a)(/(b)(c))")
   comparison = parse(Code)("==(a)(+(b)(c))")
   wordOperator = parse(Code)("a .div b * c")
+  typedBinding = parse(Code)("=(::(x)(Int))(5)")
+  ascribedSubtrahend = parse(Code)("-(x)(::(y)(Int))")
   expect toString(Code)(right) is "a + (b * c)"
   expect toString(Code)(left) is "(a + b) * c"
   expect toString(Code)(sameGroup) is "a - (b + c)"
   expect toString(Code)(repeatedDivision) is "a / (b / c)"
   expect toString(Code)(comparison) is "a == (b + c)"
   expect toString(Code)(wordOperator) is "div(a)(b * c)"
+  expect toString(Code)(typedBinding) is "(x :: Int) = 5"
+  expect toString(Code)(ascribedSubtrahend) is "x - (y :: Int)"
   assert parse(Code)(toString(Code)(right)) == right
   assert parse(Code)(toString(Code)(left)) == left
   assert parse(Code)(toString(Code)(sameGroup)) == sameGroup
   assert parse(Code)(toString(Code)(repeatedDivision)) == repeatedDivision
   assert parse(Code)(toString(Code)(comparison)) == comparison
   assert parse(Code)(toString(Code)(wordOperator)) == wordOperator
+  assert parse(Code)(toString(Code)(typedBinding)) == typedBinding
+  assert parse(Code)(toString(Code)(ascribedSubtrahend)) == ascribedSubtrahend
 end
 ```
 
