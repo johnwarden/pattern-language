@@ -55,6 +55,7 @@ def UnionTypeExpression type :unionType pattern :: PatternBody
 def IfExpression type :if condition :: Expression consequent :: Body :else alternative :: Body
 def MatchExpression type :match subject :: Expression arms :: Arms`;
 const syntaxAdapter: Adapter<Syntax> = {
+  source: (fields) => fields.map((f) => normal(f.value)).join(" "),
   equal: (a, b) => syntaxKey(a) === syntaxKey(b),
   decompose: (n) =>
     n.kind === "apply"
@@ -237,6 +238,7 @@ export class Grammar {
                   kind: "ref",
                   key: "grammar:" + n.name,
                   name: n.name,
+                  describe: () => n.name,
                   resolve: () => this.reference(n.name),
                 };
           if (n.kind === "literal")

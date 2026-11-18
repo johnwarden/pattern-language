@@ -160,14 +160,14 @@ test "Overlapping constructor alternatives are ambiguous in a binding"
   expect
     (Box(n :: Int) | Box(n :: Float)) = Box(3)
     n
-  fails "ambiguous pattern"
+  fails "E_AMBIGUOUS_VALUE"
 end
 
 test "Overlapping constructor alternatives are ambiguous as a function parameter"
   expect
     def f((Box(n :: Int) | Box(n :: Float))) n
     f(Box(3))
-  fails "ambiguous pattern"
+  fails "E_AMBIGUOUS_VALUE"
 end
 
 test "Overlapping constructor alternatives are ambiguous in a match arm"
@@ -175,7 +175,7 @@ test "Overlapping constructor alternatives are ambiguous in a match arm"
     match Box(3)
       (Box(n :: Int) | Box(n :: Float)) -> n
     end
-  fails "ambiguous pattern"
+  fails "E_AMBIGUOUS_VALUE"
 end
 
 test "Overlapping constructor alternatives are rejected as a macro parameter"

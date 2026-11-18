@@ -52,7 +52,12 @@ import {
   descriptionKey,
   term,
 } from "./type-data.ts";
-import { valueText, parseValueText } from "./value-text.ts";
+import {
+  valueText,
+  parseValueText,
+  sourceText,
+  typeExpressionText,
+} from "./value-text.ts";
 import type { TextDomain } from "./value-text.ts";
 import { Grammar, DEFAULT_GRAMMAR, syntaxGrammars } from "./grammar.ts";
 import {
@@ -181,6 +186,10 @@ const valueMatcher = () =>
   new Matcher<Value>({
     equal,
     describe: display,
+    source: (fields) =>
+      sourceText(
+        fields.length === 1 ? fields[0].value : { kind: "pack", body: fields },
+      ),
     collection: (body) => ({ kind: "term", head: valSymbol("[]"), body }),
     row: (value) => {
       let raw = unwrap(value);
@@ -3694,6 +3703,7 @@ export class Interpreter {
       kind: "ref",
       key: type.key,
       name: type.name,
+      describe: () => typeExpressionText(type),
       get facet() {
         return type.facet;
       },

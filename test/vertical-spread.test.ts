@@ -169,7 +169,7 @@ test("bad vertical elements are rejected with their source location", () => {
 test("competing row partitions are errors rather than greedy selection", () => {
   rejects(
     'def Ambiguous type\n a :: String*\n ...\n b :: String*\n ...\nend\nAmbiguous`\n "x"\nend',
-    "E_AMBIGUOUS_PATTERN",
+    "E_AMBIGUOUS_VALUE",
   );
 });
 

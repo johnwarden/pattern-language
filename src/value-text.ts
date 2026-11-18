@@ -171,7 +171,7 @@ export function valueText(
           !(error instanceof LanguageError) ||
           ![
             "E_PATTERN_MISMATCH",
-            "E_AMBIGUOUS_PATTERN",
+            "E_AMBIGUOUS_VALUE",
             "E_CONCRETE_TYPE_REQUIRED",
           ].includes(error.diagnostic.code)
         )
@@ -472,48 +472,7 @@ export function valueText(
         return parseExpression(alias);
       throw error;
     }
-    function patternSyntax(v: Value, head = false): Syntax {
-      if (v.kind === "symbol")
-        return {
-          kind: "symbol",
-          name: v.name,
-          quoted: head
-            ? !/^\p{Lu}/u.test(v.name) && !["|", "[]", "{}"].includes(v.name)
-            : !isSelfEvaluating(v.name) && !referenceNames.has(v.name),
-        };
-      if (v.kind === "literal") return syntax(v);
-      if (v.kind === "term") {
-        const head = patternSyntax(v.head, true);
-        if (v.head.kind === "symbol" && v.head.name === "Literal")
-          return {
-            kind: "apply",
-            head,
-            body: v.body.map((f) => ({
-              ...f,
-              value:
-                f.label === "**"
-                  ? { kind: "symbol" as const, name: "**", quoted: false }
-                  : f.value.kind === "symbol"
-                    ? {
-                        kind: "symbol" as const,
-                        name: f.value.name,
-                        quoted: !isSelfEvaluating(f.value.name),
-                      }
-                    : syntax(f.value),
-            })),
-          };
-        return {
-          kind: "apply",
-          head:
-            head.kind === "symbol" && ["[]", "{}"].includes(head.name)
-              ? { ...head, quoted: false }
-              : head,
-          body: v.body.map((f) => ({ ...f, value: patternSyntax(f.value) })),
-        };
-      }
-      throw new LanguageError("invalid structural type description");
-    }
-    return patternSyntax(data);
+    return descriptionSyntax(data, referenceNames, syntax);
   }
   const root = syntax(value, true);
   const grouped =
@@ -532,6 +491,201 @@ export function valueText(
       }));
   const text = normal(root);
   return grouped ? "(" + text + ")" : text;
+}
+
+/** A structural type description as the pattern expression that denotes it. */
+function descriptionSyntax(
+  v: Value,
+  referenceNames: ReadonlySet<string>,
+  literal: (v: Value) => Syntax,
+  rewrite?: (v: Value, recurse: (v: Value) => Syntax) => Syntax | undefined,
+): Syntax {
+  const go = (v: Value, head = false): Syntax => {
+    if (v.kind === "symbol")
+      return {
+        kind: "symbol",
+        name: v.name,
+        quoted: head
+          ? !/^\p{Lu}/u.test(v.name) && !["|", "[]", "{}"].includes(v.name)
+          : !isSelfEvaluating(v.name) && !referenceNames.has(v.name),
+      };
+    if (v.kind === "literal") return literal(v);
+    if (v.kind === "term") {
+      const rewritten = rewrite?.(v, (x) => go(x));
+      if (rewritten) return rewritten;
+      const headSyntax = go(v.head, true);
+      if (v.head.kind === "symbol" && v.head.name === "Literal")
+        return {
+          kind: "apply",
+          head: headSyntax,
+          body: v.body.map((f) => ({
+            ...f,
+            value:
+              f.label === "**"
+                ? { kind: "symbol" as const, name: "**", quoted: false }
+                : f.value.kind === "symbol"
+                  ? {
+                      kind: "symbol" as const,
+                      name: f.value.name,
+                      quoted: !isSelfEvaluating(f.value.name),
+                    }
+                  : literal(f.value),
+          })),
+        };
+      return {
+        kind: "apply",
+        head:
+          headSyntax.kind === "symbol" && ["[]", "{}"].includes(headSyntax.name)
+            ? { ...headSyntax, quoted: false }
+            : headSyntax,
+        body: v.body.map((f) => ({ ...f, value: go(f.value) })),
+      };
+    }
+    throw new LanguageError("invalid structural type description");
+  };
+  return go(v);
+}
+const literalSyntax = (v: Value): Syntax => {
+  const raw = unwrap(v);
+  if (raw.kind !== "literal")
+    throw new LanguageError("expected a literal", undefined, {
+      code: "E_VALUE_SERIALIZATION",
+    });
+  return typeof raw.value === "string"
+    ? { kind: "literal", value: raw.value }
+    : typeof raw.value === "number" || isRational(raw.value)
+      ? syntaxFromNumeric(raw.value)
+      : { kind: "literal", value: raw.value };
+};
+/** The alternatives of a union description (`a | b | c`), left to right. */
+const unionAlternatives = (v: Value): Value[] | undefined => {
+  if (
+    v.kind !== "term" ||
+    v.head.kind !== "term" ||
+    v.head.head.kind !== "symbol" ||
+    v.head.head.name !== "|" ||
+    v.head.body.length !== 1 ||
+    v.body.length !== 1
+  )
+    return;
+  const right = v.body[0].value;
+  return [v.head.body[0].value, ...(unionAlternatives(right) ?? [right])];
+};
+/**
+ * A type as the type expression an author would write: `String?`, `Float*`,
+ * `Box(Int)`. Local names are never used, so the text means the same anywhere.
+ * A type without a structural description is named by its own display name.
+ */
+export function typeExpressionText(type: TypeValue): string {
+  let description: Value;
+  try {
+    description = typeDescription(type);
+  } catch (error) {
+    if (
+      error instanceof LanguageError &&
+      error.diagnostic.code === "E_TYPE_SERIALIZATION"
+    )
+      return type.name;
+    throw error;
+  }
+  const sugar = (
+    v: Value,
+    recurse: (v: Value) => Syntax,
+  ): Syntax | undefined => {
+    const alternatives = unionAlternatives(v);
+    if (alternatives?.length === 2) {
+      const none = alternatives.findIndex(
+        (a) => a.kind === "symbol" && a.name === "None",
+      );
+      if (none >= 0)
+        return {
+          kind: "postfix",
+          operator: "?",
+          operand: recurse(alternatives[1 - none]),
+        };
+    }
+    if (
+      v.kind === "term" &&
+      v.head.kind === "symbol" &&
+      v.head.name === "[]" &&
+      v.body.length === 1
+    ) {
+      const repeat = v.body[0].value;
+      if (
+        repeat.kind === "term" &&
+        repeat.head.kind === "symbol" &&
+        repeat.head.name === "Repeat" &&
+        repeat.body.length === 1
+      )
+        return {
+          kind: "postfix",
+          operator: "*",
+          operand: recurse(repeat.body[0].value),
+        };
+    }
+  };
+  return normal(
+    descriptionSyntax(description, new Set(), literalSyntax, sugar),
+  );
+}
+/**
+ * A value as the source that writes it, for diagnostics: symbols keep their colon
+ * and implicit type tags are dropped. Fails with E_VALUE_SERIALIZATION when the
+ * value has no such text or is too large to quote in a message.
+ */
+export function sourceText(value: Value, limit = 80): string {
+  let nodes = 0;
+  const tooLarge = () =>
+    new LanguageError("value is too large to quote", undefined, {
+      code: "E_VALUE_SERIALIZATION",
+    });
+  const syntax = (v: Value): Syntax => {
+    if (++nodes > limit) throw tooLarge();
+    const raw = unwrap(v);
+    switch (raw.kind) {
+      case "literal":
+        return literalSyntax(raw);
+      case "symbol":
+        return {
+          kind: "symbol",
+          name: raw.name,
+          quoted: !isCanonicalAtom(raw.name),
+        };
+      case "code":
+        return raw.tree;
+      case "type":
+        return parseExpression(typeExpressionText(raw));
+      case "pack":
+        return {
+          kind: "pack",
+          body: raw.body.map((f) => ({ ...f, value: syntax(f.value) })),
+        };
+      case "term": {
+        const head = unwrap(raw.head);
+        return {
+          kind: "apply",
+          head:
+            head.kind === "symbol"
+              ? { kind: "symbol", name: head.name, quoted: false }
+              : syntax(head),
+          body: raw.body.map((f) => ({
+            ...f,
+            value:
+              f.label === "**"
+                ? { kind: "symbol" as const, name: "**", quoted: false }
+                : syntax(f.value),
+          })),
+        };
+      }
+      default:
+        throw new LanguageError("this value has no source text", undefined, {
+          code: "E_VALUE_SERIALIZATION",
+        });
+    }
+  };
+  const text = normal(syntax(value));
+  if (text.length > limit || text.includes("\n")) throw tooLarge();
+  return text;
 }
 
 /** Decodes the small data-constructor algebra; it has no evaluator or environment. */

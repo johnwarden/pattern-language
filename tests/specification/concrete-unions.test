@@ -36,5 +36,5 @@ test "An explicit concrete member identifies an otherwise ambiguous branch"
   expect
     (ambiguous :: MyType) = :None
     ambiguous
-  fails "E_AMBIGUOUS_PATTERN"
+  fails "E_AMBIGUOUS_VALUE"
 end

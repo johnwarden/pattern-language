@@ -138,8 +138,8 @@ test("type construction sorts alternatives without redefining ordinary tree equa
   );
   assert.equal(run("Type(:(B | A)) == (type :A | :B)"), "True");
   assert.equal(run(":(A | B) == :(B | A)"), "False");
-  rejects("def Bad type :A | :A\n0", "E_AMBIGUOUS_PATTERN");
-  rejects("t = type :A | :A\n0", "E_AMBIGUOUS_PATTERN");
+  rejects("def Bad type :A | :A\n0", "E_AMBIGUOUS_VALUE");
+  rejects("t = type :A | :A\n0", "E_AMBIGUOUS_VALUE");
 });
 
 test("failed submissions roll back generic declaration products", () => {

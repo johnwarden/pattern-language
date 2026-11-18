@@ -256,7 +256,7 @@ export function typeDescription(
             throw new LanguageError(
               "ambiguous type pattern: duplicate alternatives",
               undefined,
-              { code: "E_AMBIGUOUS_PATTERN", phase: "declaration" },
+              { code: "E_AMBIGUOUS_VALUE", phase: "declaration" },
             );
           const ordered = entries.map(([, value]) => value);
           return ordered.length < 2

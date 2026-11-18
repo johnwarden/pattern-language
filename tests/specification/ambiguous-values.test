@@ -1,0 +1,241 @@
+# An ambiguous value is reported as E_AMBIGUOUS_VALUE however the expected type reaches
+# it (specs/approved/ambiguous-values.md). The message lists each interpretation as
+# `value :: Type`, written as source: the value as source text and the member as a type
+# expression. Only the interpretation substrings are pinned, not the "please specify"
+# wording.
+test "An ambiguous numeric literal lists its interpretations"
+  b = abstract Int | Float
+  expect 3 .matches b fails "E_AMBIGUOUS_VALUE"
+  expect 3 .matches b fails "3 :: Int"
+  expect 3 .matches b fails "3 :: Float"
+
+  expect
+    (x :: b) = 3
+    x
+  fails "E_AMBIGUOUS_VALUE"
+  expect
+    (x :: b) = 3
+    x
+  fails "3 :: Int"
+  expect
+    (x :: b) = 3
+    x
+  fails "3 :: Float"
+end
+
+test "An ambiguous absence between peer options is an ambiguous value"
+  type Foo concrete String? | Float?
+  expect
+    (x :: Foo) = :None
+    x
+  fails "E_AMBIGUOUS_VALUE"
+  expect
+    (x :: Foo) = :None
+    x
+  fails ":None :: String?"
+  expect
+    (x :: Foo) = :None
+    x
+  fails ":None :: Float?"
+end
+
+test "Each suggested interpretation resolves the ambiguity when pasted back"
+  b = abstract Int | Float
+  type Foo concrete String? | Float?
+  expect
+    (x :: b) = 3 :: Int
+    x
+  is 3 :: Int
+  expect
+    (x :: b) = 3 :: Float
+    x
+  is 3 :: Float
+  assert (3 :: Int) .matches b
+  assert (3 :: Float) .matches b
+  expect
+    (x :: Foo) = (:None :: String?)
+    x
+  is (None :: String?) :: Foo
+  expect
+    (x :: Foo) = (:None :: Float?)
+    x
+  is (None :: Float?) :: Foo
+end
+
+test "Suggestions name each member as a type expression"
+  u = abstract Int* | Float*
+  expect [1, 2] .matches u fails "E_AMBIGUOUS_VALUE"
+  expect [1, 2] .matches u fails "[1, 2] :: Int*"
+  expect [1, 2] .matches u fails "[1, 2] :: Float*"
+  type Opt concrete Int? | Float?
+  expect
+    (x :: Opt) = :None
+    x
+  fails ":None :: Int?"
+  expect
+    (x :: Opt) = :None
+    x
+  fails ":None :: Float?"
+end
+
+test "Single-value routes report the same ambiguity"
+  b = abstract Int | Float
+  expect
+    def f(n :: b) n
+    f(3)
+  fails "E_AMBIGUOUS_VALUE"
+  expect
+    def f(n :: b) n
+    f(3)
+  fails "3 :: Int"
+  expect
+    def f(n :: b) n
+    f(3)
+  fails "3 :: Float"
+  expect
+    g = (n :: b) -> n
+    g(3)
+  fails "3 :: Int"
+  expect
+    g = (n :: b) -> n
+    g(3)
+  fails "3 :: Float"
+  expect
+    match 3
+      (n :: b) -> n
+    end
+  fails "3 :: Int"
+  expect
+    match 3
+      (n :: b) -> n
+    end
+  fails "3 :: Float"
+end
+
+test "Nested and multi-value routes list their interpretations"
+  b = abstract Int | Float
+  expect
+    def f(n :: b, m :: Int) n
+    f(3, 4)
+  fails "E_AMBIGUOUS_VALUE"
+  expect
+    def f(n :: b, m :: Int) n
+    f(3, 4)
+  fails "3 :: Int"
+  expect
+    def f(n :: b, m :: Int) n
+    f(3, 4)
+  fails "3 :: Float"
+  expect
+    (x :: b, y :: Int) = (3, 4)
+    x
+  fails "3 :: Int"
+  expect
+    (x :: b, y :: Int) = (3, 4)
+    x
+  fails "3 :: Float"
+  expect
+    (Box(x :: b)) = Box(3)
+    x
+  fails "3 :: Int"
+  expect
+    (Box(x :: b)) = Box(3)
+    x
+  fails "3 :: Float"
+  expect
+    (xs :: b*) = [3, 4]
+    xs
+  fails "3 :: Int"
+  expect
+    (xs :: b*) = [3, 4]
+    xs
+  fails "3 :: Float"
+  expect
+    (x :: b?) = 3
+    x
+  fails "3 :: Int"
+  expect
+    (x :: b?) = 3
+    x
+  fails "3 :: Float"
+end
+
+test "An ambiguity is reported even when the value has no source text"
+  expect
+    def f(x | x) 1
+    f(1 / 3)
+  fails "E_AMBIGUOUS_VALUE"
+  expect
+    match 1 / 3
+      (x | x) -> 1
+    end
+  fails "E_AMBIGUOUS_VALUE"
+  expect
+    (Box(n :: Rational) | Box(n :: Any)) = Box(1 / 3)
+    n
+  fails "E_AMBIGUOUS_VALUE"
+end
+
+# With more than two interpretations the message lists the first two, then counts the rest.
+test "Interpretations beyond the second are counted"
+  b = abstract Int | Float | Rational
+  expect 3 .matches b fails "E_AMBIGUOUS_VALUE"
+  expect 3 .matches b fails "...and 1 other"
+  c = abstract Int | Float | Rational | Float64 | Float32
+  expect 3 .matches c fails "E_AMBIGUOUS_VALUE"
+  expect 3 .matches c fails "...and 3 others"
+end
+
+test "A refinement member is listed when its predicate accepts the value"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  expect
+    def f(n :: u) n
+    f(7)
+  fails "E_AMBIGUOUS_VALUE"
+  expect
+    def f(n :: u) n
+    f(7)
+  fails "7 :: Float"
+  expect
+    def f(n :: u) n
+    f(7)
+  fails "7 :: Int .where"
+  expect
+    (x :: u) = 7
+    x
+  fails "7 :: Int .where"
+  expect
+    def f(n :: u) n
+    f(7 :: Int .where (n -> n > (5 :: Int)))
+  is 7
+  assert (7 :: p) .matches u
+end
+
+# A refinement whose predicate rejects the value is not offered as an interpretation,
+# but the call is still ambiguous: recognition does not run predicates.
+test "A refinement member that rejects the value is not listed"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  expect
+    def f(n :: u) n
+    f(3)
+  fails "E_AMBIGUOUS_VALUE"
+  expect
+    def f(n :: u) n
+    f(3)
+  fails "3 :: Float"
+end
+
+test "A value that fails a refinement reports the failed predicate"
+  p = Int .where (n -> n > (5 :: Int))
+  u = abstract p | Float
+  expect
+    def f(n :: u) n
+    f(3 :: p)
+  fails "E_PATTERN_MISMATCH"
+  expect
+    def f(n :: u) n
+    f(3 :: p)
+  fails "value does not satisfy subset (n -> n > 5 :: Int)"
+end

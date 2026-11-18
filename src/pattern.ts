@@ -70,6 +70,8 @@ export type Pattern<T> =
       dispatchIdentity?: () => string;
       facet?: boolean;
       wrappedPrimitive?: boolean;
+      /** The reference as an author would write it, for ambiguity diagnostics. */
+      describe?: () => string;
     }
   | {
       kind: "map";
@@ -95,6 +97,8 @@ export type Pattern<T> =
     };
 export interface Adapter<T> {
   describe?: (value: T) => string;
+  /** The fields an alternative consumed as source text, for ambiguity diagnostics. */
+  source?: (fields: Field<T>[]) => string;
   equal: (a: T, b: T) => boolean;
   decompose: (value: T) => { head: T; body: Field<T>[] } | undefined;
   rebuild: (value: T, head: T, body: Field<T>[]) => T;
@@ -112,6 +116,12 @@ export class Mismatch extends LanguageError {
       ...details,
     });
   }
+}
+/** A union that more than one of its alternatives accepted at one position. */
+interface Ambiguity<T> {
+  /** The fields the accepting alternatives consumed. */
+  consumed: Field<T>[];
+  choices: Pattern<T>[];
 }
 export interface MatchFailure {
   message: string;
@@ -142,6 +152,7 @@ export class Matcher<T> {
     Map<T | undefined, Set<number>>
   >();
   private recognizing = false;
+  private ambiguities: Ambiguity<T>[] = [];
   // A recognition-only hole is never returned to the caller or passed to tests.
   // It preserves an omitted constructed field through annotated destructuring.
   private readonly deferredDefault = {} as T;
@@ -335,17 +346,38 @@ export class Matcher<T> {
         );
       case "union": {
         const matches: Match<T>[] = [];
+        const accepting: Pattern<T>[] = [];
+        let end = pos;
+        const consider = function* (
+          this: Matcher<T>,
+          choice: Pattern<T>,
+        ): Generator<ScanRequest<T>, void, Match<T>[]> {
+          const results = yield { pattern: choice, items, position: pos };
+          if (results.length) {
+            accepting.push(choice);
+            for (const m of results) end = Math.max(end, m.end);
+          }
+          matches.push(...results);
+        };
+        // Remember which alternatives accepted the value, for E_AMBIGUOUS_VALUE.
+        const done = () => {
+          if (accepting.length > 1 && end > pos)
+            this.ambiguities.push({
+              consumed: items.slice(pos, end),
+              choices: accepting,
+            });
+          return matches;
+        };
         if (p.preferred) {
-          for (const choice of p.preferred)
-            matches.push(...(yield { pattern: choice, items, position: pos }));
-          if (matches.length) return matches;
+          for (const choice of p.preferred) yield* consider.call(this, choice);
+          if (matches.length) return done();
         }
         for (const choice of p.choices)
           if (!p.preferred?.includes(choice))
-            matches.push(...(yield { pattern: choice, items, position: pos }));
+            yield* consider.call(this, choice);
         // Both pattern and type unions require one interpretation. Do not
         // coalesce successful witnesses and silently conceal ambiguous branches.
-        return matches;
+        return done();
       }
       case "sequence": {
         let states: Match<T>[] = [
@@ -730,6 +762,7 @@ export class Matcher<T> {
     }
   }
   match(pattern: Pattern<T>, items: Field<T>[]): Match<T> {
+    this.ambiguities = [];
     const matches = this.scan(pattern, items).filter(
       (x) => x.end === items.length,
     );
@@ -764,11 +797,62 @@ export class Matcher<T> {
     }
     if (matches.length > 1)
       throw new LanguageError(
-        "ambiguous pattern: " + matches.length + " matches",
+        this.ambiguityMessage(matches.length),
         undefined,
-        { code: "E_AMBIGUOUS_PATTERN", phase: "match" },
+        { code: "E_AMBIGUOUS_VALUE", phase: "match" },
       );
     return matches[0];
+  }
+  /**
+   * Names the interpretations a union offered for the value it was ambiguous about,
+   * from what the scan already recorded: nothing is matched again, so predicates and
+   * defaults do not run twice and no work budget is spent. This only words an error
+   * that is already decided, so any failure here falls back to the count.
+   */
+  private ambiguityMessage(count: number): string {
+    const generic = "ambiguous value: " + count + " interpretations match";
+    try {
+      // The first ambiguous union whose alternatives account for the matches. Unions
+      // in branches that later failed are recorded too; the count screens them out.
+      const found = this.ambiguities.find(
+        (a) => count % a.choices.length === 0,
+      );
+      if (!found || !this.adapter.source) return generic;
+      const value = this.adapter.source(found.consumed);
+      const types: string[] = [];
+      for (const choice of found.choices) {
+        if (choice.kind !== "ref" || !choice.describe) return generic;
+        // Recognition never ran refinement predicates, so it accepted members the
+        // value may not satisfy. Run each such predicate once, only to decide listing.
+        if (
+          this.recognizing &&
+          choice.dispatchBase &&
+          !new Matcher(this.adapter)
+            .scan(choice, found.consumed)
+            .some((m) => m.end === found.consumed.length)
+        )
+          continue;
+        types.push(choice.describe());
+      }
+      if (!types.length) return generic;
+      const shown = types
+        .slice(0, 2)
+        .map((type) => "`" + value + " :: " + type + "`");
+      const others = types.length - shown.length;
+      return (
+        "ambiguous value " +
+        value +
+        ": please specify " +
+        (others
+          ? shown.join(", ") +
+            ", ...and " +
+            others +
+            (others === 1 ? " other" : " others")
+          : shown.join(" or "))
+      );
+    } catch {
+      return generic;
+    }
   }
 }
 export const any = <T>(): Pattern<T> => ({ kind: "any" });
