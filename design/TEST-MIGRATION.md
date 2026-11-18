@@ -306,11 +306,13 @@ chosen by this migration.
 | Float32 membership is exact representability, not finite-after-fround | specification/primitives#c03-exact-designation-differs-from-rounding already covered `0.5` / `0.1` `.matches Float32` | — |
 | Float membership and `0.5 :: Float` designation | specification/primitives#c03-exact-designation-differs-from-rounding | Unique `Float` lines; host display of the same programs removed |
 | Rational-to-binary64 conversion keeps the smallest subnormal and small normals | — | Direct `float64ToRational` / `rationalToNumber` helpers stay |
-| hex Rational syntax encoding keeps the exact Float64-rounded Rational | numeric/exact-values#exact-and-rounded-literals-remain-distinct-through-code-text covers value/Code distinctions | Host `syntaxTree(0f0.1)` display string stays |
-| non-dyadic Rationals stay exact internally without a ratified spelling | numeric/exact-values#an-exact-rational-without-a-source-spelling-fails-only-when-serialized | Exact `E_VALUE_SERIALIZATION` when printing the bare `1 / 3` program result stays; the source case explicitly calls `toString(Rational)(n)` |
+| Numeric syntax encoding keeps the exact Float64-rounded Rational | numeric/exact-values#exact-and-rounded-literals-remain-distinct-through-code-text covers value/Code distinctions | The host test checks the exact `syntaxTree(0f0.1)` payload. |
+| Non-dyadic Rationals stay exact and round-trip | numeric/exact-values#an-exact-rational-without-a-terminating-decimal-round-trips-as-a-reduced-fraction | Host construction and destructuring preserve the exact `NumberLiteral` payload. |
 | `0.5 :: Int` remains a generic mismatch until D07 integer designation | — | Exact `E_PATTERN_MISMATCH` stays until D07 |
 
-Host remainder is TS Rational/binary64 helpers, bootstrap syntax-tree display, exact serialization and D07 mismatch codes. No expected-failure or legacy marker was added or changed.
+The original migration left the bootstrap's serialization failure in place.
+The [fraction contracts](../specs/rational-literals-and-text.md#executable-contracts)
+replace that expectation with `todo` printing and reading checks.
 
 ## Numeric destination-contract correction
 
@@ -323,9 +325,9 @@ new numeric spelling.
 | Audited source case | Retained language observation | Retained host observation |
 | --- | --- | --- |
 | NumberLiteral payload is the denoted Rational | Exact decimal arithmetic, rounded-value distinction and zero. | `numeric syntax adapters preserve exact decimal and zero payloads` in `test/round-trip-parsing.test.ts`: native node payloads, schema membership, bridge inversion, quoted-tree text round trip and decimal/zero display goldens. |
-| syntaxTree distinguishes 0.1 from 0f0.1 and round-trips | Numeric/Code inequality and established Code text round trips. | `numeric syntax-tree schema transport distinguishes exact and rounded values` in `test/round-trip-parsing.test.ts`: value-tree text round trip; existing exact Float64-rounded adapter display golden stays in `test/rational-primitives.test.ts`. |
+| syntaxTree distinguishes 0.1 from 0f0.1 and round-trips | Numeric/Code inequality and established Code text round trips. | `numeric syntax-tree schema transport distinguishes exact and rounded values` in `test/round-trip-parsing.test.ts`: value-tree text round trip; `test/rational-primitives.test.ts` checks the exact Float64-rounded payload. |
 | NumberLiteral keeps integers beyond 2^53 and signed values | Neighboring large integers and signed arithmetic. | `numeric syntax payloads preserve large integers and unary-minus structure`: node payloads, prefix AST decomposition and large-integer display golden. |
-| Unspellable 1/3 stays exact as a NumberLiteral payload | Exact arithmetic and explicit `toString(Rational)(n)` serialization failure. | `test/rational-primitives.test.ts` retains construction and destructuring of the native `NumberLiteral` carrier, plus exact `E_VALUE_SERIALIZATION` when printing the bare `1 / 3` program result. |
+| One third stays exact as a NumberLiteral payload | Exact arithmetic and the pending `(1/3)` text round trip. | `test/rational-primitives.test.ts` retains construction and destructuring of the native `NumberLiteral` carrier. |
 
 The earlier inventory describes the migration history; this correction restores
 [the source/host contract boundary](TEST-CONTRACT-AUDIT.md). Layout, example and

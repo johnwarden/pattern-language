@@ -34,8 +34,8 @@ because the value is the same. Partial infix spacing is invalid. Reading or
 quoting `(1 / 0)` succeeds, and evaluating the division fails. Reading `(1/0)`
 fails immediately. The Code printer keeps the spaces in grouped division.
 
-The implementation in [#76](https://github.com/johnwarden/pattern-language/pull/76)
-needs to adopt the parenthesized spelling.
+The earlier prototype in [#76](https://github.com/johnwarden/pattern-language/pull/76)
+used bare fractions. The active contracts below use the parenthesized spelling.
 
 ## Values
 
@@ -189,9 +189,10 @@ test "Code printing preserves ordinary grouped division"
 end
 ```
 
-## Implementation handoff
+## Executable contracts
 
-After approval, revise the PR's literal cases and the old serialization-failure
-case in [exact-values.test](../tests/numeric/exact-values.test).
-Keep native syntax/transport checks in host tests. Other numeric families and
-general function/type serialization retain their existing boundaries.
+[fractions.test](../tests/numeric/fractions.test) covers literal values and
+rejected spellings. [code-text.test](../tests/numeric/code-text.test) covers
+Code structure and printing, and [exact-values.test](../tests/numeric/exact-values.test)
+covers printing and reading a computed exact fraction. The literal tests pass
+new spellings as strings so the bootstrap test reader can load them.
