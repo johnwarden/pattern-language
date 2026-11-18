@@ -188,9 +188,25 @@ predicates in literal designation when an expected type is available.
 
 The independent diagnostic work in #80 can land before the full evidence
 checker. The ambiguity message should come from surviving interpretations.
-Normalize repeated type alternatives by their compiled structural identity.
-That preserves distinct nested wrappers. Use source suggestions only when
-they can select the advertised interpretation.
+Write each suggestion with the member's
+[type expression](2026-11-18-type-expressions.md). Every type has one, so
+each surviving interpretation can be listed. Pasting a suggestion must
+select the interpretation it names.
 If #80 lands before it can distinguish literal designation from bound
 arguments, record the remaining literal-refinement cases as todo and carry
 them into the refinement implementation.
+
+Normalize repeated type alternatives by value. Two alternatives are the
+same when they evaluate to equal types under the usual value equality,
+however they are spelled. `pattern :Box(Int) | Box(Int)` is one
+alternative: the quote is redundant, and normalization drops it.
+Normalization happens only in the `pattern` and `struct` macros.
+
+```pattern
+i = Int
+assert (pattern Int | String | i) === (pattern Int | String)
+assert (pattern :Box(Int) | Box(Int)) === (pattern Box(Int))
+```
+
+Whether the redundant quote should be an error instead is still open.
+[Open choices](2026-11-18-type-expressions.md#open-choices)
