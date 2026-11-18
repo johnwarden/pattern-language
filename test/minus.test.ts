@@ -17,11 +17,13 @@ const evaluate = (source: string) => {
   );
 };
 
-test("prefix and infix minus preserve their parsed forms", () => {
-  assert.equal(normal(parseExpression("-1")), "-(1)");
+test("signed literals and minus applications preserve their parsed forms", () => {
+  assert.equal(normal(parseExpression("-1")), "-1");
+  assert.equal(normal(parseExpression("-(1)")), "-(1)");
   assert.equal(normal(parseExpression("-(x)")), "-(x)");
   assert.equal(normal(parseExpression("1 - x")), "1 - x");
   assert.equal(normal(parseExpression("1 - -x")), "1 - -(x)");
+  assert.throws(() => parseExpression("1 -2"), /infix operators require spaces/);
 });
 
 test("quoted Code of prefix and infix minus evaluates the same trees", () => {

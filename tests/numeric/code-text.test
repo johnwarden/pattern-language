@@ -24,28 +24,28 @@ test "Fraction atoms and grouped division are distinct Code"
   assert parse(Code)("(1 / 3)") == division
   assert parse(Code)("( 1 / 3 )") == division
   assert parse(Code)("a / b") == Code` /(a)(b)
-  todo assert parse(Code)("(1/3)") != division
-  todo assert parse(Code)("(2/6)") == parse(Code)("(1/3)")
-  todo assert parse(Code)("(2/4)") == Code` 0.5
-  todo assert parse(Code)("(3/1)") == Code` 3
-  todo assert parse(Code)("(3/4)e2") == Code` 75
+  assert parse(Code)("(1/3)") != division
+  assert parse(Code)("(2/6)") == parse(Code)("(1/3)")
+  assert parse(Code)("(2/4)") == Code` 0.5
+  assert parse(Code)("(3/1)") == Code` 3
+  assert parse(Code)("(3/4)e2") == Code` 75
 end
 
 test "A fraction atom has its own parentheses inside a call"
   assert parse(Code)("f((1 / 3))") == Code` f(1 / 3)
   expect parse(Code)("f(1/3)") fails "infix operators require spaces"
-  todo assert parse(Code)("f((1/3))") != parse(Code)("f(1 / 3)")
-  todo assert parse(Code)("f((2/4))(scale: (3/4))") == Code` f(0.5)(scale: 0.75)
-  todo assert parse(Code)("f((1/3)e20)") == parse(Code)("f((100000000000000000000/3))")
+  assert parse(Code)("f((1/3))") != parse(Code)("f(1 / 3)")
+  assert parse(Code)("f((2/4))(scale: (3/4))") == Code` f(0.5)(scale: 0.75)
+  assert parse(Code)("f((1/3)e20)") == parse(Code)("f((100000000000000000000/3))")
 end
 
 test "Signed numeric atoms are distinct from negation in Code"
-  todo assert parse(Code)("(-1/2)") == parse(Code)("-0.5")
-  todo assert parse(Code)("-(1/2)") != parse(Code)("(-1/2)")
-  todo assert parse(Code)("-(0.5)") != parse(Code)("-0.5")
-  todo assert parse(Code)("-(0x1p-20)") != parse(Code)("-0x1p-20")
-  todo expect toString(Code)(parse(Code)("-0.5")) is "-0.5" :: String
-  todo expect toString(Code)(parse(Code)("-0x1p-20")) is "-0x1p-20" :: String
+  assert parse(Code)("(-1/2)") == parse(Code)("-0.5")
+  assert parse(Code)("-(1/2)") != parse(Code)("(-1/2)")
+  assert parse(Code)("-(0.5)") != parse(Code)("-0.5")
+  assert parse(Code)("-(0x1p-20)") != parse(Code)("-0x1p-20")
+  expect toString(Code)(parse(Code)("-0.5")) is "-0.5" :: String
+  expect toString(Code)(parse(Code)("-0x1p-20")) is "-0x1p-20" :: String
 
   negation = Code` -(0.5)
   assert parse(Code)(toString(Code)(negation)) == negation
@@ -61,7 +61,8 @@ test "Numeric Code text preserves successive packs, labels and grouping"
     parse(Code)(toString(Code)(code)) == code
   end
 
-  todo assert roundTrips("f((-1/3))(scale: (3/4))")
-  todo assert roundTrips("-(1/3)")
-  todo expect toString(Code)(parse(Code)("(-1/3)")) is "(-1/3)" :: String
+  assert roundTrips("f((-1/3))(scale: (3/4))")
+  assert roundTrips("-(1/3)")
+  assert roundTrips("def third() (1/3)")
+  expect toString(Code)(parse(Code)("(-1/3)")) is "(-1/3)" :: String
 end

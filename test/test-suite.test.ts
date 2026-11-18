@@ -409,7 +409,7 @@ test("setup is shared only within its case, while individual subjects remain iso
   }
 });
 test("0f source denotes a Float64-rounded Rational", () => {
-  const r = runTest(sample("0f0.1", "is 0x1.999999999999Ap-4 :: Rational"));
+  const r = runTest(sample("0x1.999999999999Ap-4", "is 0f0.1 :: Rational"));
   assert.equal(r.passed, true, r.message);
 });
 test("assertions require a positional Bool result and preserve ordinary operator lexing", () => {

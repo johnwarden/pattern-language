@@ -11,7 +11,11 @@ import {
   postfix,
   POSTFIX_SUFFIX,
 } from "./syntax.ts";
-import { parseNumericSpelling, syntaxNumber } from "./rational.ts";
+import {
+  matchNumericSource,
+  parseNumericSpelling,
+  syntaxNumber,
+} from "./rational.ts";
 import type { Syntax, Field, Span } from "./syntax.ts";
 import {
   punctuation,
@@ -268,6 +272,8 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
       text = "",
       quoted = false;
     let m: RegExpMatchArray | null;
+    const numeric =
+      c === "(" || /[0-9]/.test(c) ? matchNumericSource(source, i) : undefined;
     if (source.startsWith("...", i)) {
       i += 3;
       kind = "spread";
@@ -350,48 +356,17 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
       i++;
       kind = "op";
       text = c;
-    } else if (
-      (options.specification
-        ? /^(?:0[fFxXbB]|[0-9][0-9_]*_)/
-        : /^(?:0[fFxXbB])/
-      ).test(source.slice(i))
-    ) {
-      const digits = "[0-9](?:_?[0-9])*";
-      const hex = "[0-9a-fA-F](?:_?[0-9a-fA-F])*";
-      const bits = "[01](?:_?[01])*";
-      const decimal =
-        digits + "(?:\\." + digits + ")?(?:[eE][+-]?" + digits + ")?";
-      const spelling = source
-        .slice(i)
-        .match(
-          new RegExp(
-            "^(?:0[fF]" +
-              decimal +
-              "|0[xX]" +
-              hex +
-              "(?:\\." +
-              hex +
-              ")?(?:[pP][+-]?" +
-              digits +
-              ")?|0[bB]" +
-              bits +
-              "(?:\\." +
-              bits +
-              ")?(?:[pP][+-]?" +
-              digits +
-              ")?|" +
-              decimal +
-              ")",
-          ),
-        );
-      if (
-        !spelling ||
-        /[\p{L}\p{N}_]/u.test(source[i + spelling[0].length] ?? "")
-      )
-        throw new LanguageError("malformed numeric source literal", span);
-      text = spelling[0];
+    } else if (numeric) {
+      text = numeric;
       i += text.length;
-      kind = "numberSource";
+      if (/[\p{L}\p{N}_]/u.test(source[i] ?? ""))
+        throw new LanguageError("malformed numeric source literal", span);
+      kind =
+        c === "("
+          ? "fraction"
+          : /^(?:0[fFxXbB])|_/.test(text)
+            ? "numberSource"
+            : "number";
     } else if ("()[]{},.".includes(c)) {
       i++;
       kind = c;
@@ -426,10 +401,6 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
         kind = ":";
         text = ":";
       }
-    } else if ((m = source.slice(i).match(/^\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/))) {
-      text = m[0];
-      i += text.length;
-      kind = "number";
     } else if ((m = source.slice(i).match(identifier))) {
       text = m[0];
       i += text.length;
@@ -662,6 +633,11 @@ class Reader {
       } else if (t.kind === "(") {
         this.take();
         n = { ...apply(n, this.arguments(")")), span: n.span };
+      } else if (t.kind === "fraction") {
+        throw new LanguageError(
+          "infix operators require spaces on both sides",
+          t,
+        );
       } else if (t.kind === ".") {
         this.take();
         const name = this.take();
@@ -748,26 +724,8 @@ class Reader {
       return { kind: "quote", value: this.atom(stops), span };
     }
     if (t.kind === "name") return { ...symbol(t.text, !!t.quoted), span };
-    if (t.kind === "numberSource") {
-      if (!this.options.specification) {
-        const value = parseNumericSpelling(t.text);
-        if (!value)
-          throw new LanguageError("malformed numeric source literal", t);
-        return { ...syntaxNumber(value, t.text), span };
-      }
-      return {
-        ...apply(symbol("NumericSource", true), [
-          { label: "_1", value: { kind: "literal", value: t.text } },
-        ]),
-        span,
-      };
-    }
-    if (t.kind === "number") {
-      const value = parseNumericSpelling(t.text);
-      if (!value)
-        throw new LanguageError("malformed numeric source literal", t);
-      return { ...syntaxNumber(value, t.text), span };
-    }
+    if (["number", "numberSource", "fraction"].includes(t.kind))
+      return this.numberAtom(t, span);
     if (t.kind === "string") return { ...t.textNode!, span };
     if (t.kind === "(") {
       const body = this.arguments(")");
@@ -783,6 +741,23 @@ class Reader {
     if (t.kind === "op" || t.kind === "spread") {
       const next = this.peek();
       const touching = !!next && next.start === t.end;
+      if (
+        t.text === "-" &&
+        !t.quoted &&
+        touching &&
+        next &&
+        ["number", "numberSource"].includes(next.kind)
+      ) {
+        this.take();
+        return this.numberAtom(
+          { ...next, text: "-" + next.text },
+          {
+            ...span,
+            end: next.end,
+            endColumn: next.endColumn,
+          },
+        );
+      }
       if (t.quoted || (touching && next.kind === "("))
         return { ...symbol(t.text, !!t.quoted), span };
       if (t.kind === "spread" && next?.kind === "op" && next.text === "::")
@@ -796,6 +771,19 @@ class Reader {
       return { ...apply(symbol(t.text), packOf(this.postfix(stops))), span };
     }
     throw new LanguageError("unexpected token " + t.text, t);
+  }
+  private numberAtom(t: Token, span: Span): Syntax {
+    if (t.kind !== "number" && this.options.specification)
+      return {
+        ...apply(symbol("NumericSource", true), [
+          { label: "_1", value: { kind: "literal", value: t.text } },
+        ]),
+        span,
+      };
+    const value = parseNumericSpelling(t.text);
+    if (!value)
+      throw new LanguageError("malformed numeric source literal", span);
+    return { ...syntaxNumber(value, t.text), span };
   }
   arguments(close: string): Field<Syntax>[] {
     const result: Field<Syntax>[] = [];

@@ -194,5 +194,5 @@ end
 [fractions.test](../tests/numeric/fractions.test) covers literal values and
 rejected spellings. [code-text.test](../tests/numeric/code-text.test) covers
 Code structure and printing, and [exact-values.test](../tests/numeric/exact-values.test)
-covers printing and reading a computed exact fraction. The literal tests pass
-new spellings as strings so the bootstrap test reader can load them.
+covers printing and reading a computed exact fraction. Reader tests exercise
+both source expressions and typed text.

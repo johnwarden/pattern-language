@@ -92,7 +92,9 @@ No replay/image/provenance model, arbitrary witness format or unchecked insist i
 selected. Ordinary where refinements remain in scope.
 
 IEEE signed zero, NaN identity/payloads and infinities remain deferred. Numeric
-family aliases, edge rounding/overflow and canonical spelling remain provisional.
+family aliases and fixed-format rounding and overflow remain provisional.
+[Shortest exact Rational text](specs/rational-canonical-text.md) defines
+round-trip spelling for exact numeric values.
 
 The concrete/abstract declaration forms already written in
 `tests/specification/` remain current implementation targets. Angle-bracket generic

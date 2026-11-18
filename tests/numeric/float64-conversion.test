@@ -3,7 +3,8 @@ test "smallest subnormal round-trips through Float and text"
   assert minSub .matches Float
   assert toFloat(minSub) == (minSub :: Float)
   assert parse(Float)(toString(Float)(minSub :: Float)) == (minSub :: Float)
-  expect 0f5e-324 is 0x1p-1074 :: Rational
+  assert minSub == 0x1p-1074
+  expect 0x1p-1074 is 0f3e-324 :: Rational
 end
 
 test "very-small normal round-trips through Float and text"
