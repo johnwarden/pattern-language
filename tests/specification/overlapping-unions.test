@@ -52,7 +52,7 @@ test "Union text keeps :: when untagged print is ambiguous or a different value"
   differentValue = toString(EitherFloat)(c)
 
   expect ambiguous is "0.5 :: Float32" :: String
-  expect differentValue is "0x1.999999999999Ap-4 :: Float64" :: String
+  expect differentValue is "0f0.1 :: Float64" :: String
   assert parse(EitherFloat)(ambiguous) == a
   assert parse(EitherFloat)(differentValue) == c
 

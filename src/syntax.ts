@@ -303,7 +303,7 @@ function joinOperands(
       parts.push("\n" + pad + text);
       continue;
     }
-    if (afterTerm && text.startsWith("(")) {
+    if (afterTerm && item.kind !== "literal" && text.startsWith("(")) {
       emitBlock(" ".repeat(inner) + text);
       continue;
     }

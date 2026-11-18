@@ -28,6 +28,24 @@ an optional `+` or `-` and the same digit rules. For example, `(1/3)e10`
 scales `1/3` by ten billion. Whitespace is forbidden throughout the literal,
 including between the closing parenthesis and the exponent.
 
+Hexadecimal and binary literals may take a binary `p` or `P` exponent with the
+same signed decimal-integer digit rules as `e`, including the ban on leading
+zeros. `0x1p5` and `0x1p-5` are valid; `0x1p05`, `0x1p-05`, and `0b1p05` are
+rejected with `E_SYNTAX`, the same diagnostic as `1e05` and `(1/3)e05`.
+
+The magnitude of a written decimal `e` or binary `p` exponent must be at most
+`10000`. That bound is far above Float64's decimal (~308) and binary (~1023)
+ranges, keeps exact `10^n` / `2^n` expansion cheap to compute, and is checked
+from the exponent's digit text before any bigint powering so forms such as
+`1e999999999` and `(1/3)e999999999` fail immediately. An exponent past the cap
+is a source error with code `E_SYNTAX` and message
+`numeric exponent exceeds 10000`. The same cap applies to `0f` decimal
+exponents. Canonical printing never emits an `e` or `p` exponent outside this
+bound: values whose shortest uncapped spelling would need a larger exponent
+use coefficient padding, a max-cap exponent, or full integer/fraction text
+instead, so every printed numeric atom remains readable and formatting
+terminates.
+
 `(1 / 3)` is grouped division. It yields the same Rational as `(1/3)` under
 exact Rational division. Formatting safety permits the different Code trees
 because the value is the same. Partial infix spacing is invalid. Reading or
@@ -60,6 +78,26 @@ test "A decimal exponent scales the entire fraction exactly"
   expect (3/4)e2 is 75 :: Rational
   expect (1/3)e0 is (1/3) :: Rational
   expect (1/3)e+2 is (100/3) :: Rational
+end
+
+test "Written e and p exponents share digit rules and a magnitude cap"
+  assert parse(Rational)("1e10000") == 1e10000
+  assert parse(Rational)("1e-10000") == 1e-10000
+  assert parse(Rational)("0x1p10000") == 0x1p10000
+  assert parse(Rational)("0x1p-10000") == 0x1p-10000
+  assert parse(Rational)("0x1p5") == 0x1p5
+  assert parse(Rational)("(1/3)e10000") == (1/3)e10000
+
+  expect parse(Code)("1e10001") fails "E_SYNTAX"
+  expect parse(Code)("1e-10001") fails "E_SYNTAX"
+  expect parse(Code)("0x1p10001") fails "E_SYNTAX"
+  expect parse(Code)("0x1p-10001") fails "E_SYNTAX"
+  expect parse(Code)("(1/3)e10001") fails "E_SYNTAX"
+  expect parse(Code)("1e999999999") fails "E_SYNTAX"
+  expect parse(Code)("(1/3)e999999999") fails "E_SYNTAX"
+  expect parse(Code)("0x1p05") fails "E_SYNTAX"
+  expect parse(Code)("0x1p-05") fails "E_SYNTAX"
+  expect parse(Code)("0b1p05") fails "E_SYNTAX"
 end
 
 test "Reading a fraction exponent produces the same exact Code atom"
@@ -194,5 +232,5 @@ end
 [fractions.test](../tests/numeric/fractions.test) covers literal values and
 rejected spellings. [code-text.test](../tests/numeric/code-text.test) covers
 Code structure and printing, and [exact-values.test](../tests/numeric/exact-values.test)
-covers printing and reading a computed exact fraction. The literal tests pass
-new spellings as strings so the bootstrap test reader can load them.
+covers printing and reading a computed exact fraction. Reader tests exercise
+both source expressions and typed text.

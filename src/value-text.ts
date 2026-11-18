@@ -808,16 +808,6 @@ export function parseValueText(
       };
     if (pattern && n.head.kind === "symbol" && n.head.name === "String")
       return decode(n, false);
-    if (
-      pattern &&
-      n.head.kind === "symbol" &&
-      n.head.name === "-" &&
-      n.body.length === 1 &&
-      n.body[0].value.kind === "literal"
-    ) {
-      const r = rationalFromSyntax(n.body[0].value);
-      if (r) return valRational(-r.n, r.d);
-    }
     if (!pattern) {
       if (
         n.head.kind === "apply" &&
@@ -919,14 +909,6 @@ export function parseValueText(
               value: decode(f.value, pattern),
             })),
           };
-        }
-        if (
-          n.head.name === "-" &&
-          n.body.length === 1 &&
-          n.body[0].value.kind === "literal"
-        ) {
-          const r = rationalFromSyntax(n.body[0].value);
-          if (r) return valRational(-r.n, r.d);
         }
       }
     }

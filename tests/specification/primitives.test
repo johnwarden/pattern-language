@@ -135,7 +135,7 @@ end
 test "C02 exact Rational literal meanings"
   expect 0.1 is 0.1 :: Rational
   expect 0f0.5 is 0.5 :: Rational
-  expect 0f0.1 is 0x1.999999999999Ap-4 :: Rational
+  expect 0x1.999999999999Ap-4 is 0f0.1 :: Rational
   assert 0f0.1 != 0.1
   assert 0xFp8 == 0b1111p8
 end
@@ -144,7 +144,8 @@ test "C03 exact designation differs from rounding"
   expect 0.5 :: Float32 is 0.5 :: Float32
   expect float32(0.5) is 0.5 :: Float32
   todo expect 0f0.5 :: Decimal32 is 0.5 :: Decimal32
-  expect 0f0.1 :: Float64 is 0x1.999999999999Ap-4 :: Float64
+  expect 0f0.1 :: Float64 is 0f0.1 :: Float64
+  assert (0f0.1 :: Float64) == (0x1.999999999999Ap-4 :: Float64)
   expect 0.1 :: Float64 fails "not exactly representable as Float64"
   expect
     (0.1 :: Float32)

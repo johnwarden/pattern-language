@@ -27,7 +27,6 @@ export {
   parseNumericSpelling,
   rationalFromSyntax,
   formatRational,
-  tryFormatRational,
   syntaxNumber,
   syntaxFromNumeric,
   addRationals,
