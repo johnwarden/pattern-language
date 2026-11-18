@@ -24,7 +24,8 @@ test "Ignore preceding extra name"
 end
 
 test "Nested bindings require explicit label openness"
-  Rect(x, **) = Rect(1, extra: 2)
+  def ExtraRect type Rect(Rational, extra: Rational)
+  Rect(x, **) = Rect(1, extra: 2) :: ExtraRect
 
   expect x is 1 :: Rational
 end
@@ -32,7 +33,10 @@ end
 test "Nested function patterns permit explicitly ignored labels"
   def f(Rect(x, **)) x
 
-  expect f(Rect(1, extra: 2)) is 1 :: Rational
+  def ExtraRect type Rect(Rational, extra: Rational)
+  r = Rect(1, extra: 2) :: ExtraRect
+
+  expect f(r) is 1 :: Rational
 end
 
 test "All calls ignore extra names"

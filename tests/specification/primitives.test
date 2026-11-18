@@ -4,19 +4,19 @@ test "C01 intrinsic primitive values"
   expect Int is Int :: ReservedSymbol
   expect "hello" is "hello" :: String
   expect 5 is 5 :: Rational
-  expect :Widget is Widget :: UpperCamelSymbol
-  expect :foo is foo :: LowerCamelSymbol
-  expect :Symbol is Symbol :: UpperCamelSymbol
+  legacy expect :Widget is Widget :: UpperCamelSymbol
+  legacy expect :foo is foo :: LowerCamelSymbol
+  legacy expect :Symbol is Symbol :: UpperCamelSymbol
   assert Int .matches ReservedSymbol
   assert not(Int .matches UpperCamelSymbol)
   assert not(Int .matches Symbol)
   assert not(True .matches UpperCamelSymbol)
   assert not(True .matches ReservedSymbol)
   assert False .matches Bool
-  assert :Widget .matches UpperCamelSymbol
-  assert not(:Widget .matches ReservedSymbol)
-  assert :Widget .matches Symbol
-  assert :foo .matches Symbol
+  legacy assert :Widget .matches UpperCamelSymbol
+  legacy assert not(:Widget .matches ReservedSymbol)
+  legacy assert :Widget .matches Symbol
+  legacy assert :foo .matches Symbol
   assert (type Symbol) == (unionType LowerCamelSymbol | UpperCamelSymbol | UpperSnakeSymbol | PunctuationSymbol)
   assert Int == (type Int)
   assert Float == (type Float)

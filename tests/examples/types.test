@@ -227,7 +227,8 @@ test "Ordinary factory with defaults"
 
   expect r is Rect(3, 4, color: "black") :: Rectangle
   expect r.color is "black" :: String
-  expect Rectangle(3, 4) is Rectangle(3, 4) :: Expression
+  legacy expect Rectangle(3, 4) is Rectangle(3, 4) :: Expression
+  todo expect Rectangle(3, 4) fails "concrete type"
   (r, r.color, Rectangle(3, 4))
 end
 

@@ -20,10 +20,10 @@ concrete boundaries and the set of concrete alternatives remain structural.
 Type equality is ordinary structural value equality, not host identity, a declaration
 ID, or extensional equivalence of arbitrary predicates. Evaluating distinct syntax
 can yield the same value. That does not imply that every inert syntax description
-is automatically the evaluated type/value it describes. Raw runtime Expressions
-are allowed for now; [the contracts](specs/implemented/raw-expression-values.md)
-separate them from interpreted concrete values. The public descriptor-decoding
-boundary remains undecided.
+is automatically the evaluated type/value it describes. [Construction
+contracts](specs/implemented/raw-expression-values.md) require a concrete
+destination for bare constructor expressions and symbol designators. The public
+descriptor-decoding boundary remains undecided.
 
 Values in different known concrete spaces are not made comparable by identical
 payload spelling. `None` in a String option and `None` in a Float32 option can
@@ -42,16 +42,16 @@ the same mathematical set have equal code/descriptors.
 | Refinement | Restricts an existing space, preserving identity and base operations | Nonzero, nonempty, exact-fit requirements |
 | Abstract | Preserves each admitted member's concrete identity | General unions, open facets and facet combinations |
 
-The working spellings are `type Name concrete/refinement/abstract ...`. Their exact
-surface sugar is provisional. Concrete structures may contain abstract-typed fields;
+The [refined type model](specs/implemented/refined-type-model.md) uses
+`pattern` for abstract types and `struct` to create concrete types. A refinement
+uses `T .where p` inside either form. Structs may contain abstract-typed fields;
 those positions retain member descriptors. Facet combinations require both constraints
 without merging records or inventing a concrete identity. Intersection is the reviewer's
 recommended term; the terminology is not a new semantic mechanism.
 
-A written singleton abstract union was proposed for rejection. Collapse of a computed
-singleton to its member is a separate, unratified recommendation. A restricted facet
-may admit only one concrete space; the abstract qualification/counting policy remains
-open. Nothing here creates a distinct wrapper merely to preserve an abstract label.
+A lone type reference resolves to that same type. A standalone symbol pattern
+can admit matching members of different concrete types. Applying `struct` adds
+a concrete boundary even when the pattern names a single concrete type.
 
 ## Binding views and abstract storage
 
@@ -239,8 +239,7 @@ Specialization is only a later compiler optimization preserving an independently
 defined abstract-call contract. First-class overload-set values are a separate
 unaccepted proposal. Bare generic-family facets, MemberOf constraints and parameter
 recovery remain proposals; no nominal construction history is inferred from a family
-name. Raw runtime Expressions are currently permitted; automatic descriptor
-decoding remains unsettled.
+name. Automatic descriptor decoding remains unsettled.
 
 ## Current bootstrap boundary
 

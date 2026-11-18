@@ -15,9 +15,9 @@ is evidence for the implemented bounded grammar, not a claim those revisions shi
 Capture dimensions and one required final Code result row remain valid. A test-body
 DSL has its own setup/check grammar; adding tests must not weaken the Code Body rule.
 [The next small milestone](TEST-SUITE.md) adds pending conformance and selective
-migration before more Code coverage. Raw runtime Expressions are allowed for now;
-the [current contracts](../specs/implemented/raw-expression-values.md) supersede
-the earlier optional-runtime decision without choosing public descriptor decoding.
+migration before more Code coverage. The [construction
+contracts](../specs/implemented/raw-expression-values.md) require a concrete
+expected type to turn a constructor expression into a value.
 
 ## Goal and boundary
 

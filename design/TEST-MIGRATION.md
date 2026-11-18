@@ -34,8 +34,7 @@ setup alternative. tests/symbols/classes.test checks the complete ASCII class ta
 Host tests retain trial isolation, duplicate-name unmasking, recursive grouping,
 fixture replay, source spelling and host-failure boundaries.
 
-[The legacy inventory](LEGACY-ASSERTIONS.md) accounts for every remaining legacy
-assertion. Defaults, concrete accessor results, structural equality/round trips and
+Legacy assertions retain selected bootstrap observations during migration. Defaults, concrete accessor results, structural equality/round trips and
 pack distinctions now use ordinary checks where their behavior is supported.
 Arithmetic/rest/default examples establish concrete types when their purpose does
 not depend on raw Expression fallback. Settled future changes retain executed todo
@@ -339,8 +338,7 @@ Source `.test` files no longer call `syntaxTree` or `syntaxExpression`, or name
 `test/syntax-inspection.test.ts`; the source cases state the same language
 observations with quoted patterns (`:f(arg)`, `:(pattern = value)`), Code text
 and Code equality. The `legacy expect syntaxExpression(changed)` moved to host
-with its exact expectation and its row left
-[LEGACY-ASSERTIONS.md](LEGACY-ASSERTIONS.md). Existing case ids are unchanged; one
+with its exact expectation. The assertion was removed from the former legacy inventory. Existing case ids are unchanged; one
 case is added.
 
 | Former source assertion | Source observation now | Host coverage |

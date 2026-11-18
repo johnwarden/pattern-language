@@ -1,11 +1,14 @@
 test "Lowercase captures only"
-  :None = :None
+  def Absence type :None
+  missing = :None :: Absence
+  :None = missing
 
-  expect :None is None :: UpperCamelSymbol
+  expect missing is None :: Absence
 end
 
 test "Empty outfix"
-  expect [] is [] :: Expression
+  def Empty type []
+  expect [] :: Empty is [] :: Empty
 end
 
 test "Repeated type"
@@ -75,18 +78,23 @@ test "Interpretation equality"
 end
 
 test "Structural ordering"
-  assert Rect(1, 2) < Rect(1, 3)
+  def Rectangle type Rect(Rational, Rational)
+  a = Rect(1, 2) :: Rectangle
+  b = Rect(1, 3) :: Rectangle
+
+  assert a < b
 end
 
-test "Quoted symbol"
-  v = :f
+test "A symbol can designate a value of a singleton type"
+  def Field type :f
+  v = :f :: Field
 
-  expect v is f :: LowerCamelSymbol
+  expect v is f :: Field
 end
 
-test "Constructor heads stay tags while bare symbols need quotation"
-  expect Foo(1) is Foo(1) :: Expression
-  expect :Foo is Foo :: UpperCamelSymbol
+test "A typed constructor head is a tag and a bare name resolves lexically"
+  def Tagged type Foo(Int)
+  expect Foo(1) :: Tagged is Foo(1) :: Tagged
 
   def Rect type Rect(Float, Float)
   assert Type(Rect(Float, Float)) == Rect
@@ -148,7 +156,8 @@ test "Constructor shape independent of interpretation names"
 end
 
 test "Parameter annotations and destructuring share type references"
-  Pair(Int, Int) = Pair(1, 2)
+  def IntPair type Pair(Int, Int)
+  Pair(Int, Int) = Pair(1, 2) :: IntPair
 
   assert True
 end
@@ -162,14 +171,17 @@ end
 
 test "Uppercase is literal"
   expect
-    :None = Some(1)
-    :None
+    def Choice type :None | Some(Rational)
+    value = Some(1) :: Choice
+    :None = value
+    value
   fails "expected None"
 end
 
 test "Repeat binding differs"
   expect
-    Pair(x, x) = Pair(1, 2)
+    def PairOfNumbers type Pair(Rational, Rational)
+    Pair(x, x) = Pair(1, 2) :: PairOfNumbers
     x
   fails "duplicate capture"
 end
@@ -191,7 +203,9 @@ end
 test "No structural accessor discovery"
   expect
     def R type :Rect(w :: Int)
-    Rect(3).w
+    def Plain type :Rect(Rational)
+    plain = Rect(3) :: Plain
+    plain.w
   fails "no applicable"
 end
 
@@ -217,7 +231,9 @@ test "Interpretation equality original Int versus Rational"
   expect
     def R type :Rect(w :: Int)
     r = Rect(3) :: R
-    r == Rect(3)
+    def Plain type Rect(Rational)
+    s = Rect(3) :: Plain
+    r == s
   fails "different concrete types cannot be compared"
 end
 

@@ -91,7 +91,8 @@ silently stacking or copying another branch's changes.
 Run targeted checks during development and the complete `just check` gate on the
 final PR revision. A green todo failure is not evidence that the intended feature
 is missing: distinguish subject failures from proposed syntax or malformed
-expected data. Preserve the expected-value-as-data rule and the legacy inventory.
+expected data. Preserve the expected-value-as-data rule and keep unresolved
+replacement decisions with the relevant spec or test.
 
 Merge remains squash-only and requires the author's authorization for that PR.
 The earlier authorization for #27/#28 does not authorize these new PRs.
@@ -102,8 +103,9 @@ The earlier authorization for #27/#28 does not authorize these new PRs.
   replacement policy is deferred; it does not block separating ordinary type
   construction from declaration effects.
 - Intrinsic String behavior is accepted. It does not choose the PrimitiveType
-  metatype, descriptor equality/decoding or new syntax. Raw runtime Expressions
-  are separately allowed for now; see [their contracts](../specs/implemented/raw-expression-values.md).
+  metatype, descriptor equality/decoding or new syntax. See the
+  [constructor and quotation contracts](../specs/implemented/raw-expression-values.md)
+  for the current runtime boundary.
 - The public inspection/decoding examples belong to the author. If a workstream
   genuinely depends on that decision, report the smallest concrete example and
   continue independent work; do not invent the boundary.

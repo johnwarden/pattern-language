@@ -1,45 +1,45 @@
 test "Argument-pack rest is valid in a Pair constructor"
-  macro :all Pair(xs... :: Int*) Code$` $(xs)
+  macro :all Pair(xs... :: Int*) Code$` ($(xs) :: (type [_... :: Rational*]))
 
   expect
     all Pair()
-  is [] :: Expression
+  is [] :: (type [_... :: Rational*])
   expect
     all Pair(1)
-  is [1] :: Expression
+  is [1] :: (type [_... :: Rational*])
   expect
     all Pair(1, 2)
-  is [1, 2] :: Expression
+  is [1, 2] :: (type [_... :: Rational*])
 end
 
 test "Argument-pack rest is valid in Args"
-  macro :all Args(xs... :: Int*) Code$` $(xs)
+  macro :all Args(xs... :: Int*) Code$` ($(xs) :: (type [_... :: Rational*]))
 
   expect
     all Args()
-  is [] :: Expression
+  is [] :: (type [_... :: Rational*])
   expect
     all Args(1)
-  is [1] :: Expression
+  is [1] :: (type [_... :: Rational*])
   expect
     all Args(1, 2)
-  is [1, 2] :: Expression
+  is [1, 2] :: (type [_... :: Rational*])
 end
 
 test "A list annotation means a list in a constructor-shaped sidefix parameter"
-  macro :show Args(x :: [_... :: Int*]) Code$` $(x)
+  macro :show Args(x :: [_... :: Int*]) Code$` ($(x) :: (type [_... :: Rational*]))
 
   expect
     (show Args([1, 2]))
-  is [1, 2] :: Expression
+  is [1, 2] :: (type [_... :: Rational*])
 end
 
 test "A list annotation means a list in a direct sidefix parameter"
-  macro :show x :: [_... :: Int*] Code$` $(x)
+  macro :show x :: [_... :: Int*] Code$` ($(x) :: (type [_... :: Rational*]))
 
   expect
     show [1, 2]
-  is [1, 2] :: Expression
+  is [1, 2] :: (type [_... :: Rational*])
 end
 
 test "A list annotation does not accept adjacent operands as a list"

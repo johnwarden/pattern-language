@@ -28,8 +28,8 @@ ordered first-match interpretation. Match-arm order is a different policy.
 Values stay distinct from the expressions that evaluate to them. Distinct source
 syntax may evaluate to the same primitive; quotation/printing of source and
 inspection of values keep those roles separate. Numeric literals denote
-exact Rationals; ordinary strings, Bool values and symbolic values have intrinsic
-interpretations. Reserved primitive atoms cannot simultaneously become ordinary
+exact Rationals. Ordinary strings and Bool values have intrinsic
+interpretations; symbolic designators require an expected concrete type. Reserved primitive atoms cannot simultaneously become ordinary
 UpperCamelSymbol values because of their spelling. `Symbol` is a prelude union,
 not a reserved primitive. The prelude also defines `not : Bool -> Bool` as
 `def not(x :: Bool) x == False`.
@@ -44,27 +44,25 @@ which write `type String(:A)` rather than `type :String(:A)` (D20). `True` and
 `False` are `Bool` values like computed comparison results, not `ReservedSymbol`
 values.
 
-Raw expressions are allowed at runtime for now, including `e = Rect(2, 2)`;
 [C04 and its follow-up contracts](specs/implemented/raw-expression-values.md)
-cover raw captures and concrete interpretation. An Expression descriptor does not
-automatically equal the result of evaluating it. The exact public descriptor
-decoding operation remains unsettled.
+require a concrete expected type for a constructor expression. Quotation produces
+syntax. The public descriptor decoding operation remains unsettled.
 
 ## Declarations and plain type values
 
 Working notation separates declarations from type-producing expressions:
 
 ```text
-type Rectangle concrete Rect(w :: Float32,h :: Float32)
+type Rectangle struct Rect(w :: Float32, h :: Float32)
 t = Rectangle
-u = concrete Rect(Float32,Float32)
+u = struct Rect(Float32, Float32)
 ```
 
 The declaration binds/registers the type name and local accessor/printing metadata.
 Plain type construction is capture-free and must not install methods. This makes
 ordinary type values storable, passable and comparable without a declaration effect.
-The concrete/abstract declaration and type-expression forms already written in
-`tests/specification/` are current implementation targets; their missing support
+The [pattern and struct forms](specs/implemented/refined-type-model.md)
+are the current implementation targets. Their missing support
 is tracked as todo. Additional qualifiers and policies remain provisional where
 the decision record says so. See the roadmap's immediate conformance priorities.
 

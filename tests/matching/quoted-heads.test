@@ -38,7 +38,8 @@ test "A quoted operator head matches a type"
 end
 
 test "A quoted name is a literal match head"
-  x = :name
+  def Name type :name
+  x = :name :: Name
 
   assert
     match x

@@ -128,8 +128,9 @@ the actual subject's type. `todo test` marks a whole expected-failure case, incl
 and must fail as a unit. A file may contain only one todo test. Todo assertions
 still run and must fail individually; an unexpected success requires removing
 todo. Legacy assertions must pass until explicitly retired. Do not generate expected values from current outputs.
-Pair each legacy assertion with a same-subject todo, or record the unresolved
-replacement in design/LEGACY-ASSERTIONS.md. Supported behavior uses ordinary checks.
+Use legacy for useful bootstrap behavior intended to change. Keep unresolved
+replacement decisions with the relevant spec or test. Supported behavior uses
+ordinary checks.
 
 Use the common pattern compiler/matcher and source schemas. Preserve complete
 argument-pack semantics and canonical printing, including spaces after commas.

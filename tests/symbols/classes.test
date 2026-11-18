@@ -1,34 +1,46 @@
 test "ASCII word symbol classes"
-  expect :a is a :: LowerCamelSymbol
-  expect :ab is ab :: LowerCamelSymbol
-  expect :aB is aB :: LowerCamelSymbol
-  expect :aBc is aBc :: LowerCamelSymbol
-  expect :abC is abC :: LowerCamelSymbol
-  expect :abCd is abCd :: LowerCamelSymbol
-  expect :A is A :: UpperCamelSymbol
-  expect :Ab is Ab :: UpperCamelSymbol
-  expect :AB is AB :: UpperCamelSymbol
-  expect :ABc is ABc :: UpperCamelSymbol
-  expect :AbC is AbC :: UpperCamelSymbol
-  expect :AbCd is AbCd :: UpperCamelSymbol
-  expect :A_ is A_ :: UpperSnakeSymbol
-  expect :AB_ is AB_ :: UpperSnakeSymbol
-  expect :A_B is A_B :: UpperSnakeSymbol
-  expect :A_BC is A_BC :: UpperSnakeSymbol
-  expect :AB_C is AB_C :: UpperSnakeSymbol
-  expect :AB_CD is AB_CD :: UpperSnakeSymbol
+  legacy expect :a is a :: LowerCamelSymbol
+  legacy expect :ab is ab :: LowerCamelSymbol
+  legacy expect :aB is aB :: LowerCamelSymbol
+  legacy expect :aBc is aBc :: LowerCamelSymbol
+  legacy expect :abC is abC :: LowerCamelSymbol
+  legacy expect :abCd is abCd :: LowerCamelSymbol
+  legacy expect :A is A :: UpperCamelSymbol
+  legacy expect :Ab is Ab :: UpperCamelSymbol
+  legacy expect :AB is AB :: UpperCamelSymbol
+  legacy expect :ABc is ABc :: UpperCamelSymbol
+  legacy expect :AbC is AbC :: UpperCamelSymbol
+  legacy expect :AbCd is AbCd :: UpperCamelSymbol
+  legacy expect :A_ is A_ :: UpperSnakeSymbol
+  legacy expect :AB_ is AB_ :: UpperSnakeSymbol
+  legacy expect :A_B is A_B :: UpperSnakeSymbol
+  legacy expect :A_BC is A_BC :: UpperSnakeSymbol
+  legacy expect :AB_C is AB_C :: UpperSnakeSymbol
+  legacy expect :AB_CD is AB_CD :: UpperSnakeSymbol
 
-  expect :PORT is PORT :: UpperSnakeSymbol
-  expect :ERR_FILE_NOT_FOUND is ERR_FILE_NOT_FOUND :: UpperSnakeSymbol
+  legacy expect :PORT is PORT :: UpperSnakeSymbol
+  legacy expect :ERR_FILE_NOT_FOUND is ERR_FILE_NOT_FOUND :: UpperSnakeSymbol
 end
 
 test "ReservedSymbol is disjoint from ordinary symbol classes"
-  expect :Symbol is Symbol :: UpperCamelSymbol
-  expect :Number is Number :: UpperCamelSymbol
+  legacy expect :Symbol is Symbol :: UpperCamelSymbol
+  legacy expect :Number is Number :: UpperCamelSymbol
   assert not(Int .matches UpperCamelSymbol)
   assert Int .matches ReservedSymbol
   assert not(True .matches UpperCamelSymbol)
   assert not(True .matches ReservedSymbol)
-  assert :Widget .matches Symbol
+  legacy assert :Widget .matches Symbol
   assert not(Int .matches Symbol)
+end
+
+todo test "Symbol classes are patterns for concrete symbol types"
+  type Identifier struct LowerCamelSymbol
+  type TypeName struct UpperCamelSymbol
+  type Constant struct UpperSnakeSymbol
+
+  expect :abC :: Identifier is abC :: Identifier
+  expect :AbC :: TypeName is AbC :: TypeName
+  expect :PORT :: Constant is PORT :: Constant
+  expect :AB_ :: Constant is AB_ :: Constant
+  expect :AbC :: Constant fails "does not designate"
 end

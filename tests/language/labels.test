@@ -79,7 +79,8 @@ test "Labels must start lowercase in values and patterns"
 end
 
 test "Canonical named fields sort after positional fields"
-  expect R(9, z: 2, a: 1) is R(9, a: 1, z: 2) :: Expression
+  def Record type R(Rational, a: Rational, z: Rational)
+  expect R(9, z: 2, a: 1) :: Record is R(9, a: 1, z: 2) :: Record
 end
 
 test "Named matching ignores declaration and argument order"
@@ -189,7 +190,7 @@ end
 test "Named function patterns ignore constructor field order"
   def f(R(z: Int, a: Int)) a + z
 
-  expect f(R(a: 1, z: 2)) is 3 :: Int
+  expect f(R(a: 1, z: 2) :: (type R(a: Int, z: Int))) is 3 :: Int
 end
 
 test "Named matching ignores extra labels when the pattern is open"
@@ -206,13 +207,15 @@ test "Named parameters ignore extra labels"
 end
 
 test "Named order does not change equality or ordering"
-  assert R(z: 2, a: 1) == R(a: 1, z: 2)
-  assert not(R(z: 2, a: 1) < R(a: 1, z: 2))
-  assert R(z: 9, a: 1) < R(a: 2, z: 0)
+  assert (R(z: 2, a: 1) :: (type R(a: Rational, z: Rational))) == (R(a: 1, z: 2) :: (type R(a: Rational, z: Rational)))
+  assert not((R(z: 2, a: 1) :: (type R(a: Rational, z: Rational))) < (R(a: 1, z: 2) :: (type R(a: Rational, z: Rational))))
+  assert (R(z: 9, a: 1) :: (type R(a: Rational, z: Rational))) < (R(a: 2, z: 0) :: (type R(a: Rational, z: Rational)))
 end
 
 test "Named order does not change equality of bound values"
-  Pair(x, y) = Pair(R(z: 2, a: 1), R(a: 1, z: 2))
+  def Named type R(a: Rational, z: Rational)
+  def PairOfRecords type Pair(Named, Named)
+  Pair(x, y) = Pair((R(z: 2, a: 1) :: Named), (R(a: 1, z: 2) :: Named)) :: PairOfRecords
 
   assert x == y
 end
@@ -310,22 +313,23 @@ end
 test "Nested labeled defaults bind in a function pattern"
   def f(R(size: Int = 3, **)) size
 
-  expect f(R(extra: 9)) is 3 :: Int
+  expect f(R(extra: 9) :: (type R(extra: Int))) is 3 :: Int
 end
 
 test "Match defaults bind missing labels"
   expect
-    match R()
+    match R() :: (type R())
       R(size: Int = 3) -> size
     end
   is 3 :: Int
 end
 
 test "Binding defaults preserve the scrutinee"
-  r = R(extra: 9)
+  def Record type R(extra: Int)
+  r = R(extra: 9) :: Record
   R(size: s :: Int = 3, **) = r
 
-  expect r is R(extra: 9) :: Expression
+  expect r is R(extra: 9) :: Record
   expect s is 3 :: Int
 end
 

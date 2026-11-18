@@ -1,34 +1,76 @@
-test "Raw runtime expressions can be interpreted as concrete values"
-  e = Rect(2, 2)
+test "An expected type makes a constructor expression a concrete value"
   def Rectangle type Rect(width :: Int, height :: Int)
-  (r :: Rectangle) = e
+  (r :: Rectangle) = Rect(2, 3)
 
-  expect e is Rect(2, 2) :: Expression
-  expect r is Rect(2, 2) :: Rectangle
+  expect r is Rect(2, 3) :: Rectangle
   expect r.width is 2 :: Int
-  expect r.height is 2 :: Int
+  expect r.height is 3 :: Int
 end
 
-test "Ordinary constructor bindings do not project a concrete value"
-  def Rectangle type Rect(width :: Int, height :: Int)
-  (r :: Rectangle) = Rect(2, 2)
+test "A bare constructor needs an expected concrete type"
+  legacy expect Rect(2, 3) is Rect(2, 3) :: Expression
+  todo expect Rect(2, 3) fails "concrete type"
 
   todo expect
-    Rect(w, h) = r
-    w
-  fails "E_PATTERN_MISMATCH"
+    r = Rect(2, 3)
+    r
+  fails "concrete type"
 end
 
-test "Explicit matching projects one concrete boundary with interpreted fields"
-  def Rectangle type Rect(width :: Int, height :: Int)
-  (r :: Rectangle) = Rect(2, 2)
+test "A bare symbol designates a value of a concrete type"
+  def Absence type :None
+  expect :None :: Absence is None :: Absence
 
-  (w, h) =
-    match r
-      Rect(width, height) -> (width, height)
-    end
+  legacy expect :None is None :: UpperCamelSymbol
+  todo expect
+    missing = :None
+    missing
+  fails "concrete type"
+  todo expect :None :: UpperCamelSymbol fails "concrete type"
+end
+
+test "Quotation preserves a constructor or symbol as syntax"
+  expect
+    Code` Rect(2, 3)
+  is Rect(2, 3) :: Code
+
+  expect
+    Code` :None
+  is :None :: Code
+end
+
+test "A constructor binding destructures a struct"
+  def Rectangle type Rect(width :: Int, height :: Int)
+  r = Rect(2, 3) :: Rectangle
+  Rect(w, h) = r
+
+  expect w is 2 :: Int
+  expect h is 3 :: Int
+end
+
+test "Explicit matching reads a concrete struct's typed fields"
+  def Rectangle type Rect(width :: Int, height :: Int)
+  (r :: Rectangle) = Rect(2, 3)
+
+  (w, h) = match r
+    Rect(width, height) -> (width, height)
   end
 
   expect w is 2 :: Int
-  expect h is 2 :: Int
+  expect h is 3 :: Int
+end
+
+test "A symbolic alternative selects a match arm"
+  absent = :None :: String?
+  present = "hello" :: String?
+
+  def describe(x :: String?)
+    match x
+      :None -> "absent"
+      (value :: String) -> value
+    end
+  end
+
+  expect describe(absent) is "absent"
+  expect describe(present) is "hello"
 end

@@ -27,9 +27,10 @@ end
 test "Ordinary definitions give postfix operators meaning"
   def (n :: Rational)@ n + 1
   expect 2@ is 3 :: Rational
-  prefix = @(2)
-  expect prefix is
-    @(2) :: Expression
+  expect
+    Code` @(2)
+  is
+    @(2) :: Code
   end
 end
 

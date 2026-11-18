@@ -1,10 +1,9 @@
 # Ordinary prelude patterns for type kinds
 
-Draft requested by Jonathan on 10 November 2026. This proposes the ordinary
-prelude definitions behind
-[the approved kind constructors](../approved/type-values.md). The earlier
-decision remains approved; the additional definitions and inspection choices
-below await review.
+This draft explores the ordinary prelude definitions behind the
+[earlier kind constructors](../approved/type-values.md). The
+[refined type model](../implemented/refined-type-model.md) supersedes those
+constructors. Public inspection remains open.
 
 ## Proposed kind definitions
 

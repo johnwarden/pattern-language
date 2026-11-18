@@ -7,8 +7,8 @@ Draft for review. The [fixed-precision notes](https://chatgpt.com/library?file_i
 Define the public types, aliases, operators and explicit conversions in the source prelude. Each fixed format is a concrete `ExactRational` carveout. Its membership predicate checks whether the exact value fits the format. For example:
 
 ```pattern
-type Int64 concrete ExactRational .where fitsInt64
-type Float64 concrete ExactRational .where fitsFloat64
+type Int64 struct ExactRational .where fitsInt64
+type Float64 struct ExactRational .where fitsFloat64
 ```
 
 Proposed initial aliases are `Int = Int64` and `Float = Float64`, with identical type identity under either name. The equations describe aliases. Their declaration spelling follows the language's type binding rules.
@@ -20,7 +20,7 @@ Proposed initial aliases are `Int = Int64` and `Float = Float64`, with identical
 | Decimal floats | A format specifies decimal coefficient precision and exponent bounds. Its domain consists of the Rationals expressible within those bounds. | Select the formats and short alias separately. |
 | Fixed-size ratios | A reduced fraction with a positive denominator must fit the chosen numerator and denominator limits. | Decide what the width counts before defining `Ratio64` or an alias. |
 
-Finite zero has one exact value. Signed zero, infinities, NaN and additional float widths remain open. The prototype currently reserves some numeric names. Moving them to the prelude requires migrating the primitive-name assertions and reconciling the numeric `Int` example in the [approved type-values spec](../approved/type-values.md).
+Finite zero has one exact value. Signed zero, infinities, NaN and additional float widths remain open. The prototype currently reserves some numeric names. Moving them to the prelude requires migrating the primitive-name assertions and reconciling the numeric `Int` example in the [refined type model](2026-11-17-refined-type-model.md).
 
 ## Number and numeric equality
 
@@ -214,6 +214,14 @@ test "Value equality compares Number with a concrete member"
 
   assert n == f
   assert i != f
+end
+
+test "Two Number bindings can hold equal magnitudes in different formats"
+  (x :: Number) = 1 :: Float
+  (y :: Number) = 1 :: Int
+
+  expect (x == y) is False
+  expect (x =#= y) is True
 end
 
 test "Square root requires disambiguation between floating formats"

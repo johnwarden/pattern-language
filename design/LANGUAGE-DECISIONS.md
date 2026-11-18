@@ -42,7 +42,7 @@ with adjacent explanations where needed. See [the lifecycle](../specs/README.md)
 | L11 | Author's subsequent clarification on 9 November: `True(1)`, `1(1)` and similar applications remain valid parsed Code. A head must be a Symbol constructor head or evaluate to a function; invalid head values fail during evaluation, not grammar recognition. The executable contract is application-heads.test and its adjacent note. The grammar-rejection proposal in #49 is superseded. |
 | L12 | Author's subsequent clarification on 9 November: a named function resolves to a function value containing the full implementation, with no free user variables; primitive and possibly prelude/standard-library names form the remaining callable vocabulary. Raw expressions are allowed at runtime for now. `toString(T)` follows its already documented type-directed contract. See the linked approved/implemented records below. |
 
-The spelling `type Name concrete/refinement/abstract ...` is used consistently for review. The declaration keyword, `concrete` versus `struct`/`data`, qualifier order, predicate spelling, generic constraints and some rest notation remain provisional where the attachments offered alternatives. Examples do not ratify those lexical details by repetition.
+Older examples use the review spellings `concrete`, `refinement` and `abstract`. The [refined type model](../specs/implemented/refined-type-model.md) selects `struct`, `pattern` and `T .where p`. Qualifier order, generic constraints and some rest notation remain provisional.
 
 ## Current decision specification
 
@@ -67,8 +67,8 @@ Values stay distinct from the expressions that evaluate to them. Distinct source
 expressions may compute the same value; source quotation/printing and value
 inspection keep those roles separate. Primitive values have intrinsic concrete
 interpretations: ordinary strings are String, booleans are Bool, numeric literals
-are Rational, ordinary quoted symbols have their intrinsic symbol classes, and
-primitive names are `ReservedSymbol` values (D20).
+are Rational, and primitive names are `ReservedSymbol` values in the bootstrap
+(D20). Symbol classes serve as patterns in the refined model.
 
 P proposes self-evaluating `PrimitiveType`, including `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`, with `Type` no longer a reserved primitive atom. This vocabulary is recorded as the proposed primitive representation, not a completed metatype specification. Int/Float families are intended to be definable fixed-precision types rather than primitive numeric atoms.
 
@@ -80,22 +80,21 @@ interpolation and separation of quotation from execution otherwise remain
 unchanged. **Sources:** A “Descriptions/Equality/Identity,” P “Reserved
 Symbols,” AR; R2; L9.
 
-### D03. Raw runtime Expressions are allowed for now; parse into Expression
+### D03. Constructor expressions require a concrete destination
 
-L12 supersedes the earlier blanket rejection of raw construction. `z = Rect(2,2)`
-is allowed as a raw runtime Expression; an explicit annotation, typed quotation
-or sufficient expected context can establish a concrete interpretation such as
-Rectangle. Raw fields are Rational values; interpreted fields follow the concrete
-type. Ordinary binding does not implicitly unwrap that concrete boundary. See
-[C04 and the raw-expression contracts](../specs/implemented/raw-expression-values.md).
+A constructor expression such as `Rect(2, 2)` or a symbol designator such as
+`:None` requires an unambiguous concrete expected type. The expected type
+determines the fields and member values. A typed quotation produces syntax for
+the applicable grammar. See the [construction and quotation
+contracts](../specs/implemented/raw-expression-values.md) and the
+[refined type model](../specs/implemented/refined-type-model.md), which supersede L12
+on bare runtime values.
 
 The parser destination is Expression. Number literals in that domain are exact Rationals (D04). The bootstrap currently has three trees: host `Syntax` (parser product, including quote/sequence/block/form), runtime `Value` (`term` ≈ `apply`, plus packs/literals/symbols), and public `SyntaxNode` transport (`NumberLiteral(Rational) | Apply | Postfix | …`, via `syntaxTree` / `syntaxExpression` / `parseSyntax`). Exact numeric syntax transport is implemented. Those Syntax layers are adapters to remove after staged consumer migration with behavior preserved. The migration is not implemented yet and is not a prerequisite for distinct postfix application.
 
-Permitting raw runtime Expressions does not make an Expression-typed descriptor
-equal the type it describes or choose the public descriptor-decoding API. R2's
-recommendation to require explicit decoding remains a recommendation. There is no
-pending public `NumberLiteral(Float)` A/B redesign. **Sources:** A “Require
-Annotation…,” P “Raw Expressions…,” AR “Expression”; R2; L8; superseding L12.
+Public descriptor decoding remains undecided. **Sources:** A “Require
+Annotation…,” P “Raw Expressions…,” AR “Expression”; R2; L8; L12; refined type
+model.
 
 ### D04. All numeric literals denote exact Rational values — confirmed
 
@@ -111,15 +110,14 @@ Equal normalized structural descriptors denote equal types, independently of dec
 
 This is **descriptor equality**, not proof of extensional equality of arbitrary predicates. The author accepted that correction. Functions/predicates eventually need portable representations; no new host-identity exception is approved. Canonical same-value/same-type printing and parse/print round trips remain goals. **Sources:** A “Structurally equal types…,” AR agreement on extension versus descriptor identity; O.
 
-### D06. Concrete, refinement and abstract interpretations have different effects — confirmed direction
+### D06. Pattern types preserve identity and structs add a concrete boundary
 
-- `concrete` establishes one structural concrete space; structs, alternatives and predicate carveouts are recipes for it.
-- `refinement` restricts an existing concrete space while preserving its identity and operations.
-- `abstract` preserves each accepted value's actual concrete identity; unions and open facets are recipes for it. Concrete structures may themselves contain abstract-typed fields.
-
-Facet combinations require both constraints while preserving the member, not constructing a merged record. The author's documents call these products; R1/R2 recommend the term **intersection**, but that terminology has not been separately ratified. Likewise **abstract** versus **polymorphic** remains a naming choice; the recommendations favor abstract for the type category and polymorphic for functions.
-
-The author proposed disallowing a written singleton union such as `abstract String`. Normalization to the sole member was a reviewer suggestion, **not accepted policy**. How an abstract qualifier behaves when constraints leave one admitted member remains open. **Sources:** A “Kinds…,” K, S; AR singleton question; R1/R2.
+`pattern P` admits values that match `P` while preserving their concrete
+identity. A lone type reference resolves to the same type. `struct P`
+establishes a distinct concrete type; repeated wrapping adds boundaries.
+Either form can use a refinement pattern `T .where p`. See the
+[refined type model](../specs/implemented/refined-type-model.md) for descriptor
+syntax, facets, and projection.
 
 ### D07. General abstract unions are separate from unambiguous grammars — confirmed direction
 
@@ -255,22 +253,19 @@ Live: `0.5 :: Float32` and `float32(0.5)` succeed; `0.1 :: Float32` errors becau
 it is not exactly representable; `.matches Float32` is True for `0.5` and False
 for `0.1`. Todo: `0f0.5 :: Decimal32`, `0f0.1 :: Float64`, and `0.5 :: Int16`.
 
-### C04 — raw expressions and explicit concrete interpretation
+### C04 — concrete construction and quotation
 
-Raw `x = Rect(2, 2)` and Rational captures are ordinary checks. The explicit
-`type Rectangle concrete ...` spelling remains todo. Bootstrap declaration syntax
-already supplies the concrete designation and explicit-match controls in
-[raw-expressions.test](../tests/specification/raw-expressions.test); ordinary
-constructor binding through the concrete boundary remains a todo rejection.
+A Rectangle supplies the expected types of a constructor expression's fields.
+Destructuring and explicit matching read those typed fields. Rejection of a
+bare run-time constructor or symbol remains todo. Quotation retains the syntax
+as data. See [raw-expressions.test](../tests/specification/raw-expressions.test).
 
 ### C05 — ordinary capture-free type values and a type factory
 
-Todo. A named `type Rectangle concrete Rect(w :: Rational, h :: Rational)` equals
-the capture-free `concrete Rect(Rational, Rational)`. `Box<String>` equals
-`concrete Box(String)`, and an explicit match opens
-`Box("hello") :: Box<String>` to obtain `"hello"`. An ordinary constructor binding
-does not open that concrete boundary.
-This does not compare an Expression-typed descriptor with a type, or decide bare-family membership.
+Todo. `type Rectangle struct Rect(w :: Int, h :: Int)` has the same identity
+as the capture-free `struct Rect(Int, Int)`. A type factory called as
+`Box(String)` equals `Struct(Box(String))`. The constructor pattern reads a
+Box's String field. The type descriptor round-trips as a type value.
 
 ### C06 — alternative sets determine concrete identity
 
@@ -307,16 +302,10 @@ explicitly checks the predicate; overload selection does not run it speculativel
 
 ### C11 — explicit projection crosses one boundary only
 
-Todo. `Wrapped` over `Small` over `Rational` needs two explicit matches:
-
-```text
-match w (s :: Small)
-match s (r :: Rational)
-r    # 0 :: Rational
-```
-
-Ordinary binding `(direct :: Rational) = w`, a match that skips Small, and
-`consume(w)` for `def consume(x :: Rational)` must not unwrap Wrapped.
+Todo. A `struct` wrapping another `struct` needs two explicit matches to
+reach the innermost value. An ordinary binding or function parameter for
+the inner struct cannot receive the outer value. See the C11 case in
+[type-values.test](../tests/specification/type-values.test).
 
 ### C12 — recursive designation, nested absence and guaranteed extraction
 
@@ -514,7 +503,7 @@ rejected. These are todo checks today. `Number` is removed for now.
 | Bare generic-family facets, MemberOf and parameter recovery | **Proposed.** Constraint vocabulary, structural matching and non-injective cases remain unresolved. |
 | Duplicate local type names, accessor bundles/imports and preferred display names | **Deferred policy; current errors retained.** Equivalent declarations and accessor collisions remain errors for now. No final alias/import policy is selected. |
 | Singleton abstract unions and qualifiers narrowed to one member | **Unresolved.** Author proposed rejecting explicit singleton unions; normalization is only a reviewer recommendation. |
-| Runtime Expression *value* computation and descriptor/value comparison | **Raw runtime Expressions allowed for now (L12).** Descriptor decoding/equality is separate and remains unsettled. Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
+| Runtime Expression *value* computation and descriptor/value comparison | **Concrete destination required for constructor and symbol designators.** Public descriptor decoding remains unsettled. Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
 | Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |
 | Specialization | **Deferred optimization only.** No source-visible generated overload semantics. |
 | Named functions and first-class overload sets | **Named function values approved (L12).** Full closed implementation, with no free user variables. A new overload-set representation and multiple-definition resolution remain unspecified. |
@@ -534,10 +523,10 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D02 primitives and quotation | C01; C27 is an **unaccepted lexical candidate**, not confirmed behavior |
 | D19 symbol value text vs code quotation | C01 `Widget`; `None` in the postfix, nested-option and concrete-union specs |
 | D20 ReservedSymbol and quoted primitive names | C01; quoted primitive names in Code, including QuotedSymbol todos; symbol-class disjointness |
-| D03 raw expressions / explicit interpretation / parse into Expression | C04 and raw-expressions.test; raw runtime values are allowed for now (L12), explicit concrete boundaries remain; SyntaxNode numeric A/B superseded |
+| D03 raw expressions / explicit interpretation / parse into Expression | C04 and raw-expressions.test; typed construction and grammar quotation, with bare designator rejection todo |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |
-| D06 concrete/refinement/abstract kinds | C06, C07, C13, C15; singleton policy deliberately unassigned |
+| D06 pattern types and structs | C05–C07, C13, C15 and the refined type contracts |
 | D07 general unions versus unambiguous grammars | C13, C14; qualifier spelling remains provisional |
 | D08 declaration-only accessors | C05, C16; duplicate-name/import outcomes deliberately unassigned |
 | D09 recursive designation / one-boundary projection | C03, C11, C12, C17 |

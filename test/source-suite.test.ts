@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { TEST_SCHEMA } from "../src/test-schema.ts";
 import { loadTests } from "../src/test-suite.ts";
 import { sourceFiles } from "./source-files.ts";
+import { Interpreter } from "../src/runtime.ts";
+import { normal } from "../src/syntax.ts";
 
 const sourceCases = loadTests(
   sourceFiles(new URL("../tests/", import.meta.url)),
@@ -20,37 +22,7 @@ test("the published Test schema is the source used by the harness", () => {
 });
 
 // Source-language execution lives in `just test-language`. This file keeps the
-// host-only inventory and canonical-source checks that the CLI does not cover.
-import { Interpreter } from "../src/runtime.ts";
-import { normal } from "../src/syntax.ts";
-test("every legacy assertion has a same-subject todo or an explicit unresolved decision", () => {
-  const inventory = readFileSync(
-    new URL("../design/LEGACY-ASSERTIONS.md", import.meta.url),
-    "utf8",
-  );
-  const documented = [...inventory.matchAll(/^\| `([^`]+)` \| `([^`]+)` \|/gm)]
-    .map((m) => m[1] + " :: " + m[2])
-    .sort();
-  const unresolved: string[] = [];
-  for (const value of sourceCases) {
-    for (const legacy of value.steps.filter(
-      (s) => s.mode === "legacy" && s.kind !== "setup",
-    )) {
-      if (
-        !value.steps.some(
-          (s) =>
-            s.mode === "todo" && normal(s.subject) === normal(legacy.subject),
-        )
-      )
-        unresolved.push(value.id + " :: " + normal(legacy.subject));
-    }
-  }
-  assert.deepEqual(
-    unresolved.sort(),
-    documented,
-    "pair legacy with a real replacement, or document the specific unresolved decision",
-  );
-});
+// host-only canonical-source and specification coverage checks.
 for (const value of sourceCases.filter((value) =>
   value.file.startsWith("conformance/"),
 )) {

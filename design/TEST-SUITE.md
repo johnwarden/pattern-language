@@ -215,11 +215,10 @@ Playground programs include supported setup without modifier prefixes and omit t
 | legacy expect / legacy assert | Pass until explicitly retired |
 | todo expect / todo assert | Fail silently; success fails with “This assertion now passes; remove todo.” |
 
-Legacy is reserved for a contract intended to change. Pair it with a same-subject
-todo when the replacement is settled. If it is not, record the precise unresolved
-decision in [LEGACY-ASSERTIONS.md](LEGACY-ASSERTIONS.md). A corpus check rejects
-unaccounted legacy assertions and stale unresolved entries. Stable semantics belong
-in ordinary assertions even when their setup still uses bootstrap declarations.
+Legacy is reserved for a useful bootstrap observation intended to change.
+Capture the replacement behavior in executable todos when it is settled. Keep
+open decisions with the affected spec or test. Stable semantics belong in ordinary
+assertions even when their setup uses bootstrap declarations.
 
 The same modifiers apply to expect subject fails "reason". An E_ string matches
 a subject diagnostic code exactly; another string matches its message by

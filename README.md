@@ -21,7 +21,7 @@ build, host tests and the source suite.
 | Numeric literals denote exact Rational values; `0f` is a Float64-rounded Rational | Exact Rational values and syntax payloads; explicit Float32/Float64 conversion and canonical numeric text |
 | General abstract unions; unambiguous grammars are a separate requirement | Overlapping `UnionType` members are allowed; `unambiguous` is unimplemented |
 | Named type declarations register accessors; plain type construction is capture-free | `def ... type ...` and existing type-expression accessor products |
-| Raw runtime Expressions are allowed for now; expected types can establish concrete interpretations | Raw construction, designation and one-boundary explicit matching work; ordinary constructor-binding rejection remains todo |
+| Constructor expressions and symbol designators require a concrete expected type | Typed construction and quotation work. Rejection of bare designators is todo |
 | Refinement requirements use evidence; projection crosses one explicit boundary | One-boundary match projection and direct-member designation; proof checking remains future work |
 | Test DSL supports whole-test todo and assertion-level todo/legacy contracts | Implemented source-defined steps, grouped .test files, executed expected-failure assertions, shared CLI/CI/browser corpus |
 
@@ -135,7 +135,7 @@ language milestone is **5a.2: align the bootstrap with the revised value model**
 It progressively replaces legacy checks with fulfilled future contracts. No
 self-hosted evaluator is required to run the suite.
 
-[Every legacy assertion is accounted for](design/LEGACY-ASSERTIONS.md) with a same-subject todo or a specific unresolved decision. Supported behavior uses ordinary checks. Run `just test-language` for current counts.
+Legacy checks preserve selected bootstrap behavior during migration. Run `just test-language` for current counts.
 
 ## Getting started
 

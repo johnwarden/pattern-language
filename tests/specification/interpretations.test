@@ -1,59 +1,6 @@
-test "C11 projection is one explicit concrete boundary"
-  todo expect
-    small = n -> (n == 0)
-    smaller = n -> True
-    type Small concrete Rational .where small
-    type Wrapped concrete Small .where smaller
-    (w :: Wrapped) = 0
-    match w s :: Small
-    match s r :: Rational
-    r
-  is
-    (
-      0
-    ) :: Rational
-  end
-
-  todo expect
-    small = n -> (n == 0)
-    smaller = n -> True
-    type Small concrete Rational .where small
-    type Wrapped concrete Small .where smaller
-    (w :: Wrapped) = 0
-    match w s :: Small
-    match s r :: Rational
-    (direct :: Rational) = w
-    direct
-  fails "ordinary binding does not unwrap Wrapped"
-
-  todo expect
-    small = n -> (n == 0)
-    smaller = n -> True
-    type Small concrete Rational .where small
-    type Wrapped concrete Small .where smaller
-    (w :: Wrapped) = 0
-    match w s :: Small
-    match s r :: Rational
-    match w direct :: Rational
-    direct
-  fails "the immediate base of Wrapped is Small"
-
-  todo expect
-    small = n -> (n == 0)
-    smaller = n -> True
-    type Small concrete Rational .where small
-    type Wrapped concrete Small .where smaller
-    (w :: Wrapped) = 0
-    match w s :: Small
-    match s r :: Rational
-    def consume(x :: Rational) x
-    consume(w)
-  fails "dispatch does not unwrap Wrapped"
-end
-
 test "C12 designation is recursive only when unambiguous"
   todo expect
-    type Option<T> concrete T | :None
+    type Option<T> struct T | :None
     (outer :: Option<Option<String>>) = "Hello"
     text = match outer
       (inner :: Option<String>) -> match inner
@@ -67,7 +14,7 @@ test "C12 designation is recursive only when unambiguous"
     (
       "Hello"
     ) :: (
-      type Option<T> concrete T | :None
+      type Option<T> struct T | :None
       (outer :: Option<Option<String>>) = "Hello"
       text = match outer
         (inner :: Option<String>) -> match inner
@@ -81,7 +28,7 @@ test "C12 designation is recursive only when unambiguous"
   end
 
   todo assert
-    type Option<T> concrete T | :None
+    type Option<T> struct T | :None
     (outer :: Option<Option<String>>) = :None
     (explicitOuter :: Option<Option<String>>) = :None :: Option<Option<String>>
     (inner :: Option<Option<String>>) = :None :: Option<String>
@@ -91,7 +38,7 @@ test "C12 designation is recursive only when unambiguous"
   end
 
   todo expect
-    type Option<T> concrete T | :None
+    type Option<T> struct T | :None
     (outer :: Option<Option<String>>) = "Hello"
     text = match outer
       (inner :: Option<String>) -> match inner

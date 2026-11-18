@@ -1,5 +1,9 @@
 # Type values without a reserved `Type`
 
+> The [refined type model](../implemented/refined-type-model.md) supersedes
+> this record for type construction and descriptor spelling. This proposal
+> records the decisions behind #77 and #78.
+
 Approved by Jonathan in the project chat on 10 November 2026. Origin:
 `specs/inbox/type-values.md`, moved here with the agreed migration correction.
 

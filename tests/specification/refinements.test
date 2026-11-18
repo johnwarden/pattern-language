@@ -1,139 +1,48 @@
-test "C07 refinement evidence preserves the base value"
-  todo assert
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def keep(x :: NonZero) x
-    x = 0.5
-    (nonZero(x))
-  end
+todo test "C07 a refinement preserves its base value"
+  def nonZero(n :: Rational) n != 0
+  type NonZero pattern Rational .where nonZero
+  def keep(x :: NonZero) x
 
-  todo assert
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def keep(x :: NonZero) x
-    x = 0.5
-    assert nonZero(x)
-    (n :: NonZero) = x
-    (n == x)
-  end
-
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def keep(x :: NonZero) x
-    x = 0.5
-    assert nonZero(x)
-    (n :: NonZero) = x
-    assert n == x
-    keep(n)
-  is
-    (
-      0.5
-    ) :: (
-      nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
-      def keep(x :: NonZero) x
-      x = 0.5
-      assert nonZero(x)
-      (n :: NonZero) = x
-      assert n == x
-      NonZero
-    )
-  end
+  x = 0.5
+  (n :: NonZero) = x
+  assert n == x
+  expect keep(n) is 0.5 :: NonZero
 end
 
-test "C08 todo assert supplies no refinement evidence"
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def keep(x :: NonZero) x
-    def unchecked(x :: Rational)
-      keep(x)
-    end
+todo test "C08 a separate test assertion supplies no refinement evidence"
+  def nonZero(n :: Rational) n != 0
+  type NonZero pattern Rational .where nonZero
+  def keep(x :: NonZero) x
+
+  assert nonZero(1)
+
+  expect
+    def unchecked(x :: Rational) keep(x)
     unchecked(1)
-  fails "refinement evidence is missing in unchecked"
+  fails "refinement evidence"
 end
 
-test "C09 base and refinement overloads overlap"
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
+todo test "C09 base and refinement overloads overlap"
+  def nonZero(n :: Rational) n != 0
+  type NonZero pattern Rational .where nonZero
+
+  expect
     def choose(x :: Rational) "base"
     def choose(x :: NonZero) "refined"
     choose(1)
-  fails "overlapping base and refinement overload domains"
+  fails "overlap"
 end
 
-test "C10 unrelated domains can coexist"
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def choose(x :: NonZero) "number"
-    def choose(x :: String) "string"
-    def checked(x :: Rational)
-      if nonZero(x) choose(x) else "zero"
-    end
-    checked(1)
-  is
-    (
-      "number"
-    ) :: (
-      nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
-      def choose(x :: NonZero) "number"
-      def choose(x :: String) "string"
-      def checked(x :: Rational)
-        if nonZero(x) choose(x) else "zero"
-      end
-      String
-    )
+todo test "C10 unrelated overload domains can coexist"
+  def nonZero(n :: Rational) n != 0
+  type NonZero pattern Rational .where nonZero
+  def choose(x :: NonZero) "number"
+  def choose(x :: String) "string"
+  def checked(x :: Rational)
+    if nonZero(x) choose(x) else "zero"
   end
 
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def choose(x :: NonZero) "number"
-    def choose(x :: String) "string"
-    def checked(x :: Rational)
-      if nonZero(x) choose(x) else "zero"
-    end
-    checked(0)
-  is
-    (
-      "zero"
-    ) :: (
-      nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
-      def choose(x :: NonZero) "number"
-      def choose(x :: String) "string"
-      def checked(x :: Rational)
-        if nonZero(x) choose(x) else "zero"
-      end
-      String
-    )
-  end
-
-  todo expect
-    nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def choose(x :: NonZero) "number"
-    def choose(x :: String) "string"
-    def checked(x :: Rational)
-      if nonZero(x) choose(x) else "zero"
-    end
-    choose("hello")
-  is
-    (
-      "string"
-    ) :: (
-      nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
-      def choose(x :: NonZero) "number"
-      def choose(x :: String) "string"
-      def checked(x :: Rational)
-        if nonZero(x) choose(x) else "zero"
-      end
-      String
-    )
-  end
+  expect checked(1) is "number"
+  expect checked(0) is "zero"
+  expect choose("hello") is "string"
 end

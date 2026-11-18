@@ -1,5 +1,6 @@
 test "independent captures"
-  Pair(x, y) = Pair(1, 2)
+  def NumberPair type Pair(Rational, Rational)
+  Pair(x, y) = Pair(1, 2) :: NumberPair
 
   expect x is 1 :: Rational
   expect y is 2 :: Rational

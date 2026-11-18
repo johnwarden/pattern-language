@@ -43,7 +43,7 @@ Each remaining todo is one of:
 | Canonical expected-data spelling | C03 Float64 was this; remaining String/`0f` text belongs to #31 or numeric spelling policy | do not invent spellings |
 | Deferred numeric families | C03 `Decimal32`, `Int16` | stay pending |
 | Unresolved PrimitiveType metatype | C01 `Bool :: PrimitiveType` | author's metatype choice; not chosen here |
-| Unresolved public inspection/decoding | LEGACY-ASSERTIONS D03/D02 type-text rows; example inspect/rebuild and descriptor `toString(Type)` subjects | author's examples |
+| Unresolved public inspection/decoding | Example inspect/rebuild and descriptor `toString(Type)` cases | author's examples |
 | Future diagnostic wording | C24 two-result capture error text; current failure is `E_PATTERN_MISMATCH` | stay pending |
 | Exploratory / undecided prohibition | C27 redundant primitive quotation in Code | stay pending; prohibition not finally chosen |
 | Isolation harness | C26 future names | stay todo; surrounding checks already prove isolation |
@@ -89,8 +89,7 @@ here.
 
 - Every promoted assertion targets accepted behavior, with a documented reason it
   was previously marked todo.
-- Each remaining legacy assertion still has a same-subject todo or an entry in
-  `design/LEGACY-ASSERTIONS.md`.
+- Keep useful legacy checks and document unresolved questions with their cases.
 - Targeted source cases pass; the complete source suite and PR CI remain green.
 - No broad assertion rewrite, generated-from-output expectations, placeholder
   failures, or source-language implementation changes are introduced.

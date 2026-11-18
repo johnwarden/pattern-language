@@ -1,23 +1,32 @@
 test "Label order and explicit label openness in a binding"
-  Box(n :: Int, color: c :: String, **) = Box(3, extra: 7, color: "red")
+  def Input type Box(Int, color: String, extra: Int)
+  box = Box(3, extra: 7, color: "red") :: Input
+
+  Box(n :: Int, color: c :: String, **) = box
 
   expect n is 3 :: Int
   expect c is "red" :: String
 end
 
 test "Label order and explicit label openness as a function parameter"
+  def Input type Box(Int, color: String, extra: Int)
+  box = Box(3, extra: 7, color: "red") :: Input
+
   def f(Box(n :: Int, color: c :: String, **))
     (n, c)
   end
-  (n, c) = f(Box(3, extra: 7, color: "red"))
+  (n, c) = f(box)
 
   expect n is 3 :: Int
   expect c is "red" :: String
 end
 
 test "Label order and explicit label openness in a match arm"
+  def Input type Box(Int, color: String, extra: Int)
+  box = Box(3, extra: 7, color: "red") :: Input
+
   (n, c) =
-    match Box(3, extra: 7, color: "red")
+    match box
       Box(n :: Int, color: c :: String, **) -> (n, c)
     end
   end
@@ -35,25 +44,34 @@ test "Label order and explicit label openness in a macro parameter"
 end
 
 test "Defaults only bind omitted captures in a binding"
-  Box(n :: Int, color: c :: String = "red") = Box(3)
+  def Input type Box(Int)
+  box = Box(3) :: Input
+
+  Box(n :: Int, color: c :: String = "red") = box
 
   expect n is 3 :: Int
   expect c is "red" :: String
 end
 
 test "Defaults only bind omitted captures as a function parameter"
+  def Input type Box(Int)
+  box = Box(3) :: Input
+
   def f(Box(n :: Int, color: c :: String = "red"))
     (n, c)
   end
-  (n, c) = f(Box(3))
+  (n, c) = f(box)
 
   expect n is 3 :: Int
   expect c is "red" :: String
 end
 
 test "Defaults only bind omitted captures in a match arm"
+  def Input type Box(Int)
+  box = Box(3) :: Input
+
   (n, c) =
-    match Box(3)
+    match box
       Box(n :: Int, color: c :: String = "red") -> (n, c)
     end
   end
@@ -71,50 +89,68 @@ test "Defaults only bind omitted captures in a macro parameter"
 end
 
 test "Positional rest never consumes labels in a binding"
-  Box(n :: Int, rest... :: Int*, color: c :: String, **) = Box(1, 2, 3, color: "red", extra: 9)
+  def Input type Box(Int, Int, Int, color: String, extra: Int)
+  box = Box(1, 2, 3, color: "red", extra: 9) :: Input
+
+  Box(n :: Int, rest... :: Int*, color: c :: String, **) = box
 
   expect rest is [2, 3] :: (type [_... :: Int*])
 end
 
 test "Positional rest never consumes labels as a function parameter"
+  def Input type Box(Int, Int, Int, color: String, extra: Int)
+  box = Box(1, 2, 3, color: "red", extra: 9) :: Input
+
   def f(Box(n :: Int, rest... :: Int*, color: c :: String, **)) rest
 
-  expect f(Box(1, 2, 3, color: "red", extra: 9)) is [2, 3] :: (type [_... :: Int*])
+  expect f(box) is [2, 3] :: (type [_... :: Int*])
 end
 
 test "Positional rest never consumes labels in a match arm"
+  def Input type Box(Int, Int, Int, color: String, extra: Int)
+  box = Box(1, 2, 3, color: "red", extra: 9) :: Input
+
   expect
-    match Box(1, 2, 3, color: "red", extra: 9)
+    match box
       Box(n :: Int, rest... :: Int*, color: c :: String, **) -> rest
     end
   is [2, 3] :: (type [_... :: Int*])
 end
 
 test "Positional rest never consumes labels in a macro parameter"
-  macro :take Args(Box(n :: Int, rest... :: Int*, color: c :: String, **)) Code$` [$(rest...)]
+  macro :take Args(Box(n :: Int, rest... :: Int*, color: c :: String, **)) Code$` ([$(rest...)] :: Rational*)
 
   expect
     (take Args(Box(1, 2, 3, color: "red", extra: 9)))
-  is [2, 3] :: Expression
+  is [2, 3] :: Rational*
 end
 
 test "A missing required label is rejected in a binding"
+  def Input type Box(Int, extra: Int)
+  box = Box(3, extra: 7) :: Input
+
   expect
-    Box(n :: Int, color: c :: String, **) = Box(3, extra: 7)
+    Box(n :: Int, color: c :: String, **) = box
     n
   fails "missing required labeled argument"
 end
 
 test "A missing required label is rejected as a function parameter"
+  def Input type Box(Int, extra: Int)
+  box = Box(3, extra: 7) :: Input
+
   expect
     def f(Box(n :: Int, color: c :: String, **)) n
-    f(Box(3, extra: 7))
+    f(box)
   fails "missing required labeled argument"
 end
 
 test "A missing required label is rejected in a match arm"
+  def Input type Box(Int, extra: Int)
+  box = Box(3, extra: 7) :: Input
+
   expect
-    match Box(3, extra: 7)
+    match box
       Box(n :: Int, color: c :: String, **) -> n
     end
   fails "no matching arm"
@@ -128,22 +164,31 @@ test "A missing required label is rejected in a macro parameter"
 end
 
 test "An unexpected label is rejected in a binding"
+  def Input type Box(Int, extra: Int)
+  box = Box(3, extra: 7) :: Input
+
   expect
-    Box(n :: Int) = Box(3, extra: 7)
+    Box(n :: Int) = box
     n
   fails "unexpected labeled field"
 end
 
 test "An unexpected label is rejected as a function parameter"
+  def Input type Box(Int, extra: Int)
+  box = Box(3, extra: 7) :: Input
+
   expect
     def f(Box(n :: Int)) n
-    f(Box(3, extra: 7))
+    f(box)
   fails "unexpected labeled field"
 end
 
 test "An unexpected label is rejected in a match arm"
+  def Input type Box(Int, extra: Int)
+  box = Box(3, extra: 7) :: Input
+
   expect
-    match Box(3, extra: 7)
+    match box
       Box(n :: Int) -> n
     end
   fails "no matching arm"
@@ -157,22 +202,31 @@ test "An unexpected label is rejected in a macro parameter"
 end
 
 test "Overlapping constructor alternatives are ambiguous in a binding"
+  def Input type Box(Rational)
+  box = Box(3) :: Input
+
   expect
-    (Box(n :: Int) | Box(n :: Float)) = Box(3)
+    (Box(n :: Int) | Box(n :: Float)) = box
     n
   fails "ambiguous pattern"
 end
 
 test "Overlapping constructor alternatives are ambiguous as a function parameter"
+  def Input type Box(Rational)
+  box = Box(3) :: Input
+
   expect
     def f((Box(n :: Int) | Box(n :: Float))) n
-    f(Box(3))
+    f(box)
   fails "ambiguous pattern"
 end
 
 test "Overlapping constructor alternatives are ambiguous in a match arm"
+  def Input type Box(Rational)
+  box = Box(3) :: Input
+
   expect
-    match Box(3)
+    match box
       (Box(n :: Int) | Box(n :: Float)) -> n
     end
   fails "ambiguous pattern"

@@ -1,56 +1,245 @@
-test "C04 raw expressions are allowed and explicit types establish an interpretation"
-  x = Rect(2, 2)
-  Rect(w, h) = x
+test "C04 an expected concrete type makes a constructor expression a value"
+  def Rectangle type Rect(w :: Float32, h :: Float32)
+  (r :: Rectangle) = Rect(2, 3)
 
-  expect x is Rect(2, 2) :: Expression
-  expect w is 2 :: Rational
-  expect h is 2 :: Rational
-
-  expect
-    type Rectangle concrete Rect(w :: Float32, h :: Float32)
-    r = (Rect(2, 2) :: Rectangle)
-    r
-  is
-    (
-      Rect(2, 2)
-    ) :: (
-      type Rectangle concrete Rect(w :: Float32, h :: Float32)
-      r = (Rect(2, 2) :: Rectangle)
-      Rectangle
-    )
-  end
+  expect r is Rect(2, 3) :: Rectangle
+  expect r.w is 2 :: Float32
+  expect r.h is 3 :: Float32
 end
 
-test "C05 types are structural values"
-  assert
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    t = Rectangle
-    u = concrete Rect(Rational, Rational)
-    (t == u)
-  end
+todo test "C05 struct declarations and capture-free descriptions have structural identity"
+  type Rectangle struct Rect(w :: Int, h :: Int)
+  assert Rectangle == (struct Rect(Int, Int))
+  assert Rectangle == Struct(Rect(Int, Int))
 
-  todo assert
-    type Box<T> concrete Box(T)
-    (Box<String> == (concrete Box(String)))
-  end
+  def Box(T :: Type) struct Box(T)
+  assert Box(String) == Struct(Box(String))
 
-  todo expect
-    type Box<T> concrete Box(T)
-    b = (Box("hello") :: Box<String>)
-    match b
-      Box(text) -> text
+  b = Box("hello") :: Box(String)
+  Box(text) = b
+  expect text is "hello" :: String
+end
+
+test "C06 the same symbolic designator can designate disjoint values"
+  legacy type PrimaryColor concrete :Red | :Green | :Blue
+  legacy type TicketStatus concrete :Red | :Green
+  todo type PrimaryColor struct :Red | :Green | :Blue
+  todo type TicketStatus struct :Red | :Green
+
+  red = :Red :: PrimaryColor
+  stopped = :Red :: TicketStatus
+
+  expect red == stopped fails "E_INCOMPARABLE_TYPES"
+  expect red != stopped fails "E_INCOMPARABLE_TYPES"
+end
+
+todo test "A pattern of a lone type resolves to that type"
+  alias = pattern pattern String
+
+  assert alias == String
+  expect alias is String :: PrimitiveType
+  expect "value" :: alias is "value" :: String
+end
+
+todo test "Type macros normalize alternatives and descriptors round-trip"
+  a = pattern Int | String
+  b = pattern String | Int
+  assert a == b
+  assert (struct Int | String) == (struct String | Int)
+
+  p = Pattern(String | Int)
+  s = Struct(Struct(Int))
+  assert parse(Type)(toString(Type)(p)) == p
+  assert parse(Type)(toString(Type)(s)) == s
+end
+
+todo test "Each struct wrapper adds a concrete boundary"
+  type Inner struct Int
+  type Outer struct Inner
+  type Top struct Outer
+
+  assert Inner == Struct(Int)
+  assert Top == Struct(Struct(Struct(Int)))
+  assert Inner != Outer
+  assert Outer != Top
+
+  i = 5 :: Int
+  inner = i :: Inner
+  outer = inner :: Outer
+  top = outer :: Top
+
+  expect i == inner fails "E_INCOMPARABLE_TYPES"
+  expect inner == outer fails "E_INCOMPARABLE_TYPES"
+  expect outer == top fails "E_INCOMPARABLE_TYPES"
+  assert top == (inner :: Top)
+end
+
+todo test "C11 explicit match projects one wrapper at a time"
+  type Inner struct Int
+  type Outer struct Inner
+  inner = 5 :: Inner
+  outer = inner :: Outer
+
+  expect
+    (i :: Inner) = outer
+    i
+  fails "does not designate"
+
+  def consume(value :: Inner) value
+  expect consume(outer) fails "no applicable"
+
+  missed = match outer
+    (n :: Int) -> False
+    _ -> True
+  end
+  assert missed
+
+  projected = match outer
+    (value :: Inner) -> value
+  end
+  assert projected == inner
+
+  n = match projected
+    (value :: Int) -> value
+  end
+  expect n is 5 :: Int
+end
+
+todo test "A standalone symbol pattern preserves the concrete enum"
+  type PrimaryColor struct :Red | :Green | :Blue
+  type TrafficLight struct :Red | :Amber | :Green
+  type Red pattern :Red
+  def takesRed(x :: Red) "red"
+  def takesPrimary(x :: PrimaryColor) "primary"
+
+  light = :Red :: TrafficLight
+  (red :: Red) = light
+  expect red is :Red :: TrafficLight
+  assert red == light
+  expect takesRed(red) is "red"
+  expect takesPrimary(light) fails "no applicable"
+
+  expect
+    (bare :: Red) = :Red
+    bare
+  fails "concrete type"
+end
+
+todo test "A symbol pattern respects the boundary of a wrapped enum"
+  type TrafficLight struct :Red | :Amber | :Green
+  type Status struct TrafficLight
+  type Red pattern :Red
+  def takesRed(x :: Red) "red"
+
+  light = :Red :: TrafficLight
+  status = light :: Status
+  expect takesRed(status) fails "no applicable"
+
+  member = match status
+    (value :: TrafficLight) -> value
+  end
+  assert member == light
+  expect takesRed(member) is "red"
+end
+
+todo test "An open facet accepts differently typed rectangles without reinterpreting them"
+  type Color struct :Red | :Green
+  type Rectangle struct Rect(width: Int, height: Int)
+  type ColoredRectangle struct Rect(width: Int, height: Int, color: Color)
+  type Rectangular pattern Rect(width: Int, height: Int, **)
+
+  plain = Rect(width: 2, height: 3) :: Rectangle
+  colored = Rect(width: 2, height: 3, color: :Red) :: ColoredRectangle
+  (a :: Rectangular) = plain
+  (b :: Rectangular) = colored
+
+  assert a == plain
+  assert b == colored
+  assert a != b
+  expect plain == colored fails "E_INCOMPARABLE_TYPES"
+
+  expect
+    (unknown :: Rectangular) = Rect(width: 2, height: 3)
+    unknown
+  fails "concrete type"
+end
+
+todo test "A facet checks the concrete members held in abstract fields"
+  type Num pattern Int | Float
+  type Rectangle struct Rect(Num, Num)
+  type IntRectangular pattern Rect(Int, Int)
+  ints = Rect(5 :: Int, 5 :: Int) :: Rectangle
+  mixed = Rect(5 :: Int, 5 :: Float) :: Rectangle
+
+  (selected :: IntRectangular) = ints
+  assert selected == ints
+  assert not(mixed .matches IntRectangular)
+
+  def classify(r :: Rectangle)
+    match r
+      Rect(Int, Int) -> "two Ints"
+      _ -> "mixed"
     end
-  is
-    "hello" :: String
   end
+
+  expect classify(ints) is "two Ints"
+  expect classify(mixed) is "mixed"
 end
 
-test "C06 equal spellings can belong to different concrete spaces"
+todo test "A struct pattern constructs fields and a type reference wraps the typed member"
+  type Num pattern Int | Float
+  type Rectangle struct Rect(Num, Num)
+  type IntRectangle struct Rect(Int, Int)
+  type WrappedRectangle struct IntRectangle
+  i = Rect(2 :: Int, 3 :: Int) :: IntRectangle
+  r = Rect(2 :: Int, 3 :: Int) :: Rectangle
+  w = i :: WrappedRectangle
+
+  expect i == r fails "E_INCOMPARABLE_TYPES"
+  expect i == w fails "E_INCOMPARABLE_TYPES"
   expect
-    type PrimaryColor concrete :Red | :Green | :Blue
-    type TicketStatus concrete :Red | :Green
-    red = (:Red :: PrimaryColor)
-    stopped = (:Red :: TicketStatus)
-    (red == stopped)
-  fails "E_INCOMPARABLE_TYPES"
+    (other :: Rectangle) = i
+    other
+  fails "does not designate"
+
+  member = match w
+    (value :: IntRectangle) -> value
+  end
+  assert member == i
+end
+
+todo test "A refinement uses the same pattern in Pattern and Struct"
+  def isPositive(n :: Int) n > (0 :: Int)
+  type Positive pattern Int .where isPositive
+  type PositiveBox struct Int .where isPositive
+
+  assert Positive == Pattern(Int .where isPositive)
+  assert PositiveBox == Struct(Int .where isPositive)
+
+  number = 5 :: Int
+  (p :: Positive) = number
+  (b :: PositiveBox) = number
+  assert p == number
+  expect b == number fails "E_INCOMPARABLE_TYPES"
+
+  expect
+    (bad :: Positive) = 0 :: Int
+    bad
+  fails "predicate"
+  expect
+    (bad :: PositiveBox) = 0 :: Int
+    bad
+  fails "predicate"
+end
+
+todo test "Direct overload membership wins over designation"
+  type Text struct String
+  def pick(x :: Text) "wrapped"
+  def pick(x :: String) "string"
+  def onlyWrapped(x :: Text) "wrapped"
+
+  text = "hello"
+  expect pick(text) is "string"
+  expect pick(text :: Text) is "wrapped"
+  expect onlyWrapped(text) is "wrapped"
 end

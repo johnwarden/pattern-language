@@ -114,11 +114,12 @@ test "Test DSL with typed Code"
 end
 
 test "DSL: Symbols and unannotated unions"
-  def MathExp unionType Symbol | Float
-  (a :: MathExp) = :a
+  def Name type :a | :b
+  def MathExp unionType Name | Float
+  (a :: MathExp) = :a :: Name
   text = toString(MathExp)(a)
 
-  expect a is a :: LowerCamelSymbol
+  expect a is a :: Name
   expect text is "a" :: String
 
   assert parse(MathExp)(text) == a

@@ -19,12 +19,13 @@ test "Defaults in function arguments"
 end
 
 test "Exact fields and rest markers"
-  def Packet type Rect(Int, Int, Int, color: Symbol, note: String)
+  def Color type :Black | :White
+  def Packet type Rect(Int, Int, Int, color: Color, note: String)
   Rect(w, h, ..., color: c, **) = Rect(2, 3, 4, color: :Black, note: "extra") :: Packet
 
   expect w is 2 :: Int
   expect h is 3 :: Int
-  expect c is Black :: UpperCamelSymbol
+  expect c is Black :: Color
   (w, h, c)
 end
 

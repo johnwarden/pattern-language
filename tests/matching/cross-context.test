@@ -20,20 +20,20 @@ end
 
 test "A named structural pattern works as a constructor-shaped macro parameter"
   def Point type :Point(x :: Int)
-  macro :f Args(p :: Point) Code$` $(p)
+  macro :f Args(p :: Point) Code$` ($(p) :: Point)
 
   expect
     (f Args(Point(1)))
-  is Point(1) :: Expression
+  is Point(1) :: Point
 end
 
 test "A named structural pattern works as a direct sidefix parameter"
   def Point type :Point(x :: Int)
-  macro :f p :: Point q :: Point Code$` $(p)
+  macro :f p :: Point q :: Point Code$` ($(p) :: Point)
 
   expect
     f Point(1) Point(2)
-  is Point(1) :: Expression
+  is Point(1) :: Point
 end
 
 test "A named structural pattern works in a match arm"
@@ -47,7 +47,7 @@ test "A named structural pattern works in a match arm"
 end
 
 test "One positional and rest pattern agrees in a binding"
-  Pair(first :: Int, rest... :: Int*) = Pair(1, 2, 3)
+  Pair(first :: Int, rest... :: Int*) = (Pair(1, 2, 3) :: (type Pair(Int, Int, Int)))
 
   expect rest is [2, 3] :: (type [_... :: Int*])
 end
@@ -55,12 +55,12 @@ end
 test "One positional and rest pattern agrees in a function parameter"
   def f(Pair(first :: Int, rest... :: Int*)) rest
 
-  expect f(Pair(1, 2, 3)) is [2, 3] :: (type [_... :: Int*])
+  expect f((Pair(1, 2, 3) :: (type Pair(Int, Int, Int)))) is [2, 3] :: (type [_... :: Int*])
 end
 
 test "One positional and rest pattern agrees in a match arm"
   expect
-    match Pair(1, 2, 3)
+    match Pair(1, 2, 3) :: (type Pair(Int, Int, Int))
       Pair(first :: Int, rest... :: Int*) -> rest
     end
   is [2, 3] :: (type [_... :: Int*])
@@ -74,11 +74,11 @@ test "One positional and rest pattern agrees as a type accessor"
 end
 
 test "One positional and rest pattern agrees in a macro parameter"
-  macro :take Args(Pair(first :: Int, rest... :: Int*)) Code$` [$(rest...)]
+  macro :take Args(Pair(first :: Int, rest... :: Int*)) Code$` ([$(rest...)] :: (type [_... :: Rational*]))
 
   expect
     (take Args(Pair(1, 2, 3)))
-  is [2, 3] :: Expression
+  is [2, 3] :: (type [_... :: Rational*])
 end
 
 test "Whole quotation is inert and structural interpolation supplies values"

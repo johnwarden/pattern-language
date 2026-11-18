@@ -62,9 +62,9 @@ must test composition and state role differences explicitly.
   captures only; type defaults and implicit normalization remain excluded.
 - Refinement-qualified functions are legal. Missing evidence is a checking failure;
   overlapping base/refinement overloads do not gain priority by evaluating predicates.
-- Raw runtime Expressions are allowed for now; an expected type can establish a
-  concrete interpretation. [C04 and the raw-expression cases](specs/implemented/raw-expression-values.md)
-  cover the distinction and explicit projection. Distinct
+- Constructor expressions and symbol designators require an unambiguous concrete
+  destination. [C04 and the construction contracts](specs/implemented/raw-expression-values.md)
+  cover typed construction, quotation, and bare-designator rejection. Distinct
   source syntax evaluating to the same primitive is not a type-equality exception.
   The parser destination is Expression, not a lasting parallel syntax tree:
   number literals in Expressions are exact Rationals. Host `Syntax`, public
@@ -94,8 +94,8 @@ selected. Ordinary where refinements remain in scope.
 IEEE signed zero, NaN identity/payloads and infinities remain deferred. Numeric
 family aliases, edge rounding/overflow and canonical spelling remain provisional.
 
-The concrete/abstract declaration forms already written in
-`tests/specification/` remain current implementation targets. Angle-bracket generic
+The [pattern and struct contracts](specs/implemented/refined-type-model.md)
+are the current type-model targets. Angle-bracket generic
 syntax is accepted but deferred: [#62](https://github.com/johnwarden/pattern-language/pull/62)
 is parked at the author's request. Ordinary argument packs for type-valued
 factories cover the current milestones. Preserve the angle-syntax todos, but do
@@ -108,8 +108,8 @@ author. First-class overload sets are
 not accepted. Specialization is only a deferred optimization of already defined
 abstract-call semantics, never a source-visible overload generator. The rule for
 multiple definitions when resolving a name to a function value remains open.
-Permitting raw runtime Expressions does not settle public descriptor decoding
-or require the parser's Expression migration to be completed first.
+Public descriptor decoding and the parser's Expression migration follow
+their existing workstreams.
 
 ## What is implemented now
 
@@ -293,9 +293,8 @@ corpus, including their shared setup and optional displayed return pack. CLI pro
 approved value-model slices, remove fulfilled todo markers and explicitly retire
 legacy assertions as their compatibility requirements end.
 
-Every remaining legacy assertion is accounted for in
-[LEGACY-ASSERTIONS.md](design/LEGACY-ASSERTIONS.md) by a same-subject todo or a
-specific unresolved decision. The host suite checks the inventory against source.
+Keep useful bootstrap observations as legacy during the transition. Track
+unresolved decisions with the affected specs or cases.
 
 ### 5a.2. Align the bootstrap with the revised value model — in progress
 

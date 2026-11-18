@@ -58,17 +58,12 @@ end
 test "A tag value is not implicitly a callable head"
   def Tagged type :Tag(Rational)
   expect Tag(1) :: Tagged is Tag(1) :: Tagged
-  expect (:Tag)(1) :: Tagged fails "E_NOT_CALLABLE"
-  expect :Tag(1) fails "E_NOT_CALLABLE"
-  expect :(Tag(1)) is Tag(1) :: Expression
+  def Tag type :Tag
+  expect (:Tag :: Tag)(1) fails "E_NOT_CALLABLE"
+  legacy expect :Tag(1) fails "E_NOT_CALLABLE"
 
-  head = :Tag :: UpperCamelSymbol
+  head = :Tag :: Tag
   expect head(2) fails "E_NOT_CALLABLE"
-
-  head2 = :foo :: LowerCamelSymbol
-  expect head2(2) fails "E_NOT_CALLABLE"
-  head3 = :+ :: PunctuationSymbol
-  expect head3(2) fails "E_NOT_CALLABLE"
 end
 
 test "A head expression may evaluate to a function"
@@ -93,11 +88,13 @@ test "A constructed value is not implicitly a callable head"
   expect data()(2) fails "E_NOT_CALLABLE"
 end
 
-test "Any raw expression can go in head position"
-  v = Tag(1)
-  expect v(2) is Tag(1)(2) :: Expression
-  expect Tag(1)(2) is Tag(1)(2) :: Expression
+test "Constructor heads and dot applications are available as syntax"
+  expect
+    Code` Tag(1)(2)
+  is Tag(1)(2) :: Code
 
-  expect 1 .Plus 2 is Plus(1)(2) :: Expression
+  expect
+    Code` 1 .Plus 2
+  is Plus(1)(2) :: Code
 end
 

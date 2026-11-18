@@ -9,25 +9,24 @@ test "Explicit factories supply defaults and complete typed values"
   assert rectangle(2, 3) == (Rect(2, 3, color: "black") :: Rectangle)
 end
 
-test "Declarations cannot rewrite symbolic construction"
+test "A declaration does not make a matching constructor head a factory"
   def Plain type Rect(Int, Int)
-
-  expect Rect(2, 3) is Rect(2, 3) :: Expression
-  assert Rect(2, 3) .matches (type Plain)
-
   def Rectangle type Rect(w :: Int, h :: Int, color: String)
+  r = Rect(2, 3) :: Plain
 
-  expect Rectangle(2, 3) is Rectangle(2, 3) :: Expression
+  expect r is Rect(2, 3) :: Plain
+  assert not(r .matches Rectangle)
 
-  assert not(Rect(2, 3) .matches (type Rectangle))
+  legacy expect Rectangle(2, 3) is Rectangle(2, 3) :: Expression
+  todo expect Rectangle(2, 3) fails "concrete type"
 end
 
 test "Destructuring defaults bind captures without adding fields"
   def Plain type Rect(Int, Int)
-  raw = Rect(2, 3) :: Plain
-  Rect(w, h, color: c :: String = "black") = raw
+  rect = Rect(2, 3) :: Plain
+  Rect(w, h, color: c :: String = "black") = rect
 
-  expect raw is Rect(2, 3) :: Plain
+  expect rect is Rect(2, 3) :: Plain
   expect c is "black" :: String
 
   (size: Int, color: String = "black") = (size: 3)
@@ -35,19 +34,20 @@ test "Destructuring defaults bind captures without adding fields"
   expect size is 3 :: Int
   expect color is "black" :: String
 
-  (x, color: c :: Symbol = :Red) = (1)
+  def Color type :Red | :Green
+  (x, color: c :: Color = :Red) = (1)
 
   assert x == 1
-  assert c == :Red
+  expect c is Red :: Color
 end
 
 test "Named and anonymous parameter defaults share binding semantics"
   def Plain type R()
   def f(R(color: String = "black")) color
-  raw = R()
+  r = R() :: Plain
 
-  expect f(raw) is "black" :: String
-  expect raw is R() :: Expression
+  expect f(r) is "black" :: String
+  expect r is R() :: Plain
 
   g = (color: c :: String = "black") -> c
 

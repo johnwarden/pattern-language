@@ -8,7 +8,7 @@ behind a todo.
 
 | Work | Contract | Handoff |
 | --- | --- | --- |
-| Concrete boundary in ordinary bindings | [raw-expressions.test](../../tests/specification/raw-expressions.test), "Ordinary constructor bindings do not project a concrete value" | The negative subject currently succeeds. Enforce rejection while retaining raw Expression destructuring, whole-value binding and explicit one-boundary matching. Audit [defaults.test](../../tests/bindings/defaults.test); preserve its capture/default observations through explicit matching. No angle syntax dependency. |
+| Concrete construction and projection | [Core type contracts](../../specs/implemented/refined-type-model.md) | Require concrete destinations for constructor and symbol designators. Ordinary destructuring reads struct fields. An explicit match projects a wrapper boundary. |
 | Refinement declaration recognition | C07–C10 in [refinements.test](../../tests/specification/refinements.test) | The eight todos currently stop at declaration recognition. Add focused declaration, base-identity and no-accessor controls, then elaborate `type NonZero refinement Rational .where predicate` into the existing refinement mechanism. Evidence checking belongs to milestone 7; this slice must not introduce predicate-driven overload selection. |
 
 Write any missing focused contracts before runtime changes. These scopes may
@@ -18,7 +18,7 @@ proceed independently with explicit ownership around shared runtime/grammar code
 
 | Work | Current state | Next step |
 | --- | --- | --- |
-| Ordinary type values | [Approved type-values decision](../../specs/approved/type-values.md); [prelude-pattern draft](../../specs/inbox/prelude-type-kind-patterns.md) | Convert the approved examples into focused contracts. Settle the ordinary construction rule and required supporting domains before claiming the full prelude implementation is ready. No angle syntax is required. |
+| Ordinary type values | [Core type contracts](../../specs/implemented/refined-type-model.md) | Implement the `pattern` and `struct` syntax, structural identity, and typed text round trips. Ordinary type-valued argument packs cover the initial slice. |
 | Closed named function values | [Approved decision](../../specs/approved/named-function-values.md), [closed immutable values](../../specs/approved/library-closure-and-local-printing.md), and 17 todos in [named-function-values.test](../../tests/specification/named-function-values.test) | Representation preflight first: complete immutable captured values/dependencies, finite recursion, packs, labels/rest/defaults and structural identity. A name handle or hidden ambient closure is insufficient. Public Function/Library grammar, admissible captures and overloaded-name selection remain design work. |
 | Retiring legacy type-definition syntax | [Approved retirement](../../specs/approved/retire-legacy-type-definition-syntax.md) | Coordinate replacement construction/declaration support with prelude/corpus migration before removing compatibility. The newer type-values decision already permits ordinary Type-valued functions. |
 

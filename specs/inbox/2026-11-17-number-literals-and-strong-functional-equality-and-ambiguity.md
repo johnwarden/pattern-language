@@ -156,7 +156,7 @@ This seems odd because adding a definition of `foo` changes what foo(5) means. B
 
 Analogously:
 
-	t = concrete ExactRational | Int
+	t = struct ExactRational | Int
 
 	(x :: t) = 5
 	expect x is 5 :: ExactRational
@@ -176,7 +176,7 @@ Analogously:
 
 What if we have multiple layers of designation. 
 
-	def Id concrete Int64
+	type Id struct Int64
 
 	x = 5 :: Id
 

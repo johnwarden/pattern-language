@@ -3,9 +3,9 @@
 ## Current decision boundary — 7 November 2026
 
 The later design record introduces no new string/quote surface rule. Redundant
-primitive quotation remains provisional. Raw runtime Expressions are now allowed
-for now under [their current contracts](../specs/implemented/raw-expression-values.md);
-that does not settle the complete public syntax/descriptor mapping.
+primitive quotation remains provisional. [The construction
+contracts](../specs/implemented/raw-expression-values.md) distinguish syntax
+produced by quotation from construction in an expected concrete type.
 The test-suite milestone adds pending inert forms before source code.evaluate.
 General type-value changes are in LANGUAGE-DECISIONS.md; the implementation scope
 below remains the bootstrap's tested quotation contract.

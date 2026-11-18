@@ -51,26 +51,26 @@ test "Prefix star and caret remain ordinary application"
   is 8 :: Rational
 end
 
-test "Spaced ampersand and tilde remain infix data"
+test "Spaced ampersand and tilde are infix syntax"
   expect
-    1 & 2
-  is (1 & 2) :: Expression
+    Code` 1 & 2
+  is (1 & 2) :: Code
   expect
-    3 ~ 4
-  is (3 ~ 4) :: Expression
+    Code` 3 ~ 4
+  is (3 ~ 4) :: Code
 end
 
 test "Prefix question mark is ordinary application, not an optional"
   expect
-    ?(1)
+    Code` ?(1)
   is
-    ?(1) :: Expression
+    ?(1) :: Code
   end
 end
 
 test "Optional type descriptions print as None unions"
-  expect toString(Type)(type String?) is "Type(:None | String)" :: String
-  expect toString(Type)(type String??) is "Type(:None | Type(:None | String))" :: String
+  legacy expect toString(Type)(type String?) is "Type(:None | String)" :: String
+  legacy expect toString(Type)(type String??) is "Type(:None | Type(:None | String))" :: String
 end
 
 test "An ordinary postfix question-mark definition coexists with the optional convention"

@@ -1,159 +1,159 @@
 test "Rest captures only remaining positional fields from one argument"
-  def f(first, rest...) [rest...]
+  def f(first, rest... :: Rational*) [rest...] :: Rational*
 
-  expect f(1) is [] :: Expression
+  expect f(1) is [] :: Rational*
 end
 
 test "Rest captures only remaining positional fields from two arguments"
-  def f(first, rest...) [rest...]
+  def f(first, rest... :: Rational*) [rest...] :: Rational*
 
-  expect f(1, 2) is [2] :: Expression
+  expect f(1, 2) is [2] :: Rational*
 end
 
 test "Rest captures only remaining positional fields from three arguments"
-  def f(first, rest...) [rest...]
+  def f(first, rest... :: Rational*) [rest...] :: Rational*
 
-  expect f(1, 2, 3) is [2, 3] :: Expression
+  expect f(1, 2, 3) is [2, 3] :: Rational*
 end
 
 test "Rest captures ignore extra names"
-  def f(first, rest...) [rest...]
+  def f(first, rest... :: Rational*) [rest...] :: Rational*
 
-  expect f(1, foo: 2) is [] :: Expression
+  expect f(1, foo: 2) is [] :: Rational*
 end
 
 test "Rest captures remaining positional fields in a binding"
-  (first, rest...) = (1, 2, 3)
+  (first, rest... :: Rational*) = (1, 2, 3)
 
-  expect [rest...] is [2, 3] :: Expression
+  expect [rest...] :: Rational* is [2, 3] :: Rational*
 end
 
 test "Rest captures remaining positional fields from one value"
-  (first, rest...) = (1)
+  (first, rest... :: Rational*) = (1)
 
-  expect [rest...] is [] :: Expression
+  expect [rest...] :: Rational* is [] :: Rational*
 end
 
 test "Rest captures remaining positional fields from two values"
-  (first, rest...) = (1, 2)
+  (first, rest... :: Rational*) = (1, 2)
 
-  expect [rest...] is [2] :: Expression
+  expect [rest...] :: Rational* is [2] :: Rational*
 end
 
 test "Rest captures ignore extra names in a binding"
-  (first, rest...) = (1, foo: 2)
+  (first, rest... :: Rational*) = (1, foo: 2)
 
-  expect [rest...] is [] :: Expression
+  expect [rest...] :: Rational* is [] :: Rational*
 end
 
 test "List rest captures remaining elements"
-  [first, rest...] = [1, 2, 3]
+  [first, rest... :: Rational*] = [1, 2, 3] :: Rational*
 
-  expect [rest...] is [2, 3] :: Expression
+  expect [rest...] :: Rational* is [2, 3] :: Rational*
 end
 
 test "Rest captures are empty list values at the empty tail"
-  [y, rest...] = [1]
+  [y, rest... :: Rational*] = [1] :: Rational*
 
-  expect rest is [] :: Expression
+  expect rest is [] :: Rational*
 end
 
 test "Rest captures are list values at a singleton tail"
-  [y, rest...] = [1, 2]
+  [y, rest... :: Rational*] = [1, 2] :: Rational*
 
-  expect rest is [2] :: Expression
+  expect rest is [2] :: Rational*
 end
 
 test "Rest captures are list values at a longer tail"
-  [y, rest...] = [1, 2, 3]
+  [y, rest... :: Rational*] = [1, 2, 3] :: Rational*
 
-  expect rest is [2, 3] :: Expression
+  expect rest is [2, 3] :: Rational*
 end
 
 test "Rest captures are empty list values in a pack binding"
-  (y, rest...) = (1)
+  (y, rest... :: Rational*) = (1)
 
-  expect rest is [] :: Expression
+  expect rest is [] :: Rational*
 end
 
 test "Rest captures are list values in a pack binding"
-  (y, rest...) = (1, 2)
+  (y, rest... :: Rational*) = (1, 2)
 
-  expect rest is [2] :: Expression
+  expect rest is [2] :: Rational*
 end
 
 test "Rest captures are longer list values in a pack binding"
-  (y, rest...) = (1, 2, 3)
+  (y, rest... :: Rational*) = (1, 2, 3)
 
-  expect rest is [2, 3] :: Expression
+  expect rest is [2, 3] :: Rational*
 end
 
 test "Rest captures are empty list values in a function"
-  def f(y, rest...) rest
+  def f(y, rest... :: Rational*) rest
 
-  expect f(1) is [] :: Expression
+  expect f(1) is [] :: Rational*
 end
 
 test "Rest captures are singleton list values in a function"
-  def f(y, rest...) rest
+  def f(y, rest... :: Rational*) rest
 
-  expect f(1, 2) is [2] :: Expression
+  expect f(1, 2) is [2] :: Rational*
 end
 
 test "Rest captures are list values in a function"
-  def f(y, rest...) rest
+  def f(y, rest... :: Rational*) rest
 
-  expect f(1, 2, 3) is [2, 3] :: Expression
+  expect f(1, 2, 3) is [2, 3] :: Rational*
 end
 
 test "Rest captures are empty list values in a type accessor"
   def V type [y :: Int, rest... :: Int*]
   v = [1] :: V
 
-  expect v.rest is [] :: (type [_... :: Int*])
+  expect v.rest is [] :: Int*
 end
 
 test "Rest captures are singleton list values in a type accessor"
   def V type [y :: Int, rest... :: Int*]
   v = [1, 2] :: V
 
-  expect v.rest is [2] :: (type [_... :: Int*])
+  expect v.rest is [2] :: Int*
 end
 
 test "Rest captures are list values in a type accessor"
   def V type [y :: Int, rest... :: Int*]
   v = [1, 2, 3] :: V
 
-  expect v.rest is [2, 3] :: (type [_... :: Int*])
+  expect v.rest is [2, 3] :: Int*
 end
 
 test "Empty rest list values compare equal"
-  [y, rest...] = [1]
+  [y, rest... :: Rational*] = [1] :: Rational*
 
-  assert rest == []
+  assert rest == ([] :: Rational*)
 end
 
 test "Singleton rest list values compare equal"
-  [y, rest...] = [1, 2]
+  [y, rest... :: Rational*] = [1, 2] :: Rational*
 
-  assert rest == [2]
+  assert rest == ([2] :: Rational*)
 end
 
 test "Rest list values compare equal at every length"
-  [y, rest...] = [1, 2, 3]
+  [y, rest... :: Rational*] = [1, 2, 3] :: Rational*
 
-  assert rest == [2, 3]
+  assert rest == ([2, 3] :: Rational*)
 end
 
 test "Rest list values can be spread"
-  [y, rest...] = [1, 2]
+  [y, rest... :: Rational*] = [1, 2] :: Rational*
 
-  expect [0, rest...] is [0, 2] :: Expression
+  expect [0, rest...] :: Rational* is [0, 2] :: Rational*
 end
 
 test "Rest list values match a list parameter"
   def one(x :: [_... :: Int*]) x
-  [y, rest...] = [1, 2]
+  [y, rest... :: Int*] = [1, 2] :: Int*
 
-  expect one(rest) is [2] :: (type [_... :: Int*])
+  expect one(rest) is [2] :: Int*
 end
