@@ -10,8 +10,8 @@ import {
   type LayoutForms,
 } from "./parser.ts";
 import { syntaxData, codeSource } from "./syntax-values.ts";
-import { LanguageError, normal } from "./syntax.ts";
-import type { Syntax } from "./syntax.ts";
+import { LanguageError, apply, normal, packOf, symbol } from "./syntax.ts";
+import type { Field, Syntax } from "./syntax.ts";
 import type { TypeValue, Value } from "./values.ts";
 import {
   unwrap,
@@ -571,23 +571,9 @@ const unionAlternatives = (v: Value): Value[] | undefined => {
   const right = v.body[0].value;
   return [v.head.body[0].value, ...(unionAlternatives(right) ?? [right])];
 };
-/**
- * A type as the type expression an author would write: `String?`, `Float*`,
- * `Box(Int)`. Local names are never used, so the text means the same anywhere.
- * A type without a structural description is named by its own display name.
- */
+/** Type source for diagnostics. A display name cannot stand in for an encoding. */
 export function typeExpressionText(type: TypeValue): string {
-  let description: Value;
-  try {
-    description = typeDescription(type);
-  } catch (error) {
-    if (
-      error instanceof LanguageError &&
-      error.diagnostic.code === "E_TYPE_SERIALIZATION"
-    )
-      return type.name;
-    throw error;
-  }
+  const encoded = typeData(type);
   const sugar = (
     v: Value,
     recurse: (v: Value) => Syntax,
@@ -624,17 +610,56 @@ export function typeExpressionText(type: TypeValue): string {
         };
     }
   };
-  return normal(
-    descriptionSyntax(description, new Set(), literalSyntax, sugar),
+  const names = new Set<string>();
+  const expression = (v: Value): Syntax => descriptionSyntax(
+    v,
+    names,
+    literalSyntax,
+    (description) => {
+      if (
+        description.kind !== "term" ||
+        description.head.kind !== "symbol" ||
+        description.head.name !== "Type" ||
+        description.body.length !== 1 ||
+        description.body[0].value.kind !== "term"
+      )
+        return;
+      // Read the descriptor as data. This preserves recursive binders and
+      // avoids calling a constructor with the same name in the author's scope.
+      return apply(symbol("Type"), packOf({
+        kind: "quote",
+        value: descriptionSyntax(description.body[0].value, names, literalSyntax),
+      }));
+    },
   );
+  const sugared =
+    encoded.kind === "term" &&
+    encoded.head.kind === "symbol" &&
+    encoded.head.name === "Type" &&
+    encoded.body.length === 1
+      ? sugar(encoded.body[0].value, expression)
+      : undefined;
+  return normal(sugared ?? expression(encoded));
 }
 /**
  * A value as the source that writes it, for diagnostics: symbols keep their colon
  * and implicit type tags are dropped. Fails with E_VALUE_SERIALIZATION when the
  * value has no such text or is too large to quote in a message.
  */
-export function sourceText(value: Value, limit = 80): string {
+export function sourceText(
+  value: Value,
+  annotations?: ReadonlyMap<Field<Value>, string>,
+): string {
+  const limit = 80;
+  const used = new Set<Field<Value>>();
   let nodes = 0;
+  const fieldSyntax = (field: Field<Value>): Syntax => {
+    const body = syntax(field.value);
+    const type = annotations?.get(field);
+    if (!type) return body;
+    used.add(field);
+    return apply(apply(symbol("::"), packOf(body)), packOf(parseExpression(type)));
+  };
   const tooLarge = () =>
     new LanguageError("value is too large to quote", undefined, {
       code: "E_VALUE_SERIALIZATION",
@@ -658,7 +683,7 @@ export function sourceText(value: Value, limit = 80): string {
       case "pack":
         return {
           kind: "pack",
-          body: raw.body.map((f) => ({ ...f, value: syntax(f.value) })),
+          body: raw.body.map((f) => ({ ...f, value: fieldSyntax(f) })),
         };
       case "term": {
         const head = unwrap(raw.head);
@@ -673,7 +698,7 @@ export function sourceText(value: Value, limit = 80): string {
             value:
               f.label === "**"
                 ? { kind: "symbol" as const, name: "**", quoted: false }
-                : syntax(f.value),
+                : fieldSyntax(f),
           })),
         };
       }
@@ -684,6 +709,10 @@ export function sourceText(value: Value, limit = 80): string {
     }
   };
   const text = normal(syntax(value));
+  if (annotations && used.size !== annotations.size)
+    throw new LanguageError("nested interpretations cannot be written in this value", undefined, {
+      code: "E_VALUE_SERIALIZATION",
+    });
   if (text.length > limit || text.includes("\n")) throw tooLarge();
   return text;
 }

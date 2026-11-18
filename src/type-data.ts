@@ -249,10 +249,7 @@ export function typeDescription(
         return (bs) => {
           const values = choices.map((x) => x(bs));
           if (p.preserveSpace) return unionData(values);
-          const entries = values
-            .map((value) => [descriptionKey(value), value] as const)
-            .sort((a, b) => compare(a[1], b[1]));
-          const ordered = entries.map(([, value]) => value);
+          const ordered = values.sort(compare);
           return ordered.length < 2
             ? term("Union", ...ordered)
             : ordered.slice(0, -1).reduceRight(

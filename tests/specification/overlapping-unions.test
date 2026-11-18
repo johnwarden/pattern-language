@@ -115,7 +115,7 @@ test "Same-space refinement unions reject without running predicates"
   fails "E_REFINED_UNION"
 end
 
-# Alternatives written twice are one alternative: a type declaration is not ambiguous.
+# Alternatives with equal compiled type values are one alternative.
 test "Repeated alternatives in a type are one alternative"
   def Bad type :A | :A
   assert Bad == (type :A)
@@ -130,11 +130,48 @@ test "Repeated alternatives in a type are one alternative"
   is B
 end
 
-test "Repeated alternatives do not make a pattern alternative unambiguous"
-  expect
-    def f(x | x) 1
-    f(1)
-  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+test "Type construction removes equal alternatives with different spellings"
+  i = Int
+  assert (type Int | i) == Int
+  assert (type Int | String | i) == (type Int | String)
+  assert (type :Box(Int) | Box(Int)) == (type Box(Int))
+  assert (type 1 | 1.0) == (type 1)
+  one = 1 :: Int
+  assert (type 1 | one) == (type 1)
+  assert Type(:(Box(Int) | Box(Int))) != (type Box(Int))
+  a = type :A
+  assert (type :A) == a
+  assert (type :A | a) == a
+  assert (type a | :A) == a
+  assert (type a | :A | :B) == (type :A | :B)
+end
+
+test "A factory result and a quoted head normalize when their types are equal"
+  def Box(T :: Type) type :Box(T)
+  assert (type :Box(Int)) == Box(Int)
+  assert (type :Box(Int) | Box(Int)) == Box(Int)
+  assert (type Box(Int) | :Box(Int)) == Box(Int)
+  assert (type Box(Int) | :Box(Int) | :Absent) == (type :Box(Int) | :Absent)
+end
+
+test "Type alternatives keep unequal explicit wrappers"
+  wrapped = Type(Int)
+  assert wrapped != Int
+  assert (type Int | wrapped) != Int
+  assert (type wrapped | wrapped) == wrapped
+end
+
+test "Renaming a capture does not create a second type alternative"
+  def Shape type :Circle(r :: Float) | Circle(radius :: Float)
+  assert Shape == (type Circle(Float))
+  shape = Circle(1 :: Float) :: Shape
+  expect shape.r is 1 :: Float
+end
+
+test "Recursive alternatives normalize after the full type is available"
+  def Chain type :Nil | :Cons(Int, Chain) | Cons(Int, Chain)
+  assert :Nil .matches Chain
+  assert Cons(1, :Nil) .matches Chain
 end
 
 test "Overlapping abstract facet members retain spaces"

@@ -13,7 +13,7 @@ import {
   symbol,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
-import { any } from "./pattern.ts";
+import { any, combineMatchDetails } from "./pattern.ts";
 import type { Pattern } from "./pattern.ts";
 import { uniqueCaptures, patternCaptures } from "./pattern-captures.ts";
 import { isSelfEvaluating } from "./primitive-names.ts";
@@ -32,8 +32,7 @@ export interface PatternDomain<T> {
   allowIgnoredCaptures?: boolean;
   requireCaptureTypes?: boolean;
   allowDefaults?: boolean;
-  /** Alternatives written identically are one alternative (type declarations). */
-  uniqueAlternatives?: boolean;
+  normalizeAlternatives?: (choices: Pattern<T>[]) => Pattern<T>;
   defaultValue?: (node: Syntax) => T;
   defaultIdentity?: (node: Syntax) => string;
   validateTypedCapture?: (name: string, annotation: Syntax) => void;
@@ -59,20 +58,15 @@ export class PatternCompiler<T> {
     }
     const union = binary(n, "|");
     if (union) {
-      if (!this.domain.uniqueAlternatives)
+      if (!this.domain.normalizeAlternatives)
         return { kind: "union", choices: union.map((x) => this.compile(x)) };
       const alternatives = (x: Syntax): Syntax[] => {
         const parts = binary(x, "|");
         return parts ? parts.flatMap(alternatives) : [x];
       };
-      const seen = new Set<string>();
-      const distinct = alternatives(n).filter((x) => {
-        const key = normal(x);
-        return !seen.has(key) && !!seen.add(key);
-      });
-      return distinct.length === 1
-        ? this.compile(distinct[0])
-        : { kind: "union", choices: distinct.map((x) => this.compile(x)) };
+      return this.domain.normalizeAlternatives(
+        alternatives(n).map((x) => this.compile(x)),
+      );
     }
     const annotation = binary(n, "::");
     if (annotation) {
@@ -137,7 +131,14 @@ export class PatternCompiler<T> {
               .filter((r) => r.end === result.fields.length)
               .flatMap((r) => {
                 const captures = m.merge(result.captures, r.captures);
-                return captures ? [{ ...r, end: result.end, captures }] : [];
+                return captures
+                  ? [{
+                      ...r,
+                      ...combineMatchDetails(result, r),
+                      end: result.end,
+                      captures,
+                    }]
+                  : [];
               }),
           ),
       };

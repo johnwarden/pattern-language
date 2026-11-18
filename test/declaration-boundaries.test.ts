@@ -100,7 +100,10 @@ test("equal declarations are rejected across visible scopes even when captures a
 
 test("plain type construction cannot declare captures or install accessors", () => {
   rejects("t = type :R(x :: Int)\n0", "E_PLAIN_TYPE_CAPTURE");
-  rejects("t = type :R(x: Int)\n(r :: t) = R(x: 3)\nr.x", "E_UNBOUND_NAME");
+  rejects(
+    "t = type :R(x: Int)\n(r :: t) = R(x: 3)\nr.x",
+    "E_UNBOUND_NAME",
+  );
   rejects("def make() type :R(x :: Int)\nmake()", "E_PLAIN_TYPE_CAPTURE");
   rejects(
     "def make() type :R(x: Int)\ndef R make()\nr = R(x: 3) :: R\nr.x",
@@ -135,10 +138,6 @@ test("type construction sorts alternatives without redefining ordinary tree equa
   );
   assert.equal(run("Type(:(B | A)) == (type :A | :B)"), "True");
   assert.equal(run(":(A | B) == :(B | A)"), "False");
-  assert.equal(run("def Bad type :A | :A\nBad == (type :A)"), "True");
-  assert.equal(run("t = type :A | :A\nt == (type :A)"), "True");
-  assert.equal(run("type :A | :B | :A"), "Type(:A | :B)");
-  assert.equal(run(":None .matches (type :None | :None)"), "True");
 });
 
 test("failed submissions roll back generic declaration products", () => {
@@ -150,6 +149,7 @@ test("failed submissions roll back generic declaration products", () => {
   );
   assert.equal(displayResults(interpreter.run("v = V(2) :: V(Int)\nv.x")), "2");
 });
+
 
 test("nested constructor patterns retain accessors without completing fields", () => {
   assert.equal(

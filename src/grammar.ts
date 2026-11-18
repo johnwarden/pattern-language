@@ -456,7 +456,7 @@ export class Grammar {
     if (n.kind === "symbol" && !n.quoted && this.keywords.has(n.name)) {
       return this.keywords.get(n.name)!.flatMap((name) =>
         matcher.scan(this.rules.get(name)!, items, pos).map((m) => ({
-          end: m.end,
+          ...m,
           fields: [
             entry(
               this.elaborateTypeForm(

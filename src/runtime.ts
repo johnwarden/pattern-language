@@ -186,9 +186,10 @@ const valueMatcher = () =>
   new Matcher<Value>({
     equal,
     describe: display,
-    source: (fields) =>
+    source: (fields, annotations) =>
       sourceText(
         fields.length === 1 ? fields[0].value : { kind: "pack", body: fields },
+        annotations,
       ),
     collection: (body) => ({ kind: "term", head: valSymbol("[]"), body }),
     row: (value) => {
@@ -350,6 +351,10 @@ export class Interpreter {
     outer?: Syntax;
   };
   private deferredUnions: TypeValue[] = [];
+  private deferredPatternUnions: Extract<
+    Pattern<Value>,
+    { kind: "union" }
+  >[] = [];
   private aliasTargets = new WeakMap<TypeValue, TypeValue>();
   constructor(
     grammar = DEFAULT_GRAMMAR,
@@ -647,6 +652,7 @@ export class Interpreter {
       this.evaluatedTypes = new WeakMap();
       this.pendingDefinitions.clear();
       this.deferredUnions = [];
+      this.deferredPatternUnions = [];
       for (const [scope, previous] of this.scopeChanges) {
         scope.functions = previous.functions;
         scope.typeDefinitions = previous.typeDefinitions;
@@ -2900,7 +2906,9 @@ export class Interpreter {
         allowIgnoredCaptures: !typeMode,
         requireCaptureTypes: typeMode,
         allowDefaults: !typeMode,
-        uniqueAlternatives: typeMode,
+        normalizeAlternatives: typeMode
+          ? (choices) => this.normalizePatternUnion(choices)
+          : undefined,
         defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {
@@ -3018,6 +3026,97 @@ export class Interpreter {
       dimensions,
     );
   }
+  private distinctPatternAlternatives(
+    choices: Pattern<Value>[],
+  ): Pattern<Value>[] {
+    const describe = (choice: Pattern<Value>): Value | string => {
+      const type: TypeValue =
+        choice.kind === "ref" && choice.referent?.kind === "type"
+          ? choice.referent
+          : {
+              kind: "type",
+              key: "alternative:" + nextId++,
+              name: "type alternative",
+              facet: isOpenPattern(choice),
+              pattern: () => choice,
+            };
+      try {
+        // Compare each member as its own type value, before placing it
+        // inside the union. This uses the same value tree as ordinary ==.
+        return typeData(type);
+      } catch (error) {
+        if (
+          !(error instanceof LanguageError) ||
+          error.diagnostic.code !== "E_TYPE_SERIALIZATION"
+        )
+          throw error;
+        return typeIdentity(type);
+      }
+    };
+    const alternatives = choices.map((choice, index) => ({
+      index,
+      identity: describe(choice),
+    }));
+    const order = (
+      { identity: a }: (typeof alternatives)[number],
+      { identity: b }: (typeof alternatives)[number],
+    ) => {
+      if (typeof a !== "string")
+        return typeof b === "string" ? -1 : compare(a, b);
+      if (typeof b !== "string") return 1;
+      return a === b ? 0 : a < b ? -1 : 1;
+    };
+    // When an equal direct pattern exists, keep it so a redundant reference
+    // does not introduce a nested type boundary. Otherwise keep source order.
+    alternatives.sort(
+      (a, b) =>
+        order(a, b) ||
+        Number(choices[a.index].kind === "ref") -
+          Number(choices[b.index].kind === "ref"),
+    );
+    const repeats = new Set<number>();
+    for (let i = 1; i < alternatives.length; i++)
+      if (order(alternatives[i - 1], alternatives[i]) === 0)
+        repeats.add(alternatives[i].index);
+    return choices.filter((_, i) => !repeats.has(i));
+  }
+  private normalizePatternUnion(choices: Pattern<Value>[]): Pattern<Value> {
+    try {
+      const distinct = this.distinctPatternAlternatives(choices);
+      return distinct.length === 1
+        ? distinct[0]
+        : { kind: "union", choices: distinct };
+    } catch (error) {
+      if (
+        !this.buildingTypes ||
+        !(error instanceof LanguageError) ||
+        error.diagnostic.code !== "E_UNGUARDED_TYPE"
+      )
+        throw error;
+      // A recursive alternative may refer to a definition still being built.
+      const pending = { kind: "union" as const, choices };
+      this.deferredPatternUnions.push(pending);
+      return pending;
+    }
+  }
+  private normalizeDeferredPatternUnions(): void {
+    let pending = this.deferredPatternUnions.splice(0);
+    while (pending.length) {
+      const next: typeof pending = [];
+      let changed = false;
+      for (const union of pending) {
+        const distinct = this.distinctPatternAlternatives(union.choices);
+        changed ||= distinct.length !== union.choices.length;
+        if (distinct.length === 1) Object.assign(union, distinct[0]);
+        else {
+          union.choices = distinct;
+          next.push(union);
+        }
+      }
+      if (!changed) break;
+      pending = next;
+    }
+  }
   private compilePattern(
     n: Syntax,
     env: Scope,
@@ -3079,6 +3178,12 @@ export class Interpreter {
         pattern.span,
         { code: "E_PLAIN_TYPE_CAPTURE", phase: "declaration" },
       );
+    if (
+      binary(pattern, "|") &&
+      compiled.kind === "ref" &&
+      compiled.referent?.kind === "type"
+    )
+      return compiled.referent;
     return this.patternType(compiled, env, "type " + normal(pattern), key);
   }
   private patternType(
@@ -3208,16 +3313,15 @@ export class Interpreter {
         },
       );
     const produced = this.definitionProducts.get(type);
+    const captures = produced && patternCaptures(produced.capturePattern);
     const definition: TypeDefinition = {
       type,
       name: type.name,
       declaration: decl,
       capturePattern: produced?.capturePattern ?? type.pattern(),
-      accessors: (produced?.accessors ?? []).map((a) => ({
-        ...a,
-        type,
-        declaration: decl,
-      })),
+      accessors: (produced?.accessors ?? [])
+        .filter((accessor) => captures?.has(accessor.name))
+        .map((a) => ({ ...a, type, declaration: decl })),
     };
     this.definitionProducts.set(type, definition);
     const identity = typeIdentity(type);
@@ -3704,7 +3808,8 @@ export class Interpreter {
       kind: "ref",
       key: type.key,
       name: type.name,
-      describe: () => typeExpressionText(type),
+      referent: type,
+      describe: () => (type.packaged ? undefined : typeExpressionText(type)),
       get facet() {
         return type.facet;
       },
@@ -4288,6 +4393,7 @@ export class Interpreter {
     if (!this.buildingTypes) {
       const definitions = [...this.pendingDefinitions];
       this.pendingDefinitions.clear();
+      this.normalizeDeferredPatternUnions();
       const unions = this.deferredUnions.splice(0);
       const flatten = (
         t: TypeValue,

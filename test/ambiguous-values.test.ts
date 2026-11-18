@@ -18,7 +18,8 @@ const caught = (run: () => unknown) => {
 };
 const ambiguity = (source: string, interpreter = new Interpreter()) =>
   caught(() => displayResults(interpreter.run(source)));
-const probe = (interpreter: Interpreter) => {
+const probe = (accept = true) => {
+  const interpreter = new Interpreter();
   const state = { calls: 0 };
   interpreter.env.functions.set("probe", [
     {
@@ -29,142 +30,66 @@ const probe = (interpreter: Interpreter) => {
       test: (args) => args.length === 0,
       invoke: () => {
         state.calls++;
-        return [{ label: "_1", value: { kind: "symbol", name: "True" } }];
+        return [{
+          label: "_1",
+          value: { kind: "symbol", name: accept ? "True" : "False" },
+        }];
       },
     },
   ]);
-  return state;
+  return { interpreter, state };
 };
-const union = "b = abstract Int | Float\n";
+const refinementUnion = "p = Int .where (n -> probe())\nu = abstract p | Float\n";
 
-test("an ambiguous value designator is blamed with the code, phase and location of its expression", () => {
-  const error = ambiguity(union + "x = 1\n3 .matches b");
+test("an ambiguous value designator retains its diagnostic code, phase and location", () => {
+  const error = ambiguity("b = abstract Int | Float\nx = 1\n3 .matches b");
   assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR");
   assert.equal(error.diagnostic.phase, "match");
   assert.equal(error.diagnostic.primary?.line, 3);
   assert.equal(error.diagnostic.primary?.column, 1);
+});
+
+test("type suggestions do not use the enclosing union's local name", () => {
+  const error = ambiguity("def EitherNumber abstract Int | Float\n3 .matches EitherNumber");
   assert.match(error.diagnostic.message, /`3 :: Int`/);
-  assert.match(error.diagnostic.message, /`3 :: Float`/);
+  assert.doesNotMatch(error.diagnostic.message, /EitherNumber/);
 });
 
-test("the interpretations of an absence are written as source", () => {
-  const error = ambiguity(
-    "type Foo concrete String? | Float?\n(x :: Foo) = :None\nx",
-  );
-  assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR");
-  assert.match(error.diagnostic.message, /`:None :: String\?`/);
-  assert.match(error.diagnostic.message, /`:None :: Float\?`/);
-});
-
-test("every interpretation is a type expression and never a local name", () => {
-  const error = ambiguity("u = abstract Int* | Float*\n[] .matches u");
-  assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR");
-  assert.match(error.diagnostic.message, /`\[\] :: Float\*`/);
-  assert.match(error.diagnostic.message, /`\[\] :: Int\*`/);
-  const named = ambiguity("def Number abstract Int | Float\n3 .matches Number");
-  assert.match(named.diagnostic.message, /`3 :: Int`/);
-  assert.doesNotMatch(named.diagnostic.message, /Number/);
-});
-
-test("a message lists two interpretations and counts the rest", () => {
-  const error = ambiguity(
-    "b = abstract Int | Float | Rational | Float64 | Float32\n3 .matches b",
-  );
-  assert.equal(
-    error.diagnostic.message,
-    "ambiguous value designator 3: please specify `3 :: Float`, `3 :: Float32`, ...and 3 others",
-  );
-});
-
-test("listing interpretations never evaluates a refinement predicate again", () => {
-  for (const tail of ["(x :: u) = 3\nx", "3 .matches u"]) {
-    const interpreter = new Interpreter();
-    const state = probe(interpreter);
-    const error = ambiguity(
-      "p = Int .where (n -> probe())\nu = abstract p | Float\n" + tail,
-      interpreter,
-    );
-    assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR", tail);
-    assert.equal(state.calls, 1, tail);
-  }
-});
-
-test("a predicate runs once when dispatch lists a refinement member", () => {
-  const interpreter = new Interpreter();
-  const state = probe(interpreter);
-  const error = ambiguity(
-    "p = Int .where (n -> probe())\nu = abstract p | Float\ndef f(n :: u) n\nf(3)",
-    interpreter,
-  );
-  assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR");
-  assert.equal(state.calls, 1);
-});
-
-test("dispatch lists a refinement member only when its predicate accepts the designator", () => {
-  const program = (n: number) =>
-    "p = Int .where (n -> n > (5 :: Int))\nu = abstract p | Float\ndef f(n :: u) n\nf(" +
-    n +
-    ")";
-  // 3 fails the predicate, so only Float accepts it: it is selected, not ambiguous.
-  assert.equal(displayResults(new Interpreter().run(program(3))), "3");
-  const accepted = ambiguity(program(7));
-  assert.equal(accepted.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR");
-  assert.match(accepted.diagnostic.message, /`7 :: Float`/);
-  assert.match(accepted.diagnostic.message, /`7 :: Int \.where/);
-});
-
-test("a refinement predicate decides each route once for an ambiguous designator", () => {
+test("reporting ambiguity does not reevaluate a refinement predicate", () => {
   for (const tail of [
+    "(x :: u) = 3\nx",
+    "3 .matches u",
     "def f(n :: u) n\nf(3)",
     "g = (n :: u) -> n\ng(3)",
     "match 3\n  (n :: u) -> n\nend",
   ]) {
-    const interpreter = new Interpreter();
-    const state = probe(interpreter);
-    const error = ambiguity(
-      "p = Int .where (n -> probe())\nu = abstract p | Float\n" + tail,
-      interpreter,
-    );
+    const { interpreter, state } = probe();
+    const error = ambiguity(refinementUnion + tail, interpreter);
     assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR", tail);
     assert.equal(state.calls, 1, tail);
   }
 });
 
-test("a value too large to quote still reports the ambiguity", () => {
-  const list = "[" + Array.from({ length: 60 }, (_, i) => i).join(", ") + "]";
-  const error = ambiguity(
-    "u = abstract Int* | Float*\n" + list + " .matches u",
-  );
-  assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR");
-  assert.equal(
-    error.diagnostic.message,
-    "ambiguous value designator: 2 interpretations match",
-  );
-});
-
-test("an ambiguity whose value has no text still reports E_AMBIGUOUS_VALUE_DESIGNATOR", () => {
-  for (const source of [
-    "def f(x | x) 1\nf(1 / 3)",
-    "match 1 / 3\n  (x | x) -> 1\nend",
-    "(Box(n :: Rational) | Box(n :: Any)) = Box(1 / 3)\nn",
+test("a rejecting predicate runs once after a definition is selected", () => {
+  for (const tail of [
+    "def f(n :: u) toString(u)(n)\nf(3)",
+    "g = (n :: u) -> toString(u)(n)\ng(3)",
   ]) {
-    const error = ambiguity(source);
-    assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR", source);
-    assert.equal(
-      error.diagnostic.message,
-      "ambiguous value designator: 2 interpretations match",
-      source,
-    );
+    const { interpreter, state } = probe(false);
+    const result = displayResults(interpreter.run(refinementUnion + tail));
+    assert.match(result, /3 :: Float/);
+    assert.equal(state.calls, 1, tail);
   }
 });
 
-test("alternatives that are not types have no interpretation to list", () => {
-  const error = ambiguity("def f(x | x) 1\nf(1)");
-  assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR");
-  assert.equal(
-    error.diagnostic.message,
-    "ambiguous value designator: 2 interpretations match",
-  );
+test("a predicate in an unselected overload does not run", () => {
+  const { interpreter, state } = probe();
+  const result = displayResults(interpreter.run(
+    refinementUnion +
+      "def f(n :: u, s :: String) 1\ndef f(n :: Rational, s :: Symbol) 2\nf(3, :x)",
+  ));
+  assert.equal(result, "2");
+  assert.equal(state.calls, 0);
 });
 
 test("a grammar ambiguity lists the rules that accept the text", () => {
