@@ -31,29 +31,23 @@ in the prelude. An initial union for the formats listed above is:
 type Number pattern Int64 | UInt64 | Float32 | Float64
 ```
 
-`ExactRational` is outside `Number`. The distinction matters for
-equality. If `Number` included `ExactRational`, comparing an Int zero
-and an ExactRational zero within that domain would yield `False`. Their
-concrete member types differ even though their magnitudes are equal.
-Keeping the types disjoint lets the comparison below report an error.
+`ExactRational` is outside `Number`. Numeric equality (`==`) accepts operands
+of type `Number | ExactRational` and compares their exact mathematical values
+in the finite numeric model. Numeric inequality (`!=`) is its complement.
+
+Exact equality (`===`) and inequality (`!==`) require overlapping static
+domains and compare values including their concrete types.
+[Functional equality](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#strong-functional-equality)
 
 ```pattern
 test "Numeric equality compares a Number with an exact literal"
   (x :: Number) = 0 :: Int
-  expect (x == 0) fails "E_INCOMPARABLE_TYPES"
-  expect (x != 0) fails "E_INCOMPARABLE_TYPES"
-  expect (x =#= 0) is True
-  expect (x !#= 0) is False
+  expect x === 0 fails "E_INCOMPARABLE_TYPES"
+  expect x !== 0 fails "E_INCOMPARABLE_TYPES"
+  expect x == 0 is True
+  expect x != 0 is False
 end
 ```
-
-Numeric equality accepts `Number | ExactRational` operands and compares
-their exact mathematical values in the finite numeric model. Numeric
-inequality is its Boolean complement. `==` and `!=` keep their
-[functional equality contract](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#strong-functional-equality).
-
-The proposed spellings `=#=` and `!#=` use the token and comment rules in
-the [infix precedence draft](arithmetic-precedence.md#numeric-equality-tokens-and-comments).
 
 ## Operator calls and exact literals
 
@@ -144,7 +138,7 @@ end
 | Remainder | Propose a separate operation satisfying `a = q*b + r`, with nonzero remainder having the dividend's sign. Its spelling remains open. | Deferred. | Deferred. |
 | Ordering | Compare the exact mathematical values within the selected concrete format and return `Bool`. | Same. | Same. |
 
-Division and integer remainder by zero fail when evaluated. Existing typed equality governs `==` and `!=`. Each floating operator rounds its own result before that result feeds a subsequent operator. An explicit floating conversion may round, while operand designation checks exact fit.
+Division and integer remainder by zero fail when evaluated. Each floating operator rounds its own result before that result feeds a subsequent operator. An explicit floating conversion may round, while operand designation checks exact fit.
 
 The arithmetic policies and alias defaults are proposals for review. In
 particular, checked integer arithmetic, truncating integer division, finite
@@ -190,11 +184,11 @@ end
 test "Numeric equality applies to literal and bound ExactRationals"
   n = 2 :: Int
   two = 2
-  expect (n == 2) fails "E_INCOMPARABLE_TYPES"
-  expect (n == two) fails "E_INCOMPARABLE_TYPES"
-  expect (n == (2 :: Int)) is True
-  expect (n =#= 2) is True
-  expect (two =#= n) is True
+  expect n === 2 fails "E_INCOMPARABLE_TYPES"
+  expect n === two fails "E_INCOMPARABLE_TYPES"
+  expect n === (2 :: Int) is True
+  expect n == 2 is True
+  expect two == n is True
 end
 ```
 
@@ -207,13 +201,13 @@ such as `Int` and `Float64`, also needs a signature decision.
 ## Candidate contracts
 
 ```pattern
-test "Value equality compares Number with a concrete member"
+test "Exact equality compares Number with a concrete member"
   (n :: Number) = 0 :: Float64
   (i :: Number) = 0 :: Int
   f = 0 :: Float64
 
-  assert n == f
-  assert i != f
+  assert n === f
+  assert i !== f
 end
 
 test "Square root requires disambiguation between floating formats"

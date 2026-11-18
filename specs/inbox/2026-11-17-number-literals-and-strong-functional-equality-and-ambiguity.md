@@ -1,46 +1,36 @@
 
 # Strong Functional Equality
 
+If two expressions have the same static type and compare exactly equal
+with `===`, substituting one for the other preserves the result in every
+context where both expressions are valid. The following expression must
+evaluate to `False` in such a context.
 
-Strong functional equality is a substitution rule. If two expressions evaluate to the same exact value
-with the same static type (`==` equality), substituting one for the other in any context preserves the
-result.
+	(E1 === E2) && (CONTEXT[E1] !== CONTEXT[E2])
 
-For example this should never be true:
-
-	(E1 == E2) && (CONTEXT[E1] != CONTEXT[E2])
-
-Where CONTEXT[...] can be any expression where an un-quoted value expression can be filled in.
-
-Comparison is permitted whenever the operands' static types admit at least
+Exact comparison requires the operands' static types to admit at least
 one concrete type in common. For example, `Number` and `Float64` overlap
-because `Number` includes `Float64`. Equality then compares the exact values,
-including their concrete types, without designation. A `Number` holding
-an `Int` zero therefore compares unequal to a `Float64` zero. The
-substitution rule above applies when the expressions have the same static
-type. See [existing abstract/concrete comparison coverage](../../test/abstract-values.test.ts#L25-L43).
+because `Number` includes `Float64`. Exact equality compares the values
+including their concrete types. A `Number` holding an `Int` zero compares
+exactly unequal to a `Float64` zero.
+[Abstract and concrete comparison coverage](../../test/abstract-values.test.ts#L25-L43)
 
-This creates a problem. We intuitively want fixed-precision numbers to be comparable to exact rationals (number literals)
+Numeric `==` compares magnitudes across formats, including `ExactRational`.
+An overload can distinguish values that are numerically equal.
 
 	x = 0 :: Int
+	def kind(n :: Int) "Int"
+	def kind(n :: ExactRational) "ExactRational"
 	assert x == 0
-
-But then we can do:
-
-		x = 0 :: Int
-		def foo(x :: Int) = "int"
-		def foo(x :: ExactRational) = "exact rational"
-		x == 0 && foo(x) != foo(0)
-
-Which violates strong functional equality. So we can't just say that `1` means `1 :: Int` in context where an int is expected.
+	assert kind(x) !== kind(0)
 
 ## DISCARDED Option:  Numeric Literals (ExactRationals) directly *represent* values of fixed-precision number types.
 
 	x = 1 :: Int
 	y = 1 :: Float
-	x == 1
-	y == 1
-	INCOMPARABLE: x == y
+	x === 1
+	y === 1
+	INCOMPARABLE: x === y
 
 	AMZBIGUOUS: sqrt(2)
 	sqrt(2 :: Float64)
@@ -70,15 +60,15 @@ A numeric literal by itself has type ExactRational and is not exactly equal to a
 	x = 1 :: Int
 	y = 1 :: Float
 
-	INCOMPARABLE: x == 1
-	x == 1 :: Int
-	INCOMPARABLE: y == 1
-	y == 1 :: Float
+	INCOMPARABLE: x === 1
+	x === 1 :: Int
+	INCOMPARABLE: y === 1
+	y === 1 :: Float
 
-	INCOMPARABLE: x == 1 :: ExactRational
-	NO: y == 1 :: ExactRational
+	INCOMPARABLE: x === 1 :: ExactRational
+	NO: y === 1 :: ExactRational
 
-	INCOMPARABLE: x == y
+	INCOMPARABLE: x === y
 
 	# Don't define sqrt over exact rationals, because it needs a finite-precision result. Only define over floats/decimal floats where a precision is implicit in the type.
 	expect sqrt(2) fails "ambiguous"
@@ -123,7 +113,7 @@ This could almost work.
 
 But then this is not true
 
-	(5 == 5 :: ExactRational) && foo(5) == foo(5 :: ExactRational)
+	(5 === 5 :: ExactRational) && foo(5) === foo(5 :: ExactRational)
 
 Another problem with this:
 
@@ -186,7 +176,7 @@ What if we have multiple layers of designation.
 
 	y = 5 :: Int64
 	z = y :: Id
-	assert z == x
+	assert z === x
 
 
 ## Examples: ambiguity with option types

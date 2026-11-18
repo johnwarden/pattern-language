@@ -1,35 +1,24 @@
 # Refinement evidence
 
-Draft for review. This extends D10's evidence rule to literal designation,
-bindings, dispatch, and return types.
+A type such as `NonZeroFloat` promises that a value is a `Float` and that
+`isNonZero` is true for it. Both bindings below hold the same concrete `Float` value.
 [Language decisions](../../design/LANGUAGE-DECISIONS.md) · [Ambiguity contract](../approved/ambiguous-values.md)
 
-## A refined type carries evidence
+```pattern
+def isNonZero(n :: Number) n != 0
+type NonZeroFloat pattern Float .where isNonZero
 
-A static type `T .where p` guarantees both membership in `T` and the truth of
-`p` for the value. A `pattern T .where p` retains the base value's concrete
-type and identity. For example, a `NonZeroNumber` binding can hold a
-`Float` with proof that it is nonzero.
+(x :: NonZeroFloat) = 2 :: Float
+(y :: Float) = 2 :: Float
+expect y :: NonZeroFloat fails "missing isNonZero"
+```
 
-A binding or parameter that requires a refinement checks the expression's static
-type and the facts available at that point. An existing guarantee satisfies
-the requirement directly. A base-typed variable with no such guarantee is
-ineligible even when its current value happens to pass the predicate.
-An ascription of an already typed expression requires the same evidence.
-An explicit match can narrow the base type or project a wrapper according to
-the type model.
-
-| Operation | Source of refinement evidence |
-| --- | --- |
-| Assignment or argument using an already typed expression | Its static type and facts in scope |
-| Designation of a literal in a known expected type | Evaluate each required predicate during designation |
-| True branch of an explicit `if p(x)` | The result of that check for that binding and predicate |
-| Call with a refined return type | The function's declared and checked guarantee |
-
-Missing evidence and a predicate returning `False` are different failures.
-For a binding, report which guarantee is missing. For a call with no eligible
-definition, report the missing overload and the types supplied. Report a failed
-predicate for a literal that reaches the check and is rejected by it.
+The binding of `x` checks the predicate on the literal. From then on, `x`
+carries the guarantee in its type. The declared type of `y` guarantees
+only `Float`. Writing `y :: NonZeroFloat` asks to use the value of `y` at
+the stronger type, so the checker needs the nonzero guarantee already
+in scope. Assigning `y` to a refined binding or passing it to a refined
+parameter needs the same guarantee.
 
 ## Literal designation
 
@@ -49,19 +38,18 @@ missing refinement evidence fails checking.
 
 A compiler performs the literal checks at compile time. The interpreter
 can perform them while interpreting the literal in its expected type.
-Reuse the outcome for the eventual binding and any diagnostic. An error
-raised by a predicate is a failure of the check and retains its diagnostic.
+Reuse the outcome for binding and diagnostics. A predicate that returns `False`
+produces a diagnostic naming the failed predicate. An error raised by the
+predicate retains its diagnostic.
 
-## Nonzero numbers
+## Explicit tests establish evidence
 
-These examples use the draft fixed-precision prelude. The division example
-uses `Float` operands so that the choice of division signature is explicit.
+The true branch of `if isNonZero(y)` can use `y` as a `NonZeroFloat`. The
+condition has already checked that value. In the branch, both
+`y :: NonZeroFloat` and passing `y` directly to `safeDivide` work.
 
 ```pattern
-def isNonZero(n :: Number) n !#= 0
 type NonZeroNumber pattern Number .where isNonZero
-type NonZeroFloat pattern Float .where isNonZero
-
 def safeDivide(x :: Float, y :: NonZeroFloat) x / y
 ```
 
@@ -87,7 +75,7 @@ test "A Float binding needs evidence before it can be used as nonzero"
   fails "missing isNonZero"
 
   (value :: Float?) =
-    if isNonZero(y) safeDivide(1 :: Float, y) else :None
+    if isNonZero(y) safeDivide(1 :: Float, y :: NonZeroFloat) else :None
   end
 
   expect value is 0.5 :: Float?
