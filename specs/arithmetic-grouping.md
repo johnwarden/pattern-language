@@ -18,8 +18,9 @@ readable. The printer has to preserve each of those distinctions.
 
 Familiar arithmetic can silently produce a different result from what
 readers expect. For example, `2 * 3 + 4` currently means `2 * (3 + 4)`.
-This proposal borrows Pony's explicit grouping rule for mixtures of
-arithmetic operators with different conventional precedence.
+Pony requires parentheses whenever different infix operators are mixed.
+This proposal requires explicit grouping at the boundary between additive
+and multiplicative operators.
 [Pony's infix operators](https://tutorial.ponylang.io/expressions/ops.html)
 
 ## Surface rule
@@ -59,13 +60,28 @@ the two arithmetic groups. A domain-specific grammar can still interpret
 are separate decisions. Use `(a == b) && (c == d)` to compare both pairs
 before applying `&&` under this grouping rule.
 
+## Reader options for review
+
+- Requiring grouping for an infix right operand of `-`, `/`, or `%`
+  would catch `a - b + c`, `10 - 3 - 2`, and `12 / 3 * 2`.
+- Requiring grouping for any mix of different infix operators would
+  also catch cases such as `a .div b * c`. Repeated uses of one operator
+  would still need an associativity rule.
+- Requiring grouping where arithmetic and comparison operators meet
+  would catch `a * b == c + d`. Write `(a * b) == (c + d)` to compare
+  the two arithmetic results.
+
 ## Printing
 
 Keep parentheses around left infix children when printing infix syntax.
-Also wrap a right infix child when its root operator and the parent's
-operator belong to different arithmetic groups. For example,
-`+(a)(*(b)(c))` prints as `a + (b * c)`, and `*(+(a)(b))(c)` prints as
-`(a + b) * c`. Both forms read back to their original application trees.
+When an arithmetic operator has a right infix child with an arithmetic
+operator at its root, wrap that child if the two operators differ or if
+the parent is `-`, `/`, or `%`. This makes the right grouping visible
+even in cases that the reader accepts without parentheses.
+
+For example, print `+(a)(*(b)(c))` as `a + (b * c)`, `*(+(a)(b))(c)`
+as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Each form
+reads back to its original application tree.
 
 ## Test cases
 
@@ -101,13 +117,19 @@ test "Accepted infix chains still associate right"
   assert parse(Code)("f(a * b, c + d)") == parse(Code)("f(*(a)(b), +(c)(d))")
 end
 
-test "Printed infix Code reads back across either arithmetic boundary"
+test "Printed infix Code shows the grouping of arithmetic operands"
   right = parse(Code)("+(a)(*(b)(c))")
   left = parse(Code)("*(+(a)(b))(c)")
+  sameGroup = parse(Code)("-(a)(+(b)(c))")
+  repeatedDivision = parse(Code)("/(a)(/(b)(c))")
   expect toString(Code)(right) is "a + (b * c)"
   expect toString(Code)(left) is "(a + b) * c"
+  expect toString(Code)(sameGroup) is "a - (b + c)"
+  expect toString(Code)(repeatedDivision) is "a / (b / c)"
   assert parse(Code)(toString(Code)(right)) == right
   assert parse(Code)(toString(Code)(left)) == left
+  assert parse(Code)(toString(Code)(sameGroup)) == sameGroup
+  assert parse(Code)(toString(Code)(repeatedDivision)) == repeatedDivision
 end
 ```
 
