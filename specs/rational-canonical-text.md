@@ -2,8 +2,8 @@
 
 Approved by Jonathan in the project chat on 10 November 2026. Replaces the
 16-fractional-place cutoff and binary64-specific printing preference in
-[the archived Rational draft](archive/rational-literals-and-text.md).
-This approves canonical text selection, not every remaining input spelling.
+[the Rational literals spec](rational-literals-and-text.md), which defines the
+accepted input spellings.
 
 ## Selection
 
@@ -43,8 +43,8 @@ Use these canonical lexical choices before comparing:
   exponent. Keep the required integer digit before a decimal or hexadecimal
   point (`0.5`, not `.5`). No trailing fractional zeros.
 - Fractions have coprime components and denominator greater than one. Their
-  parentheses are part of the spelling. Neither component contains a sign,
-  decimal point or separate radix/exponent syntax.
+  parentheses are part of the spelling. Each component uses plain decimal
+  integer digits. The sign rule below applies to negative values.
 
 Break ties by this tuple, in order:
 
@@ -54,8 +54,10 @@ Break ties by this tuple, in order:
 4. ASCII lexicographic order.
 
 Zero prints as `0`. For a negative Rational, select the spelling of its magnitude
-and prepend ordinary prefix `-`; thus the negative fraction form is `-(1/3)`.
-No separate signed-zero policy is introduced.
+and add `-` as part of the literal. Put the sign after the opening parenthesis
+for a fraction, as in `(-1/3)` or `(-1/3)e20`. Put it before the magnitude in
+the other families, as in `-0.5` or `-0x1p-20`. The sign adds one character in
+every family, so the same selection rules apply.
 
 Canonical output depends on the mathematical value, not its input spelling or
 construction history. A value need not originate from `0f` syntax to print in
@@ -66,6 +68,8 @@ This is shortest exact Rational value text, not shortest executable Code.
 An ordinary division application remains an application when printing Code;
 do not evaluate or fold it into a literal. The Code printer uses canonical
 numeric text for numeric atoms and retains the surrounding tree and packs.
+Print prefix negation of a numeric atom as an application, as in `-(0.5)`,
+to preserve its tree when read back.
 
 ## Examples to capture as executable contracts
 
@@ -104,9 +108,10 @@ end
 
 test "Reduced fraction text competes with exponent forms"
   expect toString(Rational)((1/3)) is "(1/3)" :: String
-  expect toString(Rational)(-(2/6)) is "-(1/3)" :: String
+  expect toString(Rational)((-2/6)) is "(-1/3)" :: String
   expect toString(Rational)((1/300)) is "(1/300)" :: String
   expect toString(Rational)((1/3)e20) is "(1/3)e20" :: String
+  expect toString(Rational)((-1/3)e20) is "(-1/3)e20" :: String
 end
 
 test "Canonical Rational text depends only on the exact value"
@@ -116,7 +121,7 @@ test "Canonical Rational text depends only on the exact value"
 end
 ```
 
-Preserve the Rational and numeric-Code round-trip contracts in the linked draft:
+Preserve the Rational and numeric-Code round-trip contracts in the linked spec:
 `parse(Rational)(toString(Rational)(v)) == v`, with equal values producing equal
 text. Candidate equality must be established with exact integer/Rational
 calculations. A host float may assist in finding a `0f` candidate, but its exact
@@ -132,6 +137,3 @@ binary64's range. Do not retain legacy hex goldens merely to preserve bootstrap
 output. This record specifies the result, not an enumeration algorithm; compare
 candidate lengths without materializing needlessly long losing expansions.
 
-Tight fraction literal syntax and its remaining input-grammar choices are still
-tracked by the draft. These are approved future contracts, not claims that the
-bootstrap currently runs every example.
