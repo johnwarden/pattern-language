@@ -8,7 +8,7 @@ stages](../../GRAMMAR-BOOTSTRAP.md#two-interpretation-stages).
 
 Tight prefix, postfix, dot and call syntax bind before infix grouping.
 Explicit parentheses, argument fields and grammar-delimited operands
-start independent expressions. A [fraction literal](rational-literals-and-text.md)
+start independent expressions. A [tight fraction literal](../approved/rational-literal-spacing.md)
 is read as an atom.
 
 Each infix operator still applies to two successive argument packs.

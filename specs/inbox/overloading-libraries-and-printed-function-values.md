@@ -1,21 +1,27 @@
 # Overloading, libraries and printed function values
 
 The [closed immutable value and exact local-printing principles](../approved/library-closure-and-local-printing.md)
-are approved in the project chat. The Library representation, overloaded constant
-selection and printed type annotations below remain proposals. The
-[test plan](named-function-value-tests.md) separates agreed behavioral contracts
-from cases that need those decisions; the original examples are retained below.
+are approved. An overloaded function name evaluates to a `PolymorphicValue`
+that contains the complete visible group of definitions.
 
-So I think the value of overloaded definitions, or definitions in general (with def), should be something like a "library". 
-I think even constants can be overloaded.
+```pattern
+type PolymorphicValue concrete
+  (definitions :: Definition*)
+  ...
+end
+```
 
-Local printing may reuse an in-scope name only for the exact complete value,
-including referenced definitions; that settled portion is in the approved record.
-The precise Function/Library value grammar and the illustrative strings below
-still need clarification.
+Binding `saved = f` captures that group as an immutable value. A call
+through `saved` uses the same overload rules as a call through the
+name. The declaration fixes the `definitions` field. The public
+`Definition` schema and any further fields remain open.
 
-I think printed function body should have type annotations?
-
+Selection of overloaded constants, printed value syntax and printed
+type annotations remain proposals. Local text may use a visible name
+only if it denotes the exact, complete value, including referenced
+definitions. See the [test plan](named-function-value-tests.md).
+The following examples retain a proposed `library` spelling for
+discussion.
 
 ```pattern
   test "Overloading and libraries"

@@ -12,6 +12,7 @@ Runtime implementation continues through feature PRs.
 | `inbox/` | Proposals, examples and questions awaiting a decision | Discuss in chat; preserve unresolved portions explicitly |
 | `approved/` | Agreed changes ready to be turned into executable contracts | Commit test-only contracts to master, then use implementation PRs as needed |
 | `implemented/` | Decisions captured in actual tests | Follow the linked tests for runtime status; some may still be todo |
+| `archive/` | Retired proposals kept for context | Use the linked approved records for any settled behavior |
 
 Use a stable descriptive filename across moves. An approved record states the
 decision, examples or syntax, intended change to existing behavior, important

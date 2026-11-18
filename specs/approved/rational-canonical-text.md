@@ -2,7 +2,7 @@
 
 Approved by Jonathan in the project chat on 10 November 2026. Replaces the
 16-fractional-place cutoff and binary64-specific printing preference in
-[the Rational draft](../inbox/rational-literals-and-text.md).
+[the archived Rational draft](../archive/rational-literals-and-text.md).
 This approves canonical text selection, not every remaining input spelling.
 
 ## Selection

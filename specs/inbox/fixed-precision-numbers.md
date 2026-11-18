@@ -16,11 +16,13 @@ Proposed initial aliases are `Int = Int64` and `Float = Float64`, with identical
 | Family | Proposed domain | Initial scope |
 | --- | --- | --- |
 | Signed and unsigned integers | `IntW` holds integers from −2^(W−1) through 2^(W−1)−1. `UIntW` holds integers from 0 through 2^W−1. | Specify `Int64` and `UInt64` first. The same rule can instantiate other widths. |
-| Binary floats | `Float32` and `Float64` hold the exact Rationals representable by their finite binary formats, including subnormals and zero. | Reuse the existing exact-fit predicates and explicit conversions. Special values remain a separate design decision. |
+| Binary floats | `Float32` and `Float64` hold the exact Rationals representable by their finite binary formats, including subnormals and zero. | Reuse the existing exact-fit predicates and explicit conversions. |
 | Decimal floats | A format specifies decimal coefficient precision and exponent bounds. Its domain consists of the Rationals expressible within those bounds. | Select the formats and short alias separately. |
 | Fixed-size ratios | A reduced fraction with a positive denominator must fit the chosen numerator and denominator limits. | Decide what the width counts before defining `Ratio64` or an alias. |
 
-Finite zero has one exact value. Signed zero, infinities, NaN and additional float widths remain open. The prototype currently reserves some numeric names. Moving them to the prelude requires migrating the primitive-name assertions and reconciling the numeric `Int` example in the [approved type-values spec](../approved/type-values.md).
+All floats are finite and zero has one exact value. Operations and
+conversions return that same zero for an exact zero result of either sign.
+Additional float widths remain open. The prototype currently reserves some numeric names. Moving them to the prelude requires migrating the primitive-name assertions and reconciling the numeric `Int` example in the [approved type-values spec](../approved/type-values.md).
 
 ## Number and numeric equality
 
@@ -32,8 +34,10 @@ type Number pattern Int64 | UInt64 | Float32 | Float64
 ```
 
 `ExactRational` is outside `Number`. Numeric equality (`==`) accepts operands
-of type `Number | ExactRational` and compares their exact mathematical values
-in the finite numeric model. Numeric inequality (`!=`) is its complement.
+of type `Number | ExactRational` and compares their exact mathematical values.
+Numeric inequality (`!=`) is its complement. Ordering (`<`, `<=`, `>`, `>=`)
+uses the same operand domain and exact magnitudes. Neither operand needs
+to fit the other's format.
 
 Exact equality (`===`) and inequality (`!==`) require overlapping static
 domains and compare values including their concrete types.
@@ -129,24 +133,38 @@ test "Exponentiation uses one complete argument pack"
 end
 ```
 
-## Proposed arithmetic policy
+## Arithmetic policy
 
 | Operations | Integers | Binary and decimal floats | Fixed-size ratios |
 | --- | --- | --- | --- |
-| `+`, `-`, `*`, unary `-` | Compute the exact integer result, then check its range. Overflow, including unsigned underflow or negating the signed minimum, fails. | Compute the exact result, then round once to the operand format. Propose nearest, ties to even, with finite overflow failure and gradual underflow where the format supports subnormals. | Compute exactly, reduce, then check the component bounds. |
-| `/` | Integer quotient truncates toward zero. Check the quotient for overflow, including signed minimum divided by −1. | Exact quotient followed by the same rounding policy. | Exact quotient, reduced before checking bounds. |
-| Remainder | Propose a separate operation satisfying `a = q*b + r`, with nonzero remainder having the dividend's sign. Its spelling remains open. | Deferred. | Deferred. |
-| Ordering | Compare the exact mathematical values within the selected concrete format and return `Bool`. | Same. | Same. |
+| `+`, `-`, `*`, unary `-` | Compute the exact integer result and panic if it is out of range. This includes unsigned underflow and negating the signed minimum. | Compute the exact result, then round once to the result format. Apply the floating failure rules below. | Compute exactly, reduce, then check the component bounds. |
+| `/` | A zero divisor or out-of-range quotient panics. The proposed quotient truncates toward zero. | A zero divisor panics. Round the exact quotient once and apply the floating failure rules. | Compute the exact quotient and reduce before checking bounds. |
+| Remainder | Proposed operation with `a = q * b + r` and any nonzero remainder having the dividend's sign. The spelling remains open. | Deferred. | Deferred. |
 
-Division and integer remainder by zero fail when evaluated. Each floating operator rounds its own result before that result feeds a subsequent operator. An explicit floating conversion may round, while operand designation checks exact fit.
+Integer remainder by zero panics. Under the proposed integer quotient,
+`(1 :: Int) / 2` returns `0 :: Int`. That zero is the truncation result.
 
-The arithmetic policies and alias defaults are proposals for review. In
-particular, checked integer arithmetic, truncating integer division, finite
-floating overflow and which formats to support initially remain choices
-to ratify. Mixed ordering still needs operator signatures. The current [`sqrt` proposal](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#decision-fixed-precision-number-types-are-wrapped-exactrationals)
-defines the operation only for fixed-precision floating types. When more
-than one floating overload accepts the designation of an `ExactRational`,
-the call is ambiguous. An explicit float ascription selects its format.
+Floating overflow and underflow panic. The proposed underflow boundary
+is a nonzero exact result that rounds to zero. Nonzero subnormal results
+are representable. An exact zero result always returns the single zero of
+the result format. For example, dividing zero by a negative finite float
+returns zero. An invalid operation that would otherwise produce NaN, such
+as taking the square root of a negative float, panics.
+
+A successful floating division with a nonzero numerator returns a
+nonzero float. With a zero numerator and a nonzero divisor it returns
+zero. The refined result follows from the numerator's static evidence
+and can be specified for a single division definition.
+
+Each floating operator rounds its result before it feeds the next
+operator. Round to nearest with ties to even is proposed. An explicit
+floating conversion may round under the same failure rules. Operand
+designation requires an exact fit.
+
+The [square root proposal](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#decision-fixed-precision-number-types-are-wrapped-exactrationals)
+defines the operation for fixed-precision floating types. If more than
+one format accepts an exact designator, the call is ambiguous. An
+explicit float ascription selects the format.
 
 ## Mixed comparison contracts
 
@@ -192,11 +210,20 @@ test "Numeric equality applies to literal and bound ExactRationals"
 end
 ```
 
-The mixed signatures still need to settle whether to order the exact magnitudes
-or require the rational to fit the fixed format. Exercise that decision with
-`n > 0.5` and `n < 9223372036854775808`, and with the same rationals bound to
-names, for an `Int` value `n`. Mixed ordering between distinct fixed formats,
-such as `Int` and `Float64`, also needs a signature decision.
+```pattern
+test "Numeric ordering compares magnitudes across formats"
+  i = 1 :: Int
+  half = 0.5 :: Float64
+  aboveIntMax = 9223372036854775808
+
+  assert i > half
+  assert half < i
+  assert i > 0.5
+  assert i < aboveIntMax
+  assert i >= (1 :: Float64)
+  assert i <= (1 :: Float64)
+end
+```
 
 ## Candidate contracts
 
@@ -224,8 +251,37 @@ end
 test "Checked integers reject unrepresentable results"
   maxInt = 9223372036854775807 :: Int
   expect maxInt + 1 fails "overflow"
+  minInt = -9223372036854775808 :: Int
+  expect minInt / -1 fails "overflow"
+  expect maxInt / 0 fails "division by zero"
+end
+
+test "Integer division truncates toward zero"
   expect (7 :: Int) / 2 is 3 :: Int
+  negativeThree = -3 :: Int
+  expect (-7 :: Int) / 2 is negativeThree
+  expect (1 :: Int) / 2 is 0 :: Int
+end
+
+test "Floating division checks zero and underflow"
+  zero = 0 :: Float64
+  smallest = 0x1p-1074 :: Float64
+
+  expect zero / -2 is 0 :: Float64
+  expect smallest / 1 is 0x1p-1074 :: Float64
+  expect smallest / 2 fails "underflow"
+  expect smallest / 0 fails "division by zero"
 end
 ```
 
-Before implementation, settle the proposed policies and capture the agreed cases in executable tests. Include the negative integer division case, unsigned underflow, mixed concrete operands, rounding at a halfway result and result identity under the aliases. Track Decimal and Ratio width choices separately from the initial Int and Float work.
+## Remaining decisions
+
+- Confirm the rounding mode, the underflow boundary for subnormals and
+  the integer quotient rule. Choose the remainder operator's name.
+- Confirm the initial widths and aliases. Choose decimal formats and
+  fixed-size ratio widths separately.
+- Define mixed arithmetic between fixed formats, including whether to
+  require conversion or promote, and what type each result has.
+- Define checked conversion of stored exact rationals and computed exact
+  results into fixed formats. Use that contract in the prelude addition
+  definitions.

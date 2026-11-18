@@ -1,4 +1,7 @@
-# Parenthesized Rational literals — draft
+# Parenthesized Rational literals — archived draft
+
+Archived on 18 November 2026. The approved spacing and canonical-text
+decisions remain linked below.
 
 Latest proposal from the 10 November 2026 discussion of
 [PR #76](https://github.com/johnwarden/pattern-language/pull/76):
@@ -14,7 +17,7 @@ trees for these two spellings. A zero denominator in the spaced expression is
 an evaluation error, not a source-reading error. Ordinary Code printing can keep
 using spaced division and grouping parentheses.
 
-[Arithmetic precedence](arithmetic-precedence.md) is a separate decision.
+[Arithmetic precedence](../inbox/arithmetic-precedence.md) is a separate decision.
 These tests propose syntax; they do not approve the remaining lexical/printing
 choices or claim current implementation support.
 

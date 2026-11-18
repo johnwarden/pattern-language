@@ -90,11 +90,23 @@ call ambiguous. `sqrt(2 :: Float64)` selects the Float64 overload.
 
 # Designation and Ambiguity
 
-Overloads must have disjoint sets of directly admitted values. For
-example, `f(x :: Int)` and `f(x :: Number)` cannot coexist because
-`Number` includes every `Int`. Different concrete formats such as
-`Float32` and `Float64` admit disjoint values, even though the same
-exact rational can designate a value of either format at a call site.
+Check overload domains when adding a definition. Reject the definition
+if it shares any directly admitted arguments with an existing overload.
+For example, `f(x :: Int)` and `f(x :: Number)` overlap because
+`Number` includes every `Int`.
+
+Also reject a definition if a bare literal could designate arguments for
+two otherwise equally ranked overloads and choosing between them would
+require a predicate on an abstract refinement such as `AboveFive`.
+Compare the parameter bases for possible literal designation without
+running those predicates. Representation checks such as `fitsFloat64`
+for concrete numeric types remain part of designation. For example, an
+`Int .where aboveFive` overload conflicts with a `Float64` overload at
+definition time. See [refinement evidence](refinement-evidence.md#one-expected-union-and-several-overloads).
+
+Different concrete formats such as `Float32` and `Float64` admit disjoint
+values. Both overloads are valid, and an exact rational that designates
+both can make a call ambiguous.
 
 An inner value can designate an outer value. The examples below explain
 how that affects overload selection.
@@ -132,7 +144,7 @@ Spo that doesn't make sense.
 
 SO THIS OPTION SOULD BE DISCARDED
 
-# OPTION 2: An outer type can be designated by a value of it's inner type. For function overloading, inner type takes priority.
+# Decision: Direct membership and inner type priority
 
 	def foo(x :: Int) "Int"
 	foo(5) "Int"
@@ -142,7 +154,9 @@ SO THIS OPTION SOULD BE DISCARDED
 	foo(5 :: Int) "Int"
 	foo(5 :: ExactRational) "ExactRational"
 
-This seems odd because adding a definition of `foo` changes what foo(5) means. But I think this is the best compromise.
+An overload that directly admits the argument wins. Between nested
+designation targets, the inner target wins. Adding a directly applicable
+definition can change which definition an existing call selects.
 
 Analogously:
 
@@ -209,7 +223,7 @@ assume the value of outer type. This interacts with the rule that in the case of
 takes precedence. These rules apply at different points. Once the expected type
 is `String??`, bare `:None` chooses its direct outer arm. The existing test
 [“Nested postfix absence preserves explicit member evidence”](../../tests/bindings/nested-option-designation.test#L126-L136)
-checks that rule. With both overloads in scope, the proposed rule additionally
+checks that rule. With both overloads in scope, overload selection
 prefers `String?` for bare syntax accepted by the two nested types. Peer
 options such as `String?` and `Int?` are still ambiguous. The example below
 checks the call behavior.

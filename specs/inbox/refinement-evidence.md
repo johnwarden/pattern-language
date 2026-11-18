@@ -75,7 +75,7 @@ test "A Float binding needs evidence before it can be used as nonzero"
   fails "missing isNonZero"
 
   (value :: Float?) =
-    if isNonZero(y) safeDivide(1 :: Float, y :: NonZeroFloat) else :None
+    if isNonZero(y) safeDivide(1 :: Float, y) else :None
   end
 
   expect value is 0.5 :: Float?
@@ -90,6 +90,33 @@ scope, including the predicate's bound arguments and dependencies. Evidence
 is valid while those dependencies stay fixed. The false branch gains no
 positive evidence. A fact can be used after a join if it holds on every
 path that reaches that point.
+
+Other explicit checks establish the same evidence.
+
+| Check | Where the evidence is available |
+| --- | --- |
+| `if y .matches NonZeroFloat` | The true branch can pass `y` as `NonZeroFloat`. |
+| A match arm binds `n :: Float` and its guard checks `isNonZero(n)` | The selected arm can use `n` as `NonZeroFloat`. The guard tests the bound value. |
+| `assert isNonZero(y)` | Following statements can use `y` as `NonZeroFloat`. A failed checked assertion stops that path. |
+| `parse(NonZeroFloat)("2")` | The returned value carries the `NonZeroFloat` guarantee. |
+
+Typed parsing checks predicates as part of matching the grammar, including in
+nested fields. Both invalid rectangles below fail to match the `Rectangle`
+grammar.
+
+```pattern
+def isPositive(n :: Int) n > 0
+type PositiveInt pattern Int .where isPositive
+type Rectangle concrete Rect(PositiveInt, PositiveInt)
+
+parse(Rectangle)("Rect(2, 3)")
+parse(Rectangle)("Rect(-2, 0)")
+parse(Rectangle)("Rect('a','b')")
+```
+
+The successful parse establishes evidence for both fields. In the second
+example a field fails `isPositive`. In the third example the strings fail
+the base type of the field pattern.
 
 ## Return types
 
@@ -107,9 +134,12 @@ end
 A specified built-in result guarantee supplies evidence in the same way.
 For example, the absolute value of a finite nonzero float is nonzero.
 Supply guarantees only for operations and formats where all successful
-results satisfy them. Float multiplication may underflow to zero, and
-integer division may truncate to zero. A result guarantee can depend on a
-known input refinement while retaining a single overload.
+results satisfy them. Fixed-precision float division returns a nonzero
+value when its numerator is known to be nonzero. Division by zero and
+rounding a nonzero result to zero both panic. Integer division can
+truncate to zero. A result guarantee can depend on a known input
+refinement while retaining a single overload.
+[Fixed-precision arithmetic](fixed-precision-numbers.md#arithmetic-policy)
 
 The rule also affects checked numeric conversions. The proposed addition
 definitions currently contain `right = b :: Int` where `b` may be a stored
@@ -129,23 +159,26 @@ ambiguous. The same designation applies in a literal binding to `U` and in
 nested literal fields. An already typed `Int` passed to the same function
 requires evidence for `AboveFive`.
 
-Dispatch on a bound argument never evaluates a predicate to decide if an
-overload applies. A predicate needed for literal designation cannot be checked
-again when the parameter is bound. The rules for disjoint overload domains and
-direct membership still apply.
+Reject a definition that overlaps another overload's directly admitted
+domain. Also reject competing literal designations at definition time when
+choosing a definition would require evaluating an abstract refinement
+predicate.
+For example, adding the second `pick` definition below is an error.
+A bare exact integer could designate either parameter type, and
+`aboveFive` would determine whether the first definition competes.
 
-## Open choices
+```pattern
+def aboveFive(n :: Int) n > 5
+type AboveFive pattern Int .where aboveFive
 
-- When multiple definitions could each supply an expected type for the same
-  literal, prefer explicit ascription if the static dispatch rules cannot pick a
-  definition. Decide whether to allow literal predicate checks to disambiguate
-  *between* definitions as well as between members of one selected type.
-- The examples recognize a direct condition `if p(x)`. Specify whether an
-  explicit `.matches` test, a guarded match arm, or a checked assertion also
-  establishes a fact. Typed text reading has its own validation boundary.
-- Choose the intrinsic operations and input refinements that justify stronger
-  numeric results. Keep the assumptions about finite values and rounding
-  explicit in those contracts.
+def pick(n :: AboveFive) "integer"
+def pick(n :: Float64) "float"
+```
+
+Dispatch on a bound argument uses its existing evidence. Once an overload
+has supplied an expected type, check any predicates needed for literal
+designation and reuse the result when binding the parameter.
+[Designation and ambiguity](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#designation-and-ambiguity)
 
 ## Implementation sequence
 

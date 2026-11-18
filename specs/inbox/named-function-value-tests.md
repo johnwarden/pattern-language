@@ -76,10 +76,10 @@ is value preservation, not one particular expanded printed body.
 
 | Case family | Specific question |
 | --- | --- |
-| Overloaded named functions | Does bare `f` contain the whole visible group, and how is that group represented as a value? Once selected, store/pass/return it and exercise every disjoint arm. |
+| Overloaded named functions | Bare `f` captures the visible group in a `PolymorphicValue` with `definitions :: Definition*`. Once the `Definition` schema is specified, store, pass and return the group and exercise every disjoint arm. |
 | Constants | Given String and Float definitions of `zero`, what selects an alternative? Test a direct name and `saved = zero` consistently; ordinary typed binding must not gain a name-only exception accidentally. |
 | Ambiguous and absent selections | For a decided selection operation, zero, one and multiple matching definitions need explicit error/success contracts. Include an abstract expected type admitting both constants. |
-| Overlap and dispatch | Preserve existing ambiguity errors; no declaration-order or specificity fallback is inferred from the Library representation. |
+| Overlap and dispatch | Check definition-time disjointness, direct membership and nested designation priority. Exercise the remaining peer ambiguity errors. [Dispatch rules](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#designation-and-ambiguity) |
 | Library syntax and identity | Is a value one named group or several definitions? Which names are structural fields versus binders? Are reordered definitions or renamed binders equal? No alpha-equivalence or ordering normalization is assumed. |
 | Function annotations | Which parameter/result/capture types are part of the public value, which must be explicit and which may be inferred? Printing must not execute a body to establish them. |
 | External references | Test the fixed primitive vocabulary first. A later library-reference scheme needs tests for exact referents, unavailable definitions and wrong versions, without relying on spelling alone. |

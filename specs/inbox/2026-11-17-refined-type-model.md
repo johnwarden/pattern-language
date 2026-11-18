@@ -77,66 +77,8 @@ This is a *facet*. It is an abstract type, that can match many different concret
   (r :: Rectangular) = Rect(2, 2) :: Square
   expect r is Rect(2, 2) :: Square
 
-## ASIDE: new syntax for spreads.
-
-First, let's drop `**` and use `...` for both positional and keyword argument spreads. The type indicates what arguments are accepted in the spread and how to collect them into a value.
-
-Second, let's put the capture with it's type and place the spread operator outside:
-
-  (ints :: String*)...     # One more strings, collected into a String*
-  (args :: {...})...       # Any arguments, collected into a type matching pattern {...}
-
-So for example this test now loos like this:
-
-  test "An anonymous matrix pattern keeps horizontal and vertical repetition"
-    type Matrix concrete [
-      (cells :: Float32**)...
-      ...
-    ]
-    anonymous = concrete [
-      (Float32**)...
-      ...
-    ]
-    matrix = ([
-      ()
-      0.5
-      1, 2
-    ] :: Matrix)
-
-    assert Matrix === anonymous
-    assert matrix .matches anonymous
-  end
-
-Example: 
-
-  type ColoredRectangle concrete Rect(Float, Float, color: Color)
-  r = Rect(3, 5, color: :Red) :: Rectangle
-  (contents :: {...})... = r...
-
-So `r...` dropped the `Rect` head and spread the body of `r`. The type `{...}` collect the body into a struct with head `{}` and any body contents. 
-
-The variable `contents` now has static abstract type `pattern {...}`. But the compiler can nail down the concrete type.
-
-  expect contents is {3, 5, color: :Red} :: concrete {Float, Float, color: Color}
-
-You can also collect into a concrete type
-
-  (contents :: Rectangle)... = r...
-
-Note the symmetry
-
-  (contents :: Rectangle)... = (r :: Rectangle)...
-
-To match more than one concrete type, a facet needs at least one nested abstract type:
-
-  type Person pattern Person(name: String, id: Id, (details :: {...})...)
-
-Now Person is a pattern type that fits *one of many concrete types*.
-
-  type Superhero concrete Person(name: String, id: Id, power: String)
-  (batman :: Person) = Person(name: "Batman", id: 2, power: "Gadgets and confidence") :: Superhero
-  expect batman hasType Superhero
-  expect batman.details is {power: "Gadgets and confidence"} :: concrete {power: String}
+Expression-tree facets can also leave labels open. The [spread proposal](spreads.md#catch-all-fields)
+defines the residual field capture and a labeled facet example.
 
 Example: nested union pattern
 
@@ -454,22 +396,13 @@ Value of outer type cannot designate value of inner type
 
 ## Abstract Expression Trees: Facets
 
-A pattern with ... is abstract: it can match a variety of concrete struct types.
+An open pattern can match values of several concrete struct types. An
+assignment to a facet requires an unambiguous concrete value. The facet
+binding preserves its value and concrete type. If the concrete type cannot
+be determined statically, the runtime binding carries a reference to it.
 
-  type Rectangle Rect(width :: Number, height :: Number)
-  type ColoredRectangle Rect(width :: Number, height :: Number, color: Color)
-  type AugmentedRectangle Rect(width :: Number, height :: Number, properties... :: {...})
-
-  (x :: AugmentedRectangle) = Rect(3, 5, color: :Red) :: ColoredRectangle
-  expect x is Rect(3, 5, color: :Red) :: ColoredRectangle
-  expect x.properties is {color: :Red} :: concrete {color: Color}
-
-  (y :: AugmentedRectangle) = Rect(3, 5) :: Rectangle
-  expect y is Rect(3, 5) :: Rectangle
-  expdect y.properties is {} :: concrete {}
-
-  # Comparison across value spaces works because x and y have same abstract type
-  assert x !== y
+See [catch-all fields](spreads.md#catch-all-fields) for an example of a facet
+that admits rectangles with different sets of labels.
 
 ## Wrapped Abstract Expression Trees: Variadic Structs
 
@@ -485,36 +418,12 @@ A pattern with ... is abstract: it can match a variety of concrete struct types.
 
 ## Wrapped Partial Matches: Ad-hoc Structs
 
-  type WrappedAugmentedRectangle concrete Rect(width :: Number, height :: Number, properties... :: {...})
-
-  # Can designate a concrete rectangle with any expression matching the defining pattern.
-  (z :: WrappedAugmentedRectangle) = Rect(3, 5, color: :Red :: Color)
-
-  expect z is Rect(3, 5, color: :Red :: Color) :: WrappedAugmentedRectangle
-
-  x = Rect(3, 5, color: :Red) :: ColoredRectangle
-
-  # But ColoredRectangle is a different concrete value space
-  expect z === x fails "Values of disjoint types `WrappedAugmentedRectangle` and `ColoredRectangle` cannot be equal"
-
-Now what is x.properties? I guess it has type.
-
-  concrete {...}
-
-A value space over arbitrary argument packs. I guess a sort of special `Dict` type.
-
-So you can't do
-
-  expect x.properties is {color: :Red} :: concrete {color: Color}
-
-Instead:
-
-  expect x.properties is {color: :Red} :: concrete {...}
-
-  expect x.keys is [:color]
-  expect x.get(:color) is :Red
-
-Maybe this needs to be thought through some more. Maybe we disallow wrapping patterns with spreads collected into types like {...} but still support spreads into lists.
+Wrapping a pattern with a catch-all field spread defines a concrete type
+whose values may have different sets of additional labels. Its values are
+disjoint from values of other concrete types that match the same facet.
+The residual fields are captured as a built-in `Dict`. Implementation of
+`Dict` and support for arbitrary labeled spreads can be deferred.
+[Catch-all fields](spreads.md#catch-all-fields)
 
 ## Set example:
 
@@ -773,7 +682,7 @@ unprojected patterns as parameters.
 
 We can embed "concrete" in any type expression:
 
-  type User {name: String, id: concrete PositiveInt}
+  type User concrete {name: String, id: concrete PositiveInt}
 
   # Positive int can designate value of wrapped type.
   u = {name: "John", id: 5} :: User
@@ -802,9 +711,11 @@ interpreter has yet to implement. Preserve coverage of each behavior
 that matters and consolidate assertions that cover the same contract.
 Keep unresolved design questions with the relevant spec or test.
 
-# POssible Future Goal:
+## Possible future syntax
 
-Allow a raw pattern (without pattern/Pattern) in places where type is expected:
+Type definitions using an abstract pattern require `pattern` in this
+proposal. These examples explore a possible future shorthand that would
+allow a raw pattern in a type position:
 
   Option<String | Float>
   (x :: String | Float) = "foo"

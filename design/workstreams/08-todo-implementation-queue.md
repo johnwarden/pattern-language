@@ -46,7 +46,7 @@ milestones 5a.2 or 5b.
   compatibility rules and C22's typed keyword remainder need design work first.
 - Numeric-width, lifting and public QuotedSymbol cases have their own vocabulary
   dependencies. C26 contains deliberate harness fixtures, not language backlog.
-- Arithmetic precedence and parenthesized fraction literals are under review in
-  [separate](../../specs/inbox/arithmetic-precedence.md)
-  [proposals](../../specs/inbox/rational-literals-and-text.md).
+- [Arithmetic precedence](../../specs/inbox/arithmetic-precedence.md) is under
+  review. The [parenthesized fraction-literal proposal](../../specs/archive/rational-literals-and-text.md)
+  is archived.
 - Foundation drafts #43, #44 and #45 remain parked.
