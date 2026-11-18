@@ -75,6 +75,8 @@ grep -q '/custom$' <<<"$grammar_out" &&
 list_out="$(just test-language --list)"
 grep -q 'bindings/defaults' <<<"$list_out" ||
 	fail "just test-language --list did not list cases"
+grep -q 'specs/rational-literals-and-text.md#fraction-literals' <<<"$list_out" ||
+	fail "just test-language --list did not discover specification tests"
 grep -q 'unknown option --' <<<"$list_out" &&
 	fail "just test-language --list forwarded an extra --"
 grep -q 'Available recipes' <<<"$list_out" &&
@@ -91,6 +93,10 @@ grep -q 'PASS examples/patterns#' <<<"$source_file_out" ||
 	fail "just test did not run a source .test file"
 grep -q '0 tests failed' <<<"$source_file_out" ||
 	fail "just test source file reported failures: $source_file_out"
+
+spec_out="$(just test specs/rational-literals-and-text.md)"
+grep -q 'PASS specs/rational-literals-and-text.md#fraction-literals' <<<"$spec_out" ||
+	fail "just test did not run a Markdown specification"
 
 source_dir_out="$(just test tests/examples)"
 grep -q 'PASS examples/patterns#' <<<"$source_dir_out" ||

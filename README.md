@@ -185,7 +185,7 @@ just test
 just test tests/examples/patterns.test # one source test file
 just test tests/examples              # source tests in a directory
 just test test/indent-prefix.test.ts  # one host test file
-just test-language                   # scans tests/**/*.test
+just test-language                   # runs .test files and executable spec fences
 just test-language --list
 just test-language tests/bindings
 ```

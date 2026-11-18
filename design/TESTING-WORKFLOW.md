@@ -7,7 +7,7 @@ and motivating examples with the draft until the behavior is agreed.
 | Stage | Change on the topic | What to review |
 | --- | --- | --- |
 | Specification | Edit or add documents directly under `specs/` on the topic branch. | The proposed intended behavior, examples and migration impact. The branch's tests may still describe the previous rule. |
-| Tests | After the spec is settled, add or revise active `.test` files by topic in a test PR. Base it on `master` if the spec has merged, or stack it on the spec branch for review. | The tests now describe the proposed behavior. Mark behavior that the current code cannot satisfy as `todo` and inspect the actual failures. |
+| Tests | After the spec is settled, add or revise executable spec fences or active `.test` files in a test PR. Base it on `master` if the spec has merged, or stack it on the spec branch for review. | The tests now describe the proposed behavior. Mark behavior that the current code cannot satisfy as `todo` and inspect the actual failures. |
 | Implementation | Implement a coherent slice and remove the todo markers from the cases it makes pass. | The spec, executable contracts and code agree for that slice. Follow-up cases can keep explicit todos. |
 
 Each stage can merge to `master` when reviewed and authorized. An approved
@@ -24,7 +24,9 @@ Jonathan authorizes the merge.
 
 - Reuse existing coverage where it expresses the agreed behavior. Add focused
   positive, negative and cross-context tests as needed. Name the relevant
-  `.test` files and cases in implementation PRs.
+  files and cases in implementation PRs. The [Rational literals spec](../specs/rational-literals-and-text.md)
+  pilots contracts beside the rules they exercise. Use a top-level `pattern test`
+  fence for those contracts. A plain `pattern` fence is an example.
 - Use the regular test suite for new or changed contracts, including future
   behavior. `todo test` covers a whole case whose shared setup needs the feature.
   A todo assertion covers one unmet expectation. Inspect failures before

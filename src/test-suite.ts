@@ -23,6 +23,7 @@ import { primitiveNames } from "./primitive-names.ts";
 import type { Pattern } from "./pattern.ts";
 import { renderDiagnostic } from "./diagnostics.ts";
 import { lineIndent } from "./indent.ts";
+import { markdownTestSources } from "./test-markdown.ts";
 import {
   TEST_SCHEMA,
   TEST_STEP_TYPES,
@@ -433,13 +434,13 @@ class TestReader {
       tail.kind = "output";
     return result;
   }
-  file(file: string, source: string): TestCase[] {
+  file(file: string, source: string, ids = new Set<string>()): TestCase[] {
     const tree = parseTestSource(source, file, {
       layoutForms: testLayoutForms,
     });
     if (tree.kind !== "block" || !tree.lines.length)
       throw problem(
-        "a .test file requires one or more test blocks",
+        "test source requires one or more test blocks",
         tree,
         "E_TEST_FILE",
       );
@@ -449,7 +450,7 @@ class TestReader {
     } catch (error) {
       if (error instanceof LanguageError)
         error.diagnostic.notes.push(
-          "A .test file contains one or more test or todo test blocks; legacy modifies assertions and setup, not whole tests.",
+          "Test source contains one or more test or todo test blocks; legacy modifies assertions and setup, not whole tests.",
         );
       throw error;
     }
@@ -458,7 +459,6 @@ class TestReader {
     );
     if (collection.kind !== "term")
       throw new Error("TestFileContent projection failed");
-    const ids = new Set<string>();
     return collection.body.map((entry) => {
       const [modifier, name, content] = this.schema.call(
         "testParts",
@@ -519,9 +519,15 @@ export function loadTests(files: Record<string, string>): TestCase[] {
   const reader = new TestReader();
   return Object.entries(files)
     .sort(([a], [b]) => a.localeCompare(b, "en"))
-    .flatMap(([name, source]) =>
-      reader.file(name.endsWith(".test") ? name : name + ".test", source),
-    );
+    .flatMap(([name, source]) => {
+      if (!name.endsWith(".md"))
+        return reader.file(name.endsWith(".test") ? name : name + ".test", source);
+      const ids = new Set<string>();
+      const tests: TestCase[] = [];
+      for (const code of markdownTestSources(name, source))
+        tests.push(...reader.file(name, code, ids));
+      return tests;
+    });
 }
 
 function execute(interpreter: Interpreter, tree: Syntax): Field<Value>[] {

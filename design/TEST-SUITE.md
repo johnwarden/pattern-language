@@ -9,13 +9,17 @@ specification todos, and put new contracts in the active suite.
 
 ## Files and basic forms
 
-The runner recursively discovers tests/**/*.test, grouped by broad topic. Each file
-contains one or more named test blocks. Shared setup belongs inside the test. IDs
-are root-relative file paths without .test plus the title slug, and survive selecting
-only a subset or inserting/reordering cases. Discovered symlinks are not traversed.
-Duplicate title slugs in a file reject. `todo` can modify a whole test, an
-assertion, or setup. `legacy` modifies assertions and setup only. A file may
-contain a single `todo test` block.
+The runner discovers `.test` files under `tests/` and top-level `pattern test`
+fences in Markdown under `specs/`, excluding the spec archive. A `.test` file
+or marked fence contains one or more named test blocks. Use a plain `pattern`
+fence for an illustrative example. Setup belongs inside each test.
+
+Run one spec with `just test-language specs/rational-literals-and-text.md`.
+Failures report the Markdown file and line. IDs use the file path and title
+slug, omitting the `.test` extension for fixture files. Selecting a subset or
+reordering the cases preserves their IDs. The runner rejects duplicate title
+slugs in a file and skips discovered symlinks. `todo` can modify a whole test,
+an assertion, or setup. `legacy` modifies assertions and setup only.
 
 ```text
 test "A value and a predicate"

@@ -108,8 +108,8 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 | `just run FILE` | Run a `.pattern` program through `src/cli.ts`. Extra CLI flags follow the filename (`just run demo.pattern --parse`). |
 | `just watch FILE` | Re-run FILE when it, `default.pattern`, or `src/**/*.ts` change (`entr`). |
 | `just repl` | Interactive CLI (`--repl`). |
-| `just test [path]` | A `.test` file or directory runs source-language tests; a TypeScript file runs host tests. No path runs host tests plus Dockerfile/devbox alignment and finite recipe smokes. |
-| `just test-language` | Source suite (`tests/**/*.test`). `just test-language --list` lists cases. |
+| `just test [path]` | A `.test` file, Markdown spec, or directory runs source-language tests; a TypeScript file runs host tests. No path runs host tests plus Dockerfile/devbox alignment and finite recipe smokes. |
+| `just test-language` | Source suite, including executable Markdown spec fences. `just test-language --list` lists cases. |
 | `just typecheck` | `tsc --noEmit`. |
 | `just build` | Generate browser bundles and the Node-only language server. |
 | `just lsp` | Start the built stdio language server for editor clients. |
@@ -118,12 +118,13 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 
 On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
-The source suite is tests/**/*.test, grouped by topic. Source runs print each
-filename. Assertions use expect subject is expected [:: Type], expect subject
+The source suite includes tests/**/*.test and top-level `pattern test` fences
+under `specs/`. Source runs print each filename. Assertions use
+expect subject is expected [:: Type], expect subject
 contains "needle" (String substring), assert, and expect subject fails "reason".
 Expected results are data, not expressions to execute; without :: Type they take
 the actual subject's type. `todo test` marks a whole expected-failure case, including language failures in its shared setup; it runs
-and must fail as a unit. A file may contain only one todo test. Todo assertions
+and must fail as a unit. Todo assertions
 still run and must fail individually; an unexpected success requires removing
 todo. Legacy assertions must pass until explicitly retired. Do not generate expected values from current outputs.
 Pair each legacy assertion with a same-subject todo, or record the unresolved
@@ -138,7 +139,7 @@ Keep credentials out of source and browser bundles. CI requires no application s
 Follow [the development workflow](design/TESTING-WORKFLOW.md). Discuss new
 language rules with Jonathan. Start a topic branch and edit or add a document
 directly under `specs/`. Review the spec first, then write or revise contracts
-in the active `.test` suite in a subsequent PR. Use todo for expected failures
+in executable spec fences or `.test` files in a subsequent PR. Use todo for expected failures
 and inspect the actual failure. An implementation PR names the cases it makes
 pass and removes their fulfilled todo markers. Approved spec PRs and
 test-only PRs can land on `master` ahead of implementation. Each stage uses
@@ -156,7 +157,6 @@ make a prototype representation a language requirement. Do not ban ordinary
 constructor names or invent the pending public inspection boundary. Follow
 [the source-contract audit](design/TEST-CONTRACT-AUDIT.md) for cleanup and migration.
 
-The `.test` files are the executable language specification. Keep the spec,
-its linked cases and needed explanations aligned as changes land. Keep open
+Keep the spec, its executable cases and needed explanations aligned as changes land. Keep open
 questions in the proposal. Treat an unrelated todo failure or a passing
 placeholder as a gap in coverage.

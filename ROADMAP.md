@@ -115,8 +115,9 @@ or require the parser's Expression migration to be completed first.
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. `tests/**/*.test` is the executable
-language corpus; runnable playground programs come from `tests/examples/`.
+The reference is TypeScript prototype 0.2. The executable language corpus includes
+`tests/**/*.test` and `pattern test` fences under `specs/`. Runnable playground
+programs come from `tests/examples/`.
 `just check` runs the complete gate. `just test-language` reports passing assertions,
 legacy assertions and expected todo failures separately. Do not copy those
 figures into this document.
