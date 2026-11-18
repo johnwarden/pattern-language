@@ -13,9 +13,10 @@ test("Rational-to-binary64 conversion keeps the smallest subnormal and small nor
   assert.equal(rationalToNumber(float64ToRational(0.1)), 0.1);
 });
 
-test("hex Rational syntax encoding keeps the exact Float64-rounded Rational", () => {
-  assert.notEqual(run("syntaxTree(0f0.1)"), "NumberLiteral(0)");
-  assert.equal(run("syntaxTree(0f0.1)"), "NumberLiteral(0x1.999999999999Ap-4)");
+test("numeric syntax encoding keeps the exact Float64-rounded Rational", () => {
+  const setup = "NumberLiteral(n) = syntaxTree(0f0.1)\n";
+  assert.equal(run(setup + "n == 0x1.999999999999Ap-4"), "True");
+  assert.equal(run(setup + "n != 0.1"), "True");
 });
 
 test("numeric syntax payloads preserve large integers and unary-minus structure", () => {
@@ -23,7 +24,7 @@ test("numeric syntax payloads preserve large integers and unary-minus structure"
     "large = syntaxTree(9007199254740993)\n" +
     "NumberLiteral(n) = large\n" +
     "NumberLiteral(negative) = NumberLiteral(0 - 0.1)\n" +
-    'Apply(Name("-", False), [Field("_1", NumberLiteral(magnitude))]) = syntaxTree(:(-0.1))\n';
+    'Apply(Name("-", False), [Field("_1", NumberLiteral(magnitude))]) = syntaxTree(:(-(0.1)))\n';
   assert.equal(run(setup + "n == 9007199254740993"), "True");
   assert.equal(run(setup + "large != syntaxTree(9007199254740992)"), "True");
   assert.equal(run(setup + "negative == 0 - 0.1"), "True");
@@ -34,16 +35,10 @@ test("numeric syntax payloads preserve large integers and unary-minus structure"
   );
 });
 
-test("unspellable 1/3 is an exact serialization failure", () => {
+test("nonterminating Rationals retain their exact numeric syntax payload", () => {
   assert.equal(
     run("NumberLiteral(n) = NumberLiteral((1 / 3) * 1)\n(n * 3) == 1"),
     "True",
-  );
-  assert.throws(
-    () => run("1 / 3"),
-    (e: unknown) =>
-      e instanceof LanguageError &&
-      e.diagnostic.code === "E_VALUE_SERIALIZATION",
   );
 });
 

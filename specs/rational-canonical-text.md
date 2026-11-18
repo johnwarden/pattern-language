@@ -71,7 +71,7 @@ numeric text for numeric atoms and retains the surrounding tree and packs.
 Print prefix negation of a numeric atom as an application, as in `-(0.5)`,
 to preserve its tree when read back.
 
-## Examples to capture as executable contracts
+## Examples
 
 ```pattern
 test "Canonical decimal text has no fractional-place cutoff"
@@ -130,10 +130,8 @@ float does not establish equality or justify printing an approximation.
 
 ## Implementation handoff
 
-Convert these examples into focused `.test` contracts before changing runtime
-printing. Include both sides of each tie, scalar and Code round trips, negative
-values, decimal/fraction exponent placement, and exact dyadic values outside
-binary64's range. Do not retain legacy hex goldens merely to preserve bootstrap
-output. This record specifies the result, not an enumeration algorithm; compare
-candidate lengths without materializing needlessly long losing expansions.
+[rational-text.test](../tests/numeric/rational-text.test) covers the candidate
+families, tie-breaks, exponent placement, and typed round trips.
+[code-text.test](../tests/numeric/code-text.test) covers Code round trips.
+Compare candidate lengths without materializing needlessly long losing expansions.
 
