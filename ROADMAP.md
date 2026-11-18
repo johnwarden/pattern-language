@@ -4,7 +4,7 @@ Updated 10 November 2026. This is the current design, implementation boundary an
 milestone sequence, not a development history. The integrated
 [decision/conformance record](design/LANGUAGE-DECISIONS.md) supplies reasons, status
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
-[TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
+[the type-value spec](specs/type-values.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
 
 The executable [`.test` specification](tests/specification/README.md) is the
 language contract. This roadmap and the linked prose explain its decisions and

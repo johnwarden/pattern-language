@@ -3,7 +3,7 @@
 > Compatibility reference for the TypeScript bootstrap and current Test DSL.
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
-> [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md).
+> [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md) and [GRAMMAR.md](GRAMMAR.md).
 > Exact Rational literals, overlapping abstract unions and the current Test DSL
 > are implemented. Declaration-only accessors and proof-based checking remain work.
 
@@ -33,7 +33,7 @@ representations, and staged self-hosting. Structural Type values and typed text 
 - [Roadmap](ROADMAP.md): accepted specification, current implementation, pending milestones, and completion criteria.
 - [Implementation checklist](TODO.md): completed and outstanding engineering work.
 - [Grammar reference](GRAMMAR.md): current syntax and interpretation boundaries.
-- [Type values and typed text](TYPE-VALUES.md): construction, matching, recursion, global/local serialization, and limits.
+- [Bootstrap type values and typed text](TYPE-VALUES-BOOTSTRAP.md): construction, matching, recursion, global/local serialization, and limits.
 - [Body grammar milestone](design/BODY-GRAMMAR.md): implemented vertical spreading and a bounded source-defined Body grammar.
 
 Functions, runtime type interpretations, shared pattern matching, explicit scoped
@@ -78,7 +78,7 @@ Pattern interpretation still recognizes captures and annotations before evaluati
 Source-defined factories work at interpreter runtime. Compile-time specialization,
 reflection and generic inference remain future milestones. This change does not
 infer Rect from an unannotated Rect(2,2); use :: Rect until inference is implemented.
-See [TYPE-VALUES.md](TYPE-VALUES.md) for normalization, recursion and text contracts.
+See [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md) for normalization, recursion and text contracts.
 
 ## Run
 
@@ -538,7 +538,7 @@ valid visible aliases. Concrete positions omit redundant annotations; abstract
 positions always include the actual concrete type. REPL inspection shows concrete
 types, or Expression for uninterpreted syntax. This does not guess Int
 versus Float or infer generic types. Opaque function inspection/serialization remains
-limited. See [TYPE-VALUES.md](TYPE-VALUES.md) for exact coverage and constraints.
+limited. See [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md) for exact coverage and constraints.
 
 ## Diagnostics
 
@@ -721,7 +721,7 @@ environment; this is a staged subset, not general type inference.
 `:f(x)` quotes only its head; `:(f(x))` is raw structural data. Use a typed
 interpolating quote for holes. Display and canonical String source use the same
 escaped inline spelling, preserving literal dollars, delimiters and all boundary
-whitespace. Portable code/function environments remain limited; see TYPE-VALUES.md.
+whitespace. Portable code/function environments remain limited; see [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md).
 
 The bootstrap grammar still recognizes def/signature/body. This keeps declaration
 discovery independent of evaluating definitions. Defining def entirely in user
@@ -832,7 +832,7 @@ Circle and Square retains its member descriptions, and recursive types have fini
 portable descriptions. Root aliases collapse while nested type boundaries remain.
 The typed API implements `parse(T)(toString(T)(value)) == value` for supported
 structural values. `parseLocal(T)` and `toStringLocal(T)` may use names in that scope.
-See [TYPE-VALUES.md](TYPE-VALUES.md) for examples and explicit limits.
+See [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md) for examples and explicit limits.
 
 ## One value equality
 
