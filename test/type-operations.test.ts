@@ -143,7 +143,6 @@ test("ordinary dispatch reports competing where and matches definitions", () => 
     "matches = v -> p -> False\nSome(3) .matches (type :Some(Int))",
     "E_AMBIGUOUS_CALL",
   );
-  assert.throws(() => run(":None .matches (type :None | :None)"), /ambiguous/);
 });
 
 test("bad refinement arguments and predicate results are diagnosed at the call", () => {

@@ -2900,6 +2900,7 @@ export class Interpreter {
         allowIgnoredCaptures: !typeMode,
         requireCaptureTypes: typeMode,
         allowDefaults: !typeMode,
+        uniqueAlternatives: typeMode,
         defaultValue: (n) => single(this.evaluate(n, env), "default value"),
         defaultIdentity: (n) => this.expressionIdentity(n, env),
         head: (n, depth = 0) => {

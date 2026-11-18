@@ -115,10 +115,25 @@ test "Same-space refinement unions reject without running predicates"
   fails "E_REFINED_UNION"
 end
 
-test "Concrete duplicate alternatives still reject"
+# Alternatives written twice are one alternative: a type declaration is not ambiguous.
+test "Repeated alternatives in a type are one alternative"
+  def Bad type :A | :A
+  assert Bad == (type :A)
+  type X concrete :D | :D
+  assert X == (concrete :D)
+  type Y concrete :C | :A | :B | :A | :C
+  assert Y == (concrete :A | :B | :C)
+  assert :D .matches X
   expect
-    def Bad type :A | :A
-    0
+    (x :: Y) = :B
+    x
+  is B
+end
+
+test "Repeated alternatives do not make a pattern alternative unambiguous"
+  expect
+    def f(x | x) 1
+    f(1)
   fails "E_AMBIGUOUS_VALUE"
 end
 

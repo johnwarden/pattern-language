@@ -50,8 +50,9 @@ and `type Name abstract` declaration spelling remain unimplemented. Primitive sy
 classes and their Symbol union work. The exact updated type/generic sugar is not yet
 implemented.
 
-Same-space refinement unions remain rejected. Concrete pattern alternatives such as
-`:A | :A` still require unique interpretations.
+Same-space refinement unions remain rejected. Alternatives written twice in a type
+declaration are one alternative: `type :A | :A` is `type :A`. Ambiguity belongs to a
+value that more than one member accepts, reported as `E_AMBIGUOUS_VALUE`.
 
 [The bootstrap type reference](../TYPE-VALUES-BOOTSTRAP.md) documents working syntax.
 

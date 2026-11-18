@@ -32,6 +32,8 @@ export interface PatternDomain<T> {
   allowIgnoredCaptures?: boolean;
   requireCaptureTypes?: boolean;
   allowDefaults?: boolean;
+  /** Alternatives written identically are one alternative (type declarations). */
+  uniqueAlternatives?: boolean;
   defaultValue?: (node: Syntax) => T;
   defaultIdentity?: (node: Syntax) => string;
   validateTypedCapture?: (name: string, annotation: Syntax) => void;
@@ -56,8 +58,22 @@ export class PatternCompiler<T> {
       return this.compile(quotePatternHead(n.value));
     }
     const union = binary(n, "|");
-    if (union)
-      return { kind: "union", choices: union.map((x) => this.compile(x)) };
+    if (union) {
+      if (!this.domain.uniqueAlternatives)
+        return { kind: "union", choices: union.map((x) => this.compile(x)) };
+      const alternatives = (x: Syntax): Syntax[] => {
+        const parts = binary(x, "|");
+        return parts ? parts.flatMap(alternatives) : [x];
+      };
+      const seen = new Set<string>();
+      const distinct = alternatives(n).filter((x) => {
+        const key = normal(x);
+        return !seen.has(key) && !!seen.add(key);
+      });
+      return distinct.length === 1
+        ? this.compile(distinct[0])
+        : { kind: "union", choices: distinct.map((x) => this.compile(x)) };
+    }
     const annotation = binary(n, "::");
     if (annotation) {
       const anonymous = anonymousSpread(annotation[0]);

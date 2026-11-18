@@ -76,11 +76,8 @@ test("type-producing blocks keep recursive self references alive", () => {
     "Cons(5, Nil)",
   );
 });
-test("union ambiguity still propagates rather than choosing the first branch", () => {
-  assert.throws(
-    () => run("def Bad type :None | :None\n:None :: Bad"),
-    /ambiguous/,
-  );
+test("a repeated union alternative is one alternative, not an ambiguity", () => {
+  assert.equal(run("def Bad type :None | :None\n:None :: Bad"), "None");
 });
 test("aliases and recursive aliases preserve their concrete identity", () => {
   assert.equal(

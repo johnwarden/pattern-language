@@ -252,12 +252,6 @@ export function typeDescription(
           const entries = values
             .map((value) => [descriptionKey(value), value] as const)
             .sort((a, b) => compare(a[1], b[1]));
-          if (entries.some(([key], i) => i > 0 && entries[i - 1][0] === key))
-            throw new LanguageError(
-              "ambiguous type pattern: duplicate alternatives",
-              undefined,
-              { code: "E_AMBIGUOUS_VALUE", phase: "declaration" },
-            );
           const ordered = entries.map(([, value]) => value);
           return ordered.length < 2
             ? term("Union", ...ordered)
