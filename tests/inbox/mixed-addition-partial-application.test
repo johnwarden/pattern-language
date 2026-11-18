@@ -5,12 +5,16 @@ test "A saved addition partial accepts direct and mixed second operands"
   addToOne = +(one)
 
   expect n + one is 42 :: Int
-  expect +(n)(one) is 42 :: Int
+  expect
+    +(n)(one)
+  is
+    42 :: Int
+  end
   expect addToN(one) is 42 :: Int
   expect addToN(1 :: Int) is 42 :: Int
 
   expect one + n is 42 :: Int
   expect addToOne(n) is 42 :: Int
   expect addToOne(2) is 3 :: ExactRational
-  expect addToN(0.5) fails "does not designate"
+  expect addToN(0.5) fails "not exactly representable as Int64"
 end

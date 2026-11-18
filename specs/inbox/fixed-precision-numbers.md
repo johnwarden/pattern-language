@@ -11,11 +11,11 @@ type Int64 concrete ExactRational .where fitsInt64
 type Float64 concrete ExactRational .where fitsFloat64
 ```
 
-Proposed initial aliases are `Int = Int64` and `Float = Float64`, with identical type identity under either name. The equations describe aliases. Their declaration spelling follows the language's type binding rules.
+The initial aliases are `Int = Int64` and `Float = Float64`, with identical type identity under either name. The equations describe aliases. Their declaration spelling follows the language's type binding rules.
 
 | Family | Proposed domain | Initial scope |
 | --- | --- | --- |
-| Signed and unsigned integers | `IntW` holds integers from −2^(W−1) through 2^(W−1)−1. `UIntW` holds integers from 0 through 2^W−1. | Specify `Int64` and `UInt64` first. The same rule can instantiate other widths. |
+| Signed and unsigned integers | `IntW` holds integers from −2^(W−1) through 2^(W−1)−1. `UIntW` holds integers from 0 through 2^W−1. | The initial formats are `Int32`, `Int64` and `UInt64`. The same rule can instantiate other widths. |
 | Binary floats | `Float32` and `Float64` hold the exact Rationals representable by their finite binary formats, including subnormals and zero. | Reuse the existing exact-fit predicates and explicit conversions. |
 | Decimal floats | A format specifies decimal coefficient precision and exponent bounds. Its domain consists of the Rationals expressible within those bounds. | Select the formats and short alias separately. |
 | Fixed-size ratios | A reduced fraction with a positive denominator must fit the chosen numerator and denominator limits. | Decide what the width counts before defining `Ratio64` or an alias. |
@@ -30,7 +30,7 @@ Additional float widths remain open. The prototype currently reserves some numer
 in the prelude. An initial union for the formats listed above is:
 
 ```pattern
-type Number pattern Int64 | UInt64 | Float32 | Float64
+type Number pattern Int32 | Int64 | UInt64 | Float32 | Float64
 ```
 
 `ExactRational` is outside `Number`. Numeric equality (`==`) accepts operands
@@ -48,8 +48,8 @@ test "Numeric equality compares a Number with an exact literal"
   (x :: Number) = 0 :: Int
   expect x === 0 fails "E_INCOMPARABLE_TYPES"
   expect x !== 0 fails "E_INCOMPARABLE_TYPES"
-  expect x == 0 is True
-  expect x != 0 is False
+  assert x == 0
+  assert not(x != 0)
 end
 ```
 
@@ -62,64 +62,117 @@ in its signature and performs any exact-fit check within its definition.
 These rules apply to infix calls, successive-pack calls and saved partials.
 A result annotation supplies no backward overload selection.
 
-## Prelude definitions for addition
+## Proposed checked conversion
 
-Draft for `ExactRational`, `Int` (the Int64 alias), and `Float64`.
-The result of mixing one fixed-precision operand with an `ExactRational`
-has the fixed operand's type, in either order. Check exact representability
-of the ExactRational operand before adding. Integer results are checked for
-overflow. Float64 results are rounded once. Different fixed formats need
-an explicit conversion for these overloads.
+`checkedConvert(T)(x)` takes a fixed numeric format `T` and an
+`ExactRational`. It returns a value of type `T` if the rational fits
+exactly. Otherwise it panics with the target type and failed fit check.
+Stored rationals and results of exact arithmetic use the same operation.
 
-Each first pack selects one definition. A union in the second pack keeps
-both supported operand types available after saving a partial application.
-When the first pack is an `ExactRational`, its definition can return an
-`ExactRational`, `Int`, or `Float64` according to the second operand.
+An ascription or binding alone follows the
+[refinement evidence rules](refinement-evidence.md) for a stored argument.
+The conversion supplies evidence by checking the target's representation
+predicate and constructing the value under the target type.
+
+The existing format-specific functions such as `float64(x)` explicitly
+round an `ExactRational` to the requested format and use the floating
+failure rules. To convert between fixed types explicitly, first project
+the source's exact payload. Integer conversion always checks exact fit.
 
 ```pattern
-def (+)(a :: Int)(b :: Int | ExactRational)
-  right = b :: Int
-  leftValue = match a
-    (value :: ExactRational) -> value
-  end
-  rightValue = match right
-    (value :: ExactRational) -> value
-  end
-  addExact(leftValue, rightValue) :: Int
-end
+test "Checked conversion validates stored and computed exact values"
+  half = 1 / 2
+  tenth = 1 / 10
+  integer = 20 + 22
 
-def (+)(a :: Float64)(b :: Float64 | ExactRational)
-  right = b :: Float64
-  leftValue = match a
-    (value :: ExactRational) -> value
-  end
-  rightValue = match right
-    (value :: ExactRational) -> value
-  end
-  float64(addExact(leftValue, rightValue))
-end
-
-def (+)(a :: ExactRational)(b :: ExactRational | Int | Float64)
-  match b
-    (q :: ExactRational) -> addExact(a, q)
-    (i :: Int) -> (+(i)(a))
-    (f :: Float64) -> (+(f)(a))
-  end
+  expect checkedConvert(Float32)(half) is 0.5 :: Float32
+  expect checkedConvert(Int32)(integer) is 42 :: Int32
+  expect checkedConvert(Int32)(half) fails "not exactly representable as Int32"
+  expect checkedConvert(Float64)(tenth) fails "not exactly representable as Float64"
+  expect float64(tenth) is 0f0.1 :: Float64
 end
 ```
 
-`addExact` denotes the prelude's internal exact addition primitive
-(the bootstrap already implements this operation as `addRationals`). The
-delegating arms use the same checked conversions as the fixed-left
-definitions. Match recognizes the concrete member held by `b`.
-The `:: Int` and `:: Float64` checks on `right` explicitly designate
-the operand, independent of whether it originated as a literal or a variable.
-For example, the Int arm rejects a rational `0.5` during operand
-designation.
+## Proposed mixed arithmetic
 
-The [partial-application contract](../../tests/inbox/mixed-addition-partial-application.test)
-checks the infix, successive-pack, and saved-partial forms, including a stored
-ExactRational operand and an ExactRational first pack called with two different types.
+Choose the result format from the operator and the concrete operand
+types. A variable of type `Number` carries its concrete member.
+Operand order does not change the result format. It does change the
+calculation for subtraction and division.
+
+| Operands | Result of `+`, `-`, `*` | Result of `/` |
+| --- | --- | --- |
+| Two fixed integers | Smallest supported integer format containing both operand ranges | `Float64` |
+| Two fixed binary floats | Wider of the two formats | Wider of the two formats |
+| One fixed integer and one fixed binary float | `Float64` | `Float64` |
+| One fixed format and one `ExactRational` | Check that the rational fits the fixed format exactly, then use the fixed format | Check the same fit. Use `Float64` if the fixed format is integer, otherwise use the fixed float format |
+| Two `ExactRational`s | `ExactRational` | `ExactRational` |
+
+An equal-format integer pair keeps its format. For example, `Int32 + Int64`
+returns `Int64`. No initial integer format contains both `Int64`'s and
+`UInt64`'s ranges. Such a pair needs explicit conversion for integer-valued
+arithmetic. Its `/` result is still `Float64`. Decimal and fixed-ratio
+promotion can be specified when those formats are introduced.
+
+For each supported pair, project fixed operands to their exact rational
+payloads. Check an exact operand's fit when the table requires it.
+Compute the exact operation on the two payloads in source order.
+Check the integer result for overflow or round once to the selected float
+format. In particular, never round integer operands to float before
+computing the result. A failed operand fit is a conversion error. A fixed
+integer result outside its range is an arithmetic overflow.
+
+### Prelude definitions for addition
+
+The table below describes how to generate the definition bodies. In this
+pseudocode, `payload` projects a fixed number or returns an
+`ExactRational` unchanged. `addExact` is the internal exact addition
+primitive. The same construction works for subtraction, multiplication
+and division with their own operations and result rules.
+
+```text
++(left of type L)(right of type R):
+  F = result format for (+, L, R)
+  check the exact operand's fit when exactly one operand is fixed
+  sum = addExact(payload(left), payload(right))
+  ExactRational result: return sum
+  fixed integer result: check the range and construct F
+  fixed float result: round sum once and construct F
+```
+
+For each left operand type, use one definition with a named abstract
+pattern for the supported right operand types. Dispatch within it on the
+right operand's concrete type. When an exact arm follows a fixed arm,
+test the fixed arm first or explicitly test the concrete member so an
+inner payload does not intercept that arm. Use the same table for a statically abstract argument by inspecting its
+active concrete member. A saved partial application accepts the same
+supported right operands as the direct call. Unary minus and the spelling of partial application of
+binary subtraction are governed by the operator-call rules.
+
+This uses direct membership of an exact operand in an abstract union
+with an explicit `ExactRational` member. A literal such as `1` supplies
+that member and reaches the arithmetic definition's fit check. See the
+[designation proposal](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#designation-and-ambiguity)
+and the [partial-application contract](../../tests/inbox/mixed-addition-partial-application.test).
+
+```pattern
+test "Mixed arithmetic chooses a format without rounding input operands"
+  narrow = 1 :: Int32
+  wide = 2 :: Int64
+  single = 0.5 :: Float32
+  double = 0.25 :: Float64
+  large = 9007199254740993 :: Int64
+  exactlyPowerOfTwo = 9007199254740992 :: Float64
+
+  expect narrow + wide is 3 :: Int64
+  expect single + double is 0.75 :: Float64
+  expect wide + single is 2.5 :: Float64
+  expect double - narrow is
+    -0.75 :: Float64
+  end
+  expect large - exactlyPowerOfTwo is 1 :: Float64
+end
+```
 
 ## Exponentiation
 
@@ -135,36 +188,58 @@ end
 
 ## Arithmetic policy
 
-| Operations | Integers | Binary and decimal floats | Fixed-size ratios |
-| --- | --- | --- | --- |
-| `+`, `-`, `*`, unary `-` | Compute the exact integer result and panic if it is out of range. This includes unsigned underflow and negating the signed minimum. | Compute the exact result, then round once to the result format. Apply the floating failure rules below. | Compute exactly, reduce, then check the component bounds. |
-| `/` | A zero divisor or out-of-range quotient panics. The proposed quotient truncates toward zero. | A zero divisor panics. Round the exact quotient once and apply the floating failure rules. | Compute the exact quotient and reduce before checking bounds. |
-| Remainder | Proposed operation with `a = q * b + r` and any nonzero remainder having the dividend's sign. The spelling remains open. | Deferred. | Deferred. |
+An out-of-range fixed integer result panics. This includes unsigned
+underflow and negating the signed minimum. For integer operators with
+a fixed integer result, apply the proposed common-format rule above.
 
-Integer remainder by zero panics. Under the proposed integer quotient,
-`(1 :: Int) / 2` returns `0 :: Int`. That zero is the truncation result.
+Floating overflow and underflow panic. Underflow occurs when a nonzero
+exact result rounds to zero. Nonzero subnormal results are representable.
+An exact zero result returns the single zero of the result format. For
+example, dividing zero by a negative finite float returns zero. An
+operation outside its real domain panics.
 
-Floating overflow and underflow panic. The proposed underflow boundary
-is a nonzero exact result that rounds to zero. Nonzero subnormal results
-are representable. An exact zero result always returns the single zero of
-the result format. For example, dividing zero by a negative finite float
-returns zero. An invalid operation that would otherwise produce NaN, such
-as taking the square root of a negative float, panics.
+Each floating operation rounds its own result before it feeds the next
+operation. Round to nearest with ties to even is proposed. A successful
+floating division with a nonzero numerator returns a nonzero float. A
+zero numerator and nonzero divisor give zero.
 
-A successful floating division with a nonzero numerator returns a
-nonzero float. With a zero numerator and a nonzero divisor it returns
-zero. The refined result follows from the numerator's static evidence
-and can be specified for a single division definition.
+## Proposed integer division and remainder
 
-Each floating operator rounds its result before it feeds the next
-operator. Round to nearest with ties to even is proposed. An explicit
-floating conversion may round under the same failure rules. Operand
-designation requires an exact fit.
+`/` on two fixed integers computes their exact quotient and rounds once
+to `Float64`. A zero divisor panics. Two `ExactRational` operands still
+give an exact quotient.
 
-The [square root proposal](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#decision-fixed-precision-number-types-are-wrapped-exactrationals)
-defines the operation for fixed-precision floating types. If more than
-one format accepts an exact designator, the call is ambiguous. An
-explicit float ascription selects the format.
+| Operator | Definition |
+| --- | --- |
+| `.div` | Integer quotient rounded toward zero |
+| `.flDiv` | Integer quotient rounded toward negative infinity |
+| `%` | Truncated remainder `a - q * b`, with `q` the mathematical quotient truncated toward zero as an unbounded integer |
+
+All three require integer operands and panic on a zero divisor. A
+nonzero truncated remainder has the dividend's sign and magnitude less
+than the divisor's magnitude. Check the range of the returned result.
+The minimum signed integer divided by −1 overflows for `.div` and
+`.flDiv`. The remainder is zero and fits its format.
+
+Integral `ExactRational` operands can also use these three operators.
+When both operands are exact rationals, the result is an
+`ExactRational` integer. With one fixed integer and one exact rational,
+check that the rational fits the fixed integer format. Fixed floats and
+fractional rationals fail the integer operand check.
+
+## Future operations that can produce irrational results
+
+Operations such as `sqrt`, `exp`, `log` and trigonometric functions
+can return real values outside the `ExactRational` domain. Define each
+on fixed floating formats. A unary operation returns the input's
+format, rounded from the mathematical result. It uses the same
+overflow, underflow, zero and domain rules. This includes inputs for
+which the mathematical result happens to be rational.
+
+A bare exact argument that could designate several supported formats
+is ambiguous. An explicit float ascription selects one, for example
+`sqrt(2 :: Float64)`. These functions are deferred from the initial
+prelude implementation.
 
 ## Mixed comparison contracts
 
@@ -179,24 +254,24 @@ test "Mixed ordering accepts the same exact value in every form"
   one = 1
   sum = 1 + 0
 
-  expect n > 0 is True
-  expect n < 10 is True
-  expect n >= 2 is True
-  expect 0 < n is True
-  expect n > -1 is True
+  assert n > 0
+  assert n < 10
+  assert n >= 2
+  assert 0 < n
+  assert n > -1
 
-  expect n > 1 is True
-  expect n > one is True
-  expect n > (1 + 0) is True
-  expect n > sum is True
-  expect one < n is True
+  assert n > 1
+  assert n > one
+  assert n > (1 + 0)
+  assert n > sum
+  assert one < n
 end
 
 test "An Int refinement can order its input against an exact zero"
   type PositiveInt pattern Int .where (n -> n > 0)
 
-  expect (2 :: Int) .matches PositiveInt is True
-  expect (0 :: Int) .matches PositiveInt is False
+  assert (2 :: Int) .matches PositiveInt
+  assert not((0 :: Int) .matches PositiveInt)
 end
 
 test "Numeric equality applies to literal and bound ExactRationals"
@@ -204,9 +279,9 @@ test "Numeric equality applies to literal and bound ExactRationals"
   two = 2
   expect n === 2 fails "E_INCOMPARABLE_TYPES"
   expect n === two fails "E_INCOMPARABLE_TYPES"
-  expect n === (2 :: Int) is True
-  expect n == 2 is True
-  expect two == n is True
+  assert n === (2 :: Int)
+  assert n == 2
+  assert two == n
 end
 ```
 
@@ -237,11 +312,6 @@ test "Exact equality compares Number with a concrete member"
   assert i !== f
 end
 
-test "Square root requires disambiguation between floating formats"
-  expect sqrt(2) fails "ambiguous"
-  expect sqrt(4 :: Float64) is 2 :: Float64
-end
-
 test "Float64 operands designate exactly and results round"
   x = 1 :: Float64
   expect x + 0.1 fails "not exactly representable as Float64"
@@ -252,15 +322,42 @@ test "Checked integers reject unrepresentable results"
   maxInt = 9223372036854775807 :: Int
   expect maxInt + 1 fails "overflow"
   minInt = -9223372036854775808 :: Int
-  expect minInt / -1 fails "overflow"
-  expect maxInt / 0 fails "division by zero"
+  expect minInt .div -1 fails "overflow"
 end
 
-test "Integer division truncates toward zero"
-  expect (7 :: Int) / 2 is 3 :: Int
-  negativeThree = -3 :: Int
-  expect (-7 :: Int) / 2 is negativeThree
-  expect (1 :: Int) / 2 is 0 :: Int
+test "Integer division returns a rounded Float64 quotient"
+  a = 1 :: Int32
+  b = 10 :: Int32
+
+  expect a / b is 0f0.1 :: Float64
+  expect a / 0 fails "division by zero"
+end
+
+test "Truncated and floored quotients differ for a negative dividend"
+  minInt32 = -2147483648 :: Int32
+
+  expect (-5) .div 2 is
+    -2
+  end
+  expect 1 .div 2 is 0
+  expect (-5) .flDiv 2 is
+    -3
+  end
+  expect (-5 :: Float) .div 2 fails ".div only defined for Integer types"
+  expect (-5 :: Float) .flDiv 2 fails ".flDiv only defined for Integer types"
+  expect minInt32 .div -1 fails "overflow"
+  expect minInt32 .flDiv -1 fails "overflow"
+end
+
+test "Truncated remainder checks only the returned result"
+  minInt32 = -2147483648 :: Int32
+
+  expect (-5) % 2 is
+    -1
+  end
+  expect minInt32 % -1 is 0 :: Int32
+  expect minInt32 % 0 fails "division by zero"
+  expect (-5 :: Float) % 2 fails "% only defined for Integer types"
 end
 
 test "Floating division checks zero and underflow"
@@ -276,12 +373,10 @@ end
 
 ## Remaining decisions
 
-- Confirm the rounding mode, the underflow boundary for subnormals and
-  the integer quotient rule. Choose the remainder operator's name.
-- Confirm the initial widths and aliases. Choose decimal formats and
-  fixed-size ratio widths separately.
-- Define mixed arithmetic between fixed formats, including whether to
-  require conversion or promote, and what type each result has.
-- Define checked conversion of stored exact rationals and computed exact
-  results into fixed formats. Use that contract in the prelude addition
-  definitions.
+- Confirm nearest-even rounding, the proposed mixed-format rules and
+  checked conversion spelling.
+- Confirm the integer division and remainder draft. Decide separately
+  whether to expose paired quotient-and-remainder operators.
+- Choose decimal formats and fixed-size ratio widths and rules.
+- Specify partial application of binary subtraction alongside unary
+  negation. The numeric definitions assume the selected arity is known.

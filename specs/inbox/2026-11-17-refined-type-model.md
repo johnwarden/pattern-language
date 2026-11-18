@@ -1,23 +1,29 @@
-# No `abstract` keyword. Instead `pattern` keyword.
+# Refined type model
 
-A type is defined by a pattern. The `concrete`, `pattern` macros construct Concrete(...) and Pattern(...) type values
+Draft. A type is defined by a pattern. The `concrete` and `pattern`
+macros construct `Concrete(...)` and `Pattern(...)` descriptors.
+The descriptor forms inherit the implemented Type
+[normalization and identity rules](../../TYPE-VALUES-BOOTSTRAP.md#normalization-and-identity)
+and [type-directed text round trips](../../TYPE-VALUES-BOOTSTRAP.md#global-and-local-typed-text).
+An explicit concrete boundary is part of the type's identity.
 
-  type Foo pattern Int | String                   # Abstract pattern type
-  type Bar concrete Int | String                  # Concrete type
-  type Baz pattern Int .where nonZero             # Refinement type (over Int) 
-  type Boo concrete Int .where nonZero            # Carveout
+```pattern
+def nonZero(n :: Int) n != 0
+type Foo pattern Int | String
+type Bar concrete Int | String
+type Baz pattern Int .where nonZero
+type Boo concrete Int .where nonZero
 
-Use `Concrete(...)` and `Pattern(...)` for type values. The descriptor
-forms inherit the implemented Type [normalization and identity
-rules](../../TYPE-VALUES-BOOTSTRAP.md#normalization-and-identity) and
-[type-directed text round trips](../../TYPE-VALUES-BOOTSTRAP.md#global-and-local-typed-text).
-A descriptor printed and read under its type recovers the same value.
-An explicit nested concrete boundary remains part of type identity.
+expect Foo is Pattern(Int | String)
+expect Bar is Concrete(Int | String)
+expect Baz is Pattern(Int .where nonZero)
+expect Boo is Concrete(Int .where nonZero)
+```
 
-  expect Foo is Pattern(Int | String)
-  expect Bar is Concrete(Int | String)
-  expect Baz is Predicate((n :: Int) -> n > 0)
-  expect Boo is Concrete(Predicate((n :: Int) -> n > 0))
+Refinement descriptions use `T .where predicate` inside the descriptor.
+This proposal would replace the corresponding constructor and composition
+rules in the [approved type-values record](../approved/type-values.md).
+The prelude kind vocabulary can be updated after this model is approved.
 
 Wrapping a pattern in concrete/Concrete creates a new value space, with values that are disjoint from but designated by values matching the wrapped pattern.
 
@@ -34,8 +40,8 @@ referenced type, so applying `pattern` to it again returns that same type.
 
 But a nested `concrete` does not.
   
-  expect concrete Uint64 is Concrete(Uint64) 
-  assert Uint64 !== concrete Uint64
+  expect concrete UInt64 is Concrete(UInt64)
+  assert UInt64 !== concrete UInt64
 
 Use `==` and `!=` for numeric equality and inequality. Use `===` and `!==`
 for exact equality and inequality. Exact comparison requires overlapping
@@ -49,7 +55,7 @@ Patterns can be:
   - single-type: Int
   - expression trees: Rect(Int, Int)
   - alternatives: Int | Float
-  - predicates: (n :: Int) .where n -> n > 0
+  - refinements: Int .where (n -> n > 0)
 
 
 Any of these patterns can be wrapped in `concrete`.
@@ -58,11 +64,14 @@ Any of these patterns can be wrapped in `concrete`.
 
 Disallow raw expression trees or symbols as values. Raw symbols are treated the same way as expression trees: they must be interpeted under some type.
 
-  expect x = :None fails "...need a type for expression `None`"
+  expect
+    x = :None
+    x
+  fails "need a type"
 
   t = concrete :None
   x = :None :: t
-  assert x is :None :: t
+  expect x is :None :: t
 
 ## Facets: Abstract Raw Expressions and Symbols
 
@@ -87,8 +96,8 @@ Example: nested union pattern
 
 Now Rectangular can match one of many concrete types (Rect(Int, Int), Rect(Int, Float), etc.)
 
-  (x :: Rectangular) = Rect(2, 2) :: Rect(Int, Int)
-  expect s is Rect(2, 2) :: Rect(Int, Int)
+  (x :: Rectangular) = Rect(2, 2) :: concrete Rect(Int, Int)
+  expect x is Rect(2, 2) :: concrete Rect(Int, Int)
 
 The four combinations of concrete field types can also be written as an
 explicit union of `Rect(Int, Int)`, `Rect(Int, Float)`, `Rect(Float, Int)`
@@ -136,34 +145,42 @@ Note the difference here:
 
 Why does the following fail? Rectangular matches Rect(Int, Int), Rect(Int, Float), etc...e.g. any type where both width and height are concrete fixed-precisions numbers concrete Num is not one of those.
 
-  expect (z :: Rectangular) = x fails "value of type `NumRectangle` does not designate a value of type `Rectangular`"
+  expect
+    (z :: Rectangular) = x
+    z
+  fails "does not designate"
 
   (z :: Rectangular) = y
-  expect z = Rect(1, 1) :: IntRectangle
+  expect z is Rect(1, 1) :: IntRectangle
 
 A raw symbol can also be abstract
 
   type None pattern :None
-  type T? concrete T | :None
 
   (v :: None) = :None :: Int?
 
-  expect v is None :: Int?
+  expect v is :None :: Int?
 
-  expect (v :: None) = 5 :: Int fails ...
+  expect
+    (v :: None) = 5 :: Int
+    v
+  fails "does not designate"
 
 Symbol, LowerCamelSymbol, etc. are primitive *abstract types*. They can be wrapped to define concrete types.
 
-  expect y = :Foo :: UpperCamelSymbol fails "Missing concrete type for :Foo (UpperCamelSymbol is abstract)..."
+  expect
+    y = :Foo :: UpperCamelSymbol
+    y
+  fails "Missing concrete type"
 
   type TypeName concrete UpperCamelSymbol
   x = :MyType :: TypeName
-  expect x is MyType :: TypeName
+  expect x is :MyType :: TypeName
 
 Values cannot have Symbol types (because they are abstract), but *variables* can.
 
   (z :: UpperCamelSymbol) = x
-  expect x is MyType :: TypeName
+  expect x is :MyType :: TypeName
 
 What if I define
 
@@ -174,18 +191,23 @@ This is odd and probably not a good idea. But it is coherent:
   # Abstract type that admits Ints, or values of any type designated by :None
 
   type AbstractOption<T> pattern :None | T
-  type T? concrete :None | T
 
-  expect (w :: AbstractOption<Int>) = :None fails Missing concrete type for :None...
+  expect
+    (w :: AbstractOption<Int>) = :None
+    w
+  fails "Missing concrete type"
 
   # AbstractOption<Int> admits any value that matches :None
   (w :: AbstractOption<Int>) = :None :: Int?
   assert w === :None :: Int?
 
   (x :: AbstractOption<Int>) = 5 :: Int
-  assert x === 5 :: Int
+  assert x === (5 :: Int)
 
-  expect (y :: AbstractOption<Int>) = 5 :: Int? fails "value of type `Int?` does not designate a value of type `AbstractOption<Int>`"
+  expect
+    (y :: AbstractOption<Int>) = 5 :: Int?
+    y
+  fails "does not designate"
 
   expect x === (5 :: Int?) fails "disjoint types"
 
@@ -203,7 +225,10 @@ singleton has one value in its own value space.
 ## Abstract symbol patterns
 
   t = pattern :None
-  expect (v :: t) = :None fails "...no concrete type for `:None`"
+  expect
+    (v :: t) = :None
+    v
+  fails "concrete type"
   (v :: t) = :None :: Int?
   assert v === :None :: Int?
 
@@ -211,7 +236,7 @@ singleton has one value in its own value space.
 
   t = concrete :None
   (v :: t) = :None
-  expect (v !== (:None :: Int?)) fails "disjoint types"
+  expect v !== (:None :: Int?) fails "E_INCOMPARABLE_TYPES"
 
 ## enums: Unions of Single-Symbol Patterns
 
@@ -223,18 +248,18 @@ singleton has one value in its own value space.
 
   (c :: PrimaryColor) = :Red
   (x :: Color) = c
-  expect x is Red :: PrimaryColor
+  expect x is :Red :: PrimaryColor
 
-  (y :: Color) = :Transparent
-  expect y is Transparent :: Transparent
+  (y :: Color) = :Transparent :: Transparent
+  expect y is :Transparent :: Transparent
 
-  func describe(c :: PrimaryColor) $"The color $c"
+  def describe(c :: PrimaryColor) $"The color $c"
 
-  func describe(t :: Transparent) "Transparent"
+  def describe(t :: Transparent) "Transparent"
 
 ## Wrapped Enum
 
-  def Status concrete PrimaryColor
+  type Status concrete PrimaryColor
 
   # Wrapping a concrete type in concrete creates a nested concrete type.
   assert Status === Concrete(Concrete(:Red | :Green | :Blue))
@@ -275,20 +300,22 @@ An abstract symbol pattern can admit a value from a different concrete enum:
     expect takesPrimary(s) fails "no definition for `takesPrimary(Status)`"
 
 `takesPrimary(s)` requires a `PrimaryColor` value. The abstract symbol
-pattern also respects the concrete wrapper boundary. 
+pattern also respects the concrete wrapper boundary.
 
   expect takesRed(s) fails "no definition for `takesRed(Status)`"
 
 Use `match` to get at the symbol inside `Status`.
 
-  match s c :: Color
-
-  expect takesRed(c) is "red pattern"
+  result = match s
+    (c :: PrimaryColor) -> takesRed(c)
+  end
+  expect result is "red pattern"
 
 Value of outer type cannot designate value of inner type
 
   expect
     (u :: Color) = s
+    u
   fails "value of type `Concrete(Color)` does not designate a value of type `Color`"
 
 # Single-type Patterns
@@ -298,8 +325,8 @@ Value of outer type cannot designate value of inner type
   t = pattern String
   expect t is String :: PrimitiveType
 
-  x = 5 :: t
-  expect x is 5 :: String
+  x = "hi" :: t
+  expect x is "hi" :: String
 
 ## Concrete Single-Type Pattern: "Newtypes"
 
@@ -312,6 +339,7 @@ Value of outer type cannot designate value of inner type
   # Value of outer type cannot designate value of inner type
   expect
     (y :: Int) = 5 :: id
+    y
   fails "value of type `Concrete(Int)` does not designate a value of type `Int`"
 
 # Unions
@@ -327,25 +355,25 @@ Value of outer type cannot designate value of inner type
   (a :: t) = :None :: String?
   (b :: t) = "hello"
 
-  expect a is None :: String?
+  expect a is :None :: String?
   expect b is "hello" :: String
   assert a !== b
 
 ## Wrapped: Concrete Unions
 
-  type Option(Int) concrete Int | :None
+  type Option(T) concrete T | :None
 
   expect Option(Int) is Concrete(Int | :None)
 
   assert Option(Int) !== Option(String)
 
   (a :: Option(Int)) = :None
-  expect a is None :: Option(Int)
+  expect a is :None :: Option(Int)
 
   (b :: Option(String)) = :None
-  expect b is None :: Option(String)
+  expect b is :None :: Option(String)
 
-  expect 
+  expect
     a === b
   fails "Values of disjoint types `Option(Int)` and `Option(String)` cannot be equal"
 
@@ -359,9 +387,10 @@ Value of outer type cannot designate value of inner type
   (x :: t) = 5
   expect x * 2 is 10 :: Int
 
-  expect 
+  expect
     (y :: t) = 0
-  fails "...fails predicate..."
+    y
+  fails "predicate"
 
 
 ## Concrete: Carveouts
@@ -373,9 +402,10 @@ Value of outer type cannot designate value of inner type
 
   expect x * 2 fails "* not defined for values of type `Concrete(Int .where Positive)`"
 
-  expect 
+  expect
     (y :: t) = 0
-  fails "...fails predicate..."
+    y
+  fails "predicate"
 
 
 # Expression Trees
@@ -387,12 +417,16 @@ Value of outer type cannot designate value of inner type
 
   (r :: t) = Rect(2, 3)
 
-  # Match pattern against concrete struct
-  Rect(w, h) = r
-  expect (w, h) is (2, 3)
+  def area(rect :: t)
+    match rect
+      Rect(w, h) -> w * h
+    end
+  end
+  expect area(r) is 6 :: Int
 
-  def area(Rect(w, h)) = w * h
-  expect area(r) is 6
+Opening a concrete struct boundary is explicit. For an ordinary binding
+or function parameter, bind the entire value and access its fields or
+open it with `match` inside the body.
 
 ## Abstract Expression Trees: Facets
 
@@ -406,15 +440,15 @@ that admits rectangles with different sets of labels.
 
 ## Wrapped Abstract Expression Trees: Variadic Structs
 
-  type Circle concrete Circle(radius :: UInt)
-  type Rectangle concrete Rect(w :: UInt, h :: UInt)
-  type Figure concrete {x :: UInt, y :: Uint, shape: Circle | Rectangle}
-  type Picture concrete Picture(figures... :: Figure+)
+  type Circle concrete Circle(radius :: UInt64)
+  type Rectangle concrete Rect(w :: UInt64, h :: UInt64)
+  type Figure concrete {x :: UInt64, y :: UInt64, shape: Circle | Rectangle}
+  type Picture concrete Picture(figures... :: Figure*)
 
   p = Picture(
-      {5, 10, Rectangle(3,5)},
-      {5, 5, Circle(2)}
-  )
+      {5, 10, shape: Rect(3, 5) :: Rectangle},
+      {5, 5, shape: Circle(2) :: Circle}
+  ) :: Picture
 
 ## Wrapped Partial Matches: Ad-hoc Structs
 
@@ -425,87 +459,43 @@ The residual fields are captured as a built-in `Dict`. Implementation of
 `Dict` and support for arbitrary labeled spreads can be deferred.
 [Catch-all fields](spreads.md#catch-all-fields)
 
-## Set example:
+## Refinements over structs and facets
 
-  type Set<T> concrete {elements... :: T*} -> isSorted(elements)
+A function can take a facet and use its guaranteed fields. For example:
 
-  expect (x :: Set<Int>) = {3, 1, 2} fails "...fails predicate isSorted(elements)"
+  type Rectangular pattern Rect(w :: Float, h :: Float)
+  type Rectangle concrete Rect(w :: Float, h :: Float)
+  def isSquare(r :: Rectangular) r.w == r.h
+  type Square pattern Rectangular .where isSquare
 
-### More on Predicates
+  r = Rect(10, 10) :: Rectangle
+  assert isSquare(r)
 
-# Function parameters are *patterns*. So a function is defined over any concrete type that matches that pattern. 
+A true explicit test supplies evidence. The refined binding retains
+the same concrete `Rectangle` value.
 
-  def isSquare(Rect(w :: Number, h :: Number)) w == h
+  if isSquare(r)
+    (s :: Square) = r
+    assert s === r
+  else
+    False
+  end
 
-So isSquare is defined over a pattern that matches many concrete types.
-
-  s = Rect(10, 10) :: concrete Rect(Float, Float)
-  assert isSquare(s)
-
-  type Square pattern Rect(w :: Float, h :: Float) .where isSquare
-
-Now Square is a pattern that matches a value of any concrete type that can be passed to isSquare and that satisies the isSquare predicate
-
-  (t :: Square) = s
-  expect t === s
-
-Just like this:
+A refinement over a numeric type behaves the same way. `NonZeroNumber`
+is the static type of `x`. The bound value still has concrete type `Int`.
 
   def isNonZero(n :: Number) n != 0
   type NonZeroNumber pattern Number .where isNonZero
+  (x :: NonZeroNumber) = 2 :: Int
+  expect x is 2 :: Int
 
-These abstract types admit values of any concrete type that match the pattern and the predicate.
+A concrete carveout has its own concrete identity.
 
-An alternative definition of nonzero
+  type ConcreteSquare concrete Rectangular .where isSquare
 
-  type NonZero<T :: Numeric> pattern T .where isNonZero
-
-  x :: NonZero<Int> = 2 :: Int
-  expect x is 2 :: Int .where isNonZero
-  expect 2.3 NonZero<Int> fails "...`2.3` does not satisfy predicate `fitsInt64` required by type `Int`" 
-
-  y :: NonZeroNumber = 2 :: Int
-  expect y is 2 :: Int .where isNonZero
-  expect x === y
-
-Note that we could define types with *just* the predicates
-
-  type Square pattern isSquare
-
-or 
-
-  type Square pattern Rect(w :: Number, h :: Number) -> w == h
-
-But the error messages are not as good
-
-  expect (s :: Square) = Rect(2, 3) :: Rectangle fails "Rect(2,3) does not satisfy predicate `Rect(w :: Number, h :: Number) -> w == h` required by type `Square`"
-
-Can wrap a predicate pattern in concrete
-
-  type ConcreteSquare concrete Rect(w :: Float, h :: Float) .where isSquare
-
-You can define a predicate over a facet:
-
-  def isSquare _(width: Float, height: Float, ...) -> width == height
-
-  type Rectangular pattern Rect(width: Float, height: Float, ...)
-  type SquareShaped pattern _(width: Float, height: Float, ...) .where isSquare
-  type Colored pattern _(color: Color, ...)
-
-And wrap intersections of facets in concrete
-
-  type ColoredSquare concrete Rectangle & SquareShaped & Colored
-
-Same as
-
-  type ColoredSquare concrete Rect(width: Float, heigth: Float, color: Color) .where isSquare
-
-
-  x = Rect(2, 2, color: :Red) :: ColoredSquare
-  (y :: SquareShaped) = x
-  (z :: Colored) = x
-  (z :: Colored) = x
-
+See [refinement evidence](refinement-evidence.md). Predicate-only types,
+head-agnostic expressions and intersections of facets are separate
+design questions.
 
 A facet name in a `concrete` declaration supplies its pattern. A constructor
 pattern gives the new concrete type its outer constructor and fields.
@@ -526,51 +516,30 @@ A reference to a concrete type supplies a typed member.
 `Foo` refers to `Int`, and the binding requires an `Int` as the whole
 value. The whole value has type `Bar`.
 
-# Pattern Matching Rules
-
-An expression tree pattern can match a value directly with a deconstructing binding
-
-  r = Rect(2, 3) :: Rectangle
-  Rect(w, h) = r
+# Pattern matching rules
 
 The `match` macro handles abstract and concrete unions. An abstract union
 carries an already typed member. A match against a concrete union can
 select its active alternative and bind its typed payload. A symbolic
 alternative can select an arm without producing a raw symbol value.
 An explicit match projects one concrete boundary at a time. Ordinary
-bindings and function arguments still respect that boundary.
+bindings and function arguments respect that boundary.
 
-Match over concrete union:
+  t = concrete Int | String
+  (y :: t) = 5 :: Int
+  expect y === (5 :: Int) fails "E_INCOMPARABLE_TYPES"
 
-  concreteUnion = concrete Int | String
-  y :: concreteUnion = 5
-
-  expect y === 5 :: Int fails "disjoint types"
-
-  v = match y
-    when i :: Int $"$i"
-    else "String"
+  result = match y
+    (i :: Int) -> i
+    _ -> 0 :: Int
   end
+  expect result is 5 :: Int
 
-  expect v "5"
+A match on an abstract union tests its stored concrete member.
 
-  (x :: Int) = 10
-
-  y = match x
-    (value :: ExactRational) -> value
-  end
-  expect y is 10 :: ExactRational
-
-Match over abstract union
-
-  abstractUnion = pattern Int | String
-
-  x :: abstractUnion = 5
-
-  v = match x
-    when i :: Int $"$i"
-    else "String"
-  end
+  t = pattern Int | String
+  (y :: t) = 5 :: Int
+  assert y === (5 :: Int)
 
 A constructor pattern tests the concrete types held in abstract fields.
 A `Rectangle` whose two `Num` fields hold Int values matches
@@ -606,35 +575,18 @@ test "A match selects absence without binding a raw symbol"
 end
 ```
 
-Match over enum
+An enum arm selects a tag. A whole-value binding can retain the typed
+enum, while selecting a tag alone discards the tag payload.
 
   type TrafficLight concrete :Red | :Amber | :Green
-
   x = :Green :: TrafficLight
 
-  s = x match
-    case :Red "Red"
-    case :Green "Green"
-    case :Blue "Blue"
+  result = match x
+    :Red -> "Red"
+    :Amber -> "Amber"
+    :Green -> "Green"
   end
-
-  expect s is "Green"
-
-Match over abstract symbol pattern
-
-  type RedPattern pattern :Red
-  (y :: RedPattern) = :Red :: TrafficLight
-
-  y match :Red
-
-Note can't capture raw symbols
-
-  expect y match (symbol :: :Red) fails "..."
-
-  (r :: Rectangle) = IntRectangle(5, 5)
-  expect r match (_ :: Symbol)(Float, Float) fails "..."
-
-
+  expect result is "Green"
 
 ## Projection patterns and overloaded matching
 
@@ -662,9 +614,9 @@ are disjoint at that boundary.
 
 ```pattern
 match x
-  when P1 V1
-  when P2 V2
-  default V3
+  P1 -> V1
+  P2 -> V2
+  _ -> V3
 end
 
 def f(P1 .as T) V1
@@ -680,21 +632,18 @@ effective overloads disjoint. The call evaluates `x` once and dispatches
 on the active alternative. A match on an abstract union uses the
 unprojected patterns as parameters.
 
-We can embed "concrete" in any type expression:
+A concrete carveout can be used as a field type.
 
-  type User concrete {name: String, id: concrete PositiveInt}
-
-  # Positive int can designate value of wrapped type.
+  def isPositive(n :: Int) n > 0
+  type PositiveInt pattern Int .where isPositive
+  type Id concrete PositiveInt
+  type User concrete {name: String, id: Id}
   u = {name: "John", id: 5} :: User
+  expect u.id is 5 :: Id
 
-  expect (u.id !== 5) fails "disjoint types"
-  assert u.id === 5 :: concrete PositiveInt
-
-  test "Structural match of wrapped integer"
-    type Id concrete PositiveInt 
-    assert toString(u.id) is "5 :: Id"
-  end
-
+Typed text must preserve each concrete boundary and reproduce the
+same value. The canonical abbreviation for values such as `u.id`
+is still open, including when local type names can appear in text.
 
 ## Test migration
 
@@ -704,6 +653,9 @@ reflect the new type and value rules. The earlier
 accepts bare runtime constructor values such as `r = Rect(2, 2)`.
 Migrate those cases, keeping separate coverage for construction with
 an expected concrete type and for quotation as expression syntax.
+This also changes the current intrinsic-symbol behavior in C01. The
+symbol-class names in this draft are patterns admitting already typed
+values. Update the symbol contracts when that change is approved.
 
 Use `legacy` for bootstrap behavior that still needs a passing check
 during the transition. Use `todo` for the intended behavior that the
@@ -730,7 +682,7 @@ In fact, the grammar of the pattern spec itself identifies it as a pattern.
 
 In nested positions we alrady allow this:
 
-  type Foo Foo(String | Float, String | Float)
+  type Foo concrete Foo(String | Float, String | Float)
 
 The only issue here is expression-tree patterns. If I just say
 

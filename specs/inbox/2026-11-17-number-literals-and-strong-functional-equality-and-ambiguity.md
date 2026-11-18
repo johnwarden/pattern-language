@@ -1,94 +1,53 @@
+# Exactness, numeric comparison and designation
 
-# Strong Functional Equality
+## Strong functional equality
 
 If two expressions have the same static type and compare exactly equal
-with `===`, substituting one for the other preserves the result in every
-context where both expressions are valid. The following expression must
-evaluate to `False` in such a context.
-
-	(E1 === E2) && (CONTEXT[E1] !== CONTEXT[E2])
+with `===`, substituting one for the other in an evaluated value
+position preserves the result whenever both expressions are valid there.
+Quotation and unevaluated macro operands can inspect the source
+expression. Literal designation can make one expression valid in a
+typed context in which a binding with the same value lacks evidence.
+See [refinement evidence](refinement-evidence.md).
 
 Exact comparison requires the operands' static types to admit at least
-one concrete type in common. For example, `Number` and `Float64` overlap
-because `Number` includes `Float64`. Exact equality compares the values
-including their concrete types. A `Number` holding an `Int` zero compares
-exactly unequal to a `Float64` zero.
-[Abstract and concrete comparison coverage](../../test/abstract-values.test.ts#L25-L43)
+one concrete type in common. It compares both the concrete type and the
+value. For example, `Number` and `Float64` overlap. A `Number` holding
+an `Int` zero is exactly unequal to a `Float64` zero. Comparing a
+concrete `Int` directly with a concrete `Float64` is a type error.
+The bootstrap's [abstract comparison tests](../../test/abstract-values.test.ts#L25-L43)
+cover a subset of this proposed rule.
 
-Numeric `==` compares magnitudes across formats, including `ExactRational`.
+Numeric `==` and ordering compare exact magnitudes across formats.
 An overload can distinguish values that are numerically equal.
 
-	x = 0 :: Int
-	def kind(n :: Int) "Int"
-	def kind(n :: ExactRational) "ExactRational"
-	assert x == 0
-	assert kind(x) !== kind(0)
+```pattern
+test "Numeric equality can hold for values dispatched to different overloads"
+  def kind(n :: Int) "Int"
+  def kind(n :: ExactRational) "ExactRational"
 
-## DISCARDED Option:  Numeric Literals (ExactRationals) directly *represent* values of fixed-precision number types.
+  x = 0 :: Int
+  assert x == 0
+  expect kind(x) is "Int"
+  expect kind(0) is "ExactRational"
+  expect kind(0 :: ExactRational) is "ExactRational"
+end
+```
 
-	x = 1 :: Int
-	y = 1 :: Float
-	x === 1
-	y === 1
-	INCOMPARABLE: x === y
+## Fixed precision number types are wrapped ExactRationals
 
-	AMZBIGUOUS: sqrt(2)
-	sqrt(2 :: Float64)
+A numeric literal by itself has type `ExactRational`. It can designate
+a fixed value when it exactly fits the requested type. The fixed value
+occupies a separate concrete value space. For example, `0.1` does not
+fit `Float64`, whereas `0f0.1` denotes exactly the rational stored
+in the Float64 approximation to one tenth.
 
-	AMBIGUOUS: x + 1
-	x + 1 :: Int
-	y + 1 :: Float
+The [fixed-precision prelude](fixed-precision-numbers.md) specifies
+the numeric types, operator signatures and conversions. Operations
+that can produce irrational numbers, such as `sqrt`, are
+[deferred](fixed-precision-numbers.md#future-operations-that-can-produce-irrational-results).
 
-	AMBIGUOUS: x > 0
-	x + 0 :: Int
-
-
-But this means many numeric operations are ambiguous:
-
-	AMBIGUOUS: sqrt(2) 
-	sqrt(2 :: Float)
-	AMBIGUOUS: x + 1
-	x + 1 :: Int
-	AMBIGUOUS: 1 / 3
-	(1 :: ExactRational) / (3 :: ExactRational)	
-
-
-# DECISIoN: Fixed precision number types are wrapped ExactRationals.
-
-A numeric literal by itself has type ExactRational and is not exactly equal to any fixed-precision value.
-
-	x = 1 :: Int
-	y = 1 :: Float
-
-	INCOMPARABLE: x === 1
-	x === 1 :: Int
-	INCOMPARABLE: y === 1
-	y === 1 :: Float
-
-	INCOMPARABLE: x === 1 :: ExactRational
-	NO: y === 1 :: ExactRational
-
-	INCOMPARABLE: x === y
-
-	# Don't define sqrt over exact rationals, because it needs a finite-precision result. Only define over floats/decimal floats where a precision is implicit in the type.
-	expect sqrt(2) fails "ambiguous"
-	sqrt(2 :: Float64) => Float64
-	x + 1        # Int because +(Int)(ExactRational) is explicitly defined
-	(x + 1) :: Int # Int
-	1 / 3        # ExactRational
-	(1 :: ExactRational) / (3 :: ExactRational)	
-
-	x > 0 # Okay
-
-The fixed-precision prelude specifies the [`Number` union and numeric
-equality](fixed-precision-numbers.md#number-and-numeric-equality) and the
-[addition definitions](fixed-precision-numbers.md#prelude-definitions-for-addition).
-
-Each fixed-precision floating type supplies a `sqrt` overload. An exact
-argument such as `2` can designate both `Float32` and `Float64`, making the
-call ambiguous. `sqrt(2 :: Float64)` selects the Float64 overload.
-
-# Designation and Ambiguity
+## Designation and ambiguity
 
 Check overload domains when adding a definition. Reject the definition
 if it shares any directly admitted arguments with an existing overload.
@@ -108,132 +67,47 @@ Different concrete formats such as `Float32` and `Float64` admit disjoint
 values. Both overloads are valid, and an exact rational that designates
 both can make a call ambiguous.
 
-An inner value can designate an outer value. The examples below explain
-how that affects overload selection.
-
-# DISCARDED OPTION 1: An outer type can be designated by a value of it's inner type only if unambiguous. Fail or require explicit type otherwise.
-
-This could almost work. 
-
-	def foo(x :: Int) "Int"
-	foo(5) "Int"
-
-	def foo(x :: ExactRational) "ExactRational"
-	AMbIGUOUS: foo(5)
-	foo(5 :: Int) "Int"
-	foo(5 :: ExactRational) "ExactRational"
-
-But then this is not true
-
-	(5 === 5 :: ExactRational) && foo(5) === foo(5 :: ExactRational)
-
-Another problem with this:
-
-	def foo(v :: String?) "String?"
-	def foo(v :: String??) "String??"
-
-How do you disambiguate? If you allowed this:
-
-	AMBIGUOUS: foo(:None :: String?)
-	assert foo((:None :: String?) :: String??) is "String??"
-	assert foo((:None :: String?) :: String?) is "String?"
-
-But (:None :: String?) :: String? is the same as (:None :: String?).
-
-Spo that doesn't make sense.
-
-SO THIS OPTION SOULD BE DISCARDED
-
-# Decision: Direct membership and inner type priority
-
-	def foo(x :: Int) "Int"
-	foo(5) "Int"
-
-	def foo(x :: ExactRational) "ExactRational"
-	foo(5) "ExactRational"
-	foo(5 :: Int) "Int"
-	foo(5 :: ExactRational) "ExactRational"
-
 An overload that directly admits the argument wins. Between nested
-designation targets, the inner target wins. Adding a directly applicable
-definition can change which definition an existing call selects.
+designation targets, prefer the inner target for overload selection.
+Adding an overload can change which definition an existing call selects.
 
-Analogously:
+For a known expected union, prefer a direct member to members reachable
+only by designation. This applies to concrete unions and is proposed for
+abstract unions too. For example, an `ExactRational` literal supplied to
+`pattern Int | ExactRational` selects the `ExactRational` member. An
+explicit `Int` selects the `Int` member. This lets arithmetic pass an
+exact operand unchanged to the selected definition for its own fit
+check. The union and overload rules differ when the already selected
+outer wrapper has a direct symbol alternative, as in the example below.
 
-	t = concrete ExactRational | Int
+The comparison across several argument positions still needs a rule
+when each overload has a better match in a different position.
+A peer overload tie and competing designations within one selected
+expected type need distinct diagnostics. The public code for a tie
+between otherwise applicable definitions remains to be confirmed.
 
-	(x :: t) = 5
-	expect x is 5 :: ExactRational
-	(y :: t) = 5 :: Int 
-	expect y is 5 :: Int
+## Nested and peer options
 
-	def foo(value :: t)
-		match value 
-			when ExactRational "ExactRational"
-			when Int "Int"
-		end
-	end
+With a known expected type `String??`, bare `:None` selects the
+outer absence. Explicit inner absence, `:None :: String?`, produces
+a different value inside `String??`. The
+[existing nested option test](../../tests/bindings/nested-option-designation.test#L126-L136)
+covers this distinction.
 
-	expect foo(5) is "ExactRational"
-	expect foo(5 :: Int) is "Int"
-
-
-What if we have multiple layers of designation. 
-
-	def Id concrete Int64
-
-	x = 5 :: Id
-
-5 designates Int64 which designates Id. We'd want the string form to use the smallest unambiguous expression.
-
-	expect toString<Any>(x) is "5 :: Id"
-
-	y = 5 :: Int64
-	z = y :: Id
-	assert z === x
-
-
-## Examples: ambiguity with option types
-
-So an integer can designate a value of type Int?. 
-
-	def foo(x :: Int?) "Int?"
-	expect foo(5 :: Int) is "Int?"
-
-And because an ExactRational can designate an integer.
-
-	expect foo(5) is "Int?"
-	expect foo(:None) is "Int?"
-
-Now there is a different type of ambiguity here: `foo(:None)` could mean various things:
-
-	def foo(x :: String?) "String?"
-	def foo(x :: Int?) "Int?"
-
-In this case, there is no priority. Type must be explict.
-
-	expect foo(:None) fails "Ambiguous foo(String?) and foo(Int?)"
-	expect foo(:None :: String?) is "String?"
-	expect foo(:None :: Int?) is "Int?"
-
-Now, a value of type String?? can take on values `:None :: String?` or `:None :: String??`
-
-We have a rule where that when a value can designate a value of both the outer and inner type, as in the case of :None in the context of String??,
-assume the value of outer type. This interacts with the rule that in the case of ambiguous overloaded functions, the function over the inner type
-takes precedence. These rules apply at different points. Once the expected type
-is `String??`, bare `:None` chooses its direct outer arm. The existing test
-[“Nested postfix absence preserves explicit member evidence”](../../tests/bindings/nested-option-designation.test#L126-L136)
-checks that rule. With both overloads in scope, overload selection
-prefers `String?` for bare syntax accepted by the two nested types. Peer
-options such as `String?` and `Int?` are still ambiguous. The example below
-checks the call behavior.
+With both the `String?` and `String??` overloads in scope, bare
+`:None` first selects the inner overload. With peer `String?` and
+`Int?` overloads, bare `:None` is ambiguous. An ascription selects
+either peer.
 
 ```pattern
-test "A lone outer overload supplies the expected option type"
-  def foo(v :: String??) "Outer"
-  expect foo(:None) is "Outer"
-  expect foo(:None :: String?) is "Outer"
-  expect foo(:None :: String??) is "Outer"
+test "A lone outer overload preserves the chosen absence"
+  def outer(v :: String??) v
+  outerNone = :None :: String??
+  innerNone = (:None :: String?) :: String??
+
+  expect outer(:None) is outerNone
+  expect outer(:None :: String?) is innerNone
+  assert outerNone !== innerNone
 end
 
 test "Inner overload takes priority for nested option designation"
@@ -244,5 +118,14 @@ test "Inner overload takes priority for nested option designation"
   expect foo(:None :: String?) is "Inner"
   expect foo(:None :: String??) is "Outer"
   expect foo((:None :: String?) :: String??) is "Outer"
+end
+
+test "Peer overloads require a type for bare absence"
+  def foo(v :: String?) "String?"
+  def foo(v :: Int?) "Int?"
+
+  expect foo(:None) fails "ambiguous"
+  expect foo(:None :: String?) is "String?"
+  expect foo(:None :: Int?) is "Int?"
 end
 ```

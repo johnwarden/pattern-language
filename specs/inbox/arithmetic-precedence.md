@@ -22,7 +22,7 @@ and the [numeric prelude draft](fixed-precision-numbers.md#exponentiation).
 
 | Tier, tightest first | Operators | Associativity |
 | --- | --- | --- |
-| Multiplicative | `*`, `/` | Left |
+| Multiplicative | `*`, `/`, `%` | Left |
 | Shared | `+`, `-` | Left |
 | Shared | Other operators, including dot-infix names and `::` | Right |
 | Weakest | `=`, `<`, `>`, `->`, and punctuation ending in `=` | Right |
@@ -30,10 +30,12 @@ and the [numeric prelude draft](fixed-precision-numbers.md#exponentiation).
 Tighter expressions form operands first. Within each unparenthesized
 chain at one tier, operators must have the same associativity. If two
 neighbors in that chain disagree, report a syntax error at the second
-operator and identify the first one. When the chain has two operators at
+operator. The conflicting operators are visible in the suggested grouping. When the chain has two operators at
 that tier, show both parenthesized spellings. A tighter expression between the operators
 still counts as a single operand. For example, `a - b * c .and d` has
 the conflicting shared-tier operators `-` and `.and`.
+Dot-infix names such as `.div` and `.flDiv` follow the shared right-associative
+rule. Caret `^` also follows that rule.
 
 Success cases compare direct Code quotations. Parentheses around the first
 quote delimit it before the assertion's `===`. Rejection cases read strings
@@ -45,7 +47,9 @@ The expression printer groups an infix child in a weaker tier than its parent.
 At the same tier, group a child of different associativity on either side.
 For operators of the same associativity, group a right child under a
 left-associative parent and a left child under a right-associative parent.
-The printed text reads back to the same application tree.
+The printed text reads back to the same application tree. The
+bootstrap currently prints `Expression` nodes as `Node(...)`; the
+infix-printing example below requires infix output for those nodes.
 
 ## Test cases
 
@@ -68,7 +72,7 @@ test "Expression printing preserves infix grouping"
 end
 
 test "Multiplication and division bind more tightly than addition and subtraction"
-  expect 1 + 2 * 3 is 7 :: Rational
+  expect 1 + 2 * 3 is 7
   expect 2 * 3 + 4 is 10 :: Rational
   expect 20 / 5 + 2 is 6 :: Rational
   expect 10 - 6 / 3 is 8 :: Rational
@@ -110,9 +114,22 @@ test "Same-tier operators with different associativity ask for grouping"
   assert (Code` x + (1 :: Int)) === Code` +(x)(::(1)(Int))
 end
 
+test "Annotation binds tighter than default, binding or arrow"
+  assert (Code` c :: String = "black") === Code` =(::(c)(String))("black")
+  assert (Code` x :: Int = 5) === Code` =(::(x)(Int))(5)
+  assert (Code` x :: Int -> x) === Code` ->(::(x)(Int))(x)
+  assert (Code` p | q -> r) === Code` ->(|(p)(q))(r)
+end
+
+test "An inline refinement predicate groups its arrow"
+  assert (Code` T .where (p -> q)) === Code` where(T)(->(p)(q))
+  assert (Code` T .where p -> q) === Code` ->(where(T)(p))(q)
+end
+
 test "Bindings, arrows and comparisons take arithmetic operands"
   assert (Code` a + b == c + d) === Code` ==(+(a)(b))(+(c)(d))
   assert (Code` a - b == c .and d) === Code` ==(-(a)(b))(and(c)(d))
+  assert (Code` a == b .and c == d) === Code` ==(a)(==(and(b)(c))(d))
   assert (Code` a == b != c) === Code` ==(a)(!=(b)(c))
   assert (Code` a + b === c * d) === Code` ===(+(a)(b))(*(c)(d))
   assert (Code` a === b !== c) === Code` ===(a)(!==(b)(c))
@@ -157,6 +174,14 @@ end
 test "Power is a regular call and caret is ordinary infix syntax"
   assert (Code` pow(2, 3) * 4) === Code` *(pow(2, 3))(4)
   assert (Code` a ^ b) === Code` ^(a)(b)
+  assert (Code` a * b ^ c) === Code` ^(*(a)(b))(c)
+  assert (Code` a ^ b .where p) === Code` ^(a)(where(b)(p))
+end
+
+test "Remainder shares the multiplicative tier"
+  assert (Code` a % b * c) === Code` *(%(a)(b))(c)
+  assert (Code` a + b % c) === Code` +(a)(%(b)(c))
+  expect parse(Code)("a .div b + c") fails "Parentheses required"
 end
 
 test "Formatting preserves grouping or rejects malformed infix spacing"
@@ -219,6 +244,16 @@ test "Canonical Code groups mixed associativity on either side"
 end
 ```
 
-The executable cases replace the equal-precedence C25 expectation when
-these rules are implemented. The current reader is described in
-[GRAMMAR-BOOTSTRAP.md](../../GRAMMAR-BOOTSTRAP.md).
+## Implementation and migration
+
+The new tree shape for `c :: String = "black"` requires the Code grammar
+to recognize a default applied to an annotated pattern. Update that
+recognizer and keep the existing default and labeled-argument behavior.
+Parenthesize inline predicate lambdas, for example
+`T .where (x -> p(x))`. Parenthesize comparisons used as operands of dot
+operators, for example `(a == b) .and (c == d)`.
+
+When implementing this proposal, migrate the equal-precedence C25
+contract, host formatter and CLI cases, and reader documentation.
+Replace evaluated caret exponentiation examples with `pow`.
+[Bootstrap grammar](../../GRAMMAR-BOOTSTRAP.md)

@@ -136,17 +136,15 @@ For example, the absolute value of a finite nonzero float is nonzero.
 Supply guarantees only for operations and formats where all successful
 results satisfy them. Fixed-precision float division returns a nonzero
 value when its numerator is known to be nonzero. Division by zero and
-rounding a nonzero result to zero both panic. Integer division can
-truncate to zero. A result guarantee can depend on a known input
-refinement while retaining a single overload.
+rounding a nonzero result to zero both panic. The integer quotient
+operations can return zero for a nonzero numerator. A result guarantee
+can depend on a known input refinement while retaining a single overload.
 [Fixed-precision arithmetic](fixed-precision-numbers.md#arithmetic-policy)
 
-The rule also affects checked numeric conversions. The proposed addition
-definitions currently contain `right = b :: Int` where `b` may be a stored
-`ExactRational`. If `Int` is `struct ExactRational .where fitsInt64`,
-that arm needs an explicit exact-fit check or a checked conversion with
-the required result type. The same applies to a computed exact result.
-See [the fixed-precision draft](fixed-precision-numbers.md#prelude-definitions-for-addition).
+A checked conversion establishes fit evidence for a stored exact value
+or a computed result. For example, `checkedConvert(Int)(n)` checks
+`fitsInt64` and returns an `Int` if it succeeds.
+See [checked conversion](fixed-precision-numbers.md#proposed-checked-conversion).
 
 ## One expected union and several overloads
 

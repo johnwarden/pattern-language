@@ -8,7 +8,7 @@ is approved, but its complete representation-level test conversion is pending.
 
 ## Existing executable todos
 
-The source file has fifteen cases and seventeen todo assertions. It checks:
+The source suite checks:
 
 1. Bind, pass, return and directly supply a named predicate to `where`.
 2. Capture a value despite a caller parameter with the same name.
