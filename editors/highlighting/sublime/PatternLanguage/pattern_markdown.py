@@ -18,6 +18,8 @@ def _syntax_path(view):
 
 def _restore(view):
     if view.settings().get(AUTO) and _syntax_path(view) == PATTERN_MARKDOWN:
+        if sublime.syntax_from_path(MARKDOWN) is None:
+            return
         view.assign_syntax(MARKDOWN)
     view.settings().erase(AUTO)
 
@@ -41,6 +43,11 @@ def _refresh(view):
         return
     if view.find(FENCE, 0):
         if path == MARKDOWN:
+            # MarkdownEditing can disable the stock package. Never assign an
+            # unavailable syntax or an extension whose parent cannot load.
+            if any(sublime.syntax_from_path(path) is None
+                   for path in (MARKDOWN, PATTERN_MARKDOWN)):
+                return
             settings.set(AUTO, True)
             view.assign_syntax(PATTERN_MARKDOWN)
     else:

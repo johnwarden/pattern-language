@@ -58,6 +58,22 @@ Markdown views only. Other Markdown packages keep their selected syntax; choose
 To disable automatic selection, set `"pattern_language_markdown_fences": false`
 in Preferences settings. Rebuild and reinstall the package to get this support.
 
+### Choosing the syntax and resolving a missing Markdown package
+
+For a `.md` file choose **Set Syntax: Markdown (Pattern Language)**. The standalone
+**Pattern Language** syntax treats the whole file as Pattern code. The combined
+entry is supplied by this package; if it is absent, check that the installed copy
+contains `Markdown.sublime-syntax` and `pattern_markdown.py`.
+
+An error saying `Unable to read Packages/Markdown/Markdown.sublime-syntax` means
+the required base Markdown package is unavailable. MarkdownEditing versions can
+disable it, as described in their [troubleshooting guide](https://sublimetext-markdown.github.io/MarkdownEditing/troubleshooting/#error-loading-syntax-file).
+Open **Preferences → Settings**, remove only `"Markdown"` from the user
+`"ignored_packages"` list if present, save, and restart Sublime. Leave the other
+entries in that list in place. Then choose **Markdown (Pattern Language)**.
+The automatic selector checks that both syntaxes are available before assigning
+the extension; it does not change package-enable settings.
+
 ## Token colors
 
 The package selects **Pattern Language Dark** for `.pattern` and `.test` files.

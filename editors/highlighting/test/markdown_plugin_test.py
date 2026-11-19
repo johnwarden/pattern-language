@@ -17,10 +17,12 @@ PLUGIN = ROOT / "sublime" / "PatternLanguage" / "pattern_markdown.py"
 preferences = {}
 windows = []
 pending = []
+available = set()
 api = SimpleNamespace(
     load_settings=lambda name: preferences,
     windows=lambda: windows,
     set_timeout=lambda callback, delay: pending.append(callback),
+    syntax_from_path=lambda path: SimpleNamespace(path=path) if path in available else None,
 )
 loader = importlib.util.spec_from_file_location("pattern_markdown_tested", PLUGIN)
 with patch.dict(sys.modules, {
@@ -71,6 +73,8 @@ class MarkdownSelection(unittest.TestCase):
         preferences.clear()
         windows.clear()
         pending.clear()
+        available.clear()
+        available.update((plugin.MARKDOWN, plugin.PATTERN_MARKDOWN))
         plugin._active = True
 
     def test_both_labels_and_marker_styles(self):
@@ -116,6 +120,32 @@ class MarkdownSelection(unittest.TestCase):
         view.options[plugin.SETTING] = False
         plugin._refresh(view)
         self.assertEqual(view.path, plugin.MARKDOWN)
+
+    def test_missing_or_disabled_markdown_dependency_is_not_assigned(self):
+        for missing in (plugin.MARKDOWN, plugin.PATTERN_MARKDOWN):
+            with self.subTest(missing=missing):
+                available.discard(missing)
+                view = View("```pattern test\nassert True")
+                plugin._refresh(view)
+                view.assign_syntax.assert_not_called()
+                self.assertNotIn(plugin.AUTO, view.options)
+                available.add(missing)
+                plugin._refresh(view)
+                self.assertEqual(view.path, plugin.PATTERN_MARKDOWN)
+
+    def test_restore_waits_for_disabled_parent_to_be_available(self):
+        view = View("```pattern\nx")
+        plugin._refresh(view)
+        available.remove(plugin.MARKDOWN)
+        view.text = "# Prose only"
+        view.assign_syntax.reset_mock()
+        plugin._refresh(view)
+        view.assign_syntax.assert_not_called()
+        self.assertTrue(view.options[plugin.AUTO])
+        available.add(plugin.MARKDOWN)
+        plugin._refresh(view)
+        self.assertEqual(view.path, plugin.MARKDOWN)
+        self.assertNotIn(plugin.AUTO, view.options)
 
     def test_debounce_closed_views_and_unload(self):
         view = View("```pattern test\nassert True")
