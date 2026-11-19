@@ -4,12 +4,12 @@ Draft for review. The [fixed-precision notes](https://chatgpt.com/library?file_i
 
 ## Types and representation
 
-Define the public types, aliases, operators and explicit conversions in the source prelude. Each fixed format is a concrete `ExactRational` carveout. Its `Predicate` enum member checks whether the exact value fits the format. The predicate prints as a tag under the [initial predicate contract](https://github.com/johnwarden/pattern-language/blob/spec/type-expressions-and-kinds/specs/refinement-predicates.md). The prelude adds the fit cases and
+Define the public types, aliases, operators and explicit conversions in the source prelude. Each fixed format is a concrete `ExactRational` carveout. Its `Predicate` enum member checks whether the exact value fits the format. The predicate prints as an unquoted case name under the [initial predicate contract](https://github.com/johnwarden/pattern-language/blob/spec/type-expressions-and-kinds/specs/refinement-predicates.md). The prelude adds the fit cases and
 their tests alongside the formats. For example:
 
 ```pattern
-type Int64 concrete ExactRational .where :fitsInt64
-type Float64 concrete ExactRational .where :fitsFloat64
+type Int64 concrete ExactRational .where fitsInt64
+type Float64 concrete ExactRational .where fitsFloat64
 ```
 
 The initial aliases are `Int = Int64` and `Float = Float64`, with identical type identity under either name. The equations describe aliases. Their declaration spelling follows the language's type binding rules.
@@ -293,7 +293,7 @@ test "Mixed ordering accepts the same exact value in every form"
 end
 
 test "An Int refinement can order its input against an exact zero"
-  type PositiveInt pattern Int .where :isPositive
+  type PositiveInt pattern Int .where isPositive
 
   assert (2 :: Int) .matches PositiveInt
   assert not((0 :: Int) .matches PositiveInt)
