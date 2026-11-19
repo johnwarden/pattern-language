@@ -4,7 +4,7 @@ Draft for review. The [fixed-precision notes](https://chatgpt.com/library?file_i
 
 ## Types and representation
 
-Define the public types, aliases, operators and explicit conversions in the source prelude. Each fixed format is a concrete `ExactRational` carveout. Its membership predicate checks whether the exact value fits the format. For example:
+Define the public types, aliases, operators and explicit conversions in the source prelude. Each fixed format is a concrete `ExactRational` carveout. Its named prelude predicate checks whether the exact value fits the format. The predicate prints as its prelude name under the [initial predicate contract](https://github.com/johnwarden/pattern-language/blob/spec/type-expressions-and-kinds/specs/refinement-predicates.md). For example:
 
 ```pattern
 type Int64 concrete ExactRational .where fitsInt64
@@ -292,7 +292,7 @@ test "Mixed ordering accepts the same exact value in every form"
 end
 
 test "An Int refinement can order its input against an exact zero"
-  type PositiveInt pattern Int .where (n -> n > 0)
+  type PositiveInt pattern Int .where isPositive
 
   assert (2 :: Int) .matches PositiveInt
   assert not((0 :: Int) .matches PositiveInt)
