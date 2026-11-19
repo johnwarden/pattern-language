@@ -22,13 +22,17 @@ compatibility does not execute the test.
 
 ## Designation and identity
 
-In `T .where p`, the expected type of `p` is `Predicate`. A bare tag
-such as `:isNonZero` designates the corresponding enum member. A
-reference to an existing `Predicate` value uses the usual value
-reference rules for type descriptions. A tag absent from `Predicate`,
-a function value, or a value of a different concrete type does not
-supply a predicate. This applies to `pattern`, `struct`, direct
-descriptors and typed reading.
+In `T .where p`, the expected type of `p` is `Predicate`. Here the
+pattern grammar interprets a bare lower-camel name such as
+`isNonZero` as an enum tag. The name designates the corresponding
+member of `Predicate`. This is a grammatical role for a lower-camel
+symbol, like a capture name in a binding pattern. A bare name here
+does not look up a function or a local variable.
+
+An explicit tag uses ordinary enum designation. A supplied value must
+have type `Predicate`. An unknown tag, a function value, or a value of
+a different concrete type does not supply a predicate. These rules
+apply to `pattern`, `struct`, direct descriptors and typed reading.
 
 The descriptor stores the enum value using its ordinary structural
 identity. It has no need to classify functions by their definition
@@ -37,17 +41,18 @@ the tests.
 
 ## Printing
 
-Print the tag in a refinement, for example `ExactRational .where :isNonZero`.
-The reader already expects a `Predicate` after `.where`, so it recovers
-the enum member under the same prelude. When an expression needs to
-identify the enum value on its own, use `:isNonZero :: Predicate`.
+Print the case name without the colon in a refinement, for example
+`ExactRational .where isNonZero`. The reader expects a `Predicate`
+after `.where`, so it recovers the enum member under the same prelude.
+When an expression needs to identify the enum value on its own, use
+`:isNonZero :: Predicate`.
 
 ```pattern
-type NonZeroRational pattern ExactRational .where :isNonZero
-type NonZeroId struct ExactRational .where :isNonZero
+type NonZeroRational pattern ExactRational .where isNonZero
+type NonZeroId struct ExactRational .where isNonZero
 
-Pattern(ExactRational .where :isNonZero)
-Struct(ExactRational .where :isNonZero)
+Pattern(ExactRational .where isNonZero)
+Struct(ExactRational .where isNonZero)
 ```
 
 Numeric formats supply any additional fit cases and their tests with
@@ -61,12 +66,11 @@ Use the enum value to identify the test in the
 rules. An explicit `.matches` check of a refined pattern can establish
 evidence for its predicate. Dispatch uses existing evidence.
 
-Cover designation and reading of a valid enum member and rejection of
-an unknown tag or wrong operand type. Round-trip a pattern and a struct,
-including a descriptor with a nested refined member. Check that a
-caller-local function with the same name as a tag has no effect on the
-refinement. The tag identifies the predicate, while ordinary calls use
-their own bindings.
+Cover designation by bare name and rejection of an unknown name or
+wrong operand type. Round-trip a pattern and a struct, including a
+descriptor with a nested refined member. Assert that the canonical
+predicate name is unquoted. Check that a caller-local function with
+the same name has no effect on the refinement.
 
 [Portable refinement predicates](https://github.com/johnwarden/pattern-language/blob/spec/portable-refinement-predicates/specs/refinement-predicates-portable.md) describe the later extension to
 user-defined functions and captures.

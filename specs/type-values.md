@@ -55,8 +55,8 @@ available. Initially `p` is a value of the `Predicate` enum. See
 [refinement predicates](refinement-predicates.md) and [refinement evidence][evidence].
 
 ```pattern
-type NonZeroRational pattern ExactRational .where :isNonZero
-type NonZeroId struct ExactRational .where :isNonZero
+type NonZeroRational pattern ExactRational .where isNonZero
+type NonZeroId struct ExactRational .where isNonZero
 
 (n :: NonZeroRational) = 2
 (id :: NonZeroId) = 2
@@ -267,9 +267,9 @@ quoted lower-case heads. The canonical printer must choose spellings that
 retain constructor-head meaning under the pattern grammar.
 
 Initially a refinement holds a `Predicate` enum value. The printer emits its
-tag, as in `Pattern(ExactRational .where :isNonZero)`. The expected
-`Predicate` type interprets that tag in nested descriptors and in a fresh
-scope using the same prelude. See [refinement predicates](refinement-predicates.md).
+bare case name, as in `Pattern(ExactRational .where isNonZero)`. The
+predicate grammar interprets the name as an enum tag in nested
+descriptors and in a fresh scope using the same prelude. See [refinement predicates](refinement-predicates.md).
 Portable user-defined predicates are a later extension.
 
 For supported types and values, `parse(Type)(toString(Type)(t))`
@@ -284,7 +284,7 @@ ascription. For example, the outer and inner absence cases for
 `toStringLocal` and diagnostics follow the established
 [exact local printing](library-closure-and-local-printing.md#exact-local-printing)
 rule. They can use a visible type name when it denotes the same
-descriptor in that scope. Predicate enum members retain their tag spelling.
+descriptor in that scope. Refinement predicates retain their bare case names.
 They can use sugar such as `T*` or
 `T?` when it resolves to the exact descriptor. A shadowed or approximate
 name is insufficient. An ambiguity diagnostic lists source expressions

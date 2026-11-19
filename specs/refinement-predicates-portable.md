@@ -3,7 +3,8 @@
 Draft for milestone 10. Extend the initial [predicate enum contract](refinement-predicates.md)
 to user-defined predicates after the language has a portable
 [closed function representation](../design/FUNCTION-VALUES.md).
-Existing enum predicates retain their tag spelling and identity.
+Existing enum predicates retain their bare spelling after `.where` and
+their enum identity.
 
 ## Closed predicate values
 
@@ -25,13 +26,15 @@ that checks whether its width and height match. To reconstruct the
 refined type, global text must carry the closed predicate and any
 definitions it depends on. The local name is usable in local text
 only when it resolves to the same closed value. Global text for an
-enum predicate still prints its tag in refinement context.
+enum predicate still prints its bare case name after `.where`.
 
 ## Decisions and contract coverage
 
 - Choose the public closed callable expression and its placement in
   canonical type text. A parenthesized lambda is a candidate for a
   noncapturing predicate once it has a portable identity.
+- Specify how to resolve a portable predicate name that also names an
+  enum case. Preserve round trips for the existing bare enum spelling.
 - Specify admissible captures and dependency identity, including
   recursive helpers and predicate references to type values.
 - Round-trip a predicate with a captured value in a fresh scope.
