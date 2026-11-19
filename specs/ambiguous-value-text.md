@@ -1,7 +1,7 @@
 # Ambiguous values use the existing type-directed text contract
 
 The author's 9 November clarification points back to the existing contract, not
-a new printing policy. See [TYPE-VALUES.md](../TYPE-VALUES.md#global-and-local-typed-text)
+a new printing policy. See [the type-value spec](type-values.md#canonical-expressions-and-typed-text)
 and [the bootstrap reference](../TYPE-VALUES-BOOTSTRAP.md#global-and-local-typed-text).
 
 `toString(T)(v)` prints data for the decoder `parse(T)`. Retain member/type

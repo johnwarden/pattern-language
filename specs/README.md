@@ -20,3 +20,6 @@ The [development workflow](../design/TESTING-WORKFLOW.md) describes how to
 stage and review these changes. The [executable specification](../tests/specification/README.md)
 indexes the topical `.test` contracts. Historical material lives in
 [archive/](archive/).
+
+A companion rationale can explain the design with worked examples, as in
+[type values](type-values-rationale.md).

@@ -3,7 +3,7 @@
 > Compatibility reference for the current TypeScript bootstrap.
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
-> [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md).
+> [the type-value spec](specs/type-values.md) and [GRAMMAR.md](GRAMMAR.md).
 > Exact Rational literals, overlapping abstract unions and the current Test DSL
 > are implemented. Declaration-only accessors and proof-based checking remain work.
 

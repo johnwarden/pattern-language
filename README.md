@@ -38,7 +38,7 @@ configuration. Analysis never executes open programs or tests.
 
 - [Roadmap](ROADMAP.md): current state, boundaries, milestones and completion gates.
 - [Value spaces](VALUE-SPACES.md): identity, construction, projection and abstract storage.
-- [Type values](TYPE-VALUES.md): declarations, descriptors, factories and typed text.
+- [Type values](specs/type-values.md): declarations, descriptors, factories and typed text.
 - [Grammar](GRAMMAR.md): shared surface rules and intended interpretation boundaries.
 - [Postfix conventions](design/POSTFIX.md): generic operators, source-defined optionals, nested union designation and future lifting.
 - [Decision record and 27 design cases](design/LANGUAGE-DECISIONS.md): reasons,

@@ -18,7 +18,7 @@ proceed independently with explicit ownership around shared runtime/grammar code
 
 | Work | Current state | Next step |
 | --- | --- | --- |
-| Ordinary type values | [Approved type-values decision](../../specs/type-values.md); [prelude-pattern draft](https://github.com/johnwarden/pattern-language/blob/spec/prelude-type-kinds/specs/prelude-type-kind-patterns.md) | Convert the approved examples into focused contracts. Settle the ordinary construction rule and required supporting domains before claiming the full prelude implementation is ready. No angle syntax is required. |
+| Ordinary type values | [Consolidated type-value draft](../../specs/type-values.md) | After approval, update active contracts for construction and inspection, non-normal descriptors, and exact type expressions and typed text. No angle syntax is required. |
 | Closed named function values | [Approved decision](../../specs/named-function-values.md), [closed immutable values](../../specs/library-closure-and-local-printing.md), and 17 todos in [named-function-values.test](../../tests/specification/named-function-values.test) | Representation preflight first: complete immutable captured values/dependencies, finite recursion, packs, labels/rest/defaults and structural identity. A name handle or hidden ambient closure is insufficient. Public Function/Library grammar, admissible captures and overloaded-name selection remain design work. |
 | Retiring legacy type-definition syntax | [Approved retirement](../../specs/retire-legacy-type-definition-syntax.md) | Coordinate replacement construction/declaration support with prelude/corpus migration before removing compatibility. The newer type-values decision already permits ordinary Type-valued functions. |
 

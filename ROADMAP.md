@@ -4,7 +4,7 @@ Updated 10 November 2026. This is the current design, implementation boundary an
 milestone sequence, not a development history. The integrated
 [decision/conformance record](design/LANGUAGE-DECISIONS.md) supplies reasons, status
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
-[TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
+[the type-value spec](specs/type-values.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
 
 The executable contracts in [specs](specs/README.md) and
 [the source suite](tests/specification/README.md) define the language. This roadmap and the linked prose explain its decisions and
@@ -314,7 +314,8 @@ Remaining alignment slices:
   not block separating declaration effects from ordinary type construction.
 - Unambiguous DSL certification, separate from the implemented overlapping abstract unions.
 - Extend numeric family/width support without choosing deferred IEEE details or implicit rounding.
-- Extend the implemented designation/projection subset with checking evidence in milestone 7.
+- Use a prelude `Predicate` enum for initial refinement descriptors and canonical text.
+  Extend designation/projection with checking evidence in milestone 7.
 - Extend mirrored spreading beyond the single-row-template slice; settle keyword
   remainder grammar before implementation.
 
@@ -416,7 +417,8 @@ have explicit diagnostics/policy. Include schema-evolution and simultaneous-impo
 
 ### 10. Portable predicates/functions and broader typed text
 
-Define a closed, finite code/dependency representation for supported predicates and
+Extend refinement descriptors beyond the initial `Predicate` enum. Define a closed,
+finite code/dependency representation for supported predicates and
 functions, including recursive helpers and admissible primitive vocabulary. Substitute
 or encode captures without hidden host identities. General descriptor/value decoding
 and supported evidence transport need explicit contracts.
