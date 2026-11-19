@@ -1,9 +1,9 @@
 # Portable refinement predicates
 
-Draft for milestone 10. Extend [prelude refinement predicates](refinement-predicates.md)
+Draft for milestone 10. Extend the initial [predicate enum contract](refinement-predicates.md)
 to user-defined predicates after the language has a portable
 [closed function representation](../design/FUNCTION-VALUES.md).
-The initial prelude-name contract remains applicable to prelude predicates.
+Existing enum predicates retain their tag spelling and identity.
 
 ## Closed predicate values
 
@@ -24,8 +24,8 @@ For example, a program can refine a rectangle with a local function
 that checks whether its width and height match. To reconstruct the
 refined type, global text must carry the closed predicate and any
 definitions it depends on. The local name is usable in local text
-only when it resolves to the same closed value. Global text for a
-prelude predicate still prints its prelude name.
+only when it resolves to the same closed value. Global text for an
+enum predicate still prints its tag in refinement context.
 
 ## Decisions and contract coverage
 

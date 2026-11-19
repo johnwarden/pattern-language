@@ -1,55 +1,72 @@
-# Refinement predicates in the prelude
+# Refinement predicates
 
-The initial refinement model accepts named functions defined in the
-standard prelude. A predicate in `T .where p` is a bare prelude
-identifier. It refers to an unambiguous prelude function applicable to
-values of the base pattern and returning `Bool`. This applies to
-`pattern`, `struct`, direct descriptors and typed reading.
-
-## Names and identity
-
-Resolve the predicate identifier against the same prelude used by
-the type reader. A local definition or alias cannot change which
-predicate a descriptor means. A name outside the prelude, a lambda
-or an arbitrary expression in the predicate position is an error.
-Ordinary calls still use lexical lookup. A call to a shadowing
-function supplies no evidence for the prelude predicate of the same
-name.
-
-The prelude predicate is identified by its name in that prelude.
-Printing the predicate emits just that name. Reading it back with
-the same prelude reconstructs the same predicate reference. Global
-type text keeps the same spelling under caller-local shadowing.
-The base pattern and other descriptor data retain the usual
-[structural identity](type-values.md#declarations-normalization-and-identity).
+The initial refinement model uses an ordinary concrete enum, `Predicate`.
+The prelude declares it and supplies the test for each case. This excerpt
+shows two cases:
 
 ```pattern
-type NonZeroNumber pattern ExactRational .where isNonZero
-type NonZeroId struct ExactRational .where isNonZero
+type Predicate struct :isNonZero | :isPositive
 
-Pattern(ExactRational .where isNonZero)
-Struct(ExactRational .where isNonZero)
+def checkPredicate(p :: Predicate)(value)
+  match p
+    :isNonZero -> isNonZero(value)
+    :isPositive -> isPositive(value)
+  end
+end
 ```
 
-These examples assume the prelude supplies `isNonZero` for
-`ExactRational`. Fixed-format fit predicates such as `fitsInt64`
-are supplied with their numeric types. This spec does not fix a
-complete list of prelude predicates.
+The example uses ordinary matching to associate each enum value with a
+Boolean test. Each case has an input domain. A refinement's base pattern
+must admit only values that the selected case can test. Checking that
+compatibility does not execute the test.
+
+## Designation and identity
+
+In `T .where p`, the expected type of `p` is `Predicate`. A bare tag
+such as `:isNonZero` designates the corresponding enum member. A
+reference to an existing `Predicate` value uses the usual value
+reference rules for type descriptions. A tag absent from `Predicate`,
+a function value, or a value of a different concrete type does not
+supply a predicate. This applies to `pattern`, `struct`, direct
+descriptors and typed reading.
+
+The descriptor stores the enum value using its ordinary structural
+identity. It has no need to classify functions by their definition
+scope. Ordinary name lookup applies to the definitions that implement
+the tests.
+
+## Printing
+
+Print the tag in a refinement, for example `ExactRational .where :isNonZero`.
+The reader already expects a `Predicate` after `.where`, so it recovers
+the enum member under the same prelude. When an expression needs to
+identify the enum value on its own, use `:isNonZero :: Predicate`.
+
+```pattern
+type NonZeroRational pattern ExactRational .where :isNonZero
+type NonZeroId struct ExactRational .where :isNonZero
+
+Pattern(ExactRational .where :isNonZero)
+Struct(ExactRational .where :isNonZero)
+```
+
+Numeric formats supply any additional fit cases and their tests with
+the corresponding types. This spec leaves the full enum inventory to
+those contracts.
 
 ## Evidence and first tests
 
-The name determines the predicate to check. [Refinement evidence](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md)
-specifies when checks establish evidence and when a caller must
-already have it. In particular, dispatch does not run a predicate to
-choose among overloads.
+Use the enum value to identify the test in the
+[refinement evidence](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md)
+rules. An explicit `.matches` check of a refined pattern can establish
+evidence for its predicate. Dispatch uses existing evidence.
 
-Cover an accepted prelude predicate and rejected non-prelude names
-and lambdas. Round-trip a pattern and a struct containing the
-predicate in a fresh scope and under caller shadowing. Include a
-descriptor containing a refined member, so the round trip exercises
-the recursive printer as well as the leaf name. Verify that an
-ordinary call to a shadowing function supplies no refinement fact
-when evidence checking lands.
+Cover designation and reading of a valid enum member and rejection of
+an unknown tag or wrong operand type. Round-trip a pattern and a struct,
+including a descriptor with a nested refined member. Check that a
+caller-local function with the same name as a tag has no effect on the
+refinement. The tag identifies the predicate, while ordinary calls use
+their own bindings.
 
-[Portable refinement predicates](https://github.com/johnwarden/pattern-language/blob/spec/portable-refinement-predicates/specs/refinement-predicates-portable.md) describe the later extension
-to user-defined functions and captures.
+[Portable refinement predicates](https://github.com/johnwarden/pattern-language/blob/spec/portable-refinement-predicates/specs/refinement-predicates-portable.md) describe the later extension to
+user-defined functions and captures.

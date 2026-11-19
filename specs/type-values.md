@@ -51,12 +51,12 @@ A refinement restricts the admitted values while preserving their concrete
 identity. A concrete carveout adds its own boundary. Use `T .where p` in
 either pattern. Literal designation and explicit checks establish predicate
 evidence. Bindings and dispatch on bound arguments use the evidence already
-available. Initially `p` names a prelude predicate. See
+available. Initially `p` is a value of the `Predicate` enum. See
 [refinement predicates](refinement-predicates.md) and [refinement evidence][evidence].
 
 ```pattern
-type NonZeroRational pattern ExactRational .where isNonZero
-type NonZeroId struct ExactRational .where isNonZero
+type NonZeroRational pattern ExactRational .where :isNonZero
+type NonZeroId struct ExactRational .where :isNonZero
 
 (n :: NonZeroRational) = 2
 (id :: NonZeroId) = 2
@@ -266,11 +266,11 @@ Kind constructors read structural patterns in this context, including
 quoted lower-case heads. The canonical printer must choose spellings that
 retain constructor-head meaning under the pattern grammar.
 
-Initially a refinement names a prelude function. The printer emits its
-identifier, as in `Pattern(ExactRational .where isNonZero)`. The same
-prelude resolves the reference in a fresh scope and in nested descriptors.
-See [refinement predicates](refinement-predicates.md) for lookup and
-identity. Portable user-defined predicates are a later extension.
+Initially a refinement holds a `Predicate` enum value. The printer emits its
+tag, as in `Pattern(ExactRational .where :isNonZero)`. The expected
+`Predicate` type interprets that tag in nested descriptors and in a fresh
+scope using the same prelude. See [refinement predicates](refinement-predicates.md).
+Portable user-defined predicates are a later extension.
 
 For supported types and values, `parse(Type)(toString(Type)(t))`
 returns the same descriptor, and `parse(T)(toString(T)(v))` returns the
@@ -284,7 +284,7 @@ ascription. For example, the outer and inner absence cases for
 `toStringLocal` and diagnostics follow the established
 [exact local printing](library-closure-and-local-printing.md#exact-local-printing)
 rule. They can use a visible type name when it denotes the same
-descriptor in that scope. Prelude predicates retain their prelude names.
+descriptor in that scope. Predicate enum members retain their tag spelling.
 They can use sugar such as `T*` or
 `T?` when it resolves to the exact descriptor. A shadowed or approximate
 name is insufficient. An ambiguity diagnostic lists source expressions
