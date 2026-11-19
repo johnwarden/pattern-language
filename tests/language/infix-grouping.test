@@ -1,0 +1,44 @@
+test "Arithmetic, comparison, and logical operators left of = need parentheses"
+  expect parse(Code)("a + b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a - b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a * b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a / b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a % b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a == b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a != b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a < b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a <= b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a > b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a >= b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a && b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a || b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a + (b) = c") fails "E_INFIX_GROUPING"
+end
+
+test "Parentheses make binding beside arithmetic, comparison, or logic explicit"
+  assert parse(Code)("(a + b) = c") == parse(Code)("=(+(a)(b))(c)")
+  assert parse(Code)("a + (b = c)") == parse(Code)("+(a)(=(b)(c))")
+  assert parse(Code)("(a == b) = c") == parse(Code)("=(==(a)(b))(c)")
+  assert parse(Code)("a == (b = c)") == parse(Code)("==(a)(=(b)(c))")
+  assert parse(Code)("(a && b) = c") == parse(Code)("=(&&(a)(b))(c)")
+  assert parse(Code)("a && (b = c)") == parse(Code)("&&(a)(=(b)(c))")
+  assert parse(Code)("(a || b) = c") == parse(Code)("=(||(a)(b))(c)")
+  assert parse(Code)("a || (b = c)") == parse(Code)("||(a)(=(b)(c))")
+end
+
+test "Binding keeps a free right-hand side"
+  assert parse(Code)("n = x + 1") == parse(Code)("=(n)(+(x)(1))")
+  assert parse(Code)("ok = a && b") == parse(Code)("=(ok)(&&(a)(b))")
+  assert parse(Code)("flag = a == b") == parse(Code)("=(flag)(==(a)(b))")
+  assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
+  assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
+end
+
+test "Printed Code groups a binding under an arithmetic or logical parent"
+  bindingUnderAdd = parse(Code)("+(a)(=(b)(c))")
+  bindingUnderAnd = parse(Code)("&&(a)(=(b)(c))")
+  expect toString(Code)(bindingUnderAdd) is "a + (b = c)"
+  expect toString(Code)(bindingUnderAnd) is "a && (b = c)"
+  assert parse(Code)(toString(Code)(bindingUnderAdd)) == bindingUnderAdd
+  assert parse(Code)(toString(Code)(bindingUnderAnd)) == bindingUnderAnd
+end

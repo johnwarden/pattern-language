@@ -40,9 +40,15 @@ Require parentheses if any of the following hold.
 3. One operator is arithmetic and the other is a comparison.
 4. One operator is logical and the other is arithmetic, a comparison,
    or a different logical operator.
+5. The first operator is arithmetic, a comparison, or logical, and the
+   second is `=`. Binding stays free on the right, so `n = x + 1` and
+   `ok = a && b` need no extra parentheses. An ungrouped arithmetic,
+   comparison, or logical operator directly left of `=` is rejected, so
+   write `(a + b) = c` or `a + (b = c)` instead of `a + b = c`.
 
 Point to the second operator in the first rejected pair and name both
 operators in the message, for example `` Parentheses required between `+` and `*` ``.
+Report these failures with code `E_INFIX_GROUPING`.
 Check each parenthesized expression and each argument field independently.
 Parentheses around a single operand in a chain, as in `a - (b) - c`, leave
 both operators at the same level. Prefix signs, postfix operators, and
@@ -64,6 +70,11 @@ domain-specific expressions.
 | `a * b == c + d` | Syntax error. Write `(a * b) == (c + d)` to compare the two results. |
 | `a == b + c` | Syntax error. Write `a == (b + c)`. |
 | `n = x + 1` | `n = (x + 1)`. |
+| `a + b = c` | Syntax error. Write `(a + b) = c` or `a + (b = c)`. |
+| `a == b = c` | Syntax error. Write `(a == b) = c` or `a == (b = c)`. |
+| `a && b = c` | Syntax error. Write `(a && b) = c` or `a && (b = c)`. |
+| `(a + b) = c` | `=(+(a)(b))(c)`. |
+| `a + (b = c)` | `+(a)(=(b)(c))`. |
 | `q = a .div b` | `q = (a .div b)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
 | `ok = a && b` | `ok = (a && b)`. |
@@ -109,44 +120,55 @@ already delimits its arguments.
 
 For example, print `+(a)(*(b)(c))` as `a + (b * c)`, `*(+(a)(b))(c)`
 as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
-`==(a)(+(b)(c))` as `a == (b + c)`. Each form reads back to its
-original application tree.
+`==(a)(+(b)(c))` as `a == (b + c)`, and `+(a)(=(b)(c))` as
+`a + (b = c)`. Each form reads back to its original application tree.
 
 ## Test cases
 
 ```pattern
 test "Mixed arithmetic requires parentheses in either order"
-  expect parse(Code)("a + b * c") fails "Parentheses required between `+` and `*`"
-  expect parse(Code)("a * b + c") fails "Parentheses required between `*` and `+`"
-  expect parse(Code)("a .div b * c + d") fails "Parentheses required between `*` and `+`"
-  expect parse(Code)("f(a * b + c, d)") fails "Parentheses required between `*` and `+`"
+  expect parse(Code)("a + b * c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a * b + c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a .div b * c + d") fails "E_INFIX_GROUPING"
+  expect parse(Code)("f(a * b + c, d)") fails "E_INFIX_GROUPING"
 end
 
 test "Subtraction, division, and remainder require explicit infix right operands"
-  expect parse(Code)("a - b + c") fails "Parentheses required between `-` and `+`"
-  expect parse(Code)("10 - 3 - 2") fails "Parentheses required between `-` and `-`"
-  expect parse(Code)("a - (b) - c") fails "Parentheses required between `-` and `-`"
-  expect parse(Code)("12 / 3 * 2") fails "Parentheses required between `/` and `*`"
-  expect parse(Code)("a % b % c") fails "Parentheses required between `%` and `%`"
-  expect parse(Code)("a - b ^ c") fails "Parentheses required between `-` and `^`"
-  expect parse(Code)("a - b .div c") fails "Parentheses required between `-` and `.div`"
-  expect parse(Code)("x - y :: Int") fails "Parentheses required between `-` and `::`"
+  expect parse(Code)("a - b + c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("10 - 3 - 2") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a - (b) - c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("12 / 3 * 2") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a % b % c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a - b ^ c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a - b .div c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("x - y :: Int") fails "E_INFIX_GROUPING"
 end
 
 test "Arithmetic and comparisons require grouping in either order"
-  expect parse(Code)("a * b == c + d") fails "Parentheses required between `*` and `==`"
-  expect parse(Code)("a == b + c") fails "Parentheses required between `==` and `+`"
-  expect parse(Code)("a + b >= c") fails "Parentheses required between `+` and `>=`"
-  expect parse(Code)("a !== b * c") fails "Parentheses required between `!==` and `*`"
+  expect parse(Code)("a * b == c + d") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a == b + c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a + b >= c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a !== b * c") fails "E_INFIX_GROUPING"
 end
 
 test "Logical operators require grouping when mixed"
-  expect parse(Code)("a == b && c == d") fails "Parentheses required between `==` and `&&`"
-  expect parse(Code)("a || b < c") fails "Parentheses required between `||` and `<`"
-  expect parse(Code)("a + b || c") fails "Parentheses required between `+` and `||`"
-  expect parse(Code)("a && b * c") fails "Parentheses required between `&&` and `*`"
-  expect parse(Code)("a && b || c") fails "Parentheses required between `&&` and `||`"
-  expect parse(Code)("a || b && c") fails "Parentheses required between `||` and `&&`"
+  expect parse(Code)("a == b && c == d") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a || b < c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a + b || c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a && b * c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a && b || c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a || b && c") fails "E_INFIX_GROUPING"
+end
+
+test "Arithmetic, comparison, and logical operators left of = need parentheses"
+  expect parse(Code)("a + b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a - b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a * b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a == b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a < b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a && b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a || b = c") fails "E_INFIX_GROUPING"
+  expect parse(Code)("a + (b) = c") fails "E_INFIX_GROUPING"
 end
 
 test "Parentheses select the arithmetic tree"
@@ -171,7 +193,13 @@ test "Accepted infix chains still associate right"
   assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
   assert parse(Code)("f(a * b, c + d)") == parse(Code)("f(*(a)(b), +(c)(d))")
   assert parse(Code)("n = x + 1") == parse(Code)("=(n)(+(x)(1))")
-  assert parse(Code)("a + b = c") == parse(Code)("+(a)(=(b)(c))")
+  assert parse(Code)("flag = a == b") == parse(Code)("=(flag)(==(a)(b))")
+  assert parse(Code)("(a + b) = c") == parse(Code)("=(+(a)(b))(c)")
+  assert parse(Code)("a + (b = c)") == parse(Code)("+(a)(=(b)(c))")
+  assert parse(Code)("(a == b) = c") == parse(Code)("=(==(a)(b))(c)")
+  assert parse(Code)("a == (b = c)") == parse(Code)("==(a)(=(b)(c))")
+  assert parse(Code)("(a && b) = c") == parse(Code)("=(&&(a)(b))(c)")
+  assert parse(Code)("a && (b = c)") == parse(Code)("&&(a)(=(b)(c))")
   assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
   assert parse(Code)("a .div b * c") == parse(Code)("div(a)(*(b)(c))")
   assert parse(Code)("(a .div b) * c") == parse(Code)("*(div(a)(b))(c)")
@@ -223,6 +251,8 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   expect toString(Code)(arithmeticBinding) is "n = x + 1"
   expect toString(Code)(logical) is "a && (b || c)"
   expect toString(Code)(compared) is "(a == b) && (c == d)"
+  bindingUnderAdd = parse(Code)("+(a)(=(b)(c))")
+  expect toString(Code)(bindingUnderAdd) is "a + (b = c)"
   assert parse(Code)(toString(Code)(right)) == right
   assert parse(Code)(toString(Code)(left)) == left
   assert parse(Code)(toString(Code)(sameGroup)) == sameGroup
@@ -234,11 +264,16 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   assert parse(Code)(toString(Code)(arithmeticBinding)) == arithmeticBinding
   assert parse(Code)(toString(Code)(logical)) == logical
   assert parse(Code)(toString(Code)(compared)) == compared
+  assert parse(Code)(toString(Code)(bindingUnderAdd)) == bindingUnderAdd
 end
 ```
 
-When implementing, give existing cases explicit grouping to keep their
-intended trees. Update the reader and formatter together so printed Code
-reads back to the same tree.
+The binding-left rule is implemented and covered by the language suite.
+The other grouping pairs above remain the destination contract for this
+proposal; mark them `todo` until the reader enforces them.
+When implementing the remaining pairs, give existing cases explicit
+grouping to keep their intended trees. Update the reader and formatter
+together so printed Code reads back to the same tree.
+[Binding-left grouping](../tests/language/infix-grouping.test) ·
 [C25 case](../tests/specification/language.test) ·
 [Same-precedence conformance case](../tests/conformance/expressions.test)

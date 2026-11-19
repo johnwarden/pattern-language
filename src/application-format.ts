@@ -7,6 +7,8 @@ export interface ApplicationNotation<T> {
   render: (node: T) => string;
   fields: (body: Field<T>[]) => string;
   needsGrouping?: (node: T) => boolean;
+  /** Wrap a right infix child when printing it next to its parent would be rejected. */
+  rejectedAdjacent?: (parent: string, child: string) => boolean;
 }
 
 function binaryParts<T>(node: T, notation: ApplicationNotation<T>) {
@@ -47,8 +49,14 @@ export function infixApplication<T>(
       return "(" + notation.fields(body) + ")";
     const value = body[0].value;
     const text = notation.render(value);
+    const child = binaryParts(value, notation);
+    const rejectedRight =
+      !left &&
+      !!child &&
+      !!notation.rejectedAdjacent?.(parts.operator, child.operator);
     return (left &&
-      (binaryParts(value, notation) || notation.punctuation(value))) ||
+      (child || notation.punctuation(value))) ||
+      rejectedRight ||
       notation.needsGrouping?.(value)
       ? "(" + text + ")"
       : text;
