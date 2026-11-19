@@ -56,9 +56,13 @@ test("shared lexical spellings agree with the actual language helpers", () => {
     assert.equal(upperSnake.test(spelling), upperSnakeName(spelling), `UpperSnake ${spelling}`);
   }
   const numeric = new RegExp(`^(?:0[fF]${lexical.patterns.decimal}|${lexical.patterns.hex}|${lexical.patterns.binary}|${lexical.patterns.decimal})$`);
-  for (const spelling of ["0", "1_024", "0.1", "12e-3", "0f0.1", "0F1_000e-2", "0x1.4p3", "0X1_F.8P-2", "0b1.01p+2", "0B10_01", "0x1p-1074", "0xFFjunk", "0b102", "0fInfinity", "1//3", ".1", "1.", "1__2", "0f0x1", "0x.1", "0b1p", "-2"]) {
+  for (const spelling of ["0", "1_024", "0.1", "12e-3", "0f0.1", "0F1_000e-2", "0x1.4p3", "0X1_F.8P-2", "0b1.01p+2", "0B10_01", "0x1p-1074", "0xFFjunk", "0b102", "0fInfinity", "1//3", ".1", "1.", "1__2", "0f0x1", "0x.1", "0b1p"]) {
     assert.equal(numeric.test(spelling), parseNumericSpelling(spelling) !== undefined, `numeric spelling ${spelling}`);
   }
+  // Value spellings now accept a sign; token highlighting still separates the
+  // prefix operator from the unsigned numeric token (covered by the fixtures).
+  assert.equal(numeric.test("-2"), false);
+  assert.notEqual(parseNumericSpelling("-2"), undefined);
   const operator = new RegExp(`^${lexical.patterns.operators}$`, "u");
   for (const character of punctuation) {
     if (character !== "…") assert.ok(operator.test(character), `missing operator ${character}`);

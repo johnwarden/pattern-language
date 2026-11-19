@@ -1,4 +1,4 @@
-<!-- SYNTAX TEST "Packages/PatternLanguage/PatternLanguage Markdown.sublime-syntax" -->
+<!-- SYNTAX TEST "Packages/PatternLanguage/Markdown.sublime-syntax" -->
 
 # Markdown remains Markdown
 <!-- <- markup.heading.1.markdown - source.pattern-language -->

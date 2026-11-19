@@ -1,0 +1,94 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import test from "node:test";
+import oniguruma from "vscode-oniguruma";
+import { parseDocument } from "yaml";
+import { generatedFiles, sublimeMarkdownGrammar } from "../generate.mjs";
+
+const root = new URL("../", import.meta.url);
+await oniguruma.loadWASM(await readFile(new URL("node_modules/vscode-oniguruma/release/onig.wasm", root)));
+const syntax = sublimeMarkdownGrammar();
+const rules = syntax.contexts["fenced-code-blocks"].slice(1);
+
+function opening(line) {
+  const scanner = new oniguruma.OnigScanner(rules.map((rule) => rule.match));
+  try {
+    const match = scanner.findNextMatchSync(line, 0);
+    return match && {
+      rule: rules[match.index],
+      fence: line.slice(match.captureIndices[1].start, match.captureIndices[1].end),
+      language: line.slice(match.captureIndices[2].start, match.captureIndices[2].end),
+    };
+  } finally {
+    scanner.dispose();
+  }
+}
+
+function closes(open, line) {
+  const scanner = new oniguruma.OnigScanner([open.rule.escape.replaceAll("\\1", open.fence)]);
+  try {
+    return scanner.findNextMatchSync(line, 0) !== null;
+  } finally {
+    scanner.dispose();
+  }
+}
+
+test("Markdown inherits stock rules and embeds the packaged Pattern grammar", async () => {
+  const path = "sublime/PatternLanguage/Markdown.sublime-syntax";
+  const files = await generatedFiles();
+  const document = parseDocument(files.get(path), { strict: true, uniqueKeys: true });
+  assert.deepEqual(document.errors, []);
+  assert.deepEqual(document.toJS(), syntax);
+  assert.equal(syntax.extends, "Packages/Markdown/Markdown.sublime-syntax");
+  assert.equal(syntax.version, 2);
+  assert.equal(syntax.scope, "text.html.markdown.pattern-language");
+  assert.equal("file_extensions" in syntax, false);
+  assert.deepEqual(syntax.contexts["fenced-code-blocks"][0], { meta_prepend: true });
+  for (const rule of rules) {
+    assert.equal(rule.embed, "Packages/PatternLanguage/PatternLanguage.sublime-syntax");
+    assert.ok(rule.embed_scope.split(" ").includes("source.pattern-language"));
+    assert.equal(rule.escape_captures[1], "punctuation.definition.raw.code-fence.end.markdown");
+  }
+  assert.equal(await readFile(new URL(path, root), "utf8"), files.get(path));
+});
+
+test("both requested fence labels, aliases and normal fence whitespace are recognized", () => {
+  for (const source of [
+    "```pattern\n",
+    "```pattern test\n",
+    "````pattern test\n",
+    "  ~~~pattern\n",
+    "\t~~~~ pattern test \r\n",
+    "```pattern-language test\n",
+    "```PATTERN TEST\n",
+  ]) {
+    const result = opening(source);
+    assert.ok(result, source);
+    assert.match(result.language, /^pattern(?:-language)?$/i);
+  }
+  for (const source of [
+    "```python\n", "```patterned\n", "```pattern-tests\n",
+    "``pattern\n", "~~~python\n", "text ```pattern\n",
+    "```pattern test `\n",
+  ]) assert.equal(opening(source), null, source);
+});
+
+test("only a matching fence of sufficient length exits embedded code", () => {
+  for (const marker of ["`", "~"]) {
+    const open = opening(marker.repeat(4) + "pattern test\n");
+    assert.ok(open);
+    assert.equal(closes(open, marker.repeat(3) + "\n"), false);
+    assert.equal(closes(open, (marker === "`" ? "~" : "`").repeat(4) + "\n"), false);
+    assert.equal(closes(open, marker.repeat(4) + " trailing text\n"), false);
+    assert.equal(closes(open, "x " + marker.repeat(4) + "\n"), false);
+    assert.equal(closes(open, marker.repeat(4) + "\n"), true);
+    assert.equal(closes(open, "  " + marker.repeat(6) + "\r\n"), true);
+  }
+});
+
+test("automatic Markdown syntax selection and archive contents", () => {
+  const result = spawnSync("python3", [fileURLToPath(new URL("markdown_plugin_test.py", import.meta.url))], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});

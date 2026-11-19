@@ -1,8 +1,8 @@
 # Pattern Language highlighting
 
-Sublime Text package for `.pattern` and `.test` files, targeting build **4166**.
-Also includes a TextMate grammar and a working Markdown fence renderer. No Node
-dependencies or editor plugin code are needed to install the Sublime package.
+Sublime Text package for `.pattern`, `.test` and embedded Markdown code fences,
+targeting build **4166**. Also includes a TextMate grammar and a working Markdown
+fence renderer. Installation needs no external runtime or Node dependencies.
 
 ## Install in Sublime Text
 
@@ -28,6 +28,35 @@ newer syntax API. See the official [syntax documentation](https://www.sublimetex
 and [4075 changelog](https://www.sublimetext.com/dev). Compatibility with build
 4166 is based on that format support. A native Sublime 4166 run has not been
 performed in the development environment.
+
+## Pattern fences in Markdown
+
+Markdown files using Sublime's built-in Markdown syntax automatically gain Pattern
+highlighting when they contain a fence labelled `pattern` or `pattern test`:
+
+````markdown
+```pattern
+type Point :Point(x :: Int, y :: Int)
+```
+
+```pattern test
+test "Addition"
+  expect 1 + 1 is 2
+end
+```
+````
+
+The extension reuses the existing Pattern grammar inside those fences and the
+built-in Markdown grammar elsewhere. Backtick and tilde fences, longer closing
+fences, and the `pattern-language` alias are supported. Closing a fence ends the
+embedded syntax even if its Pattern code contains an unfinished string or bracket.
+Markdown keeps its existing color scheme; embedded code uses Pattern token scopes.
+
+The small bundled Python plugin selects **Markdown (Pattern Language)** for stock
+Markdown views only. Other Markdown packages keep their selected syntax; choose
+**View → Syntax → Markdown (Pattern Language)** to use this extension manually.
+To disable automatic selection, set `"pattern_language_markdown_fences": false`
+in Preferences settings. Rebuild and reinstall the package to get this support.
 
 ## Token colors
 
@@ -132,7 +161,9 @@ npm test
 The tests exercise real TextMate/Oniguruma tokenization, compare spelling rules
 with the language's lexer/numeric helpers, compile the Sublime patterns, check
 context references and generated-file consistency, and render escaped Markdown
-fences. They do not emulate Sublime's syntax engine.
+fences. Markdown checks also exercise the fence regexes with Oniguruma, automatic
+syntax selection with a mocked Sublime API, and the actual package archive.
+They do not emulate Sublime's syntax engine.
 
 Color checks apply the actual palette rules through TextMate/Shiki and assert the
 rendered colors of numbers, UpperCamel/type names, clause words and quoted symbols,
@@ -144,6 +175,9 @@ To run the native assertions, install the unpacked package, open
 `sublime/PatternLanguage/syntax_test_pattern-language.pattern` in Sublime and run
 **Tools → Build**. The fixture is generated from authored `test/cases.json` checks;
 edit the fixtures or generator rather than generated grammar files.
+For Markdown, open `sublime/PatternLanguage/syntax_test_markdown-pattern.md` and
+run **Tools → Build**. This authored fixture covers embedded scopes, fence exits,
+unfinished Pattern code, and ordinary Markdown and Python fences.
 
 With a Pattern Language file active, the Sublime console can check the resolved
 foregrounds against the palette table:
