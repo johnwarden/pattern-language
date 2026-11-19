@@ -16,7 +16,7 @@ special status. `Type(...)` is retired as a native type-value wrapper.
 ## Prelude and ordinary values
 
 ```pattern
-test "Type is a prelude union, not a reserved symbol"
+todo test "Type is a prelude union, not a reserved symbol"
   assert :Type .matches UpperCamelSymbol
   assert not(Type .matches ReservedSymbol)
   assert Int .matches Type
@@ -38,13 +38,13 @@ test "Type is a prelude union, not a reserved symbol"
   assert not(refined .matches ConcreteType)
 end
 
-test "A primitive is already a type value"
+todo test "A primitive is already a type value"
   expect Int is Int :: PrimitiveType
   assert Int .matches Type
   expect :Int fails "E_QUOTED_PRIMITIVE"
 end
 
-test "Type value constructors differ from applying a type to data"
+todo test "Type value constructors differ from applying a type to data"
   type Rectangle concrete Rect(w :: Rational, h :: Rational)
   t = ConcreteType(Rect(Rational, Rational))
   assert t == Rectangle
@@ -65,7 +65,7 @@ deduplicate them. The declaration examples produce canonical descriptor data;
 equality compares the resulting values, rather than normalizing them.
 
 ```pattern
-test "Concrete descriptors are capture-free and structural"
+todo test "Concrete descriptors are capture-free and structural"
   type Rectangle concrete Rect(w :: Rational, h :: Rational)
   x = ConcreteType(Rect(Rational, Rational))
   y = ConcreteType(Rect(Rational, Rational))
@@ -77,7 +77,7 @@ test "Concrete descriptors are capture-free and structural"
   assert keep(x) == Rectangle
 end
 
-test "An independently declared descriptor interops"
+todo test "An independently declared descriptor interops"
   first = (
     type Rectangle concrete Rect(w :: Rational, h :: Rational)
     Rectangle
@@ -92,7 +92,7 @@ test "An independently declared descriptor interops"
   assert value .matches second
 end
 
-test "AbstractType values don't automatically normalize"
+todo test "AbstractType values don't automatically normalize"
   type Either abstract String | Rational
   a = AbstractType(Rational | String)
   b = AbstractType(String | Rational)
@@ -100,7 +100,7 @@ test "AbstractType values don't automatically normalize"
   assert Either != b
 end
 
-test "Abstract members remain their concrete types"
+todo test "Abstract members remain their concrete types"
   type Either abstract Rational | String
   a = AbstractType(Rational | String)
   assert Either == a
@@ -124,7 +124,7 @@ test "Independent abstract scopes retain the same member domain"
   assert pass(left) == right
 end
 
-test "A refinement has a base and predicate, and keeps its base space"
+todo test "A refinement has a base and predicate, and keeps its base space"
   def nonZero(n :: Rational) n != 0
   type NonZero refinement Rational .where nonZero
   t = RefinementType(Rational, nonZero)
@@ -137,7 +137,7 @@ test "A refinement has a base and predicate, and keeps its base space"
   assert identity(t) == NonZero
 end
 
-test "Different refinements are not equated merely by their base"
+todo test "Different refinements are not equated merely by their base"
   def positive(n :: Rational) n > 0
   def nonZero(n :: Rational) n != 0
   a = RefinementType(Rational, positive)
@@ -183,26 +183,26 @@ primitive itself where a type value is wanted: `Int`, `Int :: PrimitiveType`.
 ## Declaration products, defaults, and application
 
 ```pattern
-test "A declaration registers its accessors"
+todo test "A declaration registers its accessors"
   type Rectangle concrete Rect(w :: Rational, h :: Rational)
   value = Rect(2, 3) :: Rectangle
   expect value.w is 2 :: Rational
   assert Rectangle == ConcreteType(Rect(Rational, Rational))
 end
 
-test "A plain descriptor does not install an accessor"
+todo test "A plain descriptor does not install an accessor"
   t = ConcreteType(Rect(width: Rational, height: Rational))
   value = Rect(width: 2, height: 3) :: t
   expect value.width fails "unbound name"
 end
 
-test "A type constructor cannot declare captures"
+todo test "A type constructor cannot declare captures"
   expect
     ConcreteType(Rect(w :: Rational, h :: Rational))
   fails "ordinary type construction cannot declare captures/accessors"
 end
 
-test "A type description cannot carry a default"
+todo test "A type description cannot carry a default"
   expect
     ConcreteType(Rect(Rational, color: String = "black"))
   fails "defaults are forbidden in type descriptions"
@@ -232,7 +232,7 @@ test "Typed overloaded function still works"
   expect value.w is 2
 end
 
-test "A stored type flows through ordinary calls and returns"
+todo test "A stored type flows through ordinary calls and returns"
   def make(T :: Type) ConcreteType(Box(T))
   def use(T :: Type)(x :: T) x
   saved = make(String)
@@ -241,7 +241,7 @@ test "A stored type flows through ordinary calls and returns"
   expect use(saved, Box("hi")) fails "E_NO_METHOD"
 end
 
-test "A type value is not a function that constructs its members"
+todo test "A type value is not a function that constructs its members"
   t = ConcreteType(Box(String))
   expect t("hi") fails "E_NOT_CALLABLE"
   expect Box("hi") :: t is Box("hi") :: t
@@ -251,7 +251,7 @@ end
 ## No implicit public decoding
 
 ```pattern
-test "A constructor spelling in Code does not grant it type identity"
+todo test "A constructor spelling in Code does not grant it type identity"
   source = parse(Code)("ConcreteType(Rect(Rational))")
   assert source .matches Code
   t = ConcreteType(Rect(Rational))
@@ -259,7 +259,7 @@ test "A constructor spelling in Code does not grant it type identity"
   assert not(source .matches Type)
 end
 
-test "Supported type values round trip under the prelude Type"
+todo test "Supported type values round trip under the prelude Type"
   c = ConcreteType(Rect(Rational))
   a = AbstractType(Rational | String)
   assert parse(Type)(toString(Type)(c)) == c

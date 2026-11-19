@@ -18,7 +18,7 @@ throws, retain the original language diagnostic and location.
 
 These deliberately failing fixtures must produce distinct, identifiable reports:
 
-```pattern
+```text
 test "Failed equality"
   left = 1
   right = 2
@@ -79,7 +79,7 @@ end
 
 Acceptance fixtures that must fail:
 
-```pattern
+```text
 test "A value mismatch is a comparison failure"
   expect 1 is 2
 end
