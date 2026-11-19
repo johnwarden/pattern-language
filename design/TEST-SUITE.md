@@ -12,7 +12,10 @@ specification todos, and put new contracts in the active suite.
 The runner discovers `.test` files under `tests/` and top-level `pattern test`
 fences in Markdown under `specs/`, excluding the spec archive. A `.test` file
 or marked fence contains one or more named test blocks. Use a plain `pattern`
-fence for an illustrative example. Setup belongs inside each test.
+fence for an illustrative example. Setup belongs inside each test. Use
+`todo test` inside a `pattern test` fence for a whole-case todo. The fence
+label stays `pattern test`. Each fence is read as a separate test source,
+so a spec can contain several whole-case todos in separate fences.
 
 Run one spec with `just test-language specs/rational-literals-and-text.md`.
 Failures report the Markdown file and line. IDs use the file path and title

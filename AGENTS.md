@@ -138,12 +138,14 @@ Keep credentials out of source and browser bundles. CI requires no application s
 
 Follow [the development workflow](design/TESTING-WORKFLOW.md). Discuss new
 language rules with Jonathan. Start a topic branch and edit or add a document
-directly under `specs/`. Review the spec first, then write or revise contracts
-in executable spec fences or `.test` files in a subsequent PR. Use todo for expected failures
-and inspect the actual failure. An implementation PR names the cases it makes
-pass and removes their fulfilled todo markers. Approved spec PRs and
-test-only PRs can land on `master` ahead of implementation. Each stage uses
-authorized squash merge.
+directly under `specs/`. Drafts may use illustrative `pattern` fences.
+Before merging a finalized spec, put its new behavior in executable
+`pattern test` fences. Use todo inside the fence for expected failures
+and inspect the actual failures. Migrate existing tests in a follow-up PR
+where needed. An implementation PR names the cases it makes pass, removes
+fulfilled todos and retires the corresponding legacy expectations. The
+spec and test migration can land on `master` ahead of implementation.
+Each stage uses authorized squash merge.
 
 Existing cases on master can already satisfy the test contract requirement.
 A specification can require edits to many cases or just an illustrative example.

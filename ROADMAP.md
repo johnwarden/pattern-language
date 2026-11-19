@@ -6,8 +6,8 @@ milestone sequence, not a development history. The integrated
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
 [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
 
-The executable [`.test` specification](tests/specification/README.md) is the
-language contract. This roadmap and the linked prose explain its decisions and
+The executable contracts in [specs](specs/README.md) and
+[the source suite](tests/specification/README.md) define the language. This roadmap and the linked prose explain its decisions and
 track implementation, rather than maintain an independent specification. Discuss
 new rules in the project chat and draft them in `specs/` on a topic branch.
 Once settled, review the active test updates before changing implementation.
@@ -153,8 +153,8 @@ rewrite their current observations as if all target changes were shipped.
 
 ### Immediate priority: implement the executable specification
 
-Development is specification first: write or update focused `.test` contracts for
-accepted behavior, then implement against them. Prioritize the accepted todo
+Development is specification first. Finalize rules with executable spec tests,
+migrate affected source tests, then implement against those contracts. Prioritize the accepted todo
 cases already under `tests/specification/` over unrelated new foundations. See
 [TESTING-WORKFLOW.md](design/TESTING-WORKFLOW.md) for the implementation loop. A todo failing at an unsupported declaration does not demonstrate
 that the deeper rule in that assertion has been implemented correctly.
