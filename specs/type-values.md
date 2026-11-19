@@ -51,15 +51,15 @@ A refinement restricts the admitted values while preserving their concrete
 identity. A concrete carveout adds its own boundary. Use `T .where p` in
 either pattern. Literal designation and explicit checks establish predicate
 evidence. Bindings and dispatch on bound arguments use the evidence already
-available. See [refinement evidence][evidence].
+available. Initially `p` names a prelude predicate. See
+[refinement predicates](refinement-predicates.md) and [refinement evidence][evidence].
 
 ```pattern
-def isNonZero(n :: Int) n != 0
-type NonZeroInt pattern Int .where isNonZero
-type NonZeroId struct Int .where isNonZero
+type NonZeroRational pattern ExactRational .where isNonZero
+type NonZeroId struct ExactRational .where isNonZero
 
-(n :: NonZeroInt) = 2 :: Int
-(id :: NonZeroId) = 2 :: Int
+(n :: NonZeroRational) = 2
+(id :: NonZeroId) = 2
 ```
 
 ## Descriptor kinds and primitive types
@@ -266,15 +266,11 @@ Kind constructors read structural patterns in this context, including
 quoted lower-case heads. The canonical printer must choose spellings that
 retain constructor-head meaning under the pattern grammar.
 
-For the first refinement slice, a lambda whose body uses only its
-parameters, literals, and fixed primitives is identified by its syntax.
-Use its parenthesized lambda as its type-expression component. The same
-predicate expression reconstructs the same descriptor inside a wrapper,
-option, or list. For example, `Pattern(Bool .where (b -> b))` is a
-closed descriptor expression. Capturing predicates, named user predicates, and
-predicates calling user definitions depend on portable closed function
-values. Their global serialization can report unsupported cases until
-that work lands. See [closed function values](named-function-values.md).
+Initially a refinement names a prelude function. The printer emits its
+identifier, as in `Pattern(ExactRational .where isNonZero)`. The same
+prelude resolves the reference in a fresh scope and in nested descriptors.
+See [refinement predicates](refinement-predicates.md) for lookup and
+identity. Portable user-defined predicates are a later extension.
 
 For supported types and values, `parse(Type)(toString(Type)(t))`
 returns the same descriptor, and `parse(T)(toString(T)(v))` returns the
@@ -287,8 +283,9 @@ ascription. For example, the outer and inner absence cases for
 
 `toStringLocal` and diagnostics follow the established
 [exact local printing](library-closure-and-local-printing.md#exact-local-printing)
-rule. They can use a visible type or predicate name when it denotes the
-same complete value in that scope. They can use sugar such as `T*` or
+rule. They can use a visible type name when it denotes the same
+descriptor in that scope. Prelude predicates retain their prelude names.
+They can use sugar such as `T*` or
 `T?` when it resolves to the exact descriptor. A shadowed or approximate
 name is insufficient. An ambiguity diagnostic lists source expressions
 that actually select the indicated surviving interpretations. If it
@@ -311,8 +308,9 @@ Preserve typed construction, quotation, and explicit one-boundary matching
 coverage. The new catch-all struct rule supersedes the blanket prohibition
 on concrete open descriptions in the
 [syntax-retirement contract](retire-legacy-type-definition-syntax.md).
-Raw patterns in general type-expression positions, public predicate and
-pattern data details, and the projection dispatch question remain open.
+Raw patterns in general type-expression positions, public pattern data
+and the projection dispatch question remain open. Portable user-defined
+predicates remain later work.
 
 After review, update the active source contracts for normalization,
 non-normal direct constructors, descriptor inspection, type equality,
