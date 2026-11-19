@@ -46,9 +46,6 @@ Require parentheses if any of the following hold.
    comparison, or logical operator directly left of `=` is rejected, so
    write `(a + b) = c` or `a + (b = c)` instead of `a + b = c`.
 
-Point to the second operator in the first rejected pair and name both
-operators in the message, for example `` Parentheses required between `+` and `*` ``.
-Report these failures with code `E_INFIX_GROUPING`.
 Check each parenthesized expression and each argument field independently.
 Parentheses around a single operand in a chain, as in `a - (b) - c`, leave
 both operators at the same level. Prefix signs, postfix operators, and
@@ -60,7 +57,7 @@ domain-specific expressions.
 
 | Source | Reading |
 | --- | --- |
-| `a + b * c` | Syntax error. Write `a + (b * c)` or `(a + b) * c`. |
+| `a + b * c` | Syntax error. Write `(a + b) * c` or `a + (b * c)`. |
 | `a * b + c` | Syntax error. Write `(a * b) + c` or `a * (b + c)`. |
 | `a - b + c` | Syntax error. Write `(a - b) + c` or `a - (b + c)`. |
 | `10 - 3 - 2` | Syntax error. Write `(10 - 3) - 2` for `5` or `10 - (3 - 2)` for `9`. |
@@ -87,6 +84,39 @@ domain-specific expressions.
 
 Chains of `&&` alone or `||` alone associate right. These operators use
 ordinary infix evaluation, which evaluates both operands.
+
+## Grouping diagnostics
+
+Report `E_INFIX_GROUPING` at the second operator of the first rejected
+pair in source order. Lead with both ways to group the expression. Show
+the left grouping first and the right grouping second, using the operands
+and operator spellings from the source. Keep calls, tight dots, prefix
+signs, and existing parentheses intact. Give the rule on the next line.
+
+For `price + tax * count`, the message reads
+
+```text
+Write (price + tax) * count or price + (tax * count).
+Mixing + and * requires parentheses.
+```
+
+For a repeated operator, name the operation. For example, `10 - 3 - 2`
+produces
+
+```text
+Write (10 - 3) - 2 or 10 - (3 - 2).
+A chain of subtractions requires parentheses.
+```
+
+Use “Write” when either replacement resolves the grouping error throughout
+the expression being diagnosed. If another conflict would remain with
+either choice, show just the three operands around the first rejected
+pair. For `a * b == c + d`, the message reads
+
+```text
+Group this part as (a * b) == c or a * (b == c).
+Mixing * and == requires parentheses.
+```
 
 ## Ascriptions in infix chains
 
@@ -126,6 +156,17 @@ as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
 ## Test cases
 
 ```pattern
+test "Grouping diagnostics give both source rewrites before the rule"
+  expect parse(Code)("price + tax * count") fails "Write (price + tax) * count or price + (tax * count).\nMixing + and * requires parentheses."
+  expect parse(Code)("10 - 3 - 2") fails "Write (10 - 3) - 2 or 10 - (3 - 2).\nA chain of subtractions requires parentheses."
+  expect parse(Code)("12 / 3 * 2") fails "Write (12 / 3) * 2 or 12 / (3 * 2).\nMixing / and * requires parentheses."
+  expect parse(Code)("x - (y) .div z") fails "Write (x - (y)) .div z or x - ((y) .div z).\nMixing - and .div requires parentheses."
+  expect parse(Code)("a * b == c") fails "Write (a * b) == c or a * (b == c).\nMixing * and == requires parentheses."
+  expect parse(Code)("p && q || r") fails "Write (p && q) || r or p && (q || r).\nMixing && and || requires parentheses."
+  expect parse(Code)("a + b = c") fails "Write (a + b) = c or a + (b = c).\nUsing + before = requires parentheses."
+  expect parse(Code)("a * b == c + d") fails "Group this part as (a * b) == c or a * (b == c).\nMixing * and == requires parentheses."
+end
+
 test "Mixed arithmetic requires parentheses in either order"
   expect parse(Code)("a + b * c") fails "E_INFIX_GROUPING"
   expect parse(Code)("a * b + c") fails "E_INFIX_GROUPING"
