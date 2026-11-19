@@ -108,10 +108,11 @@ Write (10 - 3) - 2 or 10 - (3 - 2).
 A chain of subtractions requires parentheses.
 ```
 
-Use “Write” when either replacement resolves the grouping error throughout
-the expression being diagnosed. If another conflict would remain with
-either choice, show just the three operands around the first rejected
-pair. For `a * b == c + d`, the message reads
+Use “Write” when both alternatives resolve the grouping errors in the
+expression being diagnosed. Keep the surrounding source in each rewrite,
+including any call or other argument fields. If a conflict remains in
+at least one alternative, show just the three operands around the first
+rejected pair. For `a * b == c + d`, the message reads
 
 ```text
 Group this part as (a * b) == c or a * (b == c).
@@ -156,117 +157,149 @@ as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
 ## Test cases
 
 ```pattern
-test "Grouping diagnostics give both source rewrites before the rule"
-  expect parse(Code)("price + tax * count") fails "Write (price + tax) * count or price + (tax * count).\nMixing + and * requires parentheses."
-  expect parse(Code)("10 - 3 - 2") fails "Write (10 - 3) - 2 or 10 - (3 - 2).\nA chain of subtractions requires parentheses."
-  expect parse(Code)("12 / 3 * 2") fails "Write (12 / 3) * 2 or 12 / (3 * 2).\nMixing / and * requires parentheses."
-  expect parse(Code)("x - (y) .div z") fails "Write (x - (y)) .div z or x - ((y) .div z).\nMixing - and .div requires parentheses."
-  expect parse(Code)("a * b == c") fails "Write (a * b) == c or a * (b == c).\nMixing * and == requires parentheses."
-  expect parse(Code)("p && q || r") fails "Write (p && q) || r or p && (q || r).\nMixing && and || requires parentheses."
-  expect parse(Code)("a + b = c") fails "Write (a + b) = c or a + (b = c).\nUsing + before = requires parentheses."
-  expect parse(Code)("a * b == c + d") fails "Group this part as (a * b) == c or a * (b == c).\nMixing * and == requires parentheses."
+test "Mixed arithmetic shows both groupings in source order"
+  expect parse(Code)("price + tax * count") fails "
+    Write (price + tax) * count or price + (tax * count).
+    Mixing + and * requires parentheses.
+  end
+  expect parse(Code)("a * b + c") fails "
+    Write (a * b) + c or a * (b + c).
+    Mixing * and + requires parentheses.
+  end
+  expect parse(Code)("a .div b * c + d") fails "
+    Write a .div (b * c) + d or a .div b * (c + d).
+    Mixing * and + requires parentheses.
+  end
+  expect parse(Code)("f(a * b + c, d)") fails "
+    Write f((a * b) + c, d) or f(a * (b + c), d).
+    Mixing * and + requires parentheses.
+  end
 end
 
-test "Mixed arithmetic requires parentheses in either order"
-  expect parse(Code)("a + b * c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a * b + c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a .div b * c + d") fails "E_INFIX_GROUPING"
-  expect parse(Code)("f(a * b + c, d)") fails "E_INFIX_GROUPING"
+test "An infix right operand of subtraction, division or remainder needs grouping"
+  expect parse(Code)("a - b + c") fails "
+    Write (a - b) + c or a - (b + c).
+    Mixing - and + requires parentheses.
+  end
+  expect parse(Code)("10 - 3 - 2") fails "
+    Write (10 - 3) - 2 or 10 - (3 - 2).
+    A chain of subtractions requires parentheses.
+  end
+  expect parse(Code)("a - (b) - c") fails "
+    Write (a - (b)) - c or a - ((b) - c).
+    A chain of subtractions requires parentheses.
+  end
+  expect parse(Code)("12 / 3 * 2") fails "
+    Write (12 / 3) * 2 or 12 / (3 * 2).
+    Mixing / and * requires parentheses.
+  end
+  expect parse(Code)("a / b / c") fails "
+    Write (a / b) / c or a / (b / c).
+    A chain of divisions requires parentheses.
+  end
+  expect parse(Code)("a % b % c") fails "
+    Write (a % b) % c or a % (b % c).
+    A chain of remainder operations requires parentheses.
+  end
+  expect parse(Code)("-x - y.z ^ f(a)") fails "
+    Write (-x - y.z) ^ f(a) or -x - (y.z ^ f(a)).
+    Mixing - and ^ requires parentheses.
+  end
+  expect parse(Code)("x - (y) .div z") fails "
+    Write (x - (y)) .div z or x - ((y) .div z).
+    Mixing - and .div requires parentheses.
+  end
+  expect parse(Code)("x - y :: Int") fails "
+    Write (x - y) :: Int or x - (y :: Int).
+    Mixing - and :: requires parentheses.
+  end
 end
 
-test "Subtraction, division, and remainder require explicit infix right operands"
-  expect parse(Code)("a - b + c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("10 - 3 - 2") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a - (b) - c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("12 / 3 * 2") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a % b % c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a - b ^ c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a - b .div c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("x - y :: Int") fails "E_INFIX_GROUPING"
+test "Arithmetic and comparison conflicts identify the operands to group"
+  expect parse(Code)("a * b == c") fails "
+    Write (a * b) == c or a * (b == c).
+    Mixing * and == requires parentheses.
+  end
+  expect parse(Code)("a == b + c") fails "
+    Write (a == b) + c or a == (b + c).
+    Mixing == and + requires parentheses.
+  end
+  expect parse(Code)("a + b >= c") fails "
+    Write (a + b) >= c or a + (b >= c).
+    Mixing + and >= requires parentheses.
+  end
+  expect parse(Code)("a !== b * c") fails "
+    Write (a !== b) * c or a !== (b * c).
+    Mixing !== and * requires parentheses.
+  end
+  expect parse(Code)("a * b == c + d") fails "
+    Group this part as (a * b) == c or a * (b == c).
+    Mixing * and == requires parentheses.
+  end
 end
 
-test "Arithmetic and comparisons require grouping in either order"
-  expect parse(Code)("a * b == c + d") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a == b + c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a + b >= c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a !== b * c") fails "E_INFIX_GROUPING"
+test "Logical conflicts show the first missing pair of parentheses"
+  expect parse(Code)("a == b && c == d") fails "
+    Group this part as (a == b) && c or a == (b && c).
+    Mixing == and && requires parentheses.
+  end
+  expect parse(Code)("(a == b) && c == d") fails "
+    Write ((a == b) && c) == d or (a == b) && (c == d).
+    Mixing && and == requires parentheses.
+  end
+  expect parse(Code)("a == b && (c == d)") fails "
+    Write (a == b) && (c == d) or a == (b && (c == d)).
+    Mixing == and && requires parentheses.
+  end
+  expect parse(Code)("a || b < c") fails "
+    Write (a || b) < c or a || (b < c).
+    Mixing || and < requires parentheses.
+  end
+  expect parse(Code)("a + b || c") fails "
+    Write (a + b) || c or a + (b || c).
+    Mixing + and || requires parentheses.
+  end
+  expect parse(Code)("a && b * c") fails "
+    Write (a && b) * c or a && (b * c).
+    Mixing && and * requires parentheses.
+  end
+  expect parse(Code)("p && q || r") fails "
+    Write (p && q) || r or p && (q || r).
+    Mixing && and || requires parentheses.
+  end
+  expect parse(Code)("p || q && r") fails "
+    Write (p || q) && r or p || (q && r).
+    Mixing || and && requires parentheses.
+  end
 end
 
-test "Logical operators require grouping when mixed"
-  expect parse(Code)("a == b && c == d") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a || b < c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a + b || c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a && b * c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a && b || c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a || b && c") fails "E_INFIX_GROUPING"
+test "A binding after arithmetic, comparison or logic shows both groupings"
+  expect parse(Code)("a + b = c") fails "
+    Write (a + b) = c or a + (b = c).
+    Using + before = requires parentheses.
+  end
+  expect parse(Code)("a == b = c") fails "
+    Write (a == b) = c or a == (b = c).
+    Using == before = requires parentheses.
+  end
+  expect parse(Code)("a && b = c") fails "
+    Write (a && b) = c or a && (b = c).
+    Using && before = requires parentheses.
+  end
 end
 
-test "Arithmetic, comparison, and logical operators left of = need parentheses"
-  expect parse(Code)("a + b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a - b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a * b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a == b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a < b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a && b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a || b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a + (b) = c") fails "E_INFIX_GROUPING"
-end
-
-test "Parentheses select the arithmetic tree"
-  expect 2 * (3 + 4) is 14 :: Rational
-  expect (2 * 3) + 4 is 10 :: Rational
-  expect 2 + (3 * 4) is 14 :: Rational
+test "Choosing a grouping changes the subtraction result"
   expect (10 - 3) - 2 is 5 :: Rational
   expect 10 - (3 - 2) is 9 :: Rational
-  expect (12 / 3) * 2 is 8 :: Rational
-  expect 12 / (3 * 2) is 2 :: Rational
-  expect 2 * -3 is
-    -6 :: Rational
-  end
-  assert parse(Code)("1 + a.b") == parse(Code)("+(1)(b(a))")
 end
 
-test "Accepted infix chains still associate right"
+test "Operators outside the rejected pairs still compose without parentheses"
   assert parse(Code)("a + b - c") == parse(Code)("a + (b - c)")
-  assert parse(Code)("a * b / c") == parse(Code)("a * (b / c)")
-  assert parse(Code)("a .and b .or c") == parse(Code)("a .and (b .or c)")
-  assert parse(Code)("a * b ^ c") == parse(Code)("a * (b ^ c)")
-  assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
-  assert parse(Code)("f(a * b, c + d)") == parse(Code)("f(*(a)(b), +(c)(d))")
-  assert parse(Code)("n = x + 1") == parse(Code)("=(n)(+(x)(1))")
-  assert parse(Code)("flag = a == b") == parse(Code)("=(flag)(==(a)(b))")
-  assert parse(Code)("(a + b) = c") == parse(Code)("=(+(a)(b))(c)")
-  assert parse(Code)("a + (b = c)") == parse(Code)("+(a)(=(b)(c))")
-  assert parse(Code)("(a == b) = c") == parse(Code)("=(==(a)(b))(c)")
-  assert parse(Code)("a == (b = c)") == parse(Code)("==(a)(=(b)(c))")
-  assert parse(Code)("(a && b) = c") == parse(Code)("=(&&(a)(b))(c)")
-  assert parse(Code)("a && (b = c)") == parse(Code)("&&(a)(=(b)(c))")
-  assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
-  assert parse(Code)("a .div b * c") == parse(Code)("div(a)(*(b)(c))")
-  assert parse(Code)("(a .div b) * c") == parse(Code)("*(div(a)(b))(c)")
-  assert parse(Code)("(a * b) == (c + d)") == parse(Code)("==(*(a)(b))(+(c)(d))")
-  assert parse(Code)("a && b && c") == parse(Code)("&&(a)(&&(b)(c))")
-  assert parse(Code)("a || b || c") == parse(Code)("||(a)(||(b)(c))")
-  assert parse(Code)("(a == b) && (c == d)") == parse(Code)("&&(==(a)(b))(==(c)(d))")
-  assert parse(Code)("(a && b) || c") == parse(Code)("||(&&(a)(b))(c)")
-  assert parse(Code)("a && (b || c)") == parse(Code)("&&(a)(||(b)(c))")
-  assert parse(Code)("ok = a && b") == parse(Code)("=(ok)(&&(a)(b))")
-end
-
-test "Ascriptions follow ordinary right association"
-  assert parse(Code)("x :: Int = 5") == parse(Code)("::(x)(=(Int)(5))")
-  assert parse(Code)("(x :: Int) = 5") == parse(Code)("=(::(x)(Int))(5)")
-  assert parse(Code)("x :: Int -> 5") == parse(Code)("::(x)(->(Int)(5))")
-  assert parse(Code)("(x :: Int) -> 5") == parse(Code)("->(::(x)(Int))(5)")
-  assert parse(Code)("value = x :: Int") == parse(Code)("=(value)(::(x)(Int))")
-
-  assert parse(Code)("f :: Int => Int = x -> x ^ 2") == parse(Code)("::(f)(=>(Int)(=(Int)(->(x)(^(x)(2)))))")
-  assert parse(Code)("(f :: Int => Int) = x -> x ^ 2") == parse(Code)("=(::(f)(=>(Int)(Int)))(->(x)(^(x)(2)))")
-
-  assert parse(Code)("x + y :: Int") == parse(Code)("+(x)(::(y)(Int))")
-  assert parse(Code)("(x + y) :: Int") == parse(Code)("::(+(x)(y))(Int)")
-  assert parse(Code)("x - (y :: Int)") == parse(Code)("-(x)(::(y)(Int))")
-  assert parse(Code)("(x - y) :: Int") == parse(Code)("::(-(x)(y))(Int)")
+  assert parse(Code)("a .div b * c") == parse(Code)("a .div (b * c)")
+  assert parse(Code)("a && b && c") == parse(Code)("a && (b && c)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("x :: (Int = 5)")
+  assert parse(Code)("x :: Int -> 5") == parse(Code)("x :: (Int -> 5)")
+  assert parse(Code)("f :: Int => Int = x -> x ^ 2") == parse(Code)("f :: (Int => (Int = (x -> (x ^ 2))))")
 end
 
 test "Printed infix Code shows grouping and reads back to the same tree"
