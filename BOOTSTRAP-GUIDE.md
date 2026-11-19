@@ -960,8 +960,9 @@ retains the original tree and lexical origins.
 
 ## Test DSL and shared examples
 
-The runner recursively scans tests/**/*.test. Files contain one or more named test
-blocks, organized by broad subdirectory. The ordinary schema in examples/test-schema.pattern
+The runner scans `tests/**/*.test` and Markdown `pattern test` fences under `specs/`.
+Each source file or executable fence contains one or more named test blocks.
+The ordinary schema in examples/test-schema.pattern
 requires a first Test row and permits a repeated Test* tail. Shared setup belongs
 inside a test; assertion modifiers cannot be applied to an entire test.
 `expect parse` plus a quoted string checks program parse failure without making the

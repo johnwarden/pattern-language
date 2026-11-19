@@ -138,6 +138,7 @@ float does not establish equality or justify printing an approximation.
 
 [rational-text.test](../tests/numeric/rational-text.test) covers the candidate
 families, tie-breaks, exponent placement, and typed round trips.
-[code-text.test](../tests/numeric/code-text.test) covers Code round trips.
+The [Rational literals spec](rational-literals-and-text.md#packs-and-calls) covers
+fraction and grouped-division Code round trips.
 Compare candidate lengths without materializing needlessly long losing expansions.
 

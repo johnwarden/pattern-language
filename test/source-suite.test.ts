@@ -3,11 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { TEST_SCHEMA } from "../src/test-schema.ts";
 import { loadTests } from "../src/test-suite.ts";
-import { sourceFiles } from "./source-files.ts";
+import { collectTestFiles } from "../src/test-files.ts";
 
-const sourceCases = loadTests(
-  sourceFiles(new URL("../tests/", import.meta.url)),
-);
+const sourceCases = loadTests(collectTestFiles());
 
 test("the published Test schema is the source used by the harness", () => {
   assert.equal(

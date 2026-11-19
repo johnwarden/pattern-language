@@ -4,34 +4,34 @@ Discuss new language rules with Jonathan. Use one topic per coherent change.
 Use the existing specs and tests as the starting point. Keep unsettled choices
 and motivating examples with the draft until the behavior is agreed.
 
-| Stage | Change on the topic | What to review |
+| Stage | Change | What to review |
 | --- | --- | --- |
-| Specification | Edit or add documents directly under `specs/` on the topic branch. | The proposed intended behavior, examples and migration impact. The branch's tests may still describe the previous rule. |
-| Tests | After the spec is settled, add or revise active `.test` files by topic in a test PR. Base it on `master` if the spec has merged, or stack it on the spec branch for review. | The tests now describe the proposed behavior. Mark behavior that the current code cannot satisfy as `todo` and inspect the actual failures. |
-| Implementation | Implement a coherent slice and remove the todo markers from the cases it makes pass. | The spec, executable contracts and code agree for that slice. Follow-up cases can keep explicit todos. |
+| Draft spec | Edit or add a document under `specs/` on a topic branch. Use plain `pattern` fences for examples. | Intended behavior, motivating examples and open choices. |
+| Finalize spec | Put executable contracts beside the agreed rules in top-level `pattern test` fences. Cover the main positive, negative, boundary and cross-context cases. | The tests demonstrate the agreed behavior. Mark unmet expectations `todo` and inspect their failures. |
+| Migrate existing tests | In a follow-up PR, update tests affected by the new spec. Retain obsolete expectations that still pass as `legacy` while their replacements are pending. | Use a same-subject `todo` where required by the [legacy coverage rules](LEGACY-ASSERTIONS.md). |
+| Implement | Make the executable spec cases and affected tests pass. Remove fulfilled todos and retire the superseded legacy checks. | Run the contracts as ordinary checks. A partial implementation may leave explicit todos for later slices. |
 
-Each stage can merge to `master` when reviewed and authorized. An approved
-spec can land before its tests. The test PR can land before implementation
-with unmet expectations marked `todo`. Later PRs can implement the contracts
-in several coherent slices.
-
-Stack PRs when it helps to review a stage before its prerequisite lands. Once
-the prerequisite is squash-merged, update the next PR on top of `master` so its
-diff contains only its own changes. PRs to `master` use squash merge when
-Jonathan authorizes the merge.
+The spec PR, test migration PR and implementation PRs can each merge to
+`master` when reviewed and authorized. Skip the migration PR when existing
+tests need no changes. After a prerequisite is squash-merged, update any
+stacked follow-up on top of `master` so its diff shows only its own work.
+PRs to `master` use squash merge when Jonathan authorizes the merge.
 
 ## Writing and validating contracts
 
-- Reuse existing coverage where it expresses the agreed behavior. Add focused
-  positive, negative and cross-context tests as needed. Name the relevant
-  `.test` files and cases in implementation PRs.
-- Use the regular test suite for new or changed contracts, including future
-  behavior. `todo test` covers a whole case whose shared setup needs the feature.
-  A todo assertion covers one unmet expectation. Inspect failures before
-  treating a todo as a useful specification.
-- Remove a todo when its intended behavior passes. Retire paired legacy checks
-  deliberately. Keep useful explanations beside the tests and update links in
-  the spec when the cases are added.
+- Use a top-level `pattern test` fence for executable tests in a spec. A plain
+  `pattern` fence is an example. The
+  [Rational literals spec](../specs/rational-literals-and-text.md) shows tests next
+  to the rules they exercise.
+- Use `todo test` inside a `pattern test` fence when the whole case or its
+  shared setup needs the feature. Give each whole-test todo its own fence.
+  Use `todo expect` or `todo assert` for individual unmet expectations in an
+  otherwise working case. The fence label stays `pattern test`.
+- Verify a todo fails for the intended reason. If new syntax is unavailable to
+  the test reader, pass it as text to the relevant language reader inside the test.
+- Reuse coverage that already expresses the agreed behavior. Name the relevant
+  files and cases in implementation PRs. Keep useful explanations beside the
+  tests and update spec links to companion cases as they move.
 - Keep host/protocol, native adapter, transport, syntax-encoding and diagnostic
   metadata checks at their appropriate host boundary. Source contracts describe
   the language an author writes. Expected results are inert authored data.

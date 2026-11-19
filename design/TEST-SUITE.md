@@ -9,13 +9,25 @@ specification todos, and put new contracts in the active suite.
 
 ## Files and basic forms
 
-The runner recursively discovers tests/**/*.test, grouped by broad topic. Each file
-contains one or more named test blocks. Shared setup belongs inside the test. IDs
-are root-relative file paths without .test plus the title slug, and survive selecting
-only a subset or inserting/reordering cases. Discovered symlinks are not traversed.
-Duplicate title slugs in a file reject. `todo` can modify a whole test, an
-assertion, or setup. `legacy` modifies assertions and setup only. A file may
-contain a single `todo test` block.
+The runner discovers `.test` files under `tests/` and Markdown under `specs/`,
+excluding the spec archive. Only top-level fences marked `pattern test` execute.
+Plain `pattern` fences are illustrative. Specs without executable fences
+(including `README.md` and other prose records) are discovered and skipped.
+A `.test` file or marked fence contains one or more named test blocks. Setup
+belongs inside each test. Use `todo test` inside a `pattern test` fence for a
+whole-case todo; the fence label stays `pattern test`. Ordinary and `todo test`
+blocks may share a file or fence. Each fence is read as a separate test source,
+so a spec can contain several whole-case todos in separate fences. An unclosed
+fence of any kind in a scanned Markdown file is a hard discovery error, as is a
+`pattern test` fence nested inside another fence (which would otherwise silently
+swallow the executable block).
+
+Run one spec with `just test-language specs/rational-literals-and-text.md`.
+Failures report the Markdown file and line. IDs use the file path and title
+slug, omitting the `.test` extension for fixture files. Selecting a subset or
+reordering the cases preserves their IDs. The runner rejects duplicate title
+slugs in a file and skips discovered symlinks. `todo` can modify a whole test,
+an assertion, or setup. `legacy` modifies assertions and setup only.
 
 ```text
 test "A value and a predicate"

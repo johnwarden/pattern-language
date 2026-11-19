@@ -6,8 +6,8 @@ milestone sequence, not a development history. The integrated
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
 [TYPE-VALUES.md](TYPE-VALUES.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
 
-The executable [`.test` specification](tests/specification/README.md) is the
-language contract. This roadmap and the linked prose explain its decisions and
+The executable contracts in [specs](specs/README.md) and
+[the source suite](tests/specification/README.md) define the language. This roadmap and the linked prose explain its decisions and
 track implementation, rather than maintain an independent specification. Discuss
 new rules in the project chat and draft them in `specs/` on a topic branch.
 Once settled, review the active test updates before changing implementation.
@@ -115,8 +115,9 @@ or require the parser's Expression migration to be completed first.
 
 ## What is implemented now
 
-The reference is TypeScript prototype 0.2. `tests/**/*.test` is the executable
-language corpus; runnable playground programs come from `tests/examples/`.
+The reference is TypeScript prototype 0.2. The executable language corpus includes
+`tests/**/*.test` and `pattern test` fences under `specs/`. Runnable playground
+programs come from `tests/examples/`.
 `just check` runs the complete gate. `just test-language` reports passing assertions,
 legacy assertions and expected todo failures separately. Do not copy those
 figures into this document.
@@ -152,8 +153,8 @@ rewrite their current observations as if all target changes were shipped.
 
 ### Immediate priority: implement the executable specification
 
-Development is specification first: write or update focused `.test` contracts for
-accepted behavior, then implement against them. Prioritize the accepted todo
+Development is specification first. Finalize rules with executable spec tests,
+migrate affected source tests, then implement against those contracts. Prioritize the accepted todo
 cases already under `tests/specification/` over unrelated new foundations. See
 [TESTING-WORKFLOW.md](design/TESTING-WORKFLOW.md) for the implementation loop. A todo failing at an unsupported declaration does not demonstrate
 that the deeper rule in that assertion has been implemented correctly.
@@ -259,12 +260,14 @@ bootstrap declaration spelling and are distinct from pending declaration changes
 ### 5a.1. Test DSL conformance suite and selective migration — implemented
 
 Ordinary source Test types and the external runner recognize files containing one
-or more named test blocks. Files use **.test**, are grouped by topic under **tests/**,
-and are recursively discovered. Assertions may be plain, legacy or todo. A whole
-test may also be marked todo; a file may contain just one todo test. Legacy does
-not modify whole tests. Ordinary/legacy checks must pass. Todos execute; their own
-language-level failures are silent expected failures. A success fails the suite with
-“This assertion now passes; remove todo.” Fixture/setup/file/host errors remain failures.
+or more named test blocks. Files use **.test** under **tests/**, and Markdown
+specs under **specs/** may carry executable `pattern test` fences; both are
+discovered with the source suite. Assertions may be plain, legacy or todo. A whole
+test may also be marked todo. Ordinary and `todo test` blocks may share a file.
+Legacy does not modify whole tests. Ordinary/legacy checks must pass. Todos execute;
+their own language-level failures are silent expected failures. A success fails the
+suite with “This assertion now passes; remove todo.” Fixture/setup/file/host errors
+remain failures.
 
 The suite checks separately checked return values, exact observed types, canonical expected data,
 expected subject errors and assertions. Result observations use expect e is v [:: T] (an omitted type is the subject value's type; an explicit one is the exact type);

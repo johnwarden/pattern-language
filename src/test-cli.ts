@@ -19,7 +19,7 @@ try {
       fixture = decodeSource(readFileSync(path), path);
     } else if (arg === "--help") {
       console.log(
-        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: recursively scan tests/**/*.test. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
+        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: discover .test files under tests/ and pattern test fences under specs/. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
       );
       process.exit(0);
     } else if (arg.startsWith("--")) throw new Error("unknown option " + arg);
@@ -34,16 +34,18 @@ try {
     expectedFailures = 0,
     todoTests = 0;
   for (const [name, source] of Object.entries(files)) {
-    if (!list) console.log("FILE " + name);
     let tests;
     try {
       tests = loadTests({ [name]: source });
     } catch (error) {
+      if (!list) console.log("FILE " + name);
       console.error("FAIL " + name + "\n" + renderDiagnostic(error));
       failures++;
       continue;
     }
     testCount += tests.length;
+    if (!tests.length) continue;
+    if (!list) console.log("FILE " + name);
     for (const value of tests) {
       if (list) {
         const counts = value.steps
@@ -87,7 +89,7 @@ try {
       }
     }
   }
-  if (!testCount && !failures) throw new Error("no .test files found");
+  if (!testCount && !failures) throw new Error("no source tests found");
   if (!list)
     console.log(
       `${passed} tests passed, ${failures} tests failed; ${assertions} assertions passed (${legacy} legacy), ${expectedFailures} todo assertions failed as expected` +
