@@ -4,66 +4,97 @@ test "Missing parentheses before a binding show both grouping choices"
     Write `(a + b) = c` or `a + (b = c)`.
     Using + before = requires parentheses.
   end
+  expect parse(Code)("a - b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a - b = c") fails "
     Write `(a - b) = c` or `a - (b = c)`.
     Using - before = requires parentheses.
   end
+  expect parse(Code)("a * b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a * b = c") fails "
     Write `(a * b) = c` or `a * (b = c)`.
     Using * before = requires parentheses.
   end
+  expect parse(Code)("a / b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a / b = c") fails "
     Write `(a / b) = c` or `a / (b = c)`.
     Using / before = requires parentheses.
   end
+  expect parse(Code)("a % b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a % b = c") fails "
     Write `(a % b) = c` or `a % (b = c)`.
     Using % before = requires parentheses.
   end
+  expect parse(Code)("a == b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a == b = c") fails "
     Write `(a == b) = c` or `a == (b = c)`.
     Using == before = requires parentheses.
   end
+  expect parse(Code)("a != b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a != b = c") fails "
     Write `(a != b) = c` or `a != (b = c)`.
     Using != before = requires parentheses.
   end
+  expect parse(Code)("a === b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a === b = c") fails "
     Write `(a === b) = c` or `a === (b = c)`.
     Using === before = requires parentheses.
   end
+  expect parse(Code)("a !== b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a !== b = c") fails "
     Write `(a !== b) = c` or `a !== (b = c)`.
     Using !== before = requires parentheses.
   end
+  expect parse(Code)("a < b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a < b = c") fails "
     Write `(a < b) = c` or `a < (b = c)`.
     Using < before = requires parentheses.
   end
+  expect parse(Code)("a <= b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a <= b = c") fails "
     Write `(a <= b) = c` or `a <= (b = c)`.
     Using <= before = requires parentheses.
   end
+  expect parse(Code)("a > b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a > b = c") fails "
     Write `(a > b) = c` or `a > (b = c)`.
     Using > before = requires parentheses.
   end
+  expect parse(Code)("a >= b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a >= b = c") fails "
     Write `(a >= b) = c` or `a >= (b = c)`.
     Using >= before = requires parentheses.
   end
+  expect parse(Code)("a && b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a && b = c") fails "
     Write `(a && b) = c` or `a && (b = c)`.
     Using && before = requires parentheses.
   end
+  expect parse(Code)("a || b = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a || b = c") fails "
     Write `(a || b) = c` or `a || (b = c)`.
     Using || before = requires parentheses.
   end
+  expect parse(Code)("a + (b) = c") fails "E_INFIX_GROUPING"
   todo expect parse(Code)("a + (b) = c") fails "
     Write `(a + (b)) = c` or `a + ((b) = c)`.
     Using + before = requires parentheses.
   end
+end
+
+test "Accepted grouped forms keep their current trees"
+  assert parse(Code)("(a + b) = c") == parse(Code)("=(+(a)(b))(c)")
+  assert parse(Code)("a + (b = c)") == parse(Code)("+(a)(=(b)(c))")
+  assert parse(Code)("(a == b) = c") == parse(Code)("=(==(a)(b))(c)")
+  assert parse(Code)("(a * b) == (c + d)") == parse(Code)("==(*(a)(b))(+(c)(d))")
+  assert parse(Code)("(a == b) && (c == d)") == parse(Code)("&&(==(a)(b))(==(c)(d))")
+  assert parse(Code)("(a && b) || c") == parse(Code)("||(&&(a)(b))(c)")
+  assert parse(Code)("a * b ^ c") == parse(Code)("a * (b ^ c)")
+  assert parse(Code)("a .and b .or c") == parse(Code)("a .and (b .or c)")
+end
+
+test "Grouped arithmetic evaluations keep their current results"
+  expect 2 * (3 + 4) is 14 :: Rational
+  expect (12 / 3) * 2 is 8 :: Rational
 end
 
 test "Binding keeps a free right-hand side"
