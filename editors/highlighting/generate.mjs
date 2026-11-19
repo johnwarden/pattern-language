@@ -218,8 +218,12 @@ export function sublimeMarkdownGrammar() {
       "fenced-code-blocks": [
         { meta_prepend: true },
         ...["`", "~"].map((marker) => ({
+          // CommonMark allows at most 3 spaces of indent before a fence; 4+ is an
+          // indented code block. Stock Sublime Markdown uses ^[ \\t]* (any indent),
+          // which is broader than CommonMark — we follow the spec so Pattern
+          // embedding does not treat indented-code lines as fences.
           match:
-            "^[ \\t]*(" + marker + "{3,})[ \\t]*(?i:(pattern(?:-language)?))(?=[ \\t\\r\\n]|$)" +
+            "^[ ]{0,3}(" + marker + "{3,})[ \\t]*(?i:(pattern(?:-language)?))(?=[ \\t\\r\\n]|$)" +
             (marker === "`" ? "([^`\\r\\n]*)" : "([^\\r\\n]*)") +
             "(\\r?$)\\n?",
           captures: {
@@ -231,7 +235,7 @@ export function sublimeMarkdownGrammar() {
           },
           embed: "Packages/PatternLanguage/PatternLanguage.sublime-syntax",
           embed_scope: "markup.raw.code-fence.pattern-language.markdown-gfm source.pattern-language",
-          escape: "^[ \\t]*(\\1" + marker + "*)[ \\t]*(\\r?$)\\n?",
+          escape: "^[ ]{0,3}(\\1" + marker + "*)[ \\t]*(\\r?$)\\n?",
           escape_captures: {
             0: "meta.code-fence.definition.end.pattern-language.markdown-gfm",
             1: "punctuation.definition.raw.code-fence.end.markdown",

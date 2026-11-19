@@ -60,7 +60,6 @@ test("both requested fence labels, aliases and normal fence whitespace are recog
     "```pattern test\n",
     "````pattern test\n",
     "  ~~~pattern\n",
-    "\t~~~~ pattern test \r\n",
     "```pattern-language test\n",
     "```PATTERN TEST\n",
   ]) {
@@ -73,6 +72,22 @@ test("both requested fence labels, aliases and normal fence whitespace are recog
     "``pattern\n", "~~~python\n", "text ```pattern\n",
     "```pattern test `\n",
   ]) assert.equal(opening(source), null, source);
+});
+
+test("CommonMark fence indent: 0-3 spaces open a fence; 4 spaces or a tab do not", () => {
+  for (const spaces of [0, 1, 2, 3]) {
+    for (const marker of ["```", "~~~"]) {
+      const source = " ".repeat(spaces) + marker + "pattern\n";
+      assert.ok(opening(source), JSON.stringify(source));
+    }
+  }
+  for (const source of [
+    "    ```pattern\n",
+    "    ~~~pattern\n",
+    "\t```pattern\n",
+    "\t~~~pattern\n",
+    " \t```pattern\n",
+  ]) assert.equal(opening(source), null, JSON.stringify(source));
 });
 
 test("only a matching fence of sufficient length exits embedded code", () => {

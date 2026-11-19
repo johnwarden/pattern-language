@@ -88,6 +88,16 @@ class MarkdownSelection(unittest.TestCase):
                     plugin._refresh(view)
                     self.assertEqual(view.assign_syntax.call_count, 1)
 
+    def test_commonmark_fence_indent_limits(self):
+        for spaces in range(4):
+            view = View(" " * spaces + "```pattern\nx")
+            plugin._refresh(view)
+            self.assertEqual(view.path, plugin.PATTERN_MARKDOWN, spaces)
+        for text in ("    ```pattern\nx", "\t```pattern\nx"):
+            view = View(text)
+            plugin._refresh(view)
+            view.assign_syntax.assert_not_called()
+
     def test_regular_markdown_and_other_languages_keep_their_syntax(self):
         for text in ("# Title", "```python\npass\n```", "```patterned\nx\n```"):
             view = View(text)

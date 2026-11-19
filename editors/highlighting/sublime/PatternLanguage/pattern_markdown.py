@@ -7,7 +7,8 @@ MARKDOWN = "Packages/Markdown/Markdown.sublime-syntax"
 PATTERN_MARKDOWN = "Packages/PatternLanguage/Markdown.sublime-syntax"
 SETTING = "pattern_language_markdown_fences"
 AUTO = "pattern_language_markdown_auto"
-FENCE = r"(?im)^[ \t]*(?:`{3,}|~{3,})[ \t]*pattern(?:-language)?(?=[ \t\r\n]|$)"
+# CommonMark: at most 3 spaces before a fence (stock Sublime uses ^[ \t]*).
+FENCE = r"(?im)^[ ]{0,3}(?:`{3,}|~{3,})[ \t]*pattern(?:-language)?(?=[ \t\r\n]|$)"
 _active = True
 
 
