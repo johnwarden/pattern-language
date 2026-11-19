@@ -1,6 +1,6 @@
 # Cursor cloud agent image. glibc >= 2.38 (trixie) so commit signing works.
 # Tools match local devbox package names: nodejs, just, jq, git, bash, curl,
-# shellcheck, coreutils, entr. No nix, devbox, or direnv.
+# shellcheck, coreutils, entr, python3. No nix, devbox, or direnv.
 #
 # Base digest is the linux multi-arch index for node:24-trixie-slim
 # (Docker Hub tag digest, last_updated 2026-11-05).
@@ -14,7 +14,7 @@ ARG TARGETARCH
 ENV TZ=America/Denver
 
 # nodejs comes from the base image. Distro packages cover git, bash, jq, curl,
-# shellcheck, entr, tzdata, ca-certificates. coreutils is Essential on Debian.
+# shellcheck, entr, python3, tzdata, ca-certificates. coreutils is Essential on Debian.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     bash \
@@ -24,6 +24,7 @@ RUN apt-get update && \
     entr \
     git \
     jq \
+    python3 \
     shellcheck \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
@@ -45,6 +46,6 @@ RUN set -eux; \
 RUN command -v node && command -v npm && \
     command -v just && command -v git && command -v bash && \
     command -v jq && command -v curl && command -v shellcheck && \
-    command -v entr && command -v cat && \
+    command -v entr && command -v python3 && command -v cat && \
     test -f /usr/share/zoneinfo/America/Denver && \
-    node --version && just --version
+    node --version && just --version && python3 --version

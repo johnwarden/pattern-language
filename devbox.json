@@ -9,7 +9,8 @@
     "curl": "latest",
     "shellcheck": "latest",
     "coreutils": "latest",
-    "entr": "latest"
+    "entr": "latest",
+    "python3": "latest"
   },
   "shell": {
     "init_hook": [
