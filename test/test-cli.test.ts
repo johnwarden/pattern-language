@@ -136,11 +136,6 @@ test("CLI runs only marked Markdown fences and reports document line numbers", (
         "  assert False",
         "end",
         "```",
-        "````markdown",
-        "```pattern test",
-        "invalid source",
-        "```",
-        "````",
         "",
         "  ~~~pattern test",
         '  todo test "Future"',
@@ -163,7 +158,7 @@ test("CLI runs only marked Markdown fences and reports document line numbers", (
     const run = invoke(file);
     assert.equal(run.status, 1);
     assert.match(run.stdout, /TODO example\.md#future/);
-    assert.match(run.stdout, /at example\.md:21:3/);
+    assert.match(run.stdout, /at example\.md:16:3/);
   }));
 
 test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
@@ -171,12 +166,53 @@ test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
     const file = join(dir, "broken.md");
     const fence = '```pattern test\ntest "Same case"\n  assert True\nend\n';
     writeFileSync(file, "# Heading\n\n" + fence);
-    const unclosed = invoke(file);
-    assert.equal(unclosed.status, 1);
+    const unclosedTest = invoke(file);
+    assert.equal(unclosedTest.status, 1);
     assert.match(
-      unclosed.stderr,
+      unclosedTest.stderr,
       /broken\.md:3:1: unclosed pattern test fence/,
     );
+    writeFileSync(file, "# Heading\n\n```pattern\nillustrative\n");
+    const unclosedPlain = invoke(file);
+    assert.equal(unclosedPlain.status, 1);
+    assert.match(
+      unclosedPlain.stderr,
+      /broken\.md:3:1: unclosed Markdown fence/,
+    );
+    writeFileSync(
+      file,
+      [
+        "# Heading",
+        "",
+        "```pattern",
+        "illustrative",
+        "",
+        "```pattern test",
+        'test "Swallowed"',
+        "  assert True",
+        "end",
+        "```",
+        "",
+      ].join("\n"),
+    );
+    const swallowed = invoke(file);
+    assert.equal(swallowed.status, 1);
+    assert.match(
+      swallowed.stderr,
+      /broken\.md:6:1: pattern test fence nested inside another fence/,
+    );
+    assert.doesNotMatch(swallowed.stdout, /Swallowed/);
+    writeFileSync(
+      join(dir, "good.test"),
+      'test "Good"\n  assert True\nend\n',
+    );
+    const mixed = invoke(dir);
+    assert.equal(mixed.status, 1);
+    assert.match(
+      mixed.stderr,
+      /broken\.md:6:1: pattern test fence nested inside another fence/,
+    );
+    assert.match(mixed.stdout, /PASS good#good/);
     writeFileSync(file, fence + "```\n\n" + fence + "```\n");
     const duplicate = invoke("--list", file);
     assert.equal(duplicate.status, 1);

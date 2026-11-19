@@ -2,6 +2,11 @@ import { LanguageError } from "./diagnostics.ts";
 
 const openingFence = /^( {0,3})(`{3,}|~{3,})(.*)$/;
 const closingFence = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+const patternTestInfo = /^pattern[ \t]+test$/;
+
+function isPatternTestInfo(info: string): boolean {
+  return patternTestInfo.test(info.trim());
+}
 
 /** Read top-level fenced tests while preserving Markdown line numbers. */
 export function* markdownTestSources(
@@ -27,7 +32,7 @@ export function* markdownTestSources(
           marker: opener[2],
           indent: opener[1].length,
           line: index,
-          test: /^pattern[ \t]+test$/.test(opener[3].trim()),
+          test: isPatternTestInfo(opener[3]),
         };
       }
       continue;
@@ -50,11 +55,29 @@ export function* markdownTestSources(
         body.length = 0;
       }
       fence = undefined;
-    } else if (fence.test) {
-      const spaces = line.length - line.replace(/^ +/, "").length;
-      body.push(line.slice(Math.min(spaces, fence.indent)));
+      continue;
     }
+    if (!fence.test) {
+      const nested = openingFence.exec(line);
+      if (
+        nested &&
+        !(nested[2][0] === "`" && nested[3].includes("`")) &&
+        isPatternTestInfo(nested[3])
+      )
+        throw fenceError(
+          "pattern test fence nested inside another fence",
+          index,
+          nested[1].length,
+        );
+      continue;
+    }
+    const spaces = line.length - line.replace(/^ +/, "").length;
+    body.push(line.slice(Math.min(spaces, fence.indent)));
   }
-  if (fence?.test)
-    throw fenceError("unclosed pattern test fence", fence.line, fence.indent);
+  if (fence)
+    throw fenceError(
+      fence.test ? "unclosed pattern test fence" : "unclosed Markdown fence",
+      fence.line,
+      fence.indent,
+    );
 }

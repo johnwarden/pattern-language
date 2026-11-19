@@ -1,15 +1,16 @@
 # Language decisions and conformance notes
 
-**Decision rationale and case index. Executable language contracts live in `.test` files.**
+**Decision rationale and case index. Executable language contracts live in `.test` files and in `pattern test` fences under `specs/`.**
 
-This is the integrated decision record authorized by the author. Confirmed and retained rules are the intended contract; passages explicitly marked proposed or deferred keep that status. Named cases C01–C27 live in [tests/specification](../tests/specification) and execute through the test DSL, with assertion-level todo and legacy modifiers. Those `.test` files are the executable specs; this document explains the decisions with focused examples and does not have to match them byte-for-byte. Expected failures record future contracts; supported assertions already pass normally. This does not claim conformance with all of the future language semantics. [TEST-SUITE.md](TEST-SUITE.md) defines the runner contract; the [roadmap](../ROADMAP.md) tracks the language work separately.
+This is the integrated decision record authorized by the author. Confirmed and retained rules are the intended contract; passages explicitly marked proposed or deferred keep that status. Named cases C01–C27 live in [tests/specification](../tests/specification) and execute through the test DSL, with assertion-level todo and legacy modifiers. Those `.test` files and executable Markdown fences are the executable specs; this document explains the decisions with focused examples and does not have to match them byte-for-byte. Expected failures record future contracts; supported assertions already pass normally. This does not claim conformance with all of the future language semantics. [TEST-SUITE.md](TEST-SUITE.md) defines the runner contract; the [roadmap](../ROADMAP.md) tracks the language work separately.
 
 ## Status and sources
 
-The `.test` files are the language specification. This record preserves rationale
-and links to cases; it must not evolve into a competing prose contract. New rules
-are discussed in the project chat and proposed under `specs/` on topic branches.
-Once settled, write or revise active executable contracts before implementation,
+The source suite (`.test` files and `pattern test` fences) is the language
+specification. This record preserves rationale and links to cases; it must not
+evolve into a competing prose contract. New rules are discussed in the project
+chat and proposed under `specs/` on topic branches. Once settled, write or revise
+executable contracts in the spec or active `.test` files before implementation,
 with adjacent explanations where needed. See [the lifecycle](../specs/README.md) and
 [the specification index](../tests/specification/README.md).
 
@@ -204,9 +205,9 @@ AR proposes a concrete union of NaN/infinities and finite Rational carveouts whe
 ## D18. Test assertions and migration contracts
 
 Files contain ordinary test blocks with shared setup. Assertions may use expect,
-assert, `fails` and single-value `is` forms. Todo can also modify a whole test,
-and a file may contain a single todo test. Legacy modifies assertions/setup, not
-whole tests. Plain and legacy assertions must pass. Legacy identifies a current
+assert, `fails` and single-value `is` forms. Todo can also modify a whole test;
+ordinary and `todo test` blocks may share a file. Legacy modifies assertions/setup,
+not whole tests. Plain and legacy assertions must pass. Legacy identifies a current
 compatibility contract to be explicitly retired as the roadmap advances. Todo
 assertions execute and are required to fail; their failures emit no diagnostics.
 A success fails the suite: “This assertion now passes; remove todo.” Pending is not

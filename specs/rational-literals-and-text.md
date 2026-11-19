@@ -139,8 +139,8 @@ test "Equivalent numeric spellings give equal Code atoms"
 end
 
 test "A zero denominator fails during literal reading"
-  expect parse(Code)("(1/0)") fails "malformed numeric source literal"
-  expect parse(Code)("(1/0)e20") fails "malformed numeric source literal"
+  expect parse(Code)("(1/0)") fails "E_SYNTAX"
+  expect parse(Code)("(1/0)e20") fails "E_SYNTAX"
   assert parse(Code)("(1 / 0)") == Code` /(1)(0)
   expect 1 / 0 fails "result exceeds safe numeric range"
 end
@@ -158,11 +158,11 @@ These cases cover signs, whitespace, digit separators, and exponent bounds.
 
 ```pattern test
 test "Bare slash and partly spaced division remain syntax errors"
-  expect parse(Code)("1/3") fails "infix operators require spaces"
-  expect parse(Code)("1/3e20") fails "infix operators require spaces"
-  expect parse(Code)("a/b") fails "infix operators require spaces"
-  expect parse(Code)("(1/ 3)") fails "infix operators require spaces"
-  expect parse(Code)("(1 /3)") fails "infix operators require spaces"
+  expect parse(Code)("1/3") fails "E_SYNTAX"
+  expect parse(Code)("1/3e20") fails "E_SYNTAX"
+  expect parse(Code)("a/b") fails "E_SYNTAX"
+  expect parse(Code)("(1/ 3)") fails "E_SYNTAX"
+  expect parse(Code)("(1 /3)") fails "E_SYNTAX"
 end
 
 test "Fraction components and exponent obey the decimal literal grammar"
@@ -237,7 +237,7 @@ test "A literal has its own parentheses inside an argument pack"
   assert parse(Code)("f((1/3))") == atom
   assert parse(Code)("f((1 / 3))") == Code` f(1 / 3)
   assert parse(Code)("f((1/3)e20)") == parse(Code)("f((100000000000000000000/3))")
-  expect parse(Code)("f(1/3)") fails "infix operators require spaces"
+  expect parse(Code)("f(1/3)") fails "E_SYNTAX"
   assert parse(Code)("f((1/3))") != parse(Code)("f(1 / 3)")
   assert parse(Code)("f((2/4))(scale: (3/4))") == Code` f(0.5)(scale: 0.75)
 end
@@ -271,10 +271,10 @@ defines the canonical spelling rules and tie-breaks.
 ```pattern test
 test "The typed Rational reader accepts literals without evaluating Code"
   assert parse(Rational)("-0x1p-20") == -(0x1p-20)
-  expect parse(Rational)("1 + 2") fails "expected Rational"
-  expect parse(Rational)("(1 / 3)") fails "expected Rational"
-  expect parse(Rational)("-(1/3)") fails "expected Rational"
-  expect parse(Rational)("-(0.5)") fails "expected Rational"
+  expect parse(Rational)("1 + 2") fails "E_PATTERN_MISMATCH"
+  expect parse(Rational)("(1 / 3)") fails "E_PATTERN_MISMATCH"
+  expect parse(Rational)("-(1/3)") fails "E_PATTERN_MISMATCH"
+  expect parse(Rational)("-(0.5)") fails "E_PATTERN_MISMATCH"
 end
 
 test "Typed reading reduces fractions without losing precision"

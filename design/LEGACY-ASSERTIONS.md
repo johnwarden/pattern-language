@@ -7,7 +7,8 @@ Each still has its own required outcome: legacy must pass and todo must fail.
 
 Every legacy assertion in the source suite either has a same-subject todo or is
 listed below because its exact replacement is not yet specified. A host
-check verifies this inventory against every legacy assertion in tests/**/*.test.
+check verifies this inventory against every legacy assertion in the source suite
+(`.test` files under `tests/` and executable `pattern test` fences under `specs/`).
 Adding a blanket failing placeholder is not a replacement specification.
 
 The paired contracts cover intrinsic String/Rational identity, primitive metatypes,

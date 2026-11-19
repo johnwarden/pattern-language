@@ -101,9 +101,9 @@ for binding defaults, type accessors, ordered match arms and macro staging.
 ## The conformance DSL
 
 Milestone **5a.1 is implemented**. Test files use `.test`, live in broad groups
-under `tests/`, and contain one or more `test` or `todo test` blocks. A file may
-contain only a single todo test. The runner recursively discovers `.test` files
-under `tests/`. The playground embeds runnable cases from `tests/examples/`.
+under `tests/`, and contain one or more `test` or `todo test` blocks. The runner
+discovers `.test` files under `tests/` and executable `pattern test` fences under
+`specs/`. The playground embeds runnable cases from `tests/examples/`.
 
 ```text
 test "Current and future text result types"

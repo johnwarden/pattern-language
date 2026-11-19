@@ -260,12 +260,14 @@ bootstrap declaration spelling and are distinct from pending declaration changes
 ### 5a.1. Test DSL conformance suite and selective migration — implemented
 
 Ordinary source Test types and the external runner recognize files containing one
-or more named test blocks. Files use **.test**, are grouped by topic under **tests/**,
-and are recursively discovered. Assertions may be plain, legacy or todo. A whole
-test may also be marked todo; a file may contain just one todo test. Legacy does
-not modify whole tests. Ordinary/legacy checks must pass. Todos execute; their own
-language-level failures are silent expected failures. A success fails the suite with
-“This assertion now passes; remove todo.” Fixture/setup/file/host errors remain failures.
+or more named test blocks. Files use **.test** under **tests/**, and Markdown
+specs under **specs/** may carry executable `pattern test` fences; both are
+discovered with the source suite. Assertions may be plain, legacy or todo. A whole
+test may also be marked todo. Ordinary and `todo test` blocks may share a file.
+Legacy does not modify whole tests. Ordinary/legacy checks must pass. Todos execute;
+their own language-level failures are silent expected failures. A success fails the
+suite with “This assertion now passes; remove todo.” Fixture/setup/file/host errors
+remain failures.
 
 The suite checks separately checked return values, exact observed types, canonical expected data,
 expected subject errors and assertions. Result observations use expect e is v [:: T] (an omitted type is the subject value's type; an explicit one is the exact type);
