@@ -148,6 +148,11 @@ test("CLI runs named tests in both Pattern fence forms at Markdown coordinates",
         "  expect 4 is 5",
         "end",
         "```",
+        "",
+        "```pattern",
+        "test = 1",
+        "test x",
+        "```",
       ].join("\r\n"),
     );
     const listed = invoke("--list", dir);
@@ -155,11 +160,48 @@ test("CLI runs named tests in both Pattern fence forms at Markdown coordinates",
     assert.match(listed.stdout, /example\.md#future · Future · todo test/);
     assert.match(listed.stdout, /example\.md#failure · Failure/);
     assert.match(listed.stdout, /example\.md#implicit · Implicit/);
+    assert.doesNotMatch(listed.stdout, /test = 1|test x/);
     const run = invoke(file);
     assert.equal(run.status, 1);
     assert.match(run.stdout, /at example\.md:4:4/);
     assert.match(run.stdout, /TODO example\.md#future/);
     assert.match(run.stdout, /at example\.md:16:3/);
+    assert.doesNotMatch(run.stderr + run.stdout, /E_PATTERN_MISMATCH/);
+  }));
+
+test("CLI keeps plain Pattern fences without quoted test names illustrative", () =>
+  temporary((dir) => {
+    const file = join(dir, "sketch.md");
+    writeFileSync(
+      file,
+      [
+        "```pattern",
+        "test = 1",
+        "x = test",
+        "```",
+        "",
+        "```pattern",
+        "test x",
+        "```",
+        "",
+        "```pattern",
+        'test "Quoted"',
+        "  assert True",
+        "end",
+        "```",
+      ].join("\n"),
+    );
+    const listed = invoke("--list", file);
+    assert.equal(listed.status, 0, listed.stderr);
+    assert.match(listed.stdout, /sketch\.md#quoted · Quoted/);
+    assert.equal(
+      listed.stdout.split("\n").filter((line) => line.includes("sketch.md#"))
+        .length,
+      1,
+    );
+    const run = invoke(file);
+    assert.equal(run.status, 0, run.stderr + run.stdout);
+    assert.match(run.stdout, /PASS sketch\.md#quoted/);
   }));
 
 test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
@@ -222,6 +264,25 @@ test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
     const malformed = invoke(file);
     assert.equal(malformed.status, 1);
     assert.match(malformed.stderr, /broken\.md:3:13: unmatched closing delimiter/);
+    writeFileSync(
+      file,
+      [
+        "  ```pattern",
+        '  test "Runtime"',
+        "    expect missingName is 1",
+        "  end",
+        "  ```",
+        "",
+      ].join("\n"),
+    );
+    const runtime = invoke(file);
+    assert.equal(runtime.status, 1);
+    assert.match(
+      runtime.stdout,
+      /E_UNBOUND_NAME · broken\.md:3:12: unbound name: missingName/,
+    );
+    assert.match(runtime.stdout, /3 \| {5}expect missingName is 1/);
+    assert.match(runtime.stdout, /\n {2}\| {12}\^+/);
   }));
 
 test("CLI runs and lists a file containing a single todo test", () =>

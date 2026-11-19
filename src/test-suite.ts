@@ -59,6 +59,8 @@ export interface TestCase {
   /** Executable editor source for supported checks/output, excluding todo operands. */
   source: string;
   program: boolean;
+  /** Markdown fence indent: restore original columns when printing LanguageErrors. */
+  markdown?: { text: string; offset: (line: number) => number };
 }
 export type TestStatus = "passed" | "failed" | "expected-failure";
 export interface CheckReport {
@@ -514,6 +516,51 @@ class TestReader {
     });
   }
 }
+/** Shift Markdown fence columns back onto the original document and reattach its text. */
+function relocateMarkdownSpan(
+  span: Span | undefined,
+  name: string,
+  source: string,
+  offset: (line: number) => number,
+): void {
+  if (!span || (span.source && span.source.name !== name)) return;
+  span.column += offset(span.line);
+  if (span.endColumn !== undefined)
+    span.endColumn += offset(span.endLine ?? span.line);
+  attachSource(span, { name, text: source });
+}
+
+/**
+ * Copy diagnostic locations onto the Markdown document for display.
+ * Leave evaluation spans on the dedented fence source so `start`/`end` stay valid.
+ */
+function presentLanguageError(error: LanguageError, test: TestCase): LanguageError {
+  const markdown = test.markdown;
+  if (!markdown) return error;
+  const relocate = (span?: Span): Span | undefined => {
+    if (!span || (span.source && span.source.name !== test.file)) return span;
+    // Already projected onto the Markdown document for an earlier render.
+    if (span.source?.text === markdown.text) return span;
+    const copy: Span = {
+      line: span.line,
+      column: span.column,
+      start: span.start,
+      end: span.end,
+      endLine: span.endLine,
+      endColumn: span.endColumn,
+    };
+    relocateMarkdownSpan(copy, test.file, markdown.text, markdown.offset);
+    return copy;
+  };
+  error.diagnostic.primary = relocate(error.diagnostic.primary);
+  error.diagnostic.related = error.diagnostic.related.map((related) => ({
+    ...related,
+    span: relocate(related.span),
+  }));
+  error.refresh();
+  return error;
+}
+
 /** The published file grammar and common matcher recognize every file, without execution. */
 export function loadTests(files: Record<string, string>): TestCase[] {
   const reader = new TestReader();
@@ -528,19 +575,20 @@ export function loadTests(files: Record<string, string>): TestCase[] {
         const offset = (line: number) => offsets[line - firstLine] ?? 0;
         try {
           const cases = reader.file(name, code, ids);
-          for (const test of cases)
+          for (const test of cases) {
+            test.markdown = { text: source, offset };
             for (const step of test.steps)
               step.location.column += offset(step.location.line);
+          }
           tests.push(...cases);
         } catch (error) {
           if (error instanceof LanguageError) {
-            const spans = [error.diagnostic.primary, ...error.diagnostic.related.map(r => r.span)];
-            for (const span of new Set(spans)) {
-              if (!span || (span.source && span.source.name !== name)) continue;
-              span.column += offset(span.line);
-              if (span.endColumn !== undefined) span.endColumn += offset(span.endLine ?? span.line);
-              attachSource(span, { name, text: source });
-            }
+            const spans = [
+              error.diagnostic.primary,
+              ...error.diagnostic.related.map((r) => r.span),
+            ];
+            for (const span of new Set(spans))
+              relocateMarkdownSpan(span, name, source, offset);
             error.refresh();
           }
           throw error;
@@ -1002,7 +1050,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         // Interpreter/validation errors are assertion failures. Host exceptions
         // indicate a broken harness and must never be swallowed by todo.
         if (!(error instanceof LanguageError)) throw error;
-        mismatch = renderDiagnostic(error);
+        mismatch = renderDiagnostic(presentLanguageError(error, test));
       } finally {
         watch?.stop();
       }
@@ -1070,9 +1118,13 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
       checks.filter((c) => c.status === "passed").length + " assertions passed",
     );
   } catch (error) {
+    const message =
+      error instanceof LanguageError
+        ? renderDiagnostic(presentLanguageError(error, test))
+        : renderDiagnostic(error);
     return report(
       "failed",
-      renderDiagnostic(error),
+      message,
       error instanceof LanguageError &&
         phase !== "fixture" &&
         error.diagnostic.code !== "E_TEST_NO_CHECK" &&

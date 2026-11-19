@@ -6,11 +6,13 @@ new one here. Record open questions on that branch and discuss them with Jonatha
 Keep settled behavior in the same document as it gains tests and implementation.
 
 From the Rational literals pilot forward, put new executable contracts in
-top-level `pattern test` fences in the spec itself. Use plain `pattern` fences
-for draft examples. A named test in either fence executes. Before the spec merges, add `pattern test`
-fences that cover its agreed behavior. Mark unmet contracts `todo` inside the
-fence. Existing `.test` files under `tests/` remain valid; migrate a topic into
-its spec when that record is the right home.
+top-level `pattern test` fences in the spec itself. Prefer that label for new
+contracts. A plain `pattern` fence also runs when it contains a top-level
+quoted-name test (`test "…"`, optionally `todo`/`legacy`); otherwise it stays
+illustrative, so draft sketches can use names like `test = 1` without executing.
+Before the spec merges, cover agreed behavior with executable fences and mark
+unmet contracts `todo` inside them. Existing `.test` files under `tests/` remain
+valid; migrate a topic into its spec when that record is the right home.
 
 The approved spec can land with those pending tests. Use a follow-up PR to
 migrate existing tests where needed. Implementation PRs make the tests pass,

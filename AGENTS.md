@@ -118,8 +118,9 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 
 On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
-The source suite includes tests/**/*.test and named tests in top-level `pattern` and `pattern test` fences
-under `specs/`. Source runs print each filename. Assertions use
+The source suite includes tests/**/*.test, `pattern test` fences, and plain
+`pattern` fences that contain a quoted-name `test "…"` (optionally `todo`/`legacy`)
+under `specs/`. Plain fences without that trigger stay illustrative. Source runs print each filename. Assertions use
 expect subject is expected [:: Type], expect subject
 contains "needle" (String substring), assert, and expect subject fails "reason".
 Expected results are data, not expressions to execute; without :: Type they take

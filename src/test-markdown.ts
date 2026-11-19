@@ -3,9 +3,15 @@ import { LanguageError } from "./diagnostics.ts";
 const openingFence = /^( {0,3})(`{3,}|~{3,})(.*)$/;
 const closingFence = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
 const patternTestInfo = /^pattern[ \t]+test$/;
+/** Plain `pattern` fences run only when a body line declares a quoted-name test. */
+const namedTestLine = /^(?:(?:todo|legacy)[ \t]+)?test[ \t]+"/;
 
 function isPatternTestInfo(info: string): boolean {
   return patternTestInfo.test(info.trim());
+}
+
+function hasNamedTest(body: string[]): boolean {
+  return body.some((line) => namedTestLine.test(line));
 }
 
 /** Read top-level fenced tests while preserving Markdown line numbers. */
@@ -44,7 +50,7 @@ export function* markdownTestSources(
       closer[1][0] === fence.marker[0] &&
       closer[1].length >= fence.marker.length
     ) {
-      if (fence.test || (fence.plain && body.some(line => /^(?:(?:todo|legacy)[ \t]+)?test(?:[ \t]|$)/.test(line)))) {
+      if (fence.test || (fence.plain && hasNamedTest(body))) {
         const code = body.join("\n");
         if (!code.trim())
           throw fenceError(

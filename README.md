@@ -102,8 +102,9 @@ for binding defaults, type accessors, ordered match arms and macro staging.
 
 Milestone **5a.1 is implemented**. Test files use `.test`, live in broad groups
 under `tests/`, and contain one or more `test` or `todo test` blocks. The runner
-discovers `.test` files under `tests/` and tests in `pattern` and `pattern test` fences under
-`specs/`. The playground embeds runnable cases from `tests/examples/`.
+discovers `.test` files under `tests/` and tests in `pattern test` fences, plus
+plain `pattern` fences that contain a quoted-name `test "…"`, under `specs/`.
+The playground embeds runnable cases from `tests/examples/`.
 
 ```text
 test "Current and future text result types"
