@@ -1,29 +1,69 @@
-test "Arithmetic, comparison, and logical operators left of = need parentheses"
+test "Missing parentheses before a binding show both grouping choices"
   expect parse(Code)("a + b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a - b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a * b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a / b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a % b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a == b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a != b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a < b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a <= b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a > b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a >= b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a && b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a || b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a + (b) = c") fails "E_INFIX_GROUPING"
-end
-
-test "Parentheses make binding beside arithmetic, comparison, or logic explicit"
-  assert parse(Code)("(a + b) = c") == parse(Code)("=(+(a)(b))(c)")
-  assert parse(Code)("a + (b = c)") == parse(Code)("+(a)(=(b)(c))")
-  assert parse(Code)("(a == b) = c") == parse(Code)("=(==(a)(b))(c)")
-  assert parse(Code)("a == (b = c)") == parse(Code)("==(a)(=(b)(c))")
-  assert parse(Code)("(a && b) = c") == parse(Code)("=(&&(a)(b))(c)")
-  assert parse(Code)("a && (b = c)") == parse(Code)("&&(a)(=(b)(c))")
-  assert parse(Code)("(a || b) = c") == parse(Code)("=(||(a)(b))(c)")
-  assert parse(Code)("a || (b = c)") == parse(Code)("||(a)(=(b)(c))")
+  todo expect parse(Code)("a + b = c") fails "
+    Write (a + b) = c or a + (b = c).
+    Using + before = requires parentheses.
+  end
+  todo expect parse(Code)("a - b = c") fails "
+    Write (a - b) = c or a - (b = c).
+    Using - before = requires parentheses.
+  end
+  todo expect parse(Code)("a * b = c") fails "
+    Write (a * b) = c or a * (b = c).
+    Using * before = requires parentheses.
+  end
+  todo expect parse(Code)("a / b = c") fails "
+    Write (a / b) = c or a / (b = c).
+    Using / before = requires parentheses.
+  end
+  todo expect parse(Code)("a % b = c") fails "
+    Write (a % b) = c or a % (b = c).
+    Using % before = requires parentheses.
+  end
+  todo expect parse(Code)("a == b = c") fails "
+    Write (a == b) = c or a == (b = c).
+    Using == before = requires parentheses.
+  end
+  todo expect parse(Code)("a != b = c") fails "
+    Write (a != b) = c or a != (b = c).
+    Using != before = requires parentheses.
+  end
+  todo expect parse(Code)("a === b = c") fails "
+    Write (a === b) = c or a === (b = c).
+    Using === before = requires parentheses.
+  end
+  todo expect parse(Code)("a !== b = c") fails "
+    Write (a !== b) = c or a !== (b = c).
+    Using !== before = requires parentheses.
+  end
+  todo expect parse(Code)("a < b = c") fails "
+    Write (a < b) = c or a < (b = c).
+    Using < before = requires parentheses.
+  end
+  todo expect parse(Code)("a <= b = c") fails "
+    Write (a <= b) = c or a <= (b = c).
+    Using <= before = requires parentheses.
+  end
+  todo expect parse(Code)("a > b = c") fails "
+    Write (a > b) = c or a > (b = c).
+    Using > before = requires parentheses.
+  end
+  todo expect parse(Code)("a >= b = c") fails "
+    Write (a >= b) = c or a >= (b = c).
+    Using >= before = requires parentheses.
+  end
+  todo expect parse(Code)("a && b = c") fails "
+    Write (a && b) = c or a && (b = c).
+    Using && before = requires parentheses.
+  end
+  todo expect parse(Code)("a || b = c") fails "
+    Write (a || b) = c or a || (b = c).
+    Using || before = requires parentheses.
+  end
+  todo expect parse(Code)("a + (b) = c") fails "
+    Write (a + (b)) = c or a + ((b) = c).
+    Using + before = requires parentheses.
+  end
 end
 
 test "Binding keeps a free right-hand side"
