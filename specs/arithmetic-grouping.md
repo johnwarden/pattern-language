@@ -60,12 +60,12 @@ domain-specific expressions.
 | `a + b * c` | Syntax error. Write `(a + b) * c` or `a + (b * c)`. |
 | `a * b + c` | Syntax error. Write `(a * b) + c` or `a * (b + c)`. |
 | `a - b + c` | Syntax error. Write `(a - b) + c` or `a - (b + c)`. |
-| `10 - 3 - 2` | Syntax error. Write `(10 - 3) - 2` for `5` or `10 - (3 - 2)` for `9`. |
-| `12 / 3 * 2` | Syntax error. Write `(12 / 3) * 2` for `8` or `12 / (3 * 2)` for `2`. |
+| `10 - 3 - 2` | Syntax error. Write `(10 - 3) - 2` or `10 - (3 - 2)`. |
+| `12 / 3 * 2` | Syntax error. Write `(12 / 3) * 2` or `12 / (3 * 2)`. |
 | `a .div b * c` | `a .div (b * c)`. |
 | `a - b .div c` | Syntax error. Write `(a - b) .div c` or `a - (b .div c)`. |
-| `a * b == c + d` | Syntax error. Write `(a * b) == (c + d)` to compare the two results. |
-| `a == b + c` | Syntax error. Write `a == (b + c)`. |
+| `a * b == c + d` | Syntax error. Group this part as `(a * b) == c` or `a * (b == c)`. |
+| `a == b + c` | Syntax error. Write `(a == b) + c` or `a == (b + c)`. |
 | `n = x + 1` | `n = (x + 1)`. |
 | `a + b = c` | Syntax error. Write `(a + b) = c` or `a + (b = c)`. |
 | `a == b = c` | Syntax error. Write `(a == b) = c` or `a == (b = c)`. |
@@ -75,7 +75,7 @@ domain-specific expressions.
 | `q = a .div b` | `q = (a .div b)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
 | `ok = a && b` | `ok = (a && b)`. |
-| `a == b && c == d` | Syntax error. Write `(a == b) && (c == d)` to combine the comparison results. |
+| `a == b && c == d` | Syntax error. Group this part as `(a == b) && c` or `a == (b && c)`. |
 | `a && b \|\| c` | Syntax error. Write `(a && b) \|\| c` or `a && (b \|\| c)`. |
 | `a .and b .or c` | `a .and (b .or c)`. Both operators are words. |
 | `a * b ^ c` | `a * (b ^ c)`. `^` is a symbol operator outside the arithmetic and comparison sets. |
@@ -88,7 +88,8 @@ ordinary infix evaluation, which evaluates both operands.
 ## Grouping diagnostics
 
 Report `E_INFIX_GROUPING` at the second operator of the first rejected
-pair in source order. Lead with both ways to group the expression. Show
+pair in source order. At this stage the reader knows the operator spellings
+and operand boundaries. Present the two groupings as equal choices. Show
 the left grouping first and the right grouping second, using the operands
 and operator spellings from the source. Keep calls, tight dots, prefix
 signs, and existing parentheses intact. Give the rule on the next line.
@@ -100,12 +101,12 @@ Write (price + tax) * count or price + (tax * count).
 Mixing + and * requires parentheses.
 ```
 
-For a repeated operator, name the operation. For example, `10 - 3 - 2`
+For a repeated operator, use its source spelling. For example, `10 - 3 - 2`
 produces
 
 ```text
 Write (10 - 3) - 2 or 10 - (3 - 2).
-A chain of subtractions requires parentheses.
+Repeating - requires parentheses.
 ```
 
 Use “Write” when both alternatives resolve the grouping errors in the
@@ -183,11 +184,11 @@ test "An infix right operand of subtraction, division or remainder needs groupin
   end
   expect parse(Code)("10 - 3 - 2") fails "
     Write (10 - 3) - 2 or 10 - (3 - 2).
-    A chain of subtractions requires parentheses.
+    Repeating - requires parentheses.
   end
   expect parse(Code)("a - (b) - c") fails "
     Write (a - (b)) - c or a - ((b) - c).
-    A chain of subtractions requires parentheses.
+    Repeating - requires parentheses.
   end
   expect parse(Code)("12 / 3 * 2") fails "
     Write (12 / 3) * 2 or 12 / (3 * 2).
@@ -195,11 +196,11 @@ test "An infix right operand of subtraction, division or remainder needs groupin
   end
   expect parse(Code)("a / b / c") fails "
     Write (a / b) / c or a / (b / c).
-    A chain of divisions requires parentheses.
+    Repeating / requires parentheses.
   end
   expect parse(Code)("a % b % c") fails "
     Write (a % b) % c or a % (b % c).
-    A chain of remainder operations requires parentheses.
+    Repeating % requires parentheses.
   end
   expect parse(Code)("-x - y.z ^ f(a)") fails "
     Write (-x - y.z) ^ f(a) or -x - (y.z ^ f(a)).
