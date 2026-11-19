@@ -26,9 +26,9 @@ comparisons, and logical operators.
 ## Surface rule
 
 Additive operators are `+` and `-`. Multiplicative operators are `*`, `/`,
-and `%`. Together these are the arithmetic operators. For these checks,
-the comparison set is `=`, `<`, `<=`, `>`, `>=`, `==`, `!=`, `===`, and
-`!==`. Logical operators are `&&` and `||`.
+and `%`. Together these are the arithmetic operators. The comparison
+operators are `<`, `<=`, `>`, `>=`, `==`, `!=`, `===`, and `!==`. Logical
+operators are `&&` and `||`.
 
 At each expression level, check adjacent infix operators in source order.
 Require parentheses if any of the following hold.
@@ -63,10 +63,10 @@ domain-specific expressions.
 | `a - b .div c` | Syntax error. Write `(a - b) .div c` or `a - (b .div c)`. |
 | `a * b == c + d` | Syntax error. Write `(a * b) == (c + d)` to compare the two results. |
 | `a == b + c` | Syntax error. Write `a == (b + c)`. |
-| `n = x + 1` | Syntax error. Write `n = (x + 1)`. |
+| `n = x + 1` | `n = (x + 1)`. |
 | `q = a .div b` | `q = (a .div b)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
-| `ok = a && b` | Syntax error. Write `ok = (a && b)`. |
+| `ok = a && b` | `ok = (a && b)`. |
 | `a == b && c == d` | Syntax error. Write `(a == b) && (c == d)` to combine the comparison results. |
 | `a && b \|\| c` | Syntax error. Write `(a && b) \|\| c` or `a && (b \|\| c)`. |
 | `a .and b .or c` | `a .and (b .or c)`. Both operators are words. |
@@ -138,8 +138,6 @@ test "Arithmetic and comparisons require grouping in either order"
   expect parse(Code)("a == b + c") fails "Parentheses required between `==` and `+`"
   expect parse(Code)("a + b >= c") fails "Parentheses required between `+` and `>=`"
   expect parse(Code)("a !== b * c") fails "Parentheses required between `!==` and `*`"
-  expect parse(Code)("n = x + 1") fails "Parentheses required between `=` and `+`"
-  expect parse(Code)("a + b = c") fails "Parentheses required between `+` and `=`"
 end
 
 test "Logical operators require grouping when mixed"
@@ -149,7 +147,6 @@ test "Logical operators require grouping when mixed"
   expect parse(Code)("a && b * c") fails "Parentheses required between `&&` and `*`"
   expect parse(Code)("a && b || c") fails "Parentheses required between `&&` and `||`"
   expect parse(Code)("a || b && c") fails "Parentheses required between `||` and `&&`"
-  expect parse(Code)("ok = a && b") fails "Parentheses required between `=` and `&&`"
 end
 
 test "Parentheses select the arithmetic tree"
@@ -173,7 +170,8 @@ test "Accepted infix chains still associate right"
   assert parse(Code)("a * b ^ c") == parse(Code)("a * (b ^ c)")
   assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
   assert parse(Code)("f(a * b, c + d)") == parse(Code)("f(*(a)(b), +(c)(d))")
-  assert parse(Code)("n = (x + 1)") == parse(Code)("=(n)(+(x)(1))")
+  assert parse(Code)("n = x + 1") == parse(Code)("=(n)(+(x)(1))")
+  assert parse(Code)("a + b = c") == parse(Code)("+(a)(=(b)(c))")
   assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
   assert parse(Code)("a .div b * c") == parse(Code)("div(a)(*(b)(c))")
   assert parse(Code)("(a .div b) * c") == parse(Code)("*(div(a)(b))(c)")
@@ -183,7 +181,7 @@ test "Accepted infix chains still associate right"
   assert parse(Code)("(a == b) && (c == d)") == parse(Code)("&&(==(a)(b))(==(c)(d))")
   assert parse(Code)("(a && b) || c") == parse(Code)("||(&&(a)(b))(c)")
   assert parse(Code)("a && (b || c)") == parse(Code)("&&(a)(||(b)(c))")
-  assert parse(Code)("ok = (a && b)") == parse(Code)("=(ok)(&&(a)(b))")
+  assert parse(Code)("ok = a && b") == parse(Code)("=(ok)(&&(a)(b))")
 end
 
 test "Ascriptions follow ordinary right association"
@@ -222,7 +220,7 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   expect toString(Code)(wordOperator) is "div(a)(b * c)"
   expect toString(Code)(typedBinding) is "(x :: Int) = 5"
   expect toString(Code)(ascribedSubtrahend) is "x - (y :: Int)"
-  expect toString(Code)(arithmeticBinding) is "n = (x + 1)"
+  expect toString(Code)(arithmeticBinding) is "n = x + 1"
   expect toString(Code)(logical) is "a && (b || c)"
   expect toString(Code)(compared) is "(a == b) && (c == d)"
   assert parse(Code)(toString(Code)(right)) == right
