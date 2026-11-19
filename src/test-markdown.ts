@@ -12,10 +12,10 @@ function isPatternTestInfo(info: string): boolean {
 export function* markdownTestSources(
   name: string,
   source: string,
-): Generator<string> {
+): Generator<{ code: string; offsets: number[]; firstLine: number }> {
   const lines = source.replace(/^\uFEFF/, "").split(/\r?\n/);
   let fence:
-    { marker: string; indent: number; line: number; test: boolean } | undefined;
+    { marker: string; indent: number; line: number; test: boolean; plain: boolean } | undefined;
   const body: string[] = [];
   const fenceError = (message: string, line: number, indent: number) =>
     new LanguageError(
@@ -33,6 +33,7 @@ export function* markdownTestSources(
           indent: opener[1].length,
           line: index,
           test: isPatternTestInfo(opener[3]),
+          plain: opener[3].trim() === "pattern",
         };
       }
       continue;
@@ -43,7 +44,7 @@ export function* markdownTestSources(
       closer[1][0] === fence.marker[0] &&
       closer[1].length >= fence.marker.length
     ) {
-      if (fence.test) {
+      if (fence.test || (fence.plain && body.some(line => /^(?:(?:todo|legacy)[ \t]+)?test(?:[ \t]|$)/.test(line)))) {
         const code = body.join("\n");
         if (!code.trim())
           throw fenceError(
@@ -51,9 +52,14 @@ export function* markdownTestSources(
             fence.line,
             fence.indent,
           );
-        yield "\n".repeat(fence.line + 1) + code + "\n";
-        body.length = 0;
+        const firstLine = fence.line + 2;
+        yield {
+          code: "\n".repeat(fence.line + 1) + code + "\n",
+          firstLine,
+          offsets: body.map((line, i) => lines[firstLine - 1 + i].length - line.length),
+        };
       }
+      body.length = 0;
       fence = undefined;
       continue;
     }
@@ -69,7 +75,7 @@ export function* markdownTestSources(
           index,
           nested[1].length,
         );
-      continue;
+      if (!fence.plain) continue;
     }
     const spaces = line.length - line.replace(/^ +/, "").length;
     body.push(line.slice(Math.min(spaces, fence.indent)));

@@ -10,8 +10,8 @@ specification todos, and put new contracts in the active suite.
 ## Files and basic forms
 
 The runner discovers `.test` files under `tests/` and Markdown under `specs/`,
-excluding the spec archive. Only top-level fences marked `pattern test` execute.
-Plain `pattern` fences are illustrative. Specs without executable fences
+excluding the spec archive. Both top-level `pattern` and `pattern test` fences can contain named tests.
+Plain `pattern` fences without a top-level test declaration are illustrative. Specs without executable fences
 (including `README.md` and other prose records) are discovered and skipped.
 A `.test` file or marked fence contains one or more named test blocks. Setup
 belongs inside each test. Use `todo test` inside a `pattern test` fence for a

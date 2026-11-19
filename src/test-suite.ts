@@ -21,7 +21,7 @@ import {
 import type { Value, TypeValue } from "./values.ts";
 import { primitiveNames } from "./primitive-names.ts";
 import type { Pattern } from "./pattern.ts";
-import { renderDiagnostic } from "./diagnostics.ts";
+import { attachSource, renderDiagnostic } from "./diagnostics.ts";
 import { lineIndent } from "./indent.ts";
 import { markdownTestSources } from "./test-markdown.ts";
 import {
@@ -524,8 +524,28 @@ export function loadTests(files: Record<string, string>): TestCase[] {
         return reader.file(name.endsWith(".test") ? name : name + ".test", source);
       const ids = new Set<string>();
       const tests: TestCase[] = [];
-      for (const code of markdownTestSources(name, source))
-        tests.push(...reader.file(name, code, ids));
+      for (const { code, offsets, firstLine } of markdownTestSources(name, source)) {
+        const offset = (line: number) => offsets[line - firstLine] ?? 0;
+        try {
+          const cases = reader.file(name, code, ids);
+          for (const test of cases)
+            for (const step of test.steps)
+              step.location.column += offset(step.location.line);
+          tests.push(...cases);
+        } catch (error) {
+          if (error instanceof LanguageError) {
+            const spans = [error.diagnostic.primary, ...error.diagnostic.related.map(r => r.span)];
+            for (const span of new Set(spans)) {
+              if (!span || (span.source && span.source.name !== name)) continue;
+              span.column += offset(span.line);
+              if (span.endColumn !== undefined) span.endColumn += offset(span.endLine ?? span.line);
+              attachSource(span, { name, text: source });
+            }
+            error.refresh();
+          }
+          throw error;
+        }
+      }
       return tests;
     });
 }

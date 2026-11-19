@@ -20,7 +20,7 @@ PRs to `master` use squash merge when Jonathan authorizes the merge.
 ## Writing and validating contracts
 
 - Use a top-level `pattern test` fence for executable tests in a spec. A plain
-  `pattern` fence is an example. The
+  `pattern` fence also runs when it contains a top-level test declaration. The
   [Rational literals spec](../specs/rational-literals-and-text.md) shows tests next
   to the rules they exercise.
 - Use `todo test` inside a `pattern test` fence when the whole case or its

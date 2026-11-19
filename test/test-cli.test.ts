@@ -124,17 +124,17 @@ test("selecting a project group retains the same IDs as default discovery", () =
   for (const name of bindings) assert.equal(subset[name], full[name]);
 });
 
-test("CLI runs only marked Markdown fences and reports document line numbers", () =>
+test("CLI runs named tests in both Pattern fence forms at Markdown coordinates", () =>
   temporary((dir) => {
     const file = join(dir, "example.md");
     writeFileSync(
       file,
       [
         "# Example",
-        "```pattern",
-        'test "Illustration"',
-        "  assert False",
-        "end",
+        "  ```pattern",
+        '  test "Implicit"',
+        "   assert False",
+        "  end",
         "```",
         "",
         "  ~~~pattern test",
@@ -154,9 +154,10 @@ test("CLI runs only marked Markdown fences and reports document line numbers", (
     assert.equal(listed.status, 0, listed.stderr);
     assert.match(listed.stdout, /example\.md#future · Future · todo test/);
     assert.match(listed.stdout, /example\.md#failure · Failure/);
-    assert.doesNotMatch(listed.stdout, /Illustration/);
+    assert.match(listed.stdout, /example\.md#implicit · Implicit/);
     const run = invoke(file);
     assert.equal(run.status, 1);
+    assert.match(run.stdout, /at example\.md:4:4/);
     assert.match(run.stdout, /TODO example\.md#future/);
     assert.match(run.stdout, /at example\.md:16:3/);
   }));
@@ -217,6 +218,10 @@ test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
     const duplicate = invoke("--list", file);
     assert.equal(duplicate.status, 1);
     assert.match(duplicate.stderr, /E_TEST_ID · broken\.md:8:\d+/);
+    writeFileSync(file, '  ```pattern\n  test "Example"\n    expect (]\n  end\n  ```\n');
+    const malformed = invoke(file);
+    assert.equal(malformed.status, 1);
+    assert.match(malformed.stderr, /broken\.md:3:13: unmatched closing delimiter/);
   }));
 
 test("CLI runs and lists a file containing a single todo test", () =>
