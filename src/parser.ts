@@ -24,6 +24,11 @@ import {
   labelName,
   isCommentStart,
 } from "./lexical.ts";
+import {
+  INFIX_GROUPING_CODE,
+  parenthesesRequiredMessage,
+  requiresParentheses,
+} from "./infix-grouping.ts";
 import { indentRelation, lineIndent } from "./indent.ts";
 /** Start keyword -> extra clause keywords. `chains` are quoted keyword sequences from the same grammar. */
 export type LayoutForms = Map<string, Set<string>> & {
@@ -563,12 +568,19 @@ class Reader {
     return n;
   }
   expressionBody(stops: Set<string>): Syntax {
-    const left = this.postfix(stops),
-      t = this.peek();
-    if (this.stop(stops) || !t) return left;
-    if (t.kind === "op" && t.text === "$" && this.peek(1)?.start === t.end)
-      return left;
-    if (t.kind === "op" || t.kind === ".") {
+    const operands: Syntax[] = [this.postfix(stops)];
+    const operators: {
+      text: string;
+      display: string;
+      quoted: boolean;
+      span: Span;
+    }[] = [];
+    while (!this.stop(stops)) {
+      const t = this.peek();
+      if (!t) break;
+      if (t.kind === "op" && t.text === "$" && this.peek(1)?.start === t.end)
+        break;
+      if (t.kind !== "op" && t.kind !== ".") break;
       const prev = this.tokens[this.pos - 1];
       if (prev.end === t.start)
         throw new LanguageError(
@@ -577,10 +589,12 @@ class Reader {
         );
       this.take();
       let name = t;
+      let display = t.text;
       if (t.kind === ".") {
         name = this.take();
         if (name.kind !== "name" || name.start !== t.end)
           throw new LanguageError("expected .name", name);
+        display = "." + name.text;
       }
       const rhs = this.peek();
       if (!rhs)
@@ -593,7 +607,20 @@ class Reader {
           "infix operators require spaces on both sides",
           name,
         );
-      const right = this.expression(stops);
+      operators.push({
+        text: name.text,
+        display,
+        quoted: !!name.quoted,
+        span: {
+          line: name.line,
+          column: name.column,
+          start: name.start,
+          end: name.end,
+          endLine: name.endLine ?? name.line,
+          endColumn: name.endColumn ?? name.column + name.text.length,
+        },
+      });
+      const right = this.postfix(stops);
       if (
         right.kind === "symbol" &&
         !right.quoted &&
@@ -603,15 +630,31 @@ class Reader {
           "prefix and postfix operators must touch their operand",
           right.span ?? name,
         );
-      return {
+      operands.push(right);
+    }
+    for (let i = 0; i < operators.length - 1; i++) {
+      const first = operators[i]!;
+      const second = operators[i + 1]!;
+      if (requiresParentheses(first.text, second.text))
+        throw new LanguageError(
+          parenthesesRequiredMessage(first.display, second.display),
+          second.span,
+          { code: INFIX_GROUPING_CODE, phase: "parse" },
+        );
+    }
+    let result = operands[operands.length - 1]!;
+    for (let i = operators.length - 1; i >= 0; i--) {
+      const op = operators[i]!;
+      const left = operands[i]!;
+      result = {
         ...apply(
-          apply(symbol(name.text, !!name.quoted), packOf(left)),
-          packOf(right),
+          apply(symbol(op.text, op.quoted), packOf(left)),
+          packOf(result),
         ),
         span: left.span,
       };
     }
-    return left;
+    return result;
   }
   postfix(stops: Set<string>): Syntax {
     const first = this.peek()!;
