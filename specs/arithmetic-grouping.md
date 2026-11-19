@@ -64,7 +64,7 @@ domain-specific expressions.
 | `12 / 3 * 2` | Syntax error. Write `(12 / 3) * 2` or `12 / (3 * 2)`. |
 | `a .div b * c` | `a .div (b * c)`. |
 | `a - b .div c` | Syntax error. Write `(a - b) .div c` or `a - (b .div c)`. |
-| `a * b == c + d` | Syntax error. Group this part as `(a * b) == c` or `a * (b == c)`. |
+| `a * b == c + d` | Syntax error. Write `(a * b) == c` or `a * (b == c)`. |
 | `a == b + c` | Syntax error. Write `(a == b) + c` or `a == (b + c)`. |
 | `n = x + 1` | `n = (x + 1)`. |
 | `a + b = c` | Syntax error. Write `(a + b) = c` or `a + (b = c)`. |
@@ -75,7 +75,7 @@ domain-specific expressions.
 | `q = a .div b` | `q = (a .div b)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
 | `ok = a && b` | `ok = (a && b)`. |
-| `a == b && c == d` | Syntax error. Group this part as `(a == b) && c` or `a == (b && c)`. |
+| `a == b && c == d` | Syntax error. Write `(a == b) && c` or `a == (b && c)`. |
 | `a && b \|\| c` | Syntax error. Write `(a && b) \|\| c` or `a && (b \|\| c)`. |
 | `a .and b .or c` | `a .and (b .or c)`. Both operators are words. |
 | `a * b ^ c` | `a * (b ^ c)`. `^` is a symbol operator outside the arithmetic and comparison sets. |
@@ -92,12 +92,13 @@ pair in source order. At this stage the reader knows the operator spellings
 and operand boundaries. Present the two groupings as equal choices. Show
 the left grouping first and the right grouping second, using the operands
 and operator spellings from the source. Keep calls, tight dots, prefix
-signs, and existing parentheses intact. Give the rule on the next line.
+signs, and existing parentheses intact. Use the same first line for every
+grouping error, with each option in backticks. Give the rule on the next line.
 
 For `price + tax * count`, the message reads
 
 ```text
-Write (price + tax) * count or price + (tax * count).
+Write `(price + tax) * count` or `price + (tax * count)`.
 Mixing + and * requires parentheses.
 ```
 
@@ -105,18 +106,18 @@ For a repeated operator, use its source spelling. For example, `10 - 3 - 2`
 produces
 
 ```text
-Write (10 - 3) - 2 or 10 - (3 - 2).
+Write `(10 - 3) - 2` or `10 - (3 - 2)`.
 Repeating - requires parentheses.
 ```
 
-Use “Write” when both alternatives resolve the grouping errors in the
-expression being diagnosed. Keep the surrounding source in each rewrite,
-including any call or other argument fields. If a conflict remains in
+When both alternatives resolve the grouping errors in the expression,
+keep the surrounding source in each option, including any call or other
+argument fields. If a conflict remains in
 at least one alternative, show just the three operands around the first
 rejected pair. For `a * b == c + d`, the message reads
 
 ```text
-Group this part as (a * b) == c or a * (b == c).
+Write `(a * b) == c` or `a * (b == c)`.
 Mixing * and == requires parentheses.
 ```
 
@@ -160,131 +161,131 @@ as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
 ```pattern
 test "Mixed arithmetic shows both groupings in source order"
   expect parse(Code)("price + tax * count") fails "
-    Write (price + tax) * count or price + (tax * count).
+    Write `(price + tax) * count` or `price + (tax * count)`.
     Mixing + and * requires parentheses.
   end
   expect parse(Code)("a * b + c") fails "
-    Write (a * b) + c or a * (b + c).
+    Write `(a * b) + c` or `a * (b + c)`.
     Mixing * and + requires parentheses.
   end
   expect parse(Code)("a .div b * c + d") fails "
-    Write a .div (b * c) + d or a .div b * (c + d).
+    Write `a .div (b * c) + d` or `a .div b * (c + d)`.
     Mixing * and + requires parentheses.
   end
   expect parse(Code)("f(a * b + c, d)") fails "
-    Write f((a * b) + c, d) or f(a * (b + c), d).
+    Write `f((a * b) + c, d)` or `f(a * (b + c), d)`.
     Mixing * and + requires parentheses.
   end
 end
 
 test "An infix right operand of subtraction, division or remainder needs grouping"
   expect parse(Code)("a - b + c") fails "
-    Write (a - b) + c or a - (b + c).
+    Write `(a - b) + c` or `a - (b + c)`.
     Mixing - and + requires parentheses.
   end
   expect parse(Code)("10 - 3 - 2") fails "
-    Write (10 - 3) - 2 or 10 - (3 - 2).
+    Write `(10 - 3) - 2` or `10 - (3 - 2)`.
     Repeating - requires parentheses.
   end
   expect parse(Code)("a - (b) - c") fails "
-    Write (a - (b)) - c or a - ((b) - c).
+    Write `(a - (b)) - c` or `a - ((b) - c)`.
     Repeating - requires parentheses.
   end
   expect parse(Code)("12 / 3 * 2") fails "
-    Write (12 / 3) * 2 or 12 / (3 * 2).
+    Write `(12 / 3) * 2` or `12 / (3 * 2)`.
     Mixing / and * requires parentheses.
   end
   expect parse(Code)("a / b / c") fails "
-    Write (a / b) / c or a / (b / c).
+    Write `(a / b) / c` or `a / (b / c)`.
     Repeating / requires parentheses.
   end
   expect parse(Code)("a % b % c") fails "
-    Write (a % b) % c or a % (b % c).
+    Write `(a % b) % c` or `a % (b % c)`.
     Repeating % requires parentheses.
   end
   expect parse(Code)("-x - y.z ^ f(a)") fails "
-    Write (-x - y.z) ^ f(a) or -x - (y.z ^ f(a)).
+    Write `(-x - y.z) ^ f(a)` or `-x - (y.z ^ f(a))`.
     Mixing - and ^ requires parentheses.
   end
   expect parse(Code)("x - (y) .div z") fails "
-    Write (x - (y)) .div z or x - ((y) .div z).
+    Write `(x - (y)) .div z` or `x - ((y) .div z)`.
     Mixing - and .div requires parentheses.
   end
   expect parse(Code)("x - y :: Int") fails "
-    Write (x - y) :: Int or x - (y :: Int).
+    Write `(x - y) :: Int` or `x - (y :: Int)`.
     Mixing - and :: requires parentheses.
   end
 end
 
 test "Arithmetic and comparison conflicts identify the operands to group"
   expect parse(Code)("a * b == c") fails "
-    Write (a * b) == c or a * (b == c).
+    Write `(a * b) == c` or `a * (b == c)`.
     Mixing * and == requires parentheses.
   end
   expect parse(Code)("a == b + c") fails "
-    Write (a == b) + c or a == (b + c).
+    Write `(a == b) + c` or `a == (b + c)`.
     Mixing == and + requires parentheses.
   end
   expect parse(Code)("a + b >= c") fails "
-    Write (a + b) >= c or a + (b >= c).
+    Write `(a + b) >= c` or `a + (b >= c)`.
     Mixing + and >= requires parentheses.
   end
   expect parse(Code)("a !== b * c") fails "
-    Write (a !== b) * c or a !== (b * c).
+    Write `(a !== b) * c` or `a !== (b * c)`.
     Mixing !== and * requires parentheses.
   end
   expect parse(Code)("a * b == c + d") fails "
-    Group this part as (a * b) == c or a * (b == c).
+    Write `(a * b) == c` or `a * (b == c)`.
     Mixing * and == requires parentheses.
   end
 end
 
 test "Logical conflicts show the first missing pair of parentheses"
   expect parse(Code)("a == b && c == d") fails "
-    Group this part as (a == b) && c or a == (b && c).
+    Write `(a == b) && c` or `a == (b && c)`.
     Mixing == and && requires parentheses.
   end
   expect parse(Code)("(a == b) && c == d") fails "
-    Write ((a == b) && c) == d or (a == b) && (c == d).
+    Write `((a == b) && c) == d` or `(a == b) && (c == d)`.
     Mixing && and == requires parentheses.
   end
   expect parse(Code)("a == b && (c == d)") fails "
-    Write (a == b) && (c == d) or a == (b && (c == d)).
+    Write `(a == b) && (c == d)` or `a == (b && (c == d))`.
     Mixing == and && requires parentheses.
   end
   expect parse(Code)("a || b < c") fails "
-    Write (a || b) < c or a || (b < c).
+    Write `(a || b) < c` or `a || (b < c)`.
     Mixing || and < requires parentheses.
   end
   expect parse(Code)("a + b || c") fails "
-    Write (a + b) || c or a + (b || c).
+    Write `(a + b) || c` or `a + (b || c)`.
     Mixing + and || requires parentheses.
   end
   expect parse(Code)("a && b * c") fails "
-    Write (a && b) * c or a && (b * c).
+    Write `(a && b) * c` or `a && (b * c)`.
     Mixing && and * requires parentheses.
   end
   expect parse(Code)("p && q || r") fails "
-    Write (p && q) || r or p && (q || r).
+    Write `(p && q) || r` or `p && (q || r)`.
     Mixing && and || requires parentheses.
   end
   expect parse(Code)("p || q && r") fails "
-    Write (p || q) && r or p || (q && r).
+    Write `(p || q) && r` or `p || (q && r)`.
     Mixing || and && requires parentheses.
   end
 end
 
 test "A binding after arithmetic, comparison or logic shows both groupings"
   expect parse(Code)("a + b = c") fails "
-    Write (a + b) = c or a + (b = c).
+    Write `(a + b) = c` or `a + (b = c)`.
     Using + before = requires parentheses.
   end
   expect parse(Code)("a == b = c") fails "
-    Write (a == b) = c or a == (b = c).
+    Write `(a == b) = c` or `a == (b = c)`.
     Using == before = requires parentheses.
   end
   expect parse(Code)("a && b = c") fails "
-    Write (a && b) = c or a && (b = c).
+    Write `(a && b) = c` or `a && (b = c)`.
     Using && before = requires parentheses.
   end
 end
