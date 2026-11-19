@@ -60,7 +60,7 @@ require a predicate on an abstract refinement such as `PositiveInt`.
 Compare the parameter bases for possible literal designation without
 running those predicates. Representation checks such as `fitsFloat64`
 for concrete numeric types remain part of designation. For example, an
-`Int .where isPositive` overload conflicts with a `Float64` overload at
+`Int .where :isPositive` overload conflicts with a `Float64` overload at
 definition time. See [refinement evidence](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#one-expected-union-and-several-overloads).
 
 Different concrete formats such as `Float32` and `Float64` admit disjoint
