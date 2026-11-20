@@ -1,19 +1,20 @@
 # Types, descriptors, and type expressions
 
-Draft for review. A type is a value defined by a pattern. Every type has a
-writable expression. The same pattern rules serve type declarations, bindings,
-parameters, and match arms, with each context controlling captures, designation,
-and projection.
+A type is a value with a writable expression. A pattern describes the values
+a type admits.
 
 See [worked examples and rationale](type-values-rationale.md).
 
 ## Concrete spaces and abstract patterns
 
-`struct P` establishes a concrete value space. A constructor or tag pattern
-defines the visible shape of that space. A reference to an existing concrete
-type defines a typed payload, adding a boundary around the referenced type.
-`pattern P` describes an abstract domain. A value admitted by that domain keeps
-its concrete identity, including when stored in an abstract field or binding.
+A constructor pattern such as `Rect(Int, Int)` describes a shape. With
+`struct`, it defines a concrete type with that shape. With `pattern`, it
+defines a facet, an abstract type that can match values of several concrete
+types. A facet view preserves the value's concrete type.
+
+Using an existing concrete type as the pattern in a `struct` creates a
+wrapper. The wrapper has a new concrete type and stores a value of the
+original type inside it.
 
 ```pattern
 todo test "A facet view preserves concrete identity; a struct wrap adds a boundary"
@@ -25,33 +26,91 @@ todo test "A facet view preserves concrete identity; a struct wrap adds a bounda
   (view :: Rectangular) = r
   (wrapped :: WrappedRectangle) = r
   assert view === r
-  expect wrapped is r :: WrappedRectangle
+  inner = match wrapped
+    (rect :: Rectangle) -> rect
+  end
+  assert inner === r
 end
 ```
 
-`view` holds the same Rectangle as `r`. `wrapped` holds that Rectangle
-inside a new concrete boundary. A `Rectangular` binding can admit `r`
-through its visible constructor and fields. It cannot implicitly open
-`wrapped` to find those fields. A facet with abstract fields can admit
-different concrete field types. A facet requiring `Int` can recognize an
-abstract field currently holding an `Int` when the context inspects
-the value.
+`view` holds the original Rectangle. The wrapper holds it as a separate
+payload. `Rectangular` sees the `Rect` shape on `r` directly. Use an
+explicit projection to reach the rectangle inside `wrapped`.
 
-Pattern forms include type references, literals, symbol tags, constructed
-shapes and packs, alternatives, repetitions, open fields, and refinement
-constraints. `pattern Int` yields the referenced `Int` type. `struct Int`
-creates a wrapper, and `struct (struct Int)` creates two boundaries.
-Wrapping an abstract facet uses its pattern, including its outer constructor
-and fields. For example, `struct Rectangular` above denotes the same type as
-`struct Rect(Int, Int)`. Descriptor identity does not distribute a union
-over fields even when the expanded patterns admit the same values.
+### Facets and field types
 
-A tag facet such as `pattern :None` admits a typed value bearing that tag
-at the matched boundary. An abstract union may mix tags, facets, and type
-references. For example, `pattern Int | :None` admits `5 :: Int` and
-`:None :: Int?`. It requires a concrete type for a bare `:None` and
-does not open `5 :: Int?` to obtain its `Int` payload. A tag can also
-define a concrete singleton with `struct :None`.
+`NumericReading` accepts a `Reading` shape with either an `Int` or a
+`Float` field. Below, it matches values of two distinct concrete types
+whose field declarations fix different types.
+
+```pattern test
+todo test "A facet with a union field admits different concrete field types"
+  type NumericReading pattern Reading(Int | Float)
+  type IntReading struct Reading(value :: Int)
+  type FloatReading struct Reading(value :: Float)
+
+  ints = Reading(5) :: IntReading
+  floats = Reading(5) :: FloatReading
+  assert ints .matches NumericReading
+  assert floats .matches NumericReading
+end
+```
+
+A single concrete type can also declare its field as `Int | Float`. Each
+instance stores one concrete member of that union. When a match inspects the
+field, the arm `Reading(Int)` selects instances whose field holds an
+`Int`.
+
+```pattern test
+todo test "A match sees the concrete member stored in an abstract field"
+  type Reading struct Reading(value :: Int | Float)
+
+  def kind(r :: Reading)
+    match r
+      Reading(Int) -> "int"
+      Reading(Float) -> "float"
+    end
+  end
+
+  expect kind(Reading(5 :: Int) :: Reading) is "int"
+  expect kind(Reading(5 :: Float) :: Reading) is "float"
+end
+```
+
+`pattern Reading(Int | Float)` and `pattern Reading(Int) | Reading(Float)`
+admit the same readings. Their descriptors compare unequal. The first has a
+union inside one constructor pattern. The second has a union of two
+constructor patterns.
+
+```pattern test
+todo test "A field union and a union of shapes have distinct descriptors"
+  fieldUnion = pattern Reading(Int | Float)
+  shapeUnion = pattern Reading(Int) | Reading(Float)
+  assert fieldUnion !== shapeUnion
+end
+```
+
+### Pattern forms
+
+A type pattern can be a type reference, a literal, a symbol tag, a
+constructed shape, a union, or a refinement. Packs, repetitions, and
+catch-all fields occur inside constructed shapes. For example,
+`type RectPattern pattern Rect(x :: Int, y :: Int, ...)` is valid. A bare
+argument pack after `pattern`, as in
+`type RectPattern pattern (x :: Int, y :: Int, ...)`, is a syntax error.
+
+`pattern Int` returns the referenced `Int` type. `struct Int` wraps an
+`Int`, and wrapping that type again adds another layer. With a facet such
+as `Rectangular`, `struct Rectangular` uses the facet's shape and is
+equivalent to `struct Rect(Int, Int)`.
+
+A tag facet such as `pattern :None` matches a concrete value whose outer
+alternative is `:None`. For example, it matches `:None :: Int?`. If that
+value is stored inside another struct, the inner tag is visible after an
+explicit projection. An abstract union can combine a type reference and
+a tag facet. `pattern Int | :None` admits `5 :: Int` and `:None :: Int?`.
+A bare `:None` still needs a concrete type. `struct :None` defines a
+concrete singleton.
 
 A refinement restricts the admitted values while preserving their concrete
 identity. A concrete carveout adds its own boundary. Use `T .where p` in
@@ -74,13 +133,10 @@ end
 
 ## Descriptor kinds and primitive types
 
-`Type` is an ordinary prelude abstract union of `Struct | Pattern |
-PrimitiveType`. `Struct` and `Pattern` are concrete types whose values
-each contain one positional, capture-free type pattern. A refinement uses
-that same field, as in `Pattern(T .where p)` and `Struct(T .where p)`.
-The prelude can define these mutually recursive schemas using a finite
-declaration group. `Struct` and `Pattern` themselves are struct descriptors.
-`Type` itself is a pattern descriptor.
+`Type` is the prelude union of `Struct | Pattern | PrimitiveType`.
+`Struct` and `Pattern` each have one field containing a type pattern.
+`Struct` and `Pattern` are themselves struct descriptors. `Type` is a
+pattern descriptor. The prelude can define this group recursively.
 
 A primitive type is self-evaluating. This is a property of the descriptor
 and is independent of whether it describes a concrete or an abstract domain.
@@ -89,15 +145,27 @@ initial inventory is:
 
 | Types | Domain |
 | --- | --- |
-| `ExactRational`, `String`, `Bool` | Concrete. `True` and `False` are Bool values, as are computed Boolean results. |
+| `ExactRational`, `String` | Concrete. |
 | `PrimitiveType` | Concrete. It includes itself. |
-| `Any`, `LowerCamelSymbol`, `UpperCamelSymbol`, `UpperSnakeSymbol`, `PunctuationSymbol` | Abstract. The symbol classes admit already typed ordinary symbols; they do not admit reserved symbols. |
+| `Any`, `LowerCamelSymbol`, `UpperCamelSymbol`, `LowerSnakeSymbol`, `UpperSnakeSymbol`, `PunctuationSymbol` | Abstract. |
 
-`Symbol` is the prelude union of the ordinary symbol classes. Those abstract
-classes — `LowerCamelSymbol`, `UpperCamelSymbol`, `UpperSnakeSymbol`,
-`PunctuationSymbol`, and therefore `Symbol` — do not admit reserved symbols.
-Reserved names such as `True`, `False`, and the primitive type names are
-outside every ordinary symbol class:
+The prelude defines `type Bool struct True | False`. The values `True`
+and `False` are self-evaluating. Boolean literals and computed Boolean
+results share that concrete type.
+
+```pattern test
+test "Boolean literals and comparison results belong to Bool"
+  assert True .matches Bool
+  assert False .matches Bool
+  computed = 1 == 1
+  expect computed is True :: Bool
+  todo assert Bool .matches Struct
+end
+```
+
+`Symbol` is the prelude union of the ordinary symbol classes, including
+`LowerSnakeSymbol`. These classes admit typed ordinary symbols and exclude
+reserved values such as `True`, `False`, and primitive type names.
 
 ```pattern
 test "Ordinary symbol classes reject reserved names"
@@ -108,6 +176,15 @@ test "Ordinary symbol classes reject reserved names"
   assert not(String .matches Symbol)
   assert :Widget .matches UpperCamelSymbol
   assert :Widget .matches Symbol
+end
+```
+
+```pattern test
+todo test "A lower snake symbol belongs to its ordinary symbol class"
+  type SensorName struct LowerSnakeSymbol
+  name = parse(SensorName)("sensor_id")
+  assert name .matches LowerSnakeSymbol
+  assert name .matches Symbol
 end
 ```
 
@@ -139,28 +216,17 @@ The wrapper and its payload are also distinct when comparing member values.
 
 ## Constructing and inspecting descriptors
 
-`Struct(P)` and `Pattern(P)` directly construct descriptor values. Their
-field is typed pattern data. It records a structural pattern, with resolved
-type references, literal tests, tags, packs, alternatives, repetition,
-and `Predicate` members. It preserves field labels and nested concrete
-boundaries. The public pattern-data schema is open.
+`Struct` and `Pattern` have ordinary constructor forms. In
+`Struct(Rect(Int))`, the field contains the constructor pattern
+`Rect(Int)`. In `Pattern(Int | String)`, the field contains a union.
+`Pattern(T .where p)` and `Struct(T .where p)` put a refinement in that
+same field.
 
-The proposed construction rule is grammar-directed construction of a typed
-field. A resolved constructor head supplies the expected field grammar.
-Thus in `Struct(Rect(Int))`, the field grammar reads `Rect(Int)` as a
-constructor pattern with one type reference. A bound `Type` can supply a
-reference within the grammar. A value already holding typed pattern data can
-fill the field directly, including data returned by inspecting another
-descriptor. This uses the same pattern grammar as `struct` and `pattern`.
-The prelude constructor bindings supply the concrete schema for the two
-kind constructors. Calling a bound type value still fails. A type
-declaration introduces no constructor binding for its pattern's tag.
-
-Direct constructors validate the field's pattern structure, including
-recursive reference scope. They reject declaration captures, defaults, and
-malformed fields at any depth. Validation does not run refinement predicates
-or execute arbitrary syntax. An explicit match can inspect a descriptor and
-bind its typed field. No accessor needs to be installed to do this:
+The field's grammar defines which patterns it accepts, including how
+recursive references are scoped. Descriptor patterns are capture-free.
+Rules that need to inspect the parsed pattern can use predicates in the
+grammar. An ordinary match can extract the field and use it to
+construct another descriptor.
 
 ```pattern
 todo test "Descriptor inspection binds the typed pattern field"
@@ -173,34 +239,50 @@ todo test "Descriptor inspection binds the typed pattern field"
 end
 ```
 
-A function may accept or return a `Type` in ordinary successive packs.
-For example, `def makeBox(T :: Type) struct Box(T)` computes a descriptor.
-`parse(Code)("Struct(Rect(Int))")` produces inert source data. Only the
-evaluated descriptor has type `Type`.
+Functions can take and return descriptors. For example,
+`def makeBox(T :: Type) struct Box(T)` computes a descriptor from a
+type argument.
+
+`parse(Code)("Struct(Rect(Int))")` reads program syntax.
+`parse(Type)("Struct(Rect(Int))")` reads a `Struct` value. That value
+matches the abstract type `Type`.
+
+```pattern test
+todo test "Reading a descriptor as Type produces a Struct value"
+  code = parse(Code)("Struct(Rect(Int))")
+  descriptor = parse(Type)("Struct(Rect(Int))")
+
+  assert code .matches Code
+  assert not(code .matches Type)
+  assert descriptor .matches Struct
+  assert descriptor .matches Type
+  assert descriptor === Struct(Rect(Int))
+end
+```
 
 ## Declarations, normalization, and identity
 
-`type Name struct P` and `type Name pattern P` bind named types and can
-register declaration products such as scoped accessors. Plain type
-construction registers none. Positional capture names disappear from
-descriptor identity. Physical labels, pack boundaries, and concrete
-type boundaries remain. Defaults belong to binding patterns and do not
-complete a type or a value during designation. Independently constructed
-equal descriptors interoperate. Existing duplicate declaration and accessor
-collision diagnostics remain in force pending a naming and import policy.
+A `type Name struct P` or `type Name pattern P` declaration binds
+a name and can register scoped accessors for captures. Standalone
+`struct` and `pattern` expressions produce descriptors without
+registering accessors. Positional capture names belong to the declaration.
+Field labels, pack structure, and concrete boundaries are part of
+descriptor identity. Defaults belong to binding patterns. Existing
+duplicate declaration and accessor collision rules apply.
 
-Only the `pattern` and `struct` macros normalize. They resolve type
-references, collapse nested abstract pattern forms, sort
-alternatives canonically, and remove repetitions of exactly equal
-alternatives. They preserve explicit concrete boundaries. If a quoted and
-unquoted alternative denote the same type in the current scope, report
+The `pattern` and `struct` macros resolve type references, collapse nested
+abstract pattern forms, sort alternatives canonically, and remove repeated
+alternatives that compare exactly equal. They preserve explicit concrete
+boundaries. If quoted and unquoted alternatives denote the same type in
+the current scope, report
 `E_REDUNDANT_QUOTE` during macro normalization. A quote that prevents a
 name from resolving to a different type, such as a call to a type-valued
 factory, remains meaningful. This check is distinct from
 `E_QUOTED_PRIMITIVE`.
 
-Direct constructors preserve the supplied pattern data. `Pattern(Int)` is
-a valid non-normal descriptor whose domain consists of Int values.
+`Struct(P)` and `Pattern(P)` preserve the pattern as supplied.
+`Pattern(Int)` is a valid non-normal descriptor whose domain consists of
+Int values.
 `Struct(Int | Int)` preserves both alternatives, and
 `Pattern(Int | String)` and `Pattern(String | Int)` preserve their
 respective orders. Equality compares exact descriptors without normalizing
@@ -301,13 +383,6 @@ concrete type. A `Reading` with an `Int` field and a `Reading` with a
 todo test "Projected overloads classify Reading like match"
   type Reading struct Reading(value :: Int | Float)
 
-  def kind(r :: Reading)
-    match r
-      Reading(Int) -> "int"
-      Reading(Float) -> "float"
-    end
-  end
-
   def kindByOverload(Reading(Int) .as Reading) "int"
   def kindByOverload(Reading(Float) .as Reading) "float"
 
@@ -315,17 +390,15 @@ todo test "Projected overloads classify Reading like match"
 
   ints = Reading(5 :: Int) :: Reading
   floats = Reading(5 :: Float) :: Reading
-  expect kind(ints) is "int"
-  expect kind(floats) is "float"
   expect classify(ints) is "int"
   expect classify(floats) is "float"
 end
 ```
 
 Both definitions may coexist because their projected field patterns are
-disjoint. `classify` behaves like `kind` even though the static type of
-`r` guarantees only `Reading`. Refinement requirements in either overload
-still rely on existing evidence.
+disjoint. `classify` gives the same results as the earlier `match`
+example. It takes a `Reading` and dispatches on the field's concrete
+type. Refinement requirements in either overload use existing evidence.
 
 An ordered match gives priority to the first matching arm. Its equivalent
 overloads must express disjoint effective domains by subtracting the
@@ -344,12 +417,11 @@ and repetitions. Parenthesize according to the grammar. The canonical
 form of a non-normal descriptor preserves its supplied structure.
 
 Keep the existing `Recursive(body)` and `Recur(n)` spelling, with
-`Recur(0)` referring to the nearest enclosing binder. Read recursive
-references under the binder even across a nested kind constructor:
+`Recur(0)` referring to the nearest enclosing binder. In the pattern
+grammar, a binder remains in scope across a nested descriptor, as in
 `Struct(Recursive(:Leaf | Node(Struct(:Empty | Some(Recur(0))))))`.
-Kind constructors read structural patterns in this context, including
-quoted lower-case heads. The canonical printer must choose spellings that
-retain constructor-head meaning under the pattern grammar.
+The canonical printer uses constructor-head spellings that preserve the
+same pattern when read back.
 
 ```pattern
 todo test "Canonical recursive type text preserves a reference across a struct boundary"

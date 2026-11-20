@@ -65,7 +65,8 @@ Patterns can be:
 - alternatives: `Int | Float`
 - refinements: `ExactRational .where isNonZero`
 
-Any of these patterns can be wrapped in `struct`.
+Any of these patterns can be wrapped in `struct`. Packs and repetitions
+belong to the fields of a constructed shape.
 
 ```pattern test
 todo test "Each pattern form constructs a descriptor"
@@ -278,19 +279,16 @@ todo test "An abstract option admits Int or a typed :None"
 end
 ```
 
-A tag facet such as `pattern :None` admits a typed value bearing that tag
-at the matched boundary. An abstract union may mix tags, facets, and type
-references. For example, `pattern Int | :None` admits `5 :: Int` and
-`:None :: Int?`. It requires a concrete type for a bare `:None` and does
-not open `5 :: Int?` to obtain its `Int` payload. A tag can also define a
-concrete singleton with `struct :None`.
+`AbstractOption(Int)` accepts `5 :: Int` as a direct member and
+`:None :: Int?` through the tag facet. The present option
+`5 :: Int?` stores its `Int` inside the option, so neither branch of
+`AbstractOption(Int)` accepts the whole value.
 
 ## Examples: single-symbol patterns
 
-An abstract symbol pattern such as `pattern :Red` can stand alone as a
-type. It admits values from concrete types with that symbol at the
-matched boundary and preserves their concrete identity. A concrete
-singleton has one value in its own value space.
+`pattern :Red` matches values whose outer alternative is `:Red`.
+A match preserves the value's concrete type. `struct :Red` defines a
+concrete type with a single value.
 
 ### Abstract symbol patterns
 
