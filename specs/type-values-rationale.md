@@ -690,9 +690,10 @@ scrutinee) has the same behavior as a call to one local overloaded function:
     def f(P2 .as T) V2
     f(x)
 
-A trailing residual, if/when its spelling and pack coverage are settled, would
-correspond to one `Remaining` overload for `T` outside prior arms. That residual
-contract is open — see [MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) and
+A trailing `else` corresponds to one `Remaining` overload for `T` outside prior
+arms: an ordinary catch-all expression covering any remaining pack. Peer-arm
+separator spelling remains open — see
+[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) and
 [Match arm domains](type-values.md#match-arm-domains). The
 [Reading example](type-values.md#overload-domains-and-projection-dispatch)
 uses two disjoint patterns and needs no subtraction.

@@ -448,10 +448,11 @@ disjointness cannot be proved, reject conservatively as
 ordered predicate priority inside one base-type arm with `if` / `.matches`.
 See [disjointness of predicate-refined peers](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
 
-At most one trailing residual arm may appear, and only last. Spelling,
-value-returning vs error-only fallback, and whether the residual covers a
-full remaining pack are **open** — see the design note. Do not treat the
-sketches below as settling those choices.
+At most one trailing `else` may appear, and only last. `else` is an ordinary
+catch-all arm: its body is an ordinary expression, and it covers any remaining
+pack (multi-value and labeled). Peer arms still use `->` in executable fences
+until the arm-separator question in
+[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) is settled.
 
 ```pattern
 todo test "Overlapping match arms raise E_OVERLAPPING_MATCH_ARMS"
@@ -482,7 +483,7 @@ todo test "Outer wrapper and projected Inner arms overlap on one Outer value"
 end
 
 todo test "A refinement arm overlapping its base raises E_OVERLAPPING_MATCH_ARMS"
-  p = Int .where (n -> n > (0 :: Int))
+  p = Int .where isPositive
   assert 3 .matches p
   expect
     match 3 :: Int
@@ -493,8 +494,8 @@ todo test "A refinement arm overlapping its base raises E_OVERLAPPING_MATCH_ARMS
 end
 
 todo test "Two different refinements of Int cannot select peer match arms"
-  def Positive Int .where (n -> n > (0 :: Int))
-  def NonZero Int .where (n -> n != (0 :: Int))
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
   assert (-2) .matches NonZero
   n = -2 :: Int
   expect
@@ -563,32 +564,43 @@ test "Explicitly typed Box field selects one arm"
   is "int"
 end
 
-todo test "A residual arm is rejected unless it is last"
+todo test "An else arm is rejected unless it is last"
   expect
     match 1 :: Int
-      _ -> 0
+      else -> 0
       (i :: Int) -> i
     end
   fails "E_OVERLAPPING_MATCH_ARMS"
 end
+
+todo test "else covers a remaining multi-value pack"
+  expect
+    match (1, 2)
+      (a :: String, b :: String) -> "strings"
+      else -> "other"
+    end
+  is "other"
+end
+
+todo test "else covers a remaining labeled pack"
+  expect
+    match (x = 1, y = 2)
+      (x = a :: String, y = b :: String) -> "strings"
+      else -> "other"
+    end
+  is "other"
+end
 ```
 
-Trailing residual sketches (not settled; indented display-only):
+Trailing `else` sketch (peer-arm separator still open; indented display-only):
 
     match subject
       P1 -> V1
       P2 -> V2
-      _ -> fallback
-    end
-
-    match pack
-      P1 -> V1
       else -> fallback
     end
 
-Whether `_` / `else` may return an ordinary value, must raise, covers one
-positional residual vs any remaining pack (including labels), and whether an
-unreachable residual after total cover is allowed, remain open in
+Whether an unreachable `else` after total cover is allowed remains open in
 [MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md).
 
 ## Canonical expressions and typed text

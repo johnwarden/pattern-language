@@ -79,8 +79,9 @@ parameters, arms, macros and grammar interpretation. Context policies are explic
   Runtime matching is still ordered first-match. Decided (not yet enforced):
   peer arms must be pairwise disjoint under the same domain rule as overloads,
   compared on the admitted scrutinee domain including permitted projection;
-  at most one trailing residual as the last arm (spelling and pack coverage
-  open); overlap is `E_OVERLAPPING_MATCH_ARMS`. See
+  at most one trailing `else` as the last arm (ordinary catch-all expression
+  covering any remaining pack); overlap is `E_OVERLAPPING_MATCH_ARMS`. Peer-arm
+  separator spelling (`->` vs `when` layout) is open. See
   [MATCH-DISJOINTNESS](design/MATCH-DISJOINTNESS.md).
 - Union binding patterns are disallowed in function signatures and match arms.
   Separate arms or definitions may share a capture name. Union types remain valid
