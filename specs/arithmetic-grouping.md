@@ -159,7 +159,7 @@ as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
 
 ## Test cases
 
-```pattern test
+```pattern
 test "Mixed arithmetic shows both groupings in source order"
   todo expect parse(Code)("a + b * c") fails "
     Syntax error. Write `(a + b) * c` or `a + (b * c)`.

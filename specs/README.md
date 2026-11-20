@@ -6,7 +6,7 @@ new one here. Record open questions on that branch and discuss them with Jonatha
 Keep settled behavior in the same document as it gains tests and implementation.
 
 Use indented code blocks for draft sketches and display-only examples.
-Top-level unlabeled, `pattern`, and `pattern test` fences all run. A fence
+Top-level unlabeled and `pattern` fences run. A fence
 can introduce definitions for later fences or contain `expect`, `assert`, or
 named tests. Before merging, cover agreed behavior and mark unmet checks
 `todo`. Existing `.test` files under `tests/` remain valid.

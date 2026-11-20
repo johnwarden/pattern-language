@@ -137,13 +137,13 @@ test("CLI runs named tests in both Pattern fence forms at Markdown coordinates",
         "  end",
         "```",
         "",
-        "  ~~~pattern test",
+        "  ~~~",
         '  todo test "Future"',
         "    assert False",
         "  end",
         "  ~~~",
         "",
-        "```pattern test",
+        "```pattern",
         'test "Failure"',
         "  expect 4 is 5",
         "end",
@@ -202,7 +202,7 @@ test("Markdown fences share preceding setup and allow document-level checks", ()
         "later = x + 1",
         "assert later == 2",
         "~~~",
-        "```pattern test",
+        "```pattern",
         'test "Second"',
         "  expect later is 2",
         '  expect local fails "E_UNBOUND_NAME"',
@@ -262,14 +262,7 @@ test("failed Markdown setup cannot satisfy a whole-test todo", () =>
 test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
   temporary((dir) => {
     const file = join(dir, "broken.md");
-    const fence = '```pattern test\ntest "Same case"\n  assert True\nend\n';
-    writeFileSync(file, "# Heading\n\n" + fence);
-    const unclosedTest = invoke(file);
-    assert.equal(unclosedTest.status, 1);
-    assert.match(
-      unclosedTest.stderr,
-      /broken\.md:3:1: unclosed pattern test fence/,
-    );
+    const fence = '```pattern\ntest "Same case"\n  assert True\nend\n';
     writeFileSync(file, "# Heading\n\n```pattern\nillustrative\n");
     const unclosedPlain = invoke(file);
     assert.equal(unclosedPlain.status, 1);
@@ -285,7 +278,7 @@ test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
         "```pattern",
         "illustrative",
         "",
-        "```pattern test",
+        "```pattern",
         'test "Swallowed"',
         "  assert True",
         "end",
@@ -297,7 +290,7 @@ test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
     assert.equal(swallowed.status, 1);
     assert.match(
       swallowed.stderr,
-      /broken\.md:6:1: pattern test fence nested inside another fence/,
+      /broken\.md:6:1: Pattern fence starts before the previous Markdown fence closes/,
     );
     assert.doesNotMatch(swallowed.stdout, /Swallowed/);
     writeFileSync(join(dir, "good.test"), 'test "Good"\n  assert True\nend\n');
@@ -305,9 +298,20 @@ test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
     assert.equal(mixed.status, 1);
     assert.match(
       mixed.stderr,
-      /broken\.md:6:1: pattern test fence nested inside another fence/,
+      /broken\.md:6:1: Pattern fence starts before the previous Markdown fence closes/,
     );
     assert.match(mixed.stdout, /PASS good#good/);
+    writeFileSync(file, "````text\n" + fence + "```\n````\n");
+    const displayed = invoke("--list", dir);
+    assert.equal(displayed.status, 0, displayed.stderr);
+    assert.doesNotMatch(displayed.stdout, /Same case/);
+    writeFileSync(file, fence.replace("pattern", "pattern test") + "```\n");
+    const retired = invoke("--list", dir);
+    assert.equal(retired.status, 1);
+    assert.match(
+      retired.stderr,
+      /broken\.md:1:1: Use an unlabeled fence or label it pattern/,
+    );
     writeFileSync(file, fence + "```\n\n" + fence + "```\n");
     const duplicate = invoke("--list", file);
     assert.equal(duplicate.status, 1);

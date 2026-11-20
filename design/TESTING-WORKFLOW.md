@@ -19,7 +19,7 @@ PRs to `master` use squash merge when Jonathan authorizes the merge.
 
 ## Writing and validating contracts
 
-- Use unlabeled, `pattern`, or `pattern test` fences for executable spec
+- Use unlabeled or `pattern` fences for executable spec
   examples. Definitions and values are available to later fences. Simple
   checks can use `expect` or `assert` directly. Use named tests for independent
   cases. The [Rational literals spec](../specs/rational-literals-and-text.md)

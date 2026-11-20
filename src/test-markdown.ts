@@ -2,11 +2,6 @@ import { LanguageError } from "./diagnostics.ts";
 
 const openingFence = /^( {0,3})(`{3,}|~{3,})(.*)$/;
 const closingFence = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
-const patternTestInfo = /^pattern[ \t]+test$/;
-
-function isPatternTestInfo(info: string): boolean {
-  return patternTestInfo.test(info.trim());
-}
 
 /** Collect Pattern fences into one source while preserving document coordinates. */
 export function markdownTestSource(name: string, source: string) {
@@ -18,7 +13,6 @@ export function markdownTestSource(name: string, source: string) {
         marker: string;
         indent: number;
         line: number;
-        explicitTest: boolean;
         runnable: boolean;
       }
     | undefined;
@@ -34,13 +28,17 @@ export function markdownTestSource(name: string, source: string) {
       const opener = openingFence.exec(line);
       if (opener && !(opener[2][0] === "`" && opener[3].includes("`"))) {
         const info = opener[3].trim();
-        const explicitTest = isPatternTestInfo(info);
+        if (/^pattern[ \t]+test$/.test(info))
+          throw fenceError(
+            "Use an unlabeled fence or label it pattern.",
+            index,
+            opener[1].length,
+          );
         fence = {
           marker: opener[2],
           indent: opener[1].length,
           line: index,
-          explicitTest,
-          runnable: explicitTest || info === "" || info === "pattern",
+          runnable: info === "" || info === "pattern",
         };
       }
       continue;
@@ -51,27 +49,21 @@ export function markdownTestSource(name: string, source: string) {
       closer[1][0] === fence.marker[0] &&
       closer[1].length >= fence.marker.length
     ) {
-      if (
-        fence.explicitTest &&
-        !code.slice(fence.line + 1, index).some((line) => line.trim())
-      )
-        throw fenceError("empty pattern test fence", fence.line, fence.indent);
       fence = undefined;
       continue;
     }
-    if (!fence.explicitTest) {
-      const nested = openingFence.exec(line);
-      if (
-        nested &&
-        !(nested[2][0] === "`" && nested[3].includes("`")) &&
-        isPatternTestInfo(nested[3])
-      )
-        throw fenceError(
-          "pattern test fence nested inside another fence",
-          index,
-          nested[1].length,
-        );
-    }
+    const nested = openingFence.exec(line);
+    if (
+      nested &&
+      nested[2][0] === fence.marker[0] &&
+      nested[2].length >= fence.marker.length &&
+      nested[3].trim() === "pattern"
+    )
+      throw fenceError(
+        "Pattern fence starts before the previous Markdown fence closes",
+        index,
+        nested[1].length,
+      );
     if (!fence.runnable) continue;
     const spaces = line.length - line.replace(/^ +/, "").length;
     const indent = Math.min(spaces, fence.indent);
@@ -79,13 +71,7 @@ export function markdownTestSource(name: string, source: string) {
     offsets[index + 1] = indent;
   }
   if (fence)
-    throw fenceError(
-      fence.explicitTest
-        ? "unclosed pattern test fence"
-        : "unclosed Markdown fence",
-      fence.line,
-      fence.indent,
-    );
+    throw fenceError("unclosed Markdown fence", fence.line, fence.indent);
   return {
     code: code.join("\n"),
     offset: (line: number) => offsets[line] ?? 0,

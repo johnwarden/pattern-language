@@ -116,7 +116,7 @@ or require the parser's Expression migration to be completed first.
 ## What is implemented now
 
 The reference is TypeScript prototype 0.2. The executable language corpus includes
-`tests/**/*.test` and `pattern test` fences under `specs/`. Runnable playground
+`tests/**/*.test` and unlabeled or `pattern` fences under `specs/`. Runnable playground
 programs come from `tests/examples/`.
 `just check` runs the complete gate. `just test-language` reports passing assertions,
 legacy assertions and expected todo failures separately. Do not copy those
@@ -261,7 +261,7 @@ bootstrap declaration spelling and are distinct from pending declaration changes
 
 Ordinary source Test types and the external runner recognize files containing one
 or more named test blocks. Files use **.test** under **tests/**, and Markdown
-specs under **specs/** may carry executable `pattern test` fences; both are
+specs under **specs/** may carry executable unlabeled or `pattern` fences. Both are
 discovered with the source suite. Assertions may be plain, legacy or todo. A whole
 test may also be marked todo. Ordinary and `todo test` blocks may share a file.
 Legacy does not modify whole tests. Ordinary/legacy checks must pass. Todos execute;

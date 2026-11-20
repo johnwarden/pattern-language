@@ -66,7 +66,7 @@ oneThird = (1/3)
 expect oneThird is (1/3) :: Rational
 ```
 
-```pattern test
+```pattern
 test "Fraction literals denote exact reduced Rationals"
   assert oneThird == (1 / 3)
   expect (2/4) is 0.5 :: Rational
@@ -118,7 +118,7 @@ The minus operator still works in prefix applications such as `-(0.5)` and
 `-(1/3)`, and in infix subtraction with spaces on both sides. `parse(Code)`
 exposes the distinction between numeric atoms and applications.
 
-```pattern test
+```pattern
 test "Fraction atoms and spaced division have distinct Code trees"
   atom = Code` (1/3)
   division = Code` /(1)(3)
@@ -162,7 +162,7 @@ end
 
 These cases cover signs, whitespace, digit separators, and exponent bounds.
 
-```pattern test
+```pattern
 test "Bare slash and partly spaced division remain syntax errors"
   expect parse(Code)("1/3") fails "E_SYNTAX"
   expect parse(Code)("1/3e20") fails "E_SYNTAX"
@@ -237,7 +237,7 @@ end
 A fraction keeps its parentheses even inside a pack. Code text also
 preserves pack boundaries, labels, and grouping.
 
-```pattern test
+```pattern
 test "A literal has its own parentheses inside an argument pack"
   atom = Code` f((1/3))
   assert parse(Code)("f((1/3))") == atom
@@ -274,7 +274,7 @@ end
 division as Code. [Shortest exact Rational text](rational-canonical-text.md)
 defines the canonical spelling rules and tie-breaks.
 
-```pattern test
+```pattern
 test "The typed Rational reader accepts literals without evaluating Code"
   assert parse(Rational)("-0x1p-20") == -(0x1p-20)
   expect parse(Rational)("1 + 2") fails "E_PATTERN_MISMATCH"

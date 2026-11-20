@@ -10,8 +10,8 @@ specification todos, and put new contracts in the active suite.
 ## Files and basic forms
 
 The runner discovers `.test` files under `tests/` and Markdown under `specs/`,
-excluding the spec archive. It reads top-level unlabeled, `pattern`, and
-`pattern test` fences in document order. Indented code blocks and fences with
+excluding the spec archive. It reads top-level unlabeled and `pattern` fences
+in document order. Indented code blocks and fences with
 other labels are for display. A scanned Markdown fence must close.
 
 Put declarations and bindings in any runnable fence. A named `test` or
