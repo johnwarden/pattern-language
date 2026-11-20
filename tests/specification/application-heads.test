@@ -72,7 +72,7 @@ test "A tag value is not implicitly a callable head"
 end
 
 test "A head expression may evaluate to a function"
-  f = n -> n + 1
+  f = n -> (n + 1)
   expect f(2) is 3 :: Rational
 
   def make()

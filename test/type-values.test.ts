@@ -71,7 +71,7 @@ test("global text does not depend on names; local aliases resolve in the caller 
 test("an exact local alias prints a whole refinement without transporting its predicate", () => {
   const source =
     "type Rectangle concrete Rect(width :: Int, height :: Int)\n" +
-    "square = Rectangle .where (s -> width(s) == height(s))\n" +
+    "square = Rectangle .where (s -> (width(s) == height(s)))\n" +
     "(toStringLocal(Type)(square),toStringLocal(Type)(parseLocal(Type)(toStringLocal(Type)(square))))";
   assert.equal(run(source), '("square", "square")');
   assert.throws(
@@ -87,7 +87,7 @@ test("local refinement aliases resolve the identical value and stop after shadow
   const i = new Interpreter();
   const original = i.run(
     "type Rectangle concrete Rect(width :: Int, height :: Int)\n" +
-      "square = Rectangle .where (s -> width(s) == height(s))\n" +
+      "square = Rectangle .where (s -> (width(s) == height(s)))\n" +
       "square",
   )[0].value;
   assert.equal(i.inspect([{ label: "_1", value: original }]), "square :: Type");
@@ -216,7 +216,7 @@ test("parse never calls functions, executes bindings, or evaluates interpolation
 });
 
 test("unsupported predicate environments fail explicitly", () => {
-  for (const source of ["toString(Type)((type Int) .where (n -> n < 5))"])
+  for (const source of ["toString(Type)((type Int) .where (n -> (n < 5)))"])
     assert.throws(
       () => run(source),
       (e: unknown) =>

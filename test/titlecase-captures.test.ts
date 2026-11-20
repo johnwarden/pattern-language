@@ -29,7 +29,7 @@ test("TitleCase captures reject non-type annotations, reserved names and duplica
 test("hygienic templates preserve TitleCase binding and validation rules", () => {
   assert.equal(
     run(
-      "macro :make Args() Code` (T :: Type) -> (x :: T) -> x\n(T :: Type) = String\nf = (make Args())\nf(Int)(3)",
+      "macro :make Args() Code` (T :: Type) -> ((x :: T) -> x)\n(T :: Type) = String\nf = (make Args())\nf(Int)(3)",
     ),
     "3",
   );

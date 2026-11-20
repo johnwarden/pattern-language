@@ -22,7 +22,7 @@ test("the type-description syntax schema is defined in the source language", () 
 test("type unions preserve member spaces across overlapping unions", () => {
   assert.equal(
     run(
-      "def A UnionType(type Int,type String)\ndef B UnionType(type Int,type Bool)\n(x :: A) = (3 :: Int)\n(y :: B) = (3 :: Int)\nmatch x\n  (a :: Int) -> match y\n    (b :: Int) -> a == b\n    _ -> False\n  end\n  _ -> False\nend",
+      "def A UnionType(type Int,type String)\ndef B UnionType(type Int,type Bool)\n(x :: A) = (3 :: Int)\n(y :: B) = (3 :: Int)\nmatch x\n  (a :: Int) -> match y\n    (b :: Int) -> (a == b)\n    _ -> False\n  end\n  _ -> False\nend",
     ),
     "True",
   );

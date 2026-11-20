@@ -77,8 +77,8 @@ packs. `B` is initially a concrete type or an existing refinement of a concrete
 type. `p` is a function value accepting that base and producing `Bool`.
 
 ```text
-NonZeroInt = Where(Int)(n -> n != 0)
-PositiveInt = Where(Int)(n -> n > 0)
+NonZeroInt = Where(Int)(n -> (n != 0))
+PositiveInt = Where(Int)(n -> (n > 0))
 ```
 
 Membership first checks the base, then evaluates the predicate. `True` accepts
@@ -129,8 +129,8 @@ Renaming source binders can produce equal closed code if the specified closing
 algorithm removes those names; that is construction policy, not special equality.
 
 ```text
-Where(Int)(n -> n != 0)
-Where(Int)(n -> 0 != n)
+Where(Int)(n -> (n != 0))
+Where(Int)(n -> (0 != n))
 ```
 
 These need not be equal type values despite accepting the same integers. Their
@@ -153,7 +153,7 @@ input. Canonical construction/interpretation is a separate operation that applie
 point. Forcing a private deferred canonical value implements its already selected
 canonical interpretation; it does not silently convert an arbitrary raw `B` value.
 Domain/range equality alone does not make `c` a canonicalizer:
-`n -> n + 1` has the right shape but no stable output.
+`n -> (n + 1)` has the right shape but no stable output.
 
 A canonicalizer must be pure, deterministic, and total on its stated valid base
 domain and satisfy the following laws there:

@@ -1,5 +1,11 @@
 /** Adjacent-pair checks for explicit infix grouping. */
 
+/**
+ * Operators that may repeat without parentheses.
+ * `|` is the associative union constructor (same reading left or right).
+ */
+const ASSOCIATIVE = new Set(["+", "*", "&&", "||", "and", "or", "|"]);
+
 const ADDITIVE = new Set(["+", "-"]);
 const MULTIPLICATIVE = new Set(["*", "/", "%"]);
 const COMPARISON = new Set([
@@ -12,9 +18,7 @@ const COMPARISON = new Set([
   "===",
   "!==",
 ]);
-const LOGICAL = new Set(["&&", "||"]);
-/** Non-associative operators whose infix right operand must be grouped. */
-const RIGHT_GROUPING = new Set(["-", "/", "%"]);
+const LOGICAL = new Set(["&&", "||", "and", "or"]);
 
 export function isArithmetic(op: string): boolean {
   return ADDITIVE.has(op) || MULTIPLICATIVE.has(op);
@@ -28,6 +32,10 @@ export function isLogical(op: string): boolean {
   return LOGICAL.has(op);
 }
 
+export function isAssociative(op: string): boolean {
+  return ASSOCIATIVE.has(op);
+}
+
 /** Operators that cannot sit unparenthesized directly left of `=`. */
 export function isBindingLeftSensitive(op: string): boolean {
   return isArithmetic(op) || isComparison(op) || isLogical(op);
@@ -35,35 +43,20 @@ export function isBindingLeftSensitive(op: string): boolean {
 
 /**
  * True when adjacent infix operators at one expression level need parentheses.
- * Accepted chains keep equal precedence and right association.
+ * A chain may omit parentheses only when it repeats one associative operator
+ * (`+`, `*`, `|`, `&&`/`and`, `||`/`or`). Binding keeps a free right-hand side;
+ * an arithmetic, comparison, or logical operator directly left of `=` must be
+ * grouped.
  */
 export function requiresParentheses(first: string, second: string): boolean {
-  if (ADDITIVE.has(first) && MULTIPLICATIVE.has(second)) return true;
-  if (MULTIPLICATIVE.has(first) && ADDITIVE.has(second)) return true;
-  if (RIGHT_GROUPING.has(first)) return true;
-  if (isArithmetic(first) && isComparison(second)) return true;
-  if (isComparison(first) && isArithmetic(second)) return true;
-  if (isLogical(first)) {
-    if (isArithmetic(second) || isComparison(second)) return true;
-    if (isLogical(second) && first !== second) return true;
-  }
-  if (isLogical(second)) {
-    if (isArithmetic(first) || isComparison(first)) return true;
-  }
-  if (second === "=" && isBindingLeftSensitive(first)) return true;
-  return false;
+  if (second === "=") return isBindingLeftSensitive(first);
+  if (first === "=") return false;
+  return !(first === second && ASSOCIATIVE.has(first));
 }
 
-/**
- * Printer wrap for a right infix child next to its parent.
- * Rejected pairs need parentheses; so do mixed arithmetic spellings such as
- * `a + (b - c)`, which reparse without parentheses.
- */
+/** Printer wrap for a right infix child next to its parent. */
 export function needsPrintGrouping(parent: string, child: string): boolean {
-  return (
-    requiresParentheses(parent, child) ||
-    (isArithmetic(parent) && isArithmetic(child) && parent !== child)
-  );
+  return requiresParentheses(parent, child);
 }
 
 export const INFIX_GROUPING_CODE = "E_INFIX_GROUPING";
@@ -92,7 +85,6 @@ function remainingConflict(
   pairIndex: number,
   side: "left" | "right",
 ): boolean {
-  // Left groups operators[pairIndex]; right groups operators[pairIndex + 1].
   const next =
     side === "left"
       ? [...operators.slice(0, pairIndex), ...operators.slice(pairIndex + 1)]
@@ -143,17 +135,16 @@ export function parenthesesRequiredMessage(
   const texts = operators.map((op) => op.text);
   const leftClears = !remainingConflict(texts, pairIndex, "left");
   const rightClears = !remainingConflict(texts, pairIndex, "right");
-  // Suggestions start at the rejected pair's left operand so a free binding,
-  // call, or earlier chain prefix is never reprinted.
-  const fragment = leftClears && rightClears
-    ? {
-        operands: operands.slice(pairIndex),
-        operators: operators.slice(pairIndex),
-      }
-    : {
-        operands: operands.slice(pairIndex, pairIndex + 3),
-        operators: operators.slice(pairIndex, pairIndex + 2),
-      };
+  const fragment =
+    leftClears && rightClears
+      ? {
+          operands: operands.slice(pairIndex),
+          operators: operators.slice(pairIndex),
+        }
+      : {
+          operands: operands.slice(pairIndex, pairIndex + 3),
+          operators: operators.slice(pairIndex, pairIndex + 2),
+        };
   const leftText = formatChain(
     source,
     fragment.operands,

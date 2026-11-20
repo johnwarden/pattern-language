@@ -113,7 +113,7 @@ value patterns can still be ambiguous.
 
 ```text
 def Color type :Red | :Green
-(v :: :Green | :Red) = :Red
+(v :: (:Green | :Red)) = :Red
 v
 # Red :: Color in the REPL
 ```

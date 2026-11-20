@@ -1,6 +1,6 @@
 test "An exact local type alias can name a predicate-bearing value"
   type Rectangle concrete Rect(width :: Int, height :: Int)
-  square = Rectangle .where (s -> width(s) == height(s))
+  square = Rectangle .where (s -> (width(s) == height(s)))
 
   expect toStringLocal(Type)(square) is "square" :: String
   expect toStringLocal(Type)(parseLocal(Type)("square")) is "square" :: String

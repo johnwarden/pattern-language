@@ -41,14 +41,14 @@ test("generic arguments participate in identity even for empty containers", () =
 test("a subset preserves its base concrete space", () => {
   assert.equal(
     run(
-      "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> v .matches :None)\na = :None :: NoInt\nb = :None :: Option(Int)\na == b",
+      "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> (v .matches :None))\na = :None :: NoInt\nb = :None :: Option(Int)\na == b",
     ),
     "True",
   );
   assert.throws(
     () =>
       run(
-        "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> v .matches :None)\nSome(3) :: NoInt",
+        "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> (v .matches :None))\nSome(3) :: NoInt",
       ),
     /subset/,
   );
@@ -88,7 +88,7 @@ test("aliases and recursive aliases preserve their concrete identity", () => {
   );
   assert.equal(
     run(
-      "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> v .matches :None)\nemptyInt = type NoInt\na = :None :: emptyInt\nb = :None :: Option(Int)\na == b",
+      "def Option(T :: Type) type :None | Some(T)\ndef NoInt Option(Int) .where (v -> (v .matches :None))\nemptyInt = type NoInt\na = :None :: emptyInt\nb = :None :: Option(Int)\na == b",
     ),
     "True",
   );
@@ -122,14 +122,14 @@ test("refinement failures and arithmetic mismatches report errors", () => {
 test("a failed refinement does not suppress a different union alternative", () => {
   assert.equal(
     run(
-      "def Small\n  (type Int) .where (x -> x < (5 :: Int))\nend\ndef Choice type Small | :Other\n:Other :: Choice",
+      "def Small\n  (type Int) .where (x -> (x < (5 :: Int)))\nend\ndef Choice type Small | :Other\n:Other :: Choice",
     ),
     "Other",
   );
   assert.throws(
     () =>
       run(
-        "def Small\n  (type Int) .where (x -> x < (5 :: Int))\nend\ndef Large\n  (type Int) .where (x -> x >= (5 :: Int))\nend\ndef Choice UnionType(type Small,type Large)\n9 :: Choice",
+        "def Small\n  (type Int) .where (x -> (x < (5 :: Int)))\nend\ndef Large\n  (type Int) .where (x -> (x >= (5 :: Int)))\nend\ndef Choice UnionType(type Small,type Large)\n9 :: Choice",
       ),
     /same concrete space/,
   );

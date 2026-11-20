@@ -29,8 +29,8 @@ must test composition and state role differences explicitly.
 
 - One application has an expression head and one complete pack. f(a)(b), f(a,b), f()
   and f are distinct. Dot/infix/outfix are sugar; accepted infix chains have equal
-  precedence and right associativity, and mixed arithmetic, comparison, and
-  logical pairs require explicit parentheses
+  precedence and right associativity, and parentheses may be omitted only for
+  repeated associative operators (`+`, `*`, `|`, `&&`/`and`, `||`/`or`)
   ([arithmetic-grouping](specs/arithmetic-grouping.md)). Labels are lowercase,
   unique and canonically sorted after positional fields. () is an empty pack, not
   an implicit unit value.

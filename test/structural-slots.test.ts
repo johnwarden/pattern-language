@@ -346,7 +346,7 @@ test("Facet root normalization is independent of caches and source accessor meta
 
 test("unsupported predicate descriptions cannot be silently erased by Facet construction", () => {
   assert.throws(
-    () => run("Facet((type :R(Int)) .where (R(n) -> n > 0))"),
+    () => run("Facet((type :R(Int)) .where (R(n) -> (n > 0)))"),
     /portable predicate description/,
   );
 });

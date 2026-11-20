@@ -6,10 +6,10 @@ test "arithmetic"
 end
 
 test "dot is function call"
-  def b(x) y -> x + y
+  def b(x) y -> (x + y)
   a = 1 :: Int
 
-  expect a .b 2 :: Int is 3 :: Int
+  expect a .b (2 :: Int) is 3 :: Int
 end
 
 test "empty call"

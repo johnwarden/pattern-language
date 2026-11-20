@@ -16,8 +16,8 @@ def Shape type :Rect(Int, Int) | :Square(Int)
 shape = Rect(3, 4) :: Shape
 
 match shape
-  Rect(width, height) -> width * height
-  Square(side) -> side * side
+  Rect(width, height) -> (width * height)
+  Square(side) -> (side * side)
 end
 ```
 

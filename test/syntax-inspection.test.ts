@@ -124,9 +124,9 @@ test("a typed Code binding is inspected through its syntaxTree without evaluatio
     "    _ -> False",
     "  end",
     "end",
-    "def Binding Code .where e -> isBinding(e)",
+    "def Binding Code .where (e -> isBinding(e))",
     "",
-    "code = Code` f = x -> x * 2",
+    "code = Code` f = x -> (x * 2)",
     "(patternText, bodyText) =",
     "  match code",
     "    (binding :: Binding) ->",
@@ -140,5 +140,5 @@ test("a typed Code binding is inspected through its syntaxTree without evaluatio
     "end",
     "(patternText, bodyText)",
   ].join("\n");
-  assert.equal(run(source), '("f", "x -> x * 2")');
+  assert.equal(run(source), '("f", "x -> (x * 2)")');
 });

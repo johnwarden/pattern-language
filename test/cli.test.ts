@@ -68,7 +68,7 @@ test("program and REPL group annotated infix values before the type tag", () => 
 test("CLI local text uses exact aliases, and unaliased refinements fail explicitly", () => {
   const named = invoke(
     "type Rectangle concrete Rect(width :: Int, height :: Int)\n" +
-      "square = Rectangle .where (s -> width(s) == height(s))\n" +
+      "square = Rectangle .where (s -> (width(s) == height(s)))\n" +
       "square",
   );
   assert.equal(named.status, 0, named.stderr);
@@ -76,7 +76,7 @@ test("CLI local text uses exact aliases, and unaliased refinements fail explicit
 
   const anonymous = invoke(
     "type Rectangle concrete Rect(width :: Int, height :: Int)\n" +
-      "Rectangle .where (s -> width(s) == height(s))",
+      "Rectangle .where (s -> (width(s) == height(s)))",
   );
   assert.equal(anonymous.status, 1);
   assert.match(anonymous.stderr, /portable predicate description/);

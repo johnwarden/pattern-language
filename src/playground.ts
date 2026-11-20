@@ -21,7 +21,7 @@ if (root) {
     example = get<HTMLSelectElement>("example");
   get("infix").textContent = `a .f b → f(a)(b)
 Infix operators require spaces. Accepted chains have equal precedence and associate right.
-Mixed arithmetic, comparison, and logical pairs need parentheses.
+Parentheses may be omitted only for repeated +, *, |, &&/and, or ||/or.
 There are no reserved infix words.
 
 T .where predicate      → where(T)(predicate)

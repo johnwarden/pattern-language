@@ -51,7 +51,7 @@ Examples do not ratify those lexical details by repetition.
 
 ### D01. Preserve the structural application model — retained
 
-An application has one head and one argument pack. `f(a)(b)` differs from `f(a,b)`; bare `f` differs from `f()`. Empty and multiple results are packs, not implicit unit/tuple values. Ordinary partial application consumes complete packs. Accepted infix chains retain equal precedence and right associativity; mixed arithmetic, comparison, and logical pairs require explicit parentheses ([arithmetic-grouping](../specs/arithmetic-grouping.md)). Type-parameter notation must not flatten runtime packs. Reason: these are the common structural rules; none of the new proposals withdraws them. **Sources:** O, A, S.
+An application has one head and one argument pack. `f(a)(b)` differs from `f(a,b)`; bare `f` differs from `f()`. Empty and multiple results are packs, not implicit unit/tuple values. Ordinary partial application consumes complete packs. Accepted infix chains retain equal precedence and right associativity; parentheses may be omitted only for repeated associative operators (`+`, `*`, `|`, `&&`/`and`, `||`/`or`) ([arithmetic-grouping](../specs/arithmetic-grouping.md)). Type-parameter notation must not flatten runtime packs. Reason: these are the common structural rules; none of the new proposals withdraws them. **Sources:** O, A, S.
 
 Formatting and whitespace mistakes must produce syntax errors rather than logic
 errors within a form fixed by the applied grammar. They must not silently select
@@ -439,10 +439,10 @@ positional results. Empty `()` remains an empty pack.
 
 ### C25 — equal precedence and right associativity are preserved
 
-**Implemented with explicit grouping for mixed arithmetic.**  
+**Implemented with associative-repetition grouping.**  
 `(2 :: Float64) * ((3 :: Float64) + (4 :: Float64))` denotes `2 * (3 + 4)`
-and is `14 :: Float64`. `("left" .select "right")` is `"right"`. Mixed `*` and
-`+` require parentheses; ascriptions stay grouped so the tree does not change.
+and is `14 :: Float64`. `("left" .select "right")` is `"right"`. Only repeated
+`+`, `*`, `|`, `&&`/`and`, or `||`/`or` may omit parentheses.
 
 ### C26 — todo assertions execute without leaking local state
 

@@ -253,7 +253,7 @@ end
 # refinement's predicate. With p = Int .where (n -> n > 5) and u = abstract p | Float, 7 is
 # accepted by both members and is ambiguous; 3 is accepted only by Float and selects it.
 test "A refinement without a writable interpretation still contributes to ambiguity"
-  p = Int .where (n -> n > (5 :: Int))
+  p = Int .where (n -> (n > (5 :: Int)))
   u = abstract p | Float
   expect
     def f(n :: u) n
@@ -267,7 +267,7 @@ test "A refinement without a writable interpretation still contributes to ambigu
 end
 
 test "A refinement member that rejects the designator does not make it ambiguous"
-  p = Int .where (n -> n > (5 :: Int))
+  p = Int .where (n -> (n > (5 :: Int)))
   u = abstract p | Float
   assert 3 .matches u
   (x :: u) = 3
@@ -284,7 +284,7 @@ test "A refinement member that rejects the designator does not make it ambiguous
 end
 
 test "A designator is ambiguous on every route when both members accept it"
-  p = Int .where (n -> n > (5 :: Int))
+  p = Int .where (n -> (n > (5 :: Int)))
   u = abstract p | Float
   expect 7 .matches u fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect
@@ -303,8 +303,8 @@ test "A designator is ambiguous on every route when both members accept it"
 end
 
 test "A union of refinements selects the one member that accepts the designator"
-  p = Int .where (n -> n > (5 :: Int))
-  q = Float .where (x -> x > (2 :: Float))
+  p = Int .where (n -> (n > (5 :: Int)))
+  q = Float .where (x -> (x > (2 :: Float)))
   w = abstract p | q
   # 7 satisfies both refinements, 3 only q, 1 neither.
   expect 7 .matches w fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
@@ -327,7 +327,7 @@ test "A union of refinements selects the one member that accepts the designator"
 end
 
 test "A concrete union with a refinement member follows the same rule"
-  p = Int .where (n -> n > (5 :: Int))
+  p = Int .where (n -> (n > (5 :: Int)))
   type Foo concrete p | Float?
   expect
     def f(n :: Foo) n
@@ -337,7 +337,7 @@ test "A concrete union with a refinement member follows the same rule"
 end
 
 test "A value that fails a refinement reports the failed predicate"
-  p = Int .where (n -> n > (5 :: Int))
+  p = Int .where (n -> (n > (5 :: Int)))
   u = abstract p | Float
   expect
     def f(n :: u) n
@@ -346,11 +346,11 @@ test "A value that fails a refinement reports the failed predicate"
   expect
     def f(n :: u) n
     f(3 :: p)
-  fails "value does not satisfy subset (n -> n > 5 :: Int)"
+  fails "value does not satisfy subset (n -> (n > (5 :: Int)))"
 end
 
 test "Literal designation checks refinements nested in lists, options and constructor fields"
-  p = Int .where (n -> n > (5 :: Int))
+  p = Int .where (n -> (n > (5 :: Int)))
   list = abstract p* | Float*
   option = abstract p? | Float?
   box = abstract (type :Box(p)) | (type :Box(Float))
@@ -382,7 +382,7 @@ test "A predicate error in the selected definition retains its diagnostic"
 end
 
 test "A bound argument must already supply refinement evidence"
-  p = Int .where (n -> n > (5 :: Int))
+  p = Int .where (n -> (n > (5 :: Int)))
   u = abstract p | Float
   def f(n :: u) n
   n = 7 :: Int
@@ -390,7 +390,7 @@ test "A bound argument must already supply refinement evidence"
 end
 
 test "A bound field in a literal still needs refinement evidence"
-  p = Int .where (n -> n > (5 :: Int))
+  p = Int .where (n -> (n > (5 :: Int)))
   u = abstract (type :Box(p)) | (type :Box(Float))
   def f(n :: u) "designated"
   n = 7 :: Int

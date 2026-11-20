@@ -5,7 +5,7 @@ def isApplication(e)
     _ -> False
   end
 end
-def FunctionApplication Code .where e -> isApplication(e)
+def FunctionApplication Code .where (e -> isApplication(e))
 
 code = Code` factory(1)(color: :Red)
 match code

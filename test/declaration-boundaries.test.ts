@@ -60,7 +60,7 @@ test("labeled structural patterns introduce only their own captures in every bin
   assert.equal(run("(shape: Rect(w,h)) = (shape: Rect(3,4))\n(w,h)"), "(3, 4)");
   assert.equal(run("def f(shape: Rect(w,h)) w + h\nf(shape: Rect(3,4))"), "7");
   assert.equal(
-    run("match Box(shape: Rect(3,4))\n  Box(shape: Rect(w,h)) -> w + h\nend"),
+    run("match Box(shape: Rect(3,4))\n  Box(shape: Rect(w,h)) -> (w + h)\nend"),
     "7",
   );
   rejects("(shape: Rect(w,h)) = (shape: Rect(3,4))\nshape", "E_UNBOUND_NAME");

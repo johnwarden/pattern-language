@@ -5,7 +5,7 @@ export const TYPE_SCHEMA = `# Executable recursive schema for the portable patte
 def reservedHead(h)
   match h == Type
     True -> False
-    False -> h != String
+    False -> (h != String)
   end
 end
 def ordinaryHead(h)
@@ -19,7 +19,7 @@ def OrdinaryHead
   (type Symbol | ReservedSymbol) .where (h -> ordinaryHead(h))
 end
 def Index
-  (type Int) .where (n -> n >= (0 :: Int))
+  (type Int) .where (n -> (n >= (0 :: Int)))
 end
 def Data type Rational | String | Bool | Symbol | ReservedSymbol | (head :: Data)(fields... :: Data*,**)
 def FieldPattern(p :: Type) type p | Repeat(p)

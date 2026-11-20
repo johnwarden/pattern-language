@@ -50,7 +50,7 @@ test "Printing past the exponent cap absorbs overflow and still round-trips"
   # Uncapped shortest forms would be 1e10001 / 1e20000; the reader rejects those.
   product = 1e10000 * 10
   squared = 1e10000 * 1e10000
-  third = 1e10000 * 10 / 3
+  third = (1e10000 * 10) / 3
 
   expect toString(Rational)(product) is "100e9999" :: String
   expect toString(Rational)(third) is "(10/3)e10000" :: String
