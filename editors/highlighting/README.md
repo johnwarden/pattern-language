@@ -32,7 +32,7 @@ performed in the development environment.
 ## Pattern code in Markdown
 
 Markdown files using Sublime's built-in Markdown syntax use Pattern highlighting for
-unlabelled fences and inline backtick spans on a single line. Explicit fence
+four-space-indented code blocks, unlabelled fences, and single-line backtick spans. Explicit fence
 labels select their language, including `pattern` and `pattern test`.
 
 ````markdown

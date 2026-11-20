@@ -6,6 +6,15 @@ scope: text.html.markdown.pattern-language
 version: 2
 extends: Packages/Markdown/Markdown.sublime-syntax
 contexts:
+  indented-code-blocks:
+    - match: ^(?={{indented_code_block}})
+      embed: Packages/PatternLanguage/PatternLanguage.sublime-syntax
+      embed_scope: markup.raw.block.markdown source.pattern-language
+      escape: ^(?!{{indented_code_block}}|[ \t]*\r?$)
+    - match: "{{indented_code_block}}"
+      embed: Packages/PatternLanguage/PatternLanguage.sublime-syntax
+      embed_scope: markup.raw.block.markdown source.pattern-language
+      escape: \r?\n
   code-spans:
     - meta_prepend: true
     - include: pattern-inline

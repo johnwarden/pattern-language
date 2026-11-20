@@ -215,6 +215,22 @@ export function sublimeMarkdownGrammar() {
     version: 2,
     extends: "Packages/Markdown/Markdown.sublime-syntax",
     contexts: {
+      "indented-code-blocks": [
+        {
+          // Keep Pattern's multiline state until Markdown resumes at a dedented line.
+          match: "^(?={{indented_code_block}})",
+          embed: "Packages/PatternLanguage/PatternLanguage.sublime-syntax",
+          embed_scope: "markup.raw.block.markdown source.pattern-language",
+          escape: "^(?!{{indented_code_block}}|[ \\t]*\\r?$)",
+        },
+        {
+          // Inside a quote, return control to Markdown for each container prefix.
+          match: "{{indented_code_block}}",
+          embed: "Packages/PatternLanguage/PatternLanguage.sublime-syntax",
+          embed_scope: "markup.raw.block.markdown source.pattern-language",
+          escape: "\\r?\\n",
+        },
+      ],
       "code-spans": [{ meta_prepend: true }, { include: "pattern-inline" }],
       "table-cell-code-spans": [{ meta_prepend: true }, { include: "pattern-inline" }],
       "pattern-inline": [{

@@ -138,3 +138,19 @@ test("inline delimiters pair only with a whole run of matching length", () => {
     scanner.dispose();
   }
 });
+
+test("indented blocks continue across blank lines and release dedented prose", () => {
+  const [block, nested] = syntax.contexts["indented-code-blocks"];
+  const indent = "(?:[ ]{4}|[ ]{0,3}\\t)";
+  const compile = (regex) => new RegExp(regex.replaceAll("{{indented_code_block}}", indent));
+  for (const line of ["    Some(Int)", "\t42", "  \tx"]) {
+    assert.ok(compile(block.match).test(line));
+    assert.equal(compile(block.escape).test(line), false);
+  }
+  for (const line of ["", "  ", "\r"]) assert.equal(compile(block.escape).test(line), false);
+  for (const line of ["   prose", "> quoted prose", "# Heading"]) {
+    assert.equal(compile(block.match).test(line), false);
+    assert.ok(compile(block.escape).test(line));
+  }
+  assert.ok(compile(nested.escape).test("\n"));
+});
