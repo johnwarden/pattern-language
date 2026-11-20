@@ -120,3 +120,10 @@ test "Comparison chains require grouping"
     Repeating == requires parentheses.
   end
 end
+
+test "Quoted operators keep their source spelling in Write suggestions"
+  expect parse(Code)("x :- y :* z") fails "
+    Syntax error. Write `(x :- y) :* z` or `x :- (y :* z)`.
+    Mixing :- and :* requires parentheses.
+  end
+end

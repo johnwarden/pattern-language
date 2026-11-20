@@ -599,6 +599,9 @@ class Reader {
         if (name.kind !== "name" || name.start !== t.end)
           throw new LanguageError("expected .name", name);
         display = "." + name.text;
+      } else if (name.quoted) {
+        // Classify by unquoted name (`-`, `*`); show the source spelling (`:-`).
+        display = this.source.slice(name.start, name.end);
       }
       const rhs = this.peek();
       if (!rhs)

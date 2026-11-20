@@ -120,6 +120,8 @@ Write suggestions cover only the offending infix expression, starting at the
 left operand of the first rejected pair. They never reprint a surrounding call,
 binding target, earlier chain prefix, statement, or buffer. Prefer source
 slices of each operand; if an operand has no span, use its printed form.
+Quoted operators keep their source spelling in both options and in the rule
+line, so `x :- y :* z` suggests `(x :- y) :* z` or `x :- (y :* z)`.
 
 ## Ascriptions in infix chains
 
@@ -371,6 +373,13 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   assert parse(Code)(toString(Code)(repeatedPower)) == repeatedPower
   assert parse(Code)(toString(Code)(bindingUnderAdd)) == bindingUnderAdd
   assert parse(Code)(toString(Code)(addUnderBinding)) == addUnderBinding
+end
+
+test "Quoted operators keep their source spelling in Write suggestions"
+  expect parse(Code)("x :- y :* z") fails "
+    Syntax error. Write `(x :- y) :* z` or `x :- (y :* z)`.
+    Mixing :- and :* requires parentheses.
+  end
 end
 ```
 
