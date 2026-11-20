@@ -145,10 +145,9 @@ syntax or default interpolation rule. T-backtick reads inert grammar data;
 T-dollar-backtick opts into interpolation. Inserted values are not rescanned for holes.
 
 Typed quotation interprets against a grammar without executing the stored program.
-Code-producing functions do not automatically register macros. Explicit registration
-adds syntax-domain transformation with phase/lexical-origin rules. Defining a grammar
-type alone does not reserve its keywords in executable Code. Full preparation and
-portable closed dependencies remain later work.
+[Typed macro expansion and lexical capture](specs/macro-expansion.md) covers
+explicit registration, preparation environments and lexical origin. Defining a
+grammar type alone does not reserve its keywords in executable Code.
 
 ## Rows and repetition
 
