@@ -89,9 +89,12 @@ designation cannot silently round; explicit converters return typed values:
 
 One application has an expression head and one pack. `f(a)(b)` is distinct from
 `f(a,b)`; `f()` is distinct from `f`. Dot notation preserves that structure:
-`a .b c` means `b(a)(c)`. Infix operators require spaces, have equal precedence,
-and associate right. Patterns share these trees, with explicit role differences
-for binding defaults, type accessors, ordered match arms and macro staging.
+`a .b c` means `b(a)(c)`. Infix operators require spaces. Accepted chains have
+equal precedence and associate right; mixed arithmetic, comparison, and logical
+pairs require explicit parentheses
+([arithmetic-grouping](specs/arithmetic-grouping.md)). Patterns share these
+trees, with explicit role differences for binding defaults, type accessors,
+ordered match arms and macro staging.
 
 ## The conformance DSL
 

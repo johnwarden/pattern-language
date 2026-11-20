@@ -233,9 +233,10 @@ separate. Do not conflate a list, a result pack and successive application packs
 
 Typed subtrees preserve their interpretation and structure during insertion.
 For x representing a + b, left insertion prints `(a + b) * 2`; right insertion
-prints `2 * a + b`, because infix operators have equal precedence and associate
-right. Those are rendering decisions, not substitution by printed text. A String
-value fails in a MathExp position that does not admit String.
+prints `2 * (a + b)`, because the printer wraps a right child when the adjacent
+operators would form a rejected grouping pair. Those are rendering decisions,
+not substitution by printed text. A String value fails in a MathExp position
+that does not admit String.
 
 Raw quotation performs no outer interpolation pass. An explicit interpolating
 quote performs the structural pass described next; dollar protection is relative

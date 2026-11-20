@@ -2,7 +2,7 @@ import { stringSource, escapedText } from "./string-format.ts";
 import { infixPunctuation, labelName } from "./lexical.ts";
 import { applicationHead, infixApplication } from "./application-format.ts";
 import type { ApplicationNotation } from "./application-format.ts";
-import { requiresParentheses } from "./infix-grouping.ts";
+import { needsPrintGrouping } from "./infix-grouping.ts";
 import { LanguageError } from "./diagnostics.ts";
 import type { Captures } from "./pattern.ts";
 import type { SourceDocument } from "./diagnostics.ts";
@@ -340,7 +340,7 @@ export function normal(n: Syntax, indent = 0): string {
     render: (node) => normal(node, indent),
     fields: body,
     needsGrouping: (node) => node.kind === "sequence" || node.kind === "form",
-    rejectedAdjacent: requiresParentheses,
+    rejectedAdjacent: needsPrintGrouping,
   };
   switch (n.kind) {
     case "quote":

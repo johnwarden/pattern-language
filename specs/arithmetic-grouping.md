@@ -161,143 +161,143 @@ as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
 
 ```pattern
 test "Mixed arithmetic shows both groupings in source order"
-  todo expect parse(Code)("a + b * c") fails "
+  expect parse(Code)("a + b * c") fails "
     Syntax error. Write `(a + b) * c` or `a + (b * c)`.
     Mixing + and * requires parentheses.
   end
-  todo expect parse(Code)("price + tax * count") fails "
+  expect parse(Code)("price + tax * count") fails "
     Syntax error. Write `(price + tax) * count` or `price + (tax * count)`.
     Mixing + and * requires parentheses.
   end
-  todo expect parse(Code)("a * b + c") fails "
+  expect parse(Code)("a * b + c") fails "
     Syntax error. Write `(a * b) + c` or `a * (b + c)`.
     Mixing * and + requires parentheses.
   end
-  todo expect parse(Code)("a .div b * c + d") fails "
+  expect parse(Code)("a .div b * c + d") fails "
     Syntax error. Write `a .div (b * c) + d` or `a .div b * (c + d)`.
     Mixing * and + requires parentheses.
   end
-  todo expect parse(Code)("f(a * b + c, d)") fails "
+  expect parse(Code)("f(a * b + c, d)") fails "
     Syntax error. Write `f((a * b) + c, d)` or `f(a * (b + c), d)`.
     Mixing * and + requires parentheses.
   end
 end
 
 test "An infix right operand of subtraction, division or remainder needs grouping"
-  todo expect parse(Code)("a - b .div c") fails "
+  expect parse(Code)("a - b .div c") fails "
     Syntax error. Write `(a - b) .div c` or `a - (b .div c)`.
     Mixing - and .div requires parentheses.
   end
-  todo expect parse(Code)("a - b + c") fails "
+  expect parse(Code)("a - b + c") fails "
     Syntax error. Write `(a - b) + c` or `a - (b + c)`.
     Mixing - and + requires parentheses.
   end
-  todo expect parse(Code)("10 - 3 - 2") fails "
+  expect parse(Code)("10 - 3 - 2") fails "
     Syntax error. Write `(10 - 3) - 2` or `10 - (3 - 2)`.
     Repeating - requires parentheses.
   end
-  todo expect parse(Code)("a - (b) - c") fails "
+  expect parse(Code)("a - (b) - c") fails "
     Syntax error. Write `(a - (b)) - c` or `a - ((b) - c)`.
     Repeating - requires parentheses.
   end
-  todo expect parse(Code)("12 / 3 * 2") fails "
+  expect parse(Code)("12 / 3 * 2") fails "
     Syntax error. Write `(12 / 3) * 2` or `12 / (3 * 2)`.
     Mixing / and * requires parentheses.
   end
-  todo expect parse(Code)("a / b / c") fails "
+  expect parse(Code)("a / b / c") fails "
     Syntax error. Write `(a / b) / c` or `a / (b / c)`.
     Repeating / requires parentheses.
   end
-  todo expect parse(Code)("a % b % c") fails "
+  expect parse(Code)("a % b % c") fails "
     Syntax error. Write `(a % b) % c` or `a % (b % c)`.
     Repeating % requires parentheses.
   end
-  todo expect parse(Code)("-x - y.z ^ f(a)") fails "
+  expect parse(Code)("-x - y.z ^ f(a)") fails "
     Syntax error. Write `(-x - y.z) ^ f(a)` or `-x - (y.z ^ f(a))`.
     Mixing - and ^ requires parentheses.
   end
-  todo expect parse(Code)("x - (y) .div z") fails "
+  expect parse(Code)("x - (y) .div z") fails "
     Syntax error. Write `(x - (y)) .div z` or `x - ((y) .div z)`.
     Mixing - and .div requires parentheses.
   end
-  todo expect parse(Code)("x - y :: Int") fails "
+  expect parse(Code)("x - y :: Int") fails "
     Syntax error. Write `(x - y) :: Int` or `x - (y :: Int)`.
     Mixing - and :: requires parentheses.
   end
 end
 
 test "Arithmetic and comparison conflicts identify the operands to group"
-  todo expect parse(Code)("a * b == c") fails "
+  expect parse(Code)("a * b == c") fails "
     Syntax error. Write `(a * b) == c` or `a * (b == c)`.
     Mixing * and == requires parentheses.
   end
-  todo expect parse(Code)("a == b + c") fails "
+  expect parse(Code)("a == b + c") fails "
     Syntax error. Write `(a == b) + c` or `a == (b + c)`.
     Mixing == and + requires parentheses.
   end
-  todo expect parse(Code)("a + b >= c") fails "
+  expect parse(Code)("a + b >= c") fails "
     Syntax error. Write `(a + b) >= c` or `a + (b >= c)`.
     Mixing + and >= requires parentheses.
   end
-  todo expect parse(Code)("a !== b * c") fails "
+  expect parse(Code)("a !== b * c") fails "
     Syntax error. Write `(a !== b) * c` or `a !== (b * c)`.
     Mixing !== and * requires parentheses.
   end
-  todo expect parse(Code)("a * b == c + d") fails "
+  expect parse(Code)("a * b == c + d") fails "
     Syntax error. Write `(a * b) == c` or `a * (b == c)`.
     Mixing * and == requires parentheses.
   end
 end
 
 test "Logical conflicts show the first missing pair of parentheses"
-  todo expect parse(Code)("a && b || c") fails "
+  expect parse(Code)("a && b || c") fails "
     Syntax error. Write `(a && b) || c` or `a && (b || c)`.
     Mixing && and || requires parentheses.
   end
-  todo expect parse(Code)("a == b && c == d") fails "
+  expect parse(Code)("a == b && c == d") fails "
     Syntax error. Write `(a == b) && c` or `a == (b && c)`.
     Mixing == and && requires parentheses.
   end
-  todo expect parse(Code)("(a == b) && c == d") fails "
+  expect parse(Code)("(a == b) && c == d") fails "
     Syntax error. Write `((a == b) && c) == d` or `(a == b) && (c == d)`.
     Mixing && and == requires parentheses.
   end
-  todo expect parse(Code)("a == b && (c == d)") fails "
+  expect parse(Code)("a == b && (c == d)") fails "
     Syntax error. Write `(a == b) && (c == d)` or `a == (b && (c == d))`.
     Mixing == and && requires parentheses.
   end
-  todo expect parse(Code)("a || b < c") fails "
+  expect parse(Code)("a || b < c") fails "
     Syntax error. Write `(a || b) < c` or `a || (b < c)`.
     Mixing || and < requires parentheses.
   end
-  todo expect parse(Code)("a + b || c") fails "
+  expect parse(Code)("a + b || c") fails "
     Syntax error. Write `(a + b) || c` or `a + (b || c)`.
     Mixing + and || requires parentheses.
   end
-  todo expect parse(Code)("a && b * c") fails "
+  expect parse(Code)("a && b * c") fails "
     Syntax error. Write `(a && b) * c` or `a && (b * c)`.
     Mixing && and * requires parentheses.
   end
-  todo expect parse(Code)("p && q || r") fails "
+  expect parse(Code)("p && q || r") fails "
     Syntax error. Write `(p && q) || r` or `p && (q || r)`.
     Mixing && and || requires parentheses.
   end
-  todo expect parse(Code)("p || q && r") fails "
+  expect parse(Code)("p || q && r") fails "
     Syntax error. Write `(p || q) && r` or `p || (q && r)`.
     Mixing || and && requires parentheses.
   end
 end
 
 test "A binding after arithmetic, comparison or logic shows both groupings"
-  todo expect parse(Code)("a + b = c") fails "
+  expect parse(Code)("a + b = c") fails "
     Syntax error. Write `(a + b) = c` or `a + (b = c)`.
     Mixing + and = requires parentheses.
   end
-  todo expect parse(Code)("a == b = c") fails "
+  expect parse(Code)("a == b = c") fails "
     Syntax error. Write `(a == b) = c` or `a == (b = c)`.
     Mixing == and = requires parentheses.
   end
-  todo expect parse(Code)("a && b = c") fails "
+  expect parse(Code)("a && b = c") fails "
     Syntax error. Write `(a && b) = c` or `a && (b = c)`.
     Mixing && and = requires parentheses.
   end
@@ -336,17 +336,17 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   arithmeticBinding = parse(Code)("=(n)(+(x)(1))")
   logical = parse(Code)("&&(a)(||(b)(c))")
   compared = parse(Code)("&&(==(a)(b))(==(c)(d))")
-  todo expect toString(Code)(right) is "a + (b * c)"
+  expect toString(Code)(right) is "a + (b * c)"
   expect toString(Code)(left) is "(a + b) * c"
-  todo expect toString(Code)(sameGroup) is "a - (b + c)"
-  todo expect toString(Code)(repeatedDivision) is "a / (b / c)"
-  todo expect toString(Code)(comparison) is "a == (b + c)"
+  expect toString(Code)(sameGroup) is "a - (b + c)"
+  expect toString(Code)(repeatedDivision) is "a / (b / c)"
+  expect toString(Code)(comparison) is "a == (b + c)"
   expect toString(Code)(wordOperator) is "div(a)(b * c)"
   expect toString(Code)(typedBinding) is "(x :: Int) = 5"
-  todo expect toString(Code)(ascribedSubtrahend) is "x - (y :: Int)"
+  expect toString(Code)(ascribedSubtrahend) is "x - (y :: Int)"
   expect toString(Code)(arithmeticBinding) is "n = x + 1"
-  todo expect toString(Code)(logical) is "a && (b || c)"
-  todo expect toString(Code)(compared) is "(a == b) && (c == d)"
+  expect toString(Code)(logical) is "a && (b || c)"
+  expect toString(Code)(compared) is "(a == b) && (c == d)"
   bindingUnderAdd = parse(Code)("+(a)(=(b)(c))")
   expect toString(Code)(bindingUnderAdd) is "a + (b = c)"
   assert parse(Code)(toString(Code)(right)) == right
@@ -364,12 +364,9 @@ test "Printed infix Code shows grouping and reads back to the same tree"
 end
 ```
 
-The binding-left rule is implemented and covered by the language suite.
-The `todo` assertions record the proposed diagnostics and the formatter
-changes still needed.
-When implementing the remaining pairs, give existing cases explicit
-grouping to keep their intended trees. Update the reader and formatter
-together so printed Code reads back to the same tree.
-[Binding-left grouping](../tests/language/infix-grouping.test) ·
+The grouping rules, rewrite diagnostics, and printer parentheses are
+implemented. Existing cases that mixed rejected pairs keep explicit
+grouping so their trees stay the same.
+[Language suite](../tests/language/infix-grouping.test) ·
 [C25 case](../tests/specification/language.test) ·
 [Same-precedence conformance case](../tests/conformance/expressions.test)

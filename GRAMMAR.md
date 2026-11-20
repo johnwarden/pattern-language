@@ -48,15 +48,18 @@ Outfix brackets/braces put their closing delimiter after the pack; they have hea
 Prefix `-(x)` negates; infix `1 - x` is `-(1)(x)` and subtracts. `#` always
 starts a comment.
 
-Infix operators require surrounding spaces, have equal precedence and associate
-right. Prefix punctuation groups a maximal symbol except the quote prefix; postfix
-modifiers are read individually. Prefix and postfix operators must touch their
-operand (`T * *`, `* *x`, and `- (x)` are errors; `-(x)`, `-x`, `1 - (x)`,
-`1 * *x`, `1 * x*`, `x* * 1` parse). Dot and prefix/application chains preserve their
-left-associated head structure. Binary punctuation uses infix canonical spelling
-where its two-pack shape permits; parentheses preserve the tree. Outfix forms keep
-their brackets. Labels follow positional fields, are lowercase and unique, and sort
-at the surface layer. Positional pseudo-labels remain ordered.
+Infix operators require surrounding spaces. Accepted chains have equal precedence
+and associate right. Mixed arithmetic, comparison, and logical pairs that would
+mean different things under conventional precedence require explicit parentheses;
+see [explicit grouping](specs/arithmetic-grouping.md). Prefix punctuation groups a
+maximal symbol except the quote prefix; postfix modifiers are read individually.
+Prefix and postfix operators must touch their operand (`T * *`, `* *x`, and
+`- (x)` are errors; `-(x)`, `-x`, `1 - (x)`, `1 * *x`, `1 * x*`, `x* * 1` parse).
+Dot and prefix/application chains preserve their left-associated head structure.
+Binary punctuation uses infix canonical spelling where its two-pack shape
+permits; parentheses preserve the tree. Outfix forms keep their brackets. Labels
+follow positional fields, are lowercase and unique, and sort at the surface
+layer. Positional pseudo-labels remain ordered.
 
 ## Shared patterns, explicit roles
 

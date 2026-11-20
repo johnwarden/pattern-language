@@ -53,7 +53,7 @@ test "same precedence"
   b = 3 :: Int
   c = 4 :: Int
 
-  expect a * b + c is 14 :: Int
+  expect a * (b + c) is 14 :: Int
 end
 
 test "single grouping"

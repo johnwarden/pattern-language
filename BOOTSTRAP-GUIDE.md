@@ -118,8 +118,9 @@ not establish actual iOS lifecycle/storage behavior.
 - Each application has exactly one argument pack. Successive applications remain
   distinct: `f(a)(b)` is not `f(a,b)`.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
-- All infix operators have equal precedence and associate right. They require
-  spaces on both sides. `2 * 3 + 4` therefore evaluates to 14.
+- Accepted infix chains have equal precedence and associate right. They require
+  spaces on both sides. Mixed arithmetic, comparison, and logical pairs need
+  parentheses; `2 * (3 + 4)` evaluates to 14.
 - Prefix punctuation is a maximal symbol. Tight postfix `~ ! @ $ % ^ & * ?` are
   distinct from prefix/infix application. `#` is a comment, not a postfix
   operator. Prefix and postfix operators must touch their operand: `T**` is

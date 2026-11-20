@@ -1,81 +1,81 @@
 test "Missing parentheses before a binding show both grouping choices"
   expect parse(Code)("a + b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a + b = c") fails "
+  expect parse(Code)("a + b = c") fails "
     Syntax error. Write `(a + b) = c` or `a + (b = c)`.
     Mixing + and = requires parentheses.
   end
   expect parse(Code)("a - b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a - b = c") fails "
+  expect parse(Code)("a - b = c") fails "
     Syntax error. Write `(a - b) = c` or `a - (b = c)`.
     Mixing - and = requires parentheses.
   end
   expect parse(Code)("a * b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a * b = c") fails "
+  expect parse(Code)("a * b = c") fails "
     Syntax error. Write `(a * b) = c` or `a * (b = c)`.
     Mixing * and = requires parentheses.
   end
   expect parse(Code)("a / b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a / b = c") fails "
+  expect parse(Code)("a / b = c") fails "
     Syntax error. Write `(a / b) = c` or `a / (b = c)`.
     Mixing / and = requires parentheses.
   end
   expect parse(Code)("a % b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a % b = c") fails "
+  expect parse(Code)("a % b = c") fails "
     Syntax error. Write `(a % b) = c` or `a % (b = c)`.
     Mixing % and = requires parentheses.
   end
   expect parse(Code)("a == b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a == b = c") fails "
+  expect parse(Code)("a == b = c") fails "
     Syntax error. Write `(a == b) = c` or `a == (b = c)`.
     Mixing == and = requires parentheses.
   end
   expect parse(Code)("a != b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a != b = c") fails "
+  expect parse(Code)("a != b = c") fails "
     Syntax error. Write `(a != b) = c` or `a != (b = c)`.
     Mixing != and = requires parentheses.
   end
   expect parse(Code)("a === b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a === b = c") fails "
+  expect parse(Code)("a === b = c") fails "
     Syntax error. Write `(a === b) = c` or `a === (b = c)`.
     Mixing === and = requires parentheses.
   end
   expect parse(Code)("a !== b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a !== b = c") fails "
+  expect parse(Code)("a !== b = c") fails "
     Syntax error. Write `(a !== b) = c` or `a !== (b = c)`.
     Mixing !== and = requires parentheses.
   end
   expect parse(Code)("a < b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a < b = c") fails "
+  expect parse(Code)("a < b = c") fails "
     Syntax error. Write `(a < b) = c` or `a < (b = c)`.
     Mixing < and = requires parentheses.
   end
   expect parse(Code)("a <= b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a <= b = c") fails "
+  expect parse(Code)("a <= b = c") fails "
     Syntax error. Write `(a <= b) = c` or `a <= (b = c)`.
     Mixing <= and = requires parentheses.
   end
   expect parse(Code)("a > b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a > b = c") fails "
+  expect parse(Code)("a > b = c") fails "
     Syntax error. Write `(a > b) = c` or `a > (b = c)`.
     Mixing > and = requires parentheses.
   end
   expect parse(Code)("a >= b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a >= b = c") fails "
+  expect parse(Code)("a >= b = c") fails "
     Syntax error. Write `(a >= b) = c` or `a >= (b = c)`.
     Mixing >= and = requires parentheses.
   end
   expect parse(Code)("a && b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a && b = c") fails "
+  expect parse(Code)("a && b = c") fails "
     Syntax error. Write `(a && b) = c` or `a && (b = c)`.
     Mixing && and = requires parentheses.
   end
   expect parse(Code)("a || b = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a || b = c") fails "
+  expect parse(Code)("a || b = c") fails "
     Syntax error. Write `(a || b) = c` or `a || (b = c)`.
     Mixing || and = requires parentheses.
   end
   expect parse(Code)("a + (b) = c") fails "E_INFIX_GROUPING"
-  todo expect parse(Code)("a + (b) = c") fails "
+  expect parse(Code)("a + (b) = c") fails "
     Syntax error. Write `(a + (b)) = c` or `a + ((b) = c)`.
     Mixing + and = requires parentheses.
   end
