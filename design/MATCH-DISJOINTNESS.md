@@ -1,7 +1,7 @@
 # Should `match` arms be disjoint?
 
 **Status:** decisions recorded (PR discussion); runtime still ordered first-match.
-Open: arm separator spelling (`->` vs `when` vs `.then`), plus a few lesser items below.
+Lesser open items remain below. Arm-separator change is deferred (`->` kept).
 **Related:** [type-values § Match arm domains](../specs/type-values.md#match-arm-domains),
 [GRAMMAR](../GRAMMAR.md) (shared patterns),
 [VALUE-SPACES](../VALUE-SPACES.md#refinement-evidence-and-functions),
@@ -43,11 +43,12 @@ Jonathan (seed, with later clarification: *“one trailing error”* was a typo 
    admit the same `Outer` value overlap. Separately, a raw designator that can
    enter two otherwise-disjoint arms (e.g. `Box(3)` into `Box(Int)` vs
    `Box(Float)`) stays `E_AMBIGUOUS_VALUE_DESIGNATOR`, not arm overlap.
+8. **Peer arms keep `->` for now.** `.then` is rejected; a future `when` /
+   `else` newline-bounded layout may be revisited (see Deferred).
 
 Runtime matching is still **ordered first-match**. GRAMMAR and the type-values
-section state the decision as not yet enforced. Peer arms in live examples may
-still use `->` until the arm-separator question below is settled; do not migrate
-syntax in this PR.
+section state the decision as not yet enforced. Peer arms keep `->` (deferred
+below); do not migrate arm syntax in this PR.
 
 ### Reconcile with #88
 
@@ -106,26 +107,29 @@ Migrate to `else` when residual coverage is implemented. Examples:
 
 ---
 
-## Open decision: match arm separator (drop `->`?)
+## Deferred: match arm separator (keep `->` for now)
 
-Jonathan wants to consider dropping `->` for match arms because it reads as a
-function (a true function catch-all would look like `(...) -> 'default'`), and
-`=>` has the same problem. Candidates (indented sketches only; **do not** change
-existing arm syntax or tests yet):
+**Decision (Jonathan):** keep `->` for match arms for now.
 
-    match value
-      when String "string"
-      when Int "int"
-      else "neither"
-    end
+Motivation considered: `->` reads as a function (a true function catch-all
+would look like `(...) -> 'default'`), and `=>` has the same problem.
+`.then` is **rejected**. A possible future direction is `when` / `else` as
+match-clause keywords with newline-bounded bodies (sketches below); do not
+migrate arm syntax until that is revisited.
 
     match value
-      String .then "String"
-      Int .then "int"
-      else "neither"
+      when String
+        "string"
+      when Int
+        "int"
+      else
+        "neither"
     end
 
-### Analysis (against current grammar)
+Same-line juxtaposition (`when String "string"`) is not the future shape —
+see analysis.
+
+### Analysis (against current grammar; retained)
 
 **Shared baseline.** Match is a multiline layout form closed by aligned `end`
 ([GRAMMAR](../GRAMMAR.md), [default.pattern](../default.pattern)
@@ -134,13 +138,13 @@ spaces; dotted forms are ordinary application (`a .b c` → `b(a)(c)`).
 Juxtaposition / call spacing distinguishes tight `f(a)` from spaced `f a`.
 [#99](https://github.com/johnwarden/pattern-language/pull/99) requires explicit
 grouping for mixed infix chains; dotted word operators keep master’s reading;
-`->` today leaves a free right-hand side (except `=` inside an arrow body).
+`->` leaves a free right-hand side (except `=` inside an arrow body).
 
-**`when` (clause keyword).**
+**`when` (clause keyword) — possible future.**
 - Needs a match-clause keyword (like `else` on `if`), not a reserved word in
   ordinary expression Code — grammar keywords come from the active surface
   grammar, not a global reserved list.
-- `else` fits as a sibling clause keyword with no pattern.
+- Trailing `else` already fits as a sibling clause keyword with no pattern.
 - **Pattern/body boundary is the hard part.** Same-line
   `when String "string"` looks like spaced juxtaposition / call
   (`String "string"`). Compound cases are worse:
@@ -148,10 +152,10 @@ grouping for mixed infix chains; dotted word operators keep master’s reading;
   a capture continuation, a call argument, or the body start?
   `when Left(x, y) x` and `when x x` are similarly ambiguous without a
   mandatory delimiter or newline/indent rule.
-- A workable `when` would almost certainly need **newline (or indent) before
-  the body**, or some non-arrow separator — not bare juxtaposition.
+- A workable `when` would need **newline (or indent) before the body**, not
+  bare juxtaposition.
 
-**`.then` (dotted word operator).**
+**`.then` (dotted word operator) — rejected.**
 - Parses as ordinary `then(pattern)(body)` under current dotted rules. That
   collides with “arms are not function values” and with using `.then` as a
   real method elsewhere.
@@ -162,33 +166,12 @@ grouping for mixed infix chains; dotted word operators keep master’s reading;
   special-cased, which reintroduces a keyword arm beside dotted peers.
 
 **Disjoint-arm rule / projection.** Separator choice does not change domain
-comparison (scrutinee + projection) or `E_OVERLAPPING_MATCH_ARMS`. It does
-affect how large patterns and projected shapes are read before the body.
+comparison (scrutinee + projection) or `E_OVERLAPPING_MATCH_ARMS`.
 
-**Readability.** `when` / `else` read as control-flow clauses; `.then` reads as
-a method chain. Keeping `->` keeps parity with function arrows (the motivation
-to drop it).
-
-**Migration size (survey only; do not pin volatile counts in specs).** On this
-branch tip, on the order of a hundred-plus `->` occurrences sit inside
-`match`…`end` blocks across specs/tests/examples/tutorial/src (dozens of
-files). Function arrows stay. Any separator change is a wide mechanical edit
-plus printer/grammar/`Arms` shape work — still docs-only here.
-
-### Recommendation
-
-Prefer **not** adopting same-line `when Pattern Body` juxtaposition, and
-**reject `.then`** as arm syntax (collides with general dotted application and
-#99 RHS grouping). If dropping `->`, prefer **`when` / `else` as match-clause
-keywords with a newline- or indent-bounded body** (pattern on the `when` line,
-body on the following indented line), so the pattern/body cut is layout-driven
-rather than juxtaposition. Until that layout rule is specified, **keep `->`**
-for peer arms in executable fences; use `else` only for the decided catch-all
-in todos/sketches.
-
-**Decision question for Jonathan:** Drop match-arm `->` in favor of
-`when`/`else` clause layout with newline-bounded bodies, keep `->`, or pursue a
-different separator (not `.then`)?
+**Migration size (survey only; do not pin volatile counts in specs).** On the
+order of a hundred-plus `->` occurrences sit inside `match`…`end` blocks
+across specs/tests/examples/tutorial/src. Function arrows would stay. Any
+separator change is a wide mechanical edit plus printer/grammar/`Arms` work.
 
 ---
 

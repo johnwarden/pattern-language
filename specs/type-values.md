@@ -450,9 +450,9 @@ See [disjointness of predicate-refined peers](https://github.com/johnwarden/patt
 
 At most one trailing `else` may appear, and only last. `else` is an ordinary
 catch-all arm: its body is an ordinary expression, and it covers any remaining
-pack (multi-value and labeled). Peer arms still use `->` in executable fences
-until the arm-separator question in
-[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) is settled.
+pack (multi-value and labeled). Peer arms keep `->` for now (arm-separator
+change deferred in
+[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md)).
 
 ```pattern
 todo test "Overlapping match arms raise E_OVERLAPPING_MATCH_ARMS"
@@ -594,7 +594,7 @@ todo test "else covers a remaining labeled pack"
 end
 ```
 
-Trailing `else` sketch (peer-arm separator still open; indented display-only):
+Trailing `else` sketch (indented display-only):
 
     match subject
       P1 -> V1

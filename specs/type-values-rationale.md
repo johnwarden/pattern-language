@@ -691,8 +691,8 @@ scrutinee) has the same behavior as a call to one local overloaded function:
     f(x)
 
 A trailing `else` corresponds to one `Remaining` overload for `T` outside prior
-arms: an ordinary catch-all expression covering any remaining pack. Peer-arm
-separator spelling remains open — see
+arms: an ordinary catch-all expression covering any remaining pack. Peer arms
+keep `->` for now — see
 [MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) and
 [Match arm domains](type-values.md#match-arm-domains). The
 [Reading example](type-values.md#overload-domains-and-projection-dispatch)
