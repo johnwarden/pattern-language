@@ -60,3 +60,13 @@ text = "
 
 # Heading after an unfinished Pattern string
 <!-- <- markup.heading.1.markdown - source.pattern-language -->
+
+```
+value = Some(Int)
+<!--    ^^^^ constant.other.symbol.constructor.pattern-language -->
+```
+
+A value like `Some(Int)` in prose.
+<!--          ^^^^ constant.other.symbol.constructor.pattern-language -->
+<!--               ^^^ support.type.pattern-language -->
+<!--                     ^ - source.pattern-language -->

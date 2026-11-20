@@ -1,4 +1,4 @@
-"""Select the Markdown extension only for stock Markdown with Pattern fences."""
+"""Select the Markdown extension for stock Markdown."""
 
 import sublime
 import sublime_plugin
@@ -7,8 +7,6 @@ MARKDOWN = "Packages/Markdown/Markdown.sublime-syntax"
 PATTERN_MARKDOWN = "Packages/PatternLanguage/Markdown.sublime-syntax"
 SETTING = "pattern_language_markdown_fences"
 AUTO = "pattern_language_markdown_auto"
-# CommonMark: at most 3 spaces before a fence (stock Sublime uses ^[ \t]*).
-FENCE = r"(?im)^[ ]{0,3}(?:`{3,}|~{3,})[ \t]*pattern(?:-language)?(?=[ \t\r\n]|$)"
 _active = True
 
 
@@ -39,20 +37,10 @@ def _refresh(view):
     if not enabled:
         _restore(view)
         return
-    # Keep an explicitly selected extension even before the first fence is typed.
-    if path == PATTERN_MARKDOWN and not settings.get(AUTO):
-        return
-    if view.find(FENCE, 0):
-        if path == MARKDOWN:
-            # MarkdownEditing can disable the stock package. Never assign an
-            # unavailable syntax or an extension whose parent cannot load.
-            if any(sublime.syntax_from_path(path) is None
-                   for path in (MARKDOWN, PATTERN_MARKDOWN)):
-                return
-            settings.set(AUTO, True)
-            view.assign_syntax(PATTERN_MARKDOWN)
-    else:
-        _restore(view)
+    if path == MARKDOWN and all(sublime.syntax_from_path(resource) is not None
+                                for resource in (MARKDOWN, PATTERN_MARKDOWN)):
+        settings.set(AUTO, True)
+        view.assign_syntax(PATTERN_MARKDOWN)
 
 
 def plugin_loaded():
@@ -80,14 +68,3 @@ class PatternLanguageMarkdownListener(sublime_plugin.EventListener):
 
     def on_post_save(self, view):
         _refresh(view)
-
-    def on_modified(self, view):
-        if _syntax_path(view) not in (MARKDOWN, PATTERN_MARKDOWN):
-            return
-        change = view.change_count()
-        sublime.set_timeout(
-            lambda: _refresh(view)
-            if view.is_valid() and view.change_count() == change
-            else None,
-            250,
-        )

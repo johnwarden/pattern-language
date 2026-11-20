@@ -6,9 +6,23 @@ scope: text.html.markdown.pattern-language
 version: 2
 extends: Packages/Markdown/Markdown.sublime-syntax
 contexts:
+  code-spans:
+    - meta_prepend: true
+    - include: pattern-inline
+  table-cell-code-spans:
+    - meta_prepend: true
+    - include: pattern-inline
+  pattern-inline:
+    - match: (?<!`)(`+)(?!`)(?=[^\n]*?(?<!`)\1(?!`))
+      scope: punctuation.definition.raw.begin.markdown
+      embed: Packages/PatternLanguage/PatternLanguage.sublime-syntax
+      embed_scope: markup.raw.inline.markdown source.pattern-language
+      escape: (?<!`)\1(?!`)
+      escape_captures:
+        "0": punctuation.definition.raw.end.markdown
   fenced-code-blocks:
     - meta_prepend: true
-    - match: ^[ ]{0,3}(`{3,})[ \t]*(?i:(pattern(?:-language)?))(?=[ \t\r\n]|$)([^`\r\n]*)(\r?$)\n?
+    - match: ^[ ]{0,3}(`{3,})[ \t]*(?:(?i:(pattern(?:-language)?))(?=[ \t\r\n]|$)([^`\r\n]*))?(\r?$)\n?
       captures:
         "0": meta.code-fence.definition.begin.pattern-language.markdown-gfm
         "1": punctuation.definition.raw.code-fence.begin.markdown
@@ -22,7 +36,7 @@ contexts:
         "0": meta.code-fence.definition.end.pattern-language.markdown-gfm
         "1": punctuation.definition.raw.code-fence.end.markdown
         "2": meta.fold.code-fence.end.markdown
-    - match: ^[ ]{0,3}(~{3,})[ \t]*(?i:(pattern(?:-language)?))(?=[ \t\r\n]|$)([^\r\n]*)(\r?$)\n?
+    - match: ^[ ]{0,3}(~{3,})[ \t]*(?:(?i:(pattern(?:-language)?))(?=[ \t\r\n]|$)([^\r\n]*))?(\r?$)\n?
       captures:
         "0": meta.code-fence.definition.begin.pattern-language.markdown-gfm
         "1": punctuation.definition.raw.code-fence.begin.markdown

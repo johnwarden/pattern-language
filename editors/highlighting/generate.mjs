@@ -215,6 +215,17 @@ export function sublimeMarkdownGrammar() {
     version: 2,
     extends: "Packages/Markdown/Markdown.sublime-syntax",
     contexts: {
+      "code-spans": [{ meta_prepend: true }, { include: "pattern-inline" }],
+      "table-cell-code-spans": [{ meta_prepend: true }, { include: "pattern-inline" }],
+      "pattern-inline": [{
+        // Leave unmatched delimiters and paragraph-spanning code to stock Markdown.
+        match: "(?<!`)(`+)(?!`)(?=[^\\n]*?(?<!`)\\1(?!`))",
+        scope: "punctuation.definition.raw.begin.markdown",
+        embed: "Packages/PatternLanguage/PatternLanguage.sublime-syntax",
+        embed_scope: "markup.raw.inline.markdown source.pattern-language",
+        escape: "(?<!`)\\1(?!`)",
+        escape_captures: { 0: "punctuation.definition.raw.end.markdown" },
+      }],
       "fenced-code-blocks": [
         { meta_prepend: true },
         ...["`", "~"].map((marker) => ({
@@ -223,9 +234,9 @@ export function sublimeMarkdownGrammar() {
           // which is broader than CommonMark — we follow the spec so Pattern
           // embedding does not treat indented-code lines as fences.
           match:
-            "^[ ]{0,3}(" + marker + "{3,})[ \\t]*(?i:(pattern(?:-language)?))(?=[ \\t\\r\\n]|$)" +
+            "^[ ]{0,3}(" + marker + "{3,})[ \\t]*(?:(?i:(pattern(?:-language)?))(?=[ \\t\\r\\n]|$)" +
             (marker === "`" ? "([^`\\r\\n]*)" : "([^\\r\\n]*)") +
-            "(\\r?$)\\n?",
+            ")?(\\r?$)\\n?",
           captures: {
             0: "meta.code-fence.definition.begin.pattern-language.markdown-gfm",
             1: "punctuation.definition.raw.code-fence.begin.markdown",

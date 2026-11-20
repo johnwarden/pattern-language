@@ -88,36 +88,15 @@ class MarkdownSelection(unittest.TestCase):
                     plugin._refresh(view)
                     self.assertEqual(view.assign_syntax.call_count, 1)
 
-    def test_commonmark_fence_indent_limits(self):
-        for spaces in range(4):
-            view = View(" " * spaces + "```pattern\nx")
-            plugin._refresh(view)
-            self.assertEqual(view.path, plugin.PATTERN_MARKDOWN, spaces)
-        for text in ("    ```pattern\nx", "\t```pattern\nx"):
+    def test_defaults_and_other_syntaxes(self):
+        for text in ("# Title", "Use `Int`.", "```\n42\n```"):
             view = View(text)
             plugin._refresh(view)
-            view.assign_syntax.assert_not_called()
-
-    def test_regular_markdown_and_other_languages_keep_their_syntax(self):
-        for text in ("# Title", "```python\npass\n```", "```patterned\nx\n```"):
-            view = View(text)
-            plugin._refresh(view)
-            view.assign_syntax.assert_not_called()
+            self.assertEqual(view.path, plugin.PATTERN_MARKDOWN)
         for path in ("Packages/Other/Markdown.sublime-syntax", "Packages/PatternLanguage/PatternLanguage.sublime-syntax", None):
             view = View("```pattern test\nassert True", path)
             plugin._refresh(view)
             self.assertEqual(view.path, path)
-
-    def test_removing_last_fence_restores_only_automatic_assignment(self):
-        view = View("```pattern\nx = 1")
-        plugin._refresh(view)
-        view.text = "# Prose only"
-        plugin._refresh(view)
-        self.assertEqual(view.path, plugin.MARKDOWN)
-        self.assertNotIn(plugin.AUTO, view.options)
-        manual = View("# Prose", plugin.PATTERN_MARKDOWN)
-        plugin._refresh(manual)
-        self.assertEqual(manual.path, plugin.PATTERN_MARKDOWN)
 
     def test_global_and_view_opt_out(self):
         preferences[plugin.SETTING] = False
@@ -147,7 +126,7 @@ class MarkdownSelection(unittest.TestCase):
         view = View("```pattern\nx")
         plugin._refresh(view)
         available.remove(plugin.MARKDOWN)
-        view.text = "# Prose only"
+        preferences[plugin.SETTING] = False
         view.assign_syntax.reset_mock()
         plugin._refresh(view)
         view.assign_syntax.assert_not_called()
@@ -157,16 +136,10 @@ class MarkdownSelection(unittest.TestCase):
         self.assertEqual(view.path, plugin.MARKDOWN)
         self.assertNotIn(plugin.AUTO, view.options)
 
-    def test_debounce_closed_views_and_unload(self):
-        view = View("```pattern test\nassert True")
+    def test_closed_views_and_unload(self):
+        view = View("Use `Int`.")
         listener = plugin.PatternLanguageMarkdownListener()
-        listener.on_modified(view)
-        view.changes += 1
-        listener.on_modified(view)
-        self.assertEqual(len(pending), 2)
-        pending[0]()
-        view.assign_syntax.assert_not_called()
-        pending[1]()
+        listener.on_load(view)
         self.assertEqual(view.path, plugin.PATTERN_MARKDOWN)
         windows.append(SimpleNamespace(views=lambda: [view]))
         plugin.plugin_unloaded()
