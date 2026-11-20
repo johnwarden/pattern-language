@@ -2,37 +2,27 @@
 
 The [type-value spec](type-values.md) defines the rules. These examples
 explain how one pattern can describe a concrete value space, an abstract
-view, or a projection across a boundary.
+view, or a projection across a boundary. Normative executable cases live
+in that spec (and in [refinement predicates](refinement-predicates.md));
+this companion keeps the reasons and a smaller set of worked examples that
+are not already covered there.
 
 ## Type constructors and normalization
 
 A type is defined by a pattern. The `struct` and `pattern` macros construct
-`Struct(...)` and `Pattern(...)` descriptors. The macros produce normalized descriptors. The constructors preserve
-the supplied structure so that canonical text can reproduce a descriptor
-exactly, even if it contains repeated or reordered alternatives. A
-concrete boundary is part of the type's identity.
-
-```pattern
-todo test "struct and pattern macros build Struct and Pattern descriptors"
-  type Foo pattern Int | String
-  type Bar struct Int | String
-  type Baz pattern ExactRational .where isNonZero
-  type Boo struct ExactRational .where isNonZero
-
-  assert Foo === (pattern String | Int)
-  assert Bar === (struct String | Int)
-  expect Baz is Pattern(ExactRational .where isNonZero)
-  expect Boo is Struct(ExactRational .where isNonZero)
-end
-```
+`Struct(...)` and `Pattern(...)` descriptors. The macros produce normalized
+descriptors. The constructors preserve the supplied structure so that
+canonical text can reproduce a descriptor exactly, even if it contains
+repeated or reordered alternatives. A concrete boundary is part of the
+type's identity. See
+[Declarations, normalization, and identity](type-values.md#declarations-normalization-and-identity)
+for the normative macro versus direct-constructor cases.
 
 Refinement descriptions use `T .where predicate` inside the descriptor.
 Wrapping a pattern in `struct` / `Struct` creates a new value space, with
 values that are disjoint from but designated by values matching the wrapped
-pattern.
-
-Nested `pattern` forms collapse. A lone type reference resolves to the
-referenced type, so applying `pattern` to it again returns that same type.
+pattern. Nested `pattern` forms collapse. A lone type reference resolves to
+the referenced type, so applying `pattern` to it again returns that same type.
 
 ```pattern
 todo test "Nested pattern collapses; nested struct does not"
@@ -66,24 +56,15 @@ Patterns can be:
 - refinements: `ExactRational .where isNonZero`
 
 Any of these patterns can be wrapped in `struct`. Packs and repetitions
-belong to the fields of a constructed shape.
-
-```pattern
-todo test "Each pattern form constructs a descriptor"
-  assert (pattern :Singleton) === Pattern(:Singleton)
-  assert (pattern Int) === Int
-  assert (pattern Rect(Int, Int)) === Pattern(Rect(Int, Int))
-  assert (pattern Int | Float) === (pattern Float | Int)
-  assert (pattern ExactRational .where isNonZero) === Pattern(ExactRational .where isNonZero)
-  assert (struct :Singleton) === Struct(:Singleton)
-  assert (struct Rect(Int, Int)) === Struct(Rect(Int, Int))
-end
-```
+belong to the fields of a constructed shape. The normative inventory is in
+[Pattern forms](type-values.md#pattern-forms).
 
 ## Concrete context for symbols and constructor expressions
 
 A symbol tag or constructor expression describes a value that takes its
-concrete type from an expected grammar or an explicit ascription.
+concrete type from an expected grammar or an explicit ascription. Bare raw
+runtime construction without that interpretation is superseded; see
+[Designation and matching](type-values.md#designation-and-matching).
 
 ```pattern
 test "A bare symbol needs a concrete type"
@@ -104,32 +85,19 @@ end
 
 ## Facets and concrete field types
 
-So what if a pattern is an expression tree:
-
-```pattern
-todo test "An expression-tree pattern is a facet descriptor"
-  assert (pattern Rect(Float, Float)) === Pattern(Rect(Float, Float))
-end
-```
-
-This is a *facet*. It is an abstract type that can match many different
-concrete types: namely `struct Rect(Float, Float)` but also any concrete
-refinements such as `struct Rect(Float, Float) .where isSquare`.
-
-```pattern
-todo test "A facet admits a concrete refinement of the same shape"
-  type Rectangular pattern Rect(Float, Float)
-  type Square struct Rect(Float, Float) .where isSquare
-  (r :: Rectangular) = Rect(2, 2) :: Square
-  expect r is Rect(2, 2) :: Square
-end
-```
+An expression-tree pattern such as `pattern Rect(Float, Float)` is a
+*facet*: an abstract type that can match many concrete types, including
+`struct Rect(Float, Float)` and concrete refinements such as
+`struct Rect(Float, Float) .where isSquare`. The normative facet-versus-wrap
+case is
+[A facet view preserves concrete identity; a struct wrap adds a boundary](type-values.md#concrete-spaces-and-abstract-patterns).
 
 An open facet can admit extra labels. The
 [spread proposal](https://github.com/johnwarden/pattern-language/pull/85)
 shows how a residual capture collects those fields.
 
-Example: nested union pattern
+A nested union in the fields is still one constructor pattern, not a
+distributed union of shapes:
 
 ```pattern
 todo test "A nested union facet admits a concrete field combination"
@@ -143,42 +111,27 @@ end
 
 The four combinations of concrete field types can also be written as an
 explicit union of `Rect(Int, Int)`, `Rect(Int, Float)`, `Rect(Float, Int)`
-and `Rect(Float, Float)`. Use matching to show that equivalence. Descriptor
-identity uses structural normalization and identity rules. There is no new
-normalization rule that distributes a union across fields.
+and `Rect(Float, Float)`. Descriptor identity uses structural normalization;
+there is no new rule that distributes a union across fields. A field union
+and a union of shapes remain distinct; see
+[A field union and a union of shapes have distinct descriptors](type-values.md#facets-and-field-types).
 
 A constructor pattern and a reference to a concrete type have different
-roles in a concrete description:
-
-```pattern
-todo test "Constructor patterns build structs; wrapping preserves identity"
-  type Num pattern Int | Float
-  type Rectangle struct Rect(Num, Num)
-  type IntRectangle struct Rect(Int, Int)
-  type WrappedIntRectangle struct IntRectangle
-
-  (r :: Rectangle) = Rect(2 :: Int, 2 :: Int)
-  (i :: IntRectangle) = Rect(2 :: Int, 2 :: Int)
-  (w :: WrappedIntRectangle) = i
-  assert w === (i :: WrappedIntRectangle)
-end
-```
-
-The first two declarations define structs from field patterns. The source
-`Rect(2 :: Int, 2 :: Int)` can construct either struct in the corresponding
-expected type. Once constructed, `i` already has a concrete identity.
-A structural facet such as `pattern Rect(Num, Num)` can admit it as is.
-Assigning `i` to `Rectangle` would have to reinterpret the struct as a
-different concrete type. Assigning it to `WrappedIntRectangle` preserves
-`i` inside the new wrapper because that descriptor explicitly names
-`struct Rect(Int, Int)` as its inner type.
+roles in a concrete description. Source such as `Rect(2 :: Int, 2 :: Int)`
+can construct either `struct Rect(Num, Num)` or `struct Rect(Int, Int)` in
+the corresponding expected type. Once constructed, the value already has a
+concrete identity. A structural facet can admit it as is. Reinterpreting it
+as an unrelated struct is rejected; wrapping it in a struct that names that
+inner type preserves the member inside a new boundary. See the normative
+wrap case linked above.
 
 A concrete union whose alternatives explicitly reference closed concrete
 types can likewise preserve the chosen member inside the wrapper. This is
 different from a struct with abstract fields. The concrete identities are
 different and direct comparison between instances is an error.
 
-Note the difference here:
+Note the difference here: a facet that asks for `Int` or `Float` fields
+does not match a struct whose fields are themselves wrappers.
 
 ```pattern
 todo test "Wrapped Num fields retain their boundary during facet matching"
@@ -224,7 +177,9 @@ end
 
 The ordinary symbol classes are abstract primitive types. The prelude
 combines them in `Symbol`. Wrapping one class in a struct supplies a
-concrete space for designation.
+concrete space for designation. Ordinary classes also reject reserved
+names; see
+[Ordinary symbol classes reject reserved names](type-values.md#descriptor-kinds-and-primitive-types).
 
 ```pattern
 test "Ordinary symbol classes need a concrete host type for designation"
@@ -250,7 +205,8 @@ Values cannot have `Symbol` types (because they are abstract), but
 
 A union can combine a concrete type and a tag facet. In the example,
 `AbstractOption(Int)` accepts an `Int` directly or the absence case of
-any concrete option type:
+any concrete option type. Parenthesized packs such as `AbstractOption(Int)`
+remain the spelling until angle brackets for parametric functions exist.
 
 ```pattern
 todo test "An abstract option admits Int or a typed :None"
@@ -338,7 +294,8 @@ end
 
 The two `describe` overloads are pairwise disjoint (`PrimaryColor` vs
 `Transparent`), so both may coexist. Overlap would be
-`E_AMBIGUOUS_CALL`.
+`E_AMBIGUOUS_CALL`. See
+[Overload domains and projection dispatch](type-values.md#overload-domains-and-projection-dispatch).
 
 ### Wrapped enum
 
@@ -405,6 +362,10 @@ the symbol inside `Status`.
 
 ### Abstract single-type pattern: alias
 
+`pattern String` returns the referenced type. See also
+[Pattern forms](type-values.md#pattern-forms) and
+[Int and Struct(Int) compare unequal through Type](type-values.md#descriptor-kinds-and-primitive-types).
+
 ```pattern
 todo test "pattern String aliases the primitive"
   t = pattern String
@@ -415,6 +376,9 @@ end
 ```
 
 ### Concrete single-type pattern: "newtypes"
+
+`struct Int` wraps an `Int`. The wrapper and its payload are different
+concrete spaces:
 
 ```pattern
 todo test "struct Int is a newtype wrapper"
@@ -435,6 +399,13 @@ end
 
 ### Unwrapped: abstract unions
 
+For an abstract union, several accepting alternatives that yield the same
+exact typed value count as one interpretation. Macro normalization sorts
+alternatives canonically and removes repetitions of exactly equal
+alternatives. Direct constructors preserve supplied order and duplicates.
+The normative acceptance-counting case is
+[Abstract alternatives can agree on a value while repeated concrete alternatives remain ambiguous](type-values.md#designation-and-matching).
+
 ```pattern
 todo test "Abstract unions preserve member concrete identities"
   t = pattern String | :None
@@ -451,14 +422,6 @@ todo test "Abstract unions preserve member concrete identities"
   assert a !== b
 end
 ```
-
-For an abstract union, several accepting alternatives that yield the same
-exact typed value count as one interpretation. For example,
-`pattern Any | String` admits `"hi" :: String` once. Ambiguity remains when
-alternatives yield different typed results. Macro normalization sorts
-alternatives canonically and removes repetitions of exactly equal
-alternatives (dedupe by type-value equality). Direct constructors preserve
-supplied order and duplicates.
 
 ### Wrapped: concrete unions
 
@@ -480,17 +443,25 @@ end
 ```
 
 Inside a concrete descriptor, explicit alternative occurrences remain
-separate choices. Designating `3 :: Int` into the direct-constructor
-`Struct(Int | Int)` yields two interpretations, even though the two
-alternatives have the same pattern. Its normalized macro counterpart
-`struct Int | Int` has one.
+separate choices. Designating `3 :: Int` into `Struct(Int | Int)` yields
+two interpretations; its normalized macro counterpart `struct Int | Int`
+has one.
 
 ## Predicate
 
 The [Predicate enum](refinement-predicates.md) gives refinements stable
 identities that can be written in type expressions and typed text.
+Abstract refinement versus concrete carveout, and the named-predicate
+requirement, are covered by
+[Abstract refinement and concrete carveout both use named predicates](type-values.md#pattern-forms)
+and by the `isSquare` case in
+[refinement predicates](refinement-predicates.md#evidence-and-first-tests).
 
-### Pattern: refinements
+A refinement restricts the admitted values while preserving their concrete
+identity. Literal designation and explicit checks establish predicate
+evidence. Bindings and dispatch on bound arguments use the evidence already
+available; dispatch does not run predicates. A concrete carveout adds its
+own boundary. Use `T .where p` in either pattern form.
 
 ```pattern
 todo test "An abstract refinement preserves Int operations"
@@ -507,13 +478,6 @@ todo test "An abstract refinement preserves Int operations"
 end
 ```
 
-A refinement restricts the admitted values while preserving their concrete
-identity. Literal designation and explicit checks establish predicate
-evidence. Bindings and dispatch on bound arguments use the evidence already
-available; dispatch does not run predicates.
-
-### Concrete: carveouts
-
 ```pattern
 todo test "A concrete carveout has its own operations"
   t = struct ExactRational .where isPositive
@@ -529,12 +493,16 @@ todo test "A concrete carveout has its own operations"
 end
 ```
 
-A concrete carveout adds its own boundary. Use `T .where p` in either
-pattern form.
+The abstract case keeps base operations; the carveout does not inherit them.
+That operational contrast is the reason both forms exist.
 
 ## Expression trees
 
 ### Concrete expression trees
+
+Opening a concrete struct boundary is explicit. For an ordinary binding
+or function parameter, bind the entire value and access its fields or
+open it with `match` inside the body.
 
 ```pattern
 todo test "A concrete Rect supports an area match"
@@ -551,10 +519,6 @@ todo test "A concrete Rect supports an area match"
   expect area(r) is 6 :: Int
 end
 ```
-
-Opening a concrete struct boundary is explicit. For an ordinary binding
-or function parameter, bind the entire value and access its fields or
-open it with `match` inside the body.
 
 ### Abstract expression trees: facets
 
@@ -593,77 +557,18 @@ that the preceding patterns left unmatched.
 
 ### Refinements over structs and facets
 
-A facet can guarantee the fields a predicate needs. The prelude's
-`isSquare` case can test a value that provides the rectangular fields.
-
-```pattern
-todo test "isSquare is a named Predicate on a Rectangular facet"
-  type Rectangular pattern Rect(w :: Float, h :: Float)
-  type Rectangle struct Rect(w :: Float, h :: Float)
-  type Square pattern Rectangular .where isSquare
-
-  r = Rect(10, 10) :: Rectangle
-  assert not((Rect(10, 11) :: Rectangle) .matches Square)
-  same = if r .matches Square
-    (s :: Square) = r
-    s === r
-  else
-    False
-  end
-  assert same
-end
-```
-
-A true explicit `.matches` check supplies evidence. The refined binding
-retains the same concrete `Rectangle` value.
-
-A refinement over a numeric type behaves the same way. `NonZeroNumber`
-is the static type of `x`. The bound value still has concrete type `Int`.
-
-```pattern
-todo test "A Number refinement keeps the Int concrete member"
-  type NonZeroNumber pattern Number .where isNonZero
-  (x :: NonZeroNumber) = 2 :: Int
-  expect x is 2 :: Int
-end
-```
-
-A concrete carveout has its own concrete identity.
-
-```pattern
-todo test "A concrete Square carveout wraps the facet refinement"
-  type Rectangular pattern Rect(w :: Float, h :: Float)
-  type ConcreteSquare struct Rectangular .where isSquare
-  expect ConcreteSquare is Struct(Rectangular .where isSquare)
-end
-```
-
-Predicate-only types, head-agnostic expressions and intersections of
-facets are separate design questions.
+A facet can guarantee the fields a predicate needs. A true explicit
+`.matches` check supplies evidence; the refined binding retains the same
+concrete value. Predicate-only types, head-agnostic expressions and
+intersections of facets are separate design questions.
 
 A facet name in a `struct` declaration supplies its pattern. A constructor
 pattern gives the new concrete type its outer constructor and fields.
-A reference to a concrete type supplies a typed member.
-
-```pattern
-todo test "struct Rectangular wraps the facet; Bar does not unwrap to Foo"
-  type Rectangular pattern Rect(Int, Int)
-  type Rectangle struct Rectangular
-  (x :: Rectangular) = Rect(2, 3) :: Rectangle
-  expect x is Rect(2, 3) :: Rectangle
-
-  type Foo pattern Int
-  type Bar struct Foo
-
-  expect
-    (i :: Foo) = 5 :: Bar
-    i
-  fails "E_PATTERN_MISMATCH"
-end
-```
-
-`Foo` refers to `Int`, and the binding requires an `Int` as the whole
-value. The whole value has type `Bar`.
+A reference to a concrete type supplies a typed member. `pattern Int`
+aliases `Int`, so `struct Foo` where `Foo` is that alias wraps `Int` and
+does not unwrap under an abstract `Foo` binding—the same boundary rule as
+the normative wrap case in
+[Concrete spaces and abstract patterns](type-values.md#concrete-spaces-and-abstract-patterns).
 
 ## Pattern matching rules
 
@@ -699,9 +604,10 @@ end
 ```
 
 A constructor pattern tests the concrete types held in abstract fields.
+The normative Reading match is
+[A match sees the concrete member stored in an abstract field](type-values.md#facets-and-field-types).
 A `Rectangle` whose two `Num` fields hold Int values matches
-`pattern Rect(Int, Int)`. The `Rectangle` keeps its concrete type. A
-rectangle with a Float in the second field reaches the other arm.
+`pattern Rect(Int, Int)` the same way:
 
 ```pattern
 todo test "A rectangle matches the concrete members held in its fields"
@@ -824,23 +730,7 @@ todo test "Nested union patterns are allowed inside struct fields"
 end
 ```
 
-The only issue for a future shorthand is expression-tree patterns. If I
-just say:
-
-    t = Rect(Float, Float)
-
-this looks like a value, not a type. A single symbol is similarly
-ambiguous:
-
-    :Foo
-
-So those remain a future goal. For now the required spellings are
-current syntax and are tested:
-
-```pattern
-todo test "Current spellings require pattern or Pattern for facets and tags"
-  assert (pattern Rect(Float, Float)) === Pattern(Rect(Float, Float))
-  expect Pattern(Rect(Float, Float)) is Pattern(Rect(Float, Float))
-  assert (pattern :Foo) === Pattern(:Foo)
-end
-```
+Bare constructor trees and bare tags still look like values when written
+alone (`Rect(Float, Float)`, `:Foo`), so those remain a future shorthand
+goal. For now the required spellings use `pattern` / `Pattern` (and
+`struct` / `Struct`) as in [Pattern forms](type-values.md#pattern-forms).
