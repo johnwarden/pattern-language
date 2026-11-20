@@ -4,7 +4,12 @@ Approved by Jonathan in the project chat on 9 November 2026: initially support
 substring matching, and require the subject value to be a String.
 
 ```pattern
-expect subject contains "needle"
+test "Contains matches contiguous String text"
+  expect "hello world" contains "hello"
+  expect "hello world" contains "lo w"
+  expect "hello world" contains "world"
+  expect "a,b" contains ","
+end
 ```
 
 The subject must produce one String value. The expected needle is authored String

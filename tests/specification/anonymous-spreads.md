@@ -3,18 +3,14 @@
 [The source cases](anonymous-spreads.test) use a bare annotated ellipsis when
 no capture name is needed. A single horizontal repetition uses one list layer:
 
-```pattern
-concrete [... :: Float32*]
-```
+    concrete [... :: Float32*]
 
 A horizontal row repeated vertically keeps both repetitions explicit:
 
-```pattern
-concrete [
-  ... :: Float32**
-  ...
-]
-```
+    concrete [
+      ... :: Float32**
+      ...
+    ]
 
 The annotation describes the aggregate repetition dimensions. There is no
 required `_` capture and no synthetic capture binding.

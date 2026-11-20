@@ -3,105 +3,100 @@
 Approved by Jonathan in the project chat on 9 November 2026: retire
 `x = type pattern` and `def Name type ...`; `def` must not provide an alternate
 way to declare a type. The motivation is one clear spelling for each role.
+Aligned with the [type values](type-values.md) decision: named declarations
+install accessors; plain construction is capture-free; Type-valued ordinary
+computation remains legal.
 
-Use dedicated declarations and ordinary type-producing expressions:
+## Current spellings
 
-```pattern
-type Rectangle concrete Rect(width :: Int, height :: Int)
-t = concrete Rect(Int, Int)
-
-type EitherFloat abstract Float32 | Float64
-u = abstract Float32 | Float64
-
-alias = Rectangle
-```
-
-The last binding stores an existing type value; it is not another declaration.
-Plain construction remains capture-free and does not install accessor products.
-Named declarations retain their established declaration/accessor behavior.
-
-Retired forms must be rejected rather than silently normalized to the new syntax:
+Use a dedicated declaration, or an ordinary type-producing expression:
 
 ```pattern
-t = type Rect(Int, Int)
-
-def Rectangle type Rect(width :: Int, height :: Int)
-
-def Rectangle concrete Rect(width :: Int, height :: Int)
-
-def EitherFloat abstract Float32 | Float64
+test "Dedicated declarations and plain construction"
+  type Rectangle concrete Rect(width :: Int, height :: Int)
+  t = concrete Rect(Int, Int)
+  type EitherFloat abstract Float32 | Float64
+  u = abstract Float32 | Float64
+  alias = Rectangle
+  assert alias == Rectangle
+  assert t == (concrete Rect(Int, Int))
+  assert u == (abstract Float32 | Float64)
+end
 ```
 
-The last two are important: removing only the old `type pattern` expression must
-not leave `def Name concrete/abstract ...` as a confusing second declaration path.
-These snippets are negative test inputs, not current executable rejection coverage.
-Their diagnostic contract should be made concrete with the implementation tests.
+`alias = Rectangle` stores an existing type value; it is not another declaration.
+Kind constructors such as `ConcreteType(...)` and `AbstractType(...)` are the
+ordinary data forms of those descriptors; see [type values](type-values.md).
 
-## Boundary needing clarification
+Retired alternate spellings (`t = type …`, `def Name type …`, and
+`def Name concrete/abstract …` as a second declaration path) are rejected rather
+than normalized. Coverage for those rejections belongs with the coordinated
+runtime removal; this record does not keep a suite of negative deprecated-form
+cases.
 
-The distinction between declaring a type and computing with Type values needs
-one explicit example. In particular, is an ordinary function returning a Type
-value still legal?
+## Type-valued ordinary functions
+
+Retiring `def` as a type-declaration spelling does not ban Type as a parameter
+or result. [Type values](type-values.md) already contracts ordinary functions
+that take and return Type, including building descriptors with
+`ConcreteType(...)`. The old sketch `def makeBox(t :: Type) concrete Box(t)` was
+a confused hybrid of declaration syntax and computation; the approved form is an
+ordinary function body:
 
 ```pattern
-def makeBox(t :: Type) concrete Box(t)
+test "Ordinary functions may take and return Type values"
+  def keep(t :: Type) t
+  type Rectangle concrete Rect(w :: Rational, h :: Rational)
+  assert keep(Rectangle) == Rectangle
+end
+
+todo test "A Type parameter builds a concrete Box descriptor"
+  def makeBox(T :: Type) ConcreteType(Box(T))
+  saved = makeBox(String)
+  assert saved == ConcreteType(Box(String))
+end
 ```
 
-Likewise, clarify `def` constants that merely refer to an existing Type value.
-Do not infer a blanket ban on Type-valued computation, or make indirect `def`
-aliases a new declaration mechanism, before that boundary is agreed in chat.
+A `def` constant that merely names an existing type value remains an ordinary
+binding (`alias = Rectangle` above), not a declaration mechanism.
 
 ## Open patterns migrate to `abstract`
 
 Approved by Jonathan in the project chat on 2026-11-10. The retired
 `def Name type pattern` and `type pattern` forms constructed an abstract type
-when the pattern was open, that is, when it included `...` or `**` (an open
-structural facet). Migrate such definitions to `abstract`, never `concrete`:
+when the pattern was open (`...` or `**`). Migrate those to `abstract`, never
+`concrete`. A concrete type cannot be open (`ConcreteType({**})` and the
+`concrete` pattern form fail with `E_TYPE_DESCRIPTION`).
 
 ```pattern
-type Rectangular abstract Rect(w :: Float, h :: Float, **)
+test "Open facets use abstract declarations"
+  type Rectangular abstract Rect(w :: Float, h :: Float, **)
+  assert Rectangular .matches Type
+end
+
+todo test "An abstract open facet registers named field accessors"
+  type Rectangular abstract Rect(w :: Float, h :: Float, **)
+  r = Rect(2, 3, color: "black") :: (concrete Rect(Float, Float, color: String))
+  (p :: Rectangular) = r
+  expect p.w is 2 :: Float
+  expect p.h is 3 :: Float
+end
 ```
 
-replaces `def Rectangular type :Rect(w :: Float, h :: Float, **)`. A concrete
-type cannot be open: `ConcreteType({**})` is an error, and the same holds for
-the `concrete` pattern form. The mass edit must therefore classify each retired
-declaration by whether its pattern is open instead of rewriting every `type` to
-`concrete`. These errors use `E_TYPE_DESCRIPTION`, the invalid type description
-code.
+The facet fixes the `Float` fields, so their annotations may be omitted in typed
+text; an open `color` field keeps its `String` annotation when the facet does
+not determine it. Annotated typed repetition such as `... :: Float32*` follows
+[anonymous repeated patterns](anonymous-repeated-patterns.md) (`type Numbers
+concrete [... :: Float32*]`); do not treat those as open-facet migrations.
 
-An abstract open facet registers accessors for its named fields, as the retired
-definition did. Given the declaration above and a value `r` of a concrete
-`Rect(Float, Float, color: String)` type, `(p :: Rectangular) = r` binds a value
-with `p.w` and `p.h`, and `toString(Rectangular)(p)` is
-`Rect(2, 3, color: "black" :: String)`. The facet fixes the `Float` fields, so
-their annotations are omitted; the open `color` field keeps its `String`
-annotation because the facet does not determine it.
+## Implementation
 
-Pending clarification: how this rule applies to an annotated typed repetition
-such as `... :: Float32*`, which the approved
-[anonymous repeated patterns](anonymous-repeated-patterns.md) record builds as a
-concrete type (`type Numbers concrete [... :: Float32*]`). Do not migrate
-declarations containing `...` until that is confirmed in chat.
-
-## Implementation and test prerequisites
-
-Existing positive controls are C04/C05 in
+Positive controls remain C04/C05 in
 [type-values.test](../tests/specification/type-values.test), C13 in
 [interpretations.test](../tests/specification/interpretations.test) and C16 in
-[declarations.test](../tests/specification/declarations.test). Add focused
-negative cases for the retired forms before changing recognition/evaluation.
-
-This is a coordinated breaking change. Audit the source prelude, default/source
-grammar bootstrapping, schemas, all tests/fixtures, canonical Code printing, docs
-and editor consumers. Parameterized/postfix/variadic type declarations used by
-the prelude need supported replacements before compatibility is removed. Preserve
-the source-defined optional convention and complete runtime argument packs.
-
-Raw data and global descriptor text use their own grammars; this surface change
-does not choose a new descriptor-decoding or public inspection API. Keep old
-Code text/quotation round-trip expectations explicit during the migration.
-
-The expectation-DSL rename is a separate coordinated change. Do not silently
-expand that scheduled migration into this language-syntax retirement. Keep this
-record approved until its replacement/rejection contracts are actual tests;
-runtime removal follows those tests and the prerequisite work.
+[declarations.test](../tests/specification/declarations.test). Runtime removal of
+the retired spellings is a coordinated breaking change with the prelude,
+schemas, corpus, docs and editors, and follows the type-values migration table
+for `Type(...)` / `UnionType(...)` replacements. Preserve the source-defined
+optional convention and complete runtime argument packs. This surface change
+does not choose a new descriptor-decoding or public inspection API.

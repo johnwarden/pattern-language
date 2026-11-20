@@ -960,7 +960,7 @@ retains the original tree and lexical origins.
 
 ## Test DSL and shared examples
 
-The runner scans `tests/**/*.test` and Markdown `pattern test` fences under `specs/`.
+The runner scans `tests/**/*.test` and unlabeled or `pattern` fences under `specs/`.
 Each source file or executable fence contains one or more named test blocks.
 The ordinary schema in examples/test-schema.pattern
 requires a first Test row and permits a repeated Test* tail. Shared setup belongs

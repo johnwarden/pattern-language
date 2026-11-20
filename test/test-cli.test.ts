@@ -137,22 +137,20 @@ test("CLI runs named tests in both Pattern fence forms at Markdown coordinates",
         "  end",
         "```",
         "",
-        "  ~~~pattern test",
+        "  ~~~",
         '  todo test "Future"',
         "    assert False",
         "  end",
         "  ~~~",
         "",
-        "```pattern test",
+        "```pattern",
         'test "Failure"',
         "  expect 4 is 5",
         "end",
         "```",
         "",
-        "```pattern",
-        "test = 1",
-        "test x",
-        "```",
+        "    test = 1",
+        "    test x",
       ].join("\r\n"),
     );
     const listed = invoke("--list", dir);
@@ -169,52 +167,102 @@ test("CLI runs named tests in both Pattern fence forms at Markdown coordinates",
     assert.doesNotMatch(run.stderr + run.stdout, /E_PATTERN_MISMATCH/);
   }));
 
-test("CLI keeps plain Pattern fences without quoted test names illustrative", () =>
+test("Markdown fences share preceding setup and allow document-level checks", () =>
   temporary((dir) => {
     const file = join(dir, "sketch.md");
     writeFileSync(
       file,
       [
-        "```pattern",
+        "```",
+        "def Rectangle type Rect(width :: Float, height :: Float)",
         "test = 1",
         "x = test",
         "```",
         "",
-        "```pattern",
-        "test x",
-        "```",
+        "An illustrative fragment.",
+        "",
+        "    expect x is 99",
         "",
         "```pattern",
-        'test "Quoted"',
-        "  assert True",
+        "r = Rect(2, 3) :: Rectangle",
+        "expect x is 1",
+        'test "First"',
+        "  local = 4",
+        "  expect x is 1",
+        "  expect r.width is 2 :: Float",
+        '  expect later fails "E_UNBOUND_NAME"',
+        "end",
+        "```",
+        "",
+        "```text",
+        "expect x is 99",
+        "```",
+        "",
+        "~~~",
+        "later = x + 1",
+        "assert later == 2",
+        "~~~",
+        "```pattern",
+        'test "Second"',
+        "  expect later is 2",
+        '  expect local fails "E_UNBOUND_NAME"',
         "end",
         "```",
       ].join("\n"),
     );
     const listed = invoke("--list", file);
     assert.equal(listed.status, 0, listed.stderr);
-    assert.match(listed.stdout, /sketch\.md#quoted · Quoted/);
-    assert.equal(
-      listed.stdout.split("\n").filter((line) => line.includes("sketch.md#"))
-        .length,
-      1,
-    );
+    assert.match(listed.stdout, /sketch\.md#first · First/);
+    assert.match(listed.stdout, /sketch\.md#second · Second/);
+    assert.match(listed.stdout, /sketch\.md · Document examples · 2 check/);
     const run = invoke(file);
     assert.equal(run.status, 0, run.stderr + run.stdout);
-    assert.match(run.stdout, /PASS sketch\.md#quoted/);
+    assert.match(run.stdout, /PASS sketch\.md#first/);
+    assert.match(run.stdout, /PASS sketch\.md#second/);
+    assert.match(run.stdout, /7 assertions passed/);
+  }));
+
+test("unnamed Markdown examples run, and failures retain Markdown coordinates", () =>
+  temporary((dir) => {
+    const file = join(dir, "examples.md");
+    writeFileSync(file, "A value.\n\n```\nx = 1\n```\n");
+    const smoke = invoke(file);
+    assert.equal(smoke.status, 0, smoke.stderr + smoke.stdout);
+    assert.match(smoke.stdout, /PASS examples\.md · Document examples/);
+    assert.match(smoke.stdout, /0 assertions passed/);
+
+    writeFileSync(file, "A failing check.\n\n  ```\n  assert False\n  ```\n");
+    const check = invoke(file);
+    assert.equal(check.status, 1);
+    assert.match(check.stdout, /at examples\.md:4:3/);
+
+    writeFileSync(
+      file,
+      '```pattern\ntest "First"\n  assert True\nend\n```\n\n  ```\n  missingName()\n  ```\n',
+    );
+    const trailing = invoke(file);
+    assert.equal(trailing.status, 1);
+    assert.match(trailing.stdout, /PASS examples\.md#first/);
+    assert.match(trailing.stdout, /E_UNBOUND_NAME · examples\.md:8:3/);
+  }));
+
+test("failed Markdown setup cannot satisfy a whole-test todo", () =>
+  temporary((dir) => {
+    const file = join(dir, "future.md");
+    writeFileSync(
+      file,
+      '```\nmissingName()\n```\n\n```pattern\ntodo test "Future"\n  assert False\nend\n```\n',
+    );
+    const run = invoke(file);
+    assert.equal(run.status, 1);
+    assert.match(run.stdout, /FAIL future\.md#future/);
+    assert.match(run.stdout, /fixture: E_UNBOUND_NAME · future\.md:2:1/);
   }));
 
 test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
   temporary((dir) => {
     const file = join(dir, "broken.md");
-    const fence = '```pattern test\ntest "Same case"\n  assert True\nend\n';
-    writeFileSync(file, "# Heading\n\n" + fence);
-    const unclosedTest = invoke(file);
-    assert.equal(unclosedTest.status, 1);
-    assert.match(
-      unclosedTest.stderr,
-      /broken\.md:3:1: unclosed pattern test fence/,
-    );
+    const fence = '```pattern\ntest "Same case"\n  assert True\nend\n';
     writeFileSync(file, "# Heading\n\n```pattern\nillustrative\n");
     const unclosedPlain = invoke(file);
     assert.equal(unclosedPlain.status, 1);
@@ -230,7 +278,7 @@ test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
         "```pattern",
         "illustrative",
         "",
-        "```pattern test",
+        "```pattern",
         'test "Swallowed"',
         "  assert True",
         "end",
@@ -242,28 +290,42 @@ test("CLI rejects malformed Markdown test fences and duplicate case IDs", () =>
     assert.equal(swallowed.status, 1);
     assert.match(
       swallowed.stderr,
-      /broken\.md:6:1: pattern test fence nested inside another fence/,
+      /broken\.md:6:1: Pattern fence starts before the previous Markdown fence closes/,
     );
     assert.doesNotMatch(swallowed.stdout, /Swallowed/);
-    writeFileSync(
-      join(dir, "good.test"),
-      'test "Good"\n  assert True\nend\n',
-    );
+    writeFileSync(join(dir, "good.test"), 'test "Good"\n  assert True\nend\n');
     const mixed = invoke(dir);
     assert.equal(mixed.status, 1);
     assert.match(
       mixed.stderr,
-      /broken\.md:6:1: pattern test fence nested inside another fence/,
+      /broken\.md:6:1: Pattern fence starts before the previous Markdown fence closes/,
     );
     assert.match(mixed.stdout, /PASS good#good/);
+    writeFileSync(file, "````text\n" + fence + "```\n````\n");
+    const displayed = invoke("--list", dir);
+    assert.equal(displayed.status, 0, displayed.stderr);
+    assert.doesNotMatch(displayed.stdout, /Same case/);
+    writeFileSync(file, fence.replace("pattern", "pattern test") + "```\n");
+    const retired = invoke("--list", dir);
+    assert.equal(retired.status, 1);
+    assert.match(
+      retired.stderr,
+      /broken\.md:1:1: Use an unlabeled fence or label it pattern/,
+    );
     writeFileSync(file, fence + "```\n\n" + fence + "```\n");
     const duplicate = invoke("--list", file);
     assert.equal(duplicate.status, 1);
     assert.match(duplicate.stderr, /E_TEST_ID · broken\.md:8:\d+/);
-    writeFileSync(file, '  ```pattern\n  test "Example"\n    expect (]\n  end\n  ```\n');
+    writeFileSync(
+      file,
+      '  ```pattern\n  test "Example"\n    expect (]\n  end\n  ```\n',
+    );
     const malformed = invoke(file);
     assert.equal(malformed.status, 1);
-    assert.match(malformed.stderr, /broken\.md:3:13: unmatched closing delimiter/);
+    assert.match(
+      malformed.stderr,
+      /broken\.md:3:13: unmatched closing delimiter/,
+    );
     writeFileSync(
       file,
       [

@@ -6,7 +6,7 @@ import {
   parseTestSource,
 } from "./parser.ts";
 import { DEFAULT_GRAMMAR, Grammar } from "./grammar.ts";
-import { normal, binary, LanguageError } from "./syntax.ts";
+import { normal, binary, isName, LanguageError } from "./syntax.ts";
 import type { Field, Syntax, Span } from "./syntax.ts";
 import { dataSyntax, codeSource } from "./syntax-values.ts";
 import {
@@ -23,7 +23,7 @@ import { primitiveNames } from "./primitive-names.ts";
 import type { Pattern } from "./pattern.ts";
 import { attachSource, renderDiagnostic } from "./diagnostics.ts";
 import { lineIndent } from "./indent.ts";
-import { markdownTestSources } from "./test-markdown.ts";
+import { markdownTestSource } from "./test-markdown.ts";
 import {
   TEST_SCHEMA,
   TEST_STEP_TYPES,
@@ -59,6 +59,10 @@ export interface TestCase {
   /** Executable editor source for supported checks/output, excluding todo operands. */
   source: string;
   program: boolean;
+  /** Ordinary source above this case, with its document line numbers preserved. */
+  documentSetup?: string;
+  /** The unnamed checks and examples from a Markdown document. */
+  documentCase?: boolean;
   /** Markdown fence indent: restore original columns when printing LanguageErrors. */
   markdown?: { text: string; offset: (line: number) => number };
 }
@@ -171,6 +175,14 @@ function scalarString(value: Value): string {
 function stem(file: string): string {
   return file.replace(/\.test$/, "");
 }
+function documentSetupSource(steps: TestStep[]): string {
+  const lines: string[] = [];
+  for (const step of steps) {
+    while (lines.length < step.location.line - 1) lines.push("");
+    lines.push(...step.source.trimEnd().split("\n"));
+  }
+  return lines.join("\n");
+}
 function slug(name: string): string {
   return (
     name
@@ -268,7 +280,7 @@ class TestReader {
       };
     });
   }
-  steps(body: Syntax): TestStep[] {
+  steps(body: Syntax, allowOutput = true): TestStep[] {
     if (body.kind !== "block")
       throw problem("a test requires an indented body", body, "E_TEST_SYNTAX");
     const tokens: Syntax[] = [],
@@ -369,7 +381,10 @@ class TestReader {
         const row = boundaries.get(pos)!;
         const next = [...boundaries.keys()].find((i) => i > pos)!;
         const start = n.span;
-        const stop = body.lines[row + 1]?.span?.start ?? body.span?.end;
+        const stop =
+          body.lines[row + 1]?.span?.start ??
+          body.span?.end ??
+          start?.source?.text.length;
         let source: string;
         if (start?.source && start.start !== undefined && stop !== undefined) {
           let from = start.start - start.column + 1;
@@ -428,6 +443,7 @@ class TestReader {
     // It is not another assertion and introduces no new pack representation.
     const tail = result.at(-1);
     if (
+      allowOutput &&
       tail?.kind === "setup" &&
       tail.mode === "check" &&
       one(tail.subject).kind === "pack" &&
@@ -436,7 +452,7 @@ class TestReader {
       tail.kind = "output";
     return result;
   }
-  file(file: string, source: string, ids = new Set<string>()): TestCase[] {
+  file(file: string, source: string): TestCase[] {
     const tree = parseTestSource(source, file, {
       layoutForms: testLayoutForms,
     });
@@ -446,6 +462,64 @@ class TestReader {
         tree,
         "E_TEST_FILE",
       );
+    return this.cases(file, tree);
+  }
+  document(file: string, source: string): TestCase[] {
+    const tree = parseTestSource(source, file, { layoutForms: testLayoutForms });
+    if (tree.kind !== "block" || !tree.lines.length) return [];
+    const isTest = tree.lines.map((line) => {
+      if (line.kind !== "sequence") return false;
+      const [first, second, third] = line.items;
+      const modified = isName(first, "todo") || isName(first, "legacy");
+      const head = modified ? second : first;
+      const name = modified ? third : second;
+      return (
+        head &&
+        isName(head, "test") &&
+        name?.kind === "literal" &&
+        typeof name.value === "string"
+      );
+    });
+    const named = tree.lines.filter((_, index) => isTest[index]);
+    const tests = named.length ? this.cases(file, { ...tree, lines: named }) : [];
+    const lines = source.split("\n");
+    for (const [index, line] of tree.lines.entries()) {
+      if (!isTest[index]) continue;
+      const start = line.span!.line - 1;
+      const end = (tree.lines[index + 1]?.span?.line ?? lines.length + 1) - 1;
+      lines.fill("", start, end);
+    }
+    const documentSource = lines.join("\n");
+    const document = named.length
+      ? parseTestSource(documentSource, file, { layoutForms: testLayoutForms })
+      : tree;
+    const steps = this.steps(document, false);
+    const setup = steps.filter(
+      (step) => step.kind === "setup" && step.mode !== "todo",
+    );
+    for (const [index, test] of tests.entries()) {
+      const before = setup.filter((step) => step.location.line < named[index].span!.line);
+      if (!before.length) continue;
+      test.documentSetup = documentSetupSource(before);
+      test.source = test.documentSetup.trim() + "\n\n" + test.source;
+    }
+    const lastTestLine = named.at(-1)?.span?.line ?? 0;
+    if (
+      steps.some((step) => isAssertion(step) || step.location.line > lastTestLine)
+    ) {
+      const [example] = this.file(file, 'test "Document examples"\n  ()\nend');
+      tests.push({
+        ...example,
+        id: file,
+        steps,
+        source: documentSource.trim(),
+        documentCase: true,
+      });
+    }
+    return tests;
+  }
+  private cases(file: string, tree: Syntax): TestCase[] {
+    const ids = new Set<string>();
     let value: Value;
     try {
       value = this.schema.interpretSyntax(this.fileType, tree);
@@ -569,32 +643,28 @@ export function loadTests(files: Record<string, string>): TestCase[] {
     .flatMap(([name, source]) => {
       if (!name.endsWith(".md"))
         return reader.file(name.endsWith(".test") ? name : name + ".test", source);
-      const ids = new Set<string>();
-      const tests: TestCase[] = [];
-      for (const { code, offsets, firstLine } of markdownTestSources(name, source)) {
-        const offset = (line: number) => offsets[line - firstLine] ?? 0;
-        try {
-          const cases = reader.file(name, code, ids);
-          for (const test of cases) {
-            test.markdown = { text: source, offset };
-            for (const step of test.steps)
-              step.location.column += offset(step.location.line);
-          }
-          tests.push(...cases);
-        } catch (error) {
-          if (error instanceof LanguageError) {
-            const spans = [
-              error.diagnostic.primary,
-              ...error.diagnostic.related.map((r) => r.span),
-            ];
-            for (const span of new Set(spans))
-              relocateMarkdownSpan(span, name, source, offset);
-            error.refresh();
-          }
-          throw error;
+      const { code, offset } = markdownTestSource(name, source);
+      if (!code.trim()) return [];
+      try {
+        const tests = reader.document(name, code);
+        for (const test of tests) {
+          test.markdown = { text: source, offset };
+          for (const step of test.steps)
+            step.location.column += offset(step.location.line);
         }
+        return tests;
+      } catch (error) {
+        if (error instanceof LanguageError) {
+          const spans = [
+            error.diagnostic.primary,
+            ...error.diagnostic.related.map((r) => r.span),
+          ];
+          for (const span of new Set(spans))
+            relocateMarkdownSpan(span, name, source, offset);
+          error.refresh();
+        }
+        throw error;
       }
-      return tests;
     });
 }
 
@@ -885,7 +955,12 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
     fail(describeFailure(entry.message, entry), todoEligible);
   };
   try {
-    if (fixture) interpreter.run(fixture, "repl", test.file + ":fixture");
+    const prepare = (target: Interpreter) => {
+      if (fixture) target.run(fixture, "repl", test.file + ":fixture");
+      if (test.documentSetup)
+        target.run(test.documentSetup, "repl", test.file);
+    };
+    prepare(interpreter);
     const setup: TestStep[] = [];
     const history: string[] = [];
     let alternativeBase: string[] | undefined;
@@ -894,9 +969,15 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
       phase = "setup";
       const first = setup[0];
       alternativeBase = first.mode === "legacy" ? [...history] : undefined;
-      const source = setup.map((s) => s.source).join("\n");
+      const source = test.documentCase
+        ? documentSetupSource(setup)
+        : setup.map((s) => s.source).join("\n");
       try {
-        interpreter.run(source, "repl", test.file + ":setup");
+        interpreter.run(
+          source,
+          "repl",
+          test.documentCase ? test.file : test.file + ":setup",
+        );
       } catch (error) {
         if (error instanceof LanguageError && first.subject.span)
           error.diagnostic.related.push({
@@ -921,7 +1002,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
             group.push(test.steps[++index]);
           phase = "setup";
           const trial = new Interpreter();
-          if (fixture) trial.run(fixture, "repl", test.file + ":fixture");
+          prepare(trial);
           for (const source of alternativeBase ?? history)
             trial.run(source, "repl", test.file + ":setup replay");
           let failed = false;
@@ -1096,7 +1177,7 @@ export function runTest(test: TestCase, fixture = ""): TestReport {
         });
     }
     flush();
-    if (!checks.length)
+    if (!checks.length && !test.documentCase)
       throw problem(
         "a test requires at least one assert or expect",
         test.body,
