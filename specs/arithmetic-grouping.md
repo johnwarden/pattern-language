@@ -299,6 +299,7 @@ test "Lowest-precedence = binds typed names and rejects invalid pattern left-han
   assert parse(Code)("x :: Int = 5") == parse(Code)("=(::(x)(Int))(5)")
   assert parse(Code)("a + b = c") == parse(Code)("=(+(a)(b))(c)")
   assert parse(Code)("a ^ b = c") == parse(Code)("=(^(a)(b))(c)")
+  assert parse(Code)("n = a ^ b") == parse(Code)("=(n)(^(a)(b))")
   expect
     x :: Int = 5
     x
@@ -392,6 +393,10 @@ test "Quoted operators keep their source spelling in Write suggestions"
   expect parse(Code)("x :- y :* z") fails "
     Syntax error. Write `(x :- y) :* z` or `x :- (y :* z)`.
     Mixing :- and :* requires parentheses.
+  end
+  expect parse(Code)("x .:and y :|| z") fails "
+    Syntax error. Write `(x .:and y) :|| z` or `x .:and (y :|| z)`.
+    Mixing .:and and :|| requires parentheses.
   end
 end
 ```
