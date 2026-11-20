@@ -18,28 +18,26 @@ throws, retain the original language diagnostic and location.
 
 These deliberately failing fixtures must produce distinct, identifiable reports:
 
-```text
-test "Failed equality"
-  left = 1
-  right = 2
-  assert left == right
-end
+    test "Failed equality"
+      left = 1
+      right = 2
+      assert left == right
+    end
 
-test "Failed inequality"
-  left = 1
-  right = 1
-  assert left != right
-end
+    test "Failed inequality"
+      left = 1
+      right = 1
+      assert left != right
+    end
 
-test "Failed pattern match"
-  candidate = "hello"
-  assert candidate .matches Rational
-end
+    test "Failed pattern match"
+      candidate = "hello"
+      assert candidate .matches Rational
+    end
 
-test "Fulfilled todo"
-  todo assert 1 == 1
-end
-```
+    test "Fulfilled todo"
+      todo assert 1 == 1
+    end
 
 The equality report identifies `assert left == right`, `left: 1 :: Rational`
 and `right: 2 :: Rational`. The inequality report identifies `assert left != right`
@@ -79,22 +77,20 @@ end
 
 Acceptance fixtures that must fail:
 
-```text
-test "A value mismatch is a comparison failure"
-  expect 1 is 2
-end
+    test "A value mismatch is a comparison failure"
+      expect 1 is 2
+    end
 
-test "An explicit type mismatch remains a failure"
-  expect 3 :: Int is 3 :: Rational
-end
+    test "An explicit type mismatch remains a failure"
+      expect 3 :: Int is 3 :: Rational
+    end
 
-test "Expected data is never executed"
-  expect 2
-  is
-    (1 + 1)
-  end
-end
-```
+    test "Expected data is never executed"
+      expect 2
+      is
+        (1 + 1)
+      end
+    end
 
 The first fixture is valid DSL and reports expected `2`, actual `1`, and its
 assertion location. The second reports the Int/Rational type mismatch. The third

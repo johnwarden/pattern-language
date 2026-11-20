@@ -6,13 +6,18 @@ way to declare a type. The motivation is one clear spelling for each role.
 
 Use dedicated declarations and ordinary type-producing expressions:
 
-    type Rectangle concrete Rect(width :: Int, height :: Int)
-    t = concrete Rect(Int, Int)
-
-    type EitherFloat abstract Float32 | Float64
-    u = abstract Float32 | Float64
-
-    alias = Rectangle
+```pattern
+test "Dedicated type declarations and plain construction"
+  type Rectangle concrete Rect(width :: Int, height :: Int)
+  t = concrete Rect(Int, Int)
+  type EitherFloat abstract Float32 | Float64
+  u = abstract Float32 | Float64
+  alias = Rectangle
+  assert alias == Rectangle
+  assert t == (concrete Rect(Int, Int))
+  assert u == (abstract Float32 | Float64)
+end
+```
 
 The last binding stores an existing type value; it is not another declaration.
 Plain construction remains capture-free and does not install accessor products.
@@ -52,7 +57,12 @@ Approved by Jonathan in the project chat on 2026-11-10. The retired
 when the pattern was open, that is, when it included `...` or `**` (an open
 structural facet). Migrate such definitions to `abstract`, never `concrete`:
 
-    type Rectangular abstract Rect(w :: Float, h :: Float, **)
+```pattern
+test "Open facets migrate to abstract declarations"
+  type Rectangular abstract Rect(w :: Float, h :: Float, **)
+  assert Rectangular .matches Type
+end
+```
 
 replaces `def Rectangular type :Rect(w :: Float, h :: Float, **)`. A concrete
 type cannot be open: `ConcreteType({**})` is an error, and the same holds for

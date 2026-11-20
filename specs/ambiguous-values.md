@@ -9,13 +9,24 @@ value designator. When more than one member of an expected type can accept the
 designator, it is ambiguous. The error is the same however the expected type
 reaches the designator, and it blames the designator, not the pattern:
 
-    b = abstract Int | Float
-
-    3 .matches b
+```pattern
+test "An ambiguous numeric literal fails with E_AMBIGUOUS_VALUE_DESIGNATOR"
+  b = abstract Int | Float
+  expect 3 .matches b fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
     (x :: b) = 3
+    x
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
 
-    type Foo concrete String? | Float?
+test "An ambiguous absence between peer options fails with E_AMBIGUOUS_VALUE_DESIGNATOR"
+  type Foo concrete String? | Float?
+  expect
     (x :: Foo) = :None
+    x
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+```
 
 Each of these fails with `E_AMBIGUOUS_VALUE_DESIGNATOR`. The message lists the
 possible interpretations so the author can choose one, for example "ambiguous

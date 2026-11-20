@@ -3,10 +3,14 @@
 Approved by Jonathan in the project chat on 9 November 2026; reaffirmed for
 implementation on 10 November. This is a coordinated surface-syntax migration.
 
-    expect subject is expected
-    expect subject is expected :: Type
-    expect subject contains "needle"
-    expect subject fails "diagnostic"
+```pattern
+test "Expectation predicates"
+  expect 1 is 1
+  expect 1 is 1 :: Rational
+  expect "hello world" contains "world"
+  expect parse(Code)("x + ") fails "E_SYNTAX"
+end
+```
 
 `is` replaces `result`; `fails` replaces `error`. Preserve existing equality,
 inert authored expected data and diagnostic matching. An omitted RHS type uses

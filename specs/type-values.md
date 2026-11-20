@@ -157,14 +157,32 @@ grammar. A pattern that is just one primitive adds nothing, so neither the
 constructors nor the declaration and pattern forms wrap one. All of these are
 rejected with `E_TYPE_DESCRIPTION`:
 
-```text
-concrete Int
-abstract Int
-concrete concrete Int
-ConcreteType(Int)
-AbstractType(Int)
-type X concrete Int
-type Y abstract Int
+```pattern
+todo test "Lone primitive wrappers are rejected"
+  expect
+    concrete Int
+  fails "E_TYPE_DESCRIPTION"
+  expect
+    abstract Int
+  fails "E_TYPE_DESCRIPTION"
+  expect
+    concrete concrete Int
+  fails "E_TYPE_DESCRIPTION"
+  expect
+    ConcreteType(Int)
+  fails "E_TYPE_DESCRIPTION"
+  expect
+    AbstractType(Int)
+  fails "E_TYPE_DESCRIPTION"
+  expect
+    type X concrete Int
+    X
+  fails "E_TYPE_DESCRIPTION"
+  expect
+    type Y abstract Int
+    Y
+  fails "E_TYPE_DESCRIPTION"
+end
 ```
 
 `concrete concrete Int` is rejected because its operand, `concrete Int`, is
