@@ -423,9 +423,173 @@ disjoint. `classify` gives the same results as the earlier `match`
 example. It takes a `Reading` and dispatches on the field's concrete
 type. Refinement requirements in either overload use existing evidence.
 
-Peer match arms follow the same disjointness rule. A trailing residual
-covers the part of the subject domain outside all preceding arms. Public
-notation for that subtraction is open. See [match arm domains](https://github.com/johnwarden/pattern-language/pull/100).
+### Match arm domains
+
+Decided, not yet enforced (runtime is still ordered first-match). Peer match
+arms use the same pairwise-disjoint domain rule as overloads. Overlap is
+`E_OVERLAPPING_MATCH_ARMS`, not `E_AMBIGUOUS_CALL` and not
+`E_AMBIGUOUS_VALUE_DESIGNATOR`. See
+[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md).
+
+Compare arm domains **relative to the admitted scrutinee domain**, including
+values each arm admits by the **permitted one-boundary projection**. An
+`Outer` wrapper arm and an `Inner` arm that projects the stored member both
+admit the same `Outer` value, so they overlap. Do not compare arms as if each
+were a top-level expected type in isolation.
+
+A function parameter or match arm cannot use `P | Q` as its binding pattern,
+even when constructor tags distinguish the alternatives. Write separate arms
+or overloads. Union types remain valid in annotations.
+
+Compare structural domains after erasing refinement predicates. When
+disjointness cannot be proved, reject conservatively as
+`E_OVERLAPPING_MATCH_ARMS` and report that disjointness could not be proved
+(do not invent a second code). The checker need not execute predicates. Put
+ordered predicate priority inside one base-type arm with `if` / `.matches`.
+See [disjointness of predicate-refined peers](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
+
+At most one trailing residual arm may appear, and only last. Spelling,
+value-returning vs error-only fallback, and whether the residual covers a
+full remaining pack are **open** — see the design note. Do not treat the
+sketches below as settling those choices.
+
+```pattern
+todo test "Overlapping match arms raise E_OVERLAPPING_MATCH_ARMS"
+  expect
+    match 1 :: Int
+      (a :: Int) -> 1
+      (b :: Int) -> 2
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+todo test "Outer wrapper and projected Inner arms overlap on one Outer value"
+  type Inner concrete Box(String)
+  type Outer concrete Wrapper(Inner)
+  (inner :: Inner) = Box("hi")
+  (o :: Outer) = Wrapper(inner)
+  expect
+    match o
+      (x :: Outer) -> "outer"
+    end
+  is "outer"
+  expect
+    match o
+      (x :: Outer) -> "outer"
+      (y :: Inner) -> "inner"
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+todo test "A refinement arm overlapping its base raises E_OVERLAPPING_MATCH_ARMS"
+  p = Int .where (n -> n > (0 :: Int))
+  assert 3 .matches p
+  expect
+    match 3 :: Int
+      (x :: p) -> "positive"
+      (i :: Int) -> "other"
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+todo test "Two different refinements of Int cannot select peer match arms"
+  def Positive Int .where (n -> n > (0 :: Int))
+  def NonZero Int .where (n -> n != (0 :: Int))
+  assert (-2) .matches NonZero
+  n = -2 :: Int
+  expect
+    match n
+      (n :: Positive) -> "positive"
+      (n :: NonZero) -> "nonzero"
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+todo test "Disjoint tags still cannot form a union binding pattern in an arm"
+  expect
+    match Left(1, 2)
+      (Left(x, _) | Right(_, x)) -> x
+    end
+  fails "union pattern"
+end
+
+todo test "Disjoint tags still cannot form a union binding pattern in a function"
+  expect
+    def selected((Left(x, _) | Right(_, x))) x
+    "definitions complete"
+  fails "union pattern"
+end
+
+test "Separate arms can extract the same name from different fields"
+  def selected(p)
+    match p
+      Left(x, _) -> x
+      Right(_, x) -> x
+    end
+  end
+  expect selected(Left(1, 2)) is 1
+  expect selected(Right(1, 2)) is 2
+end
+
+test "Disjoint match arms are allowed"
+  type Num abstract Int | String
+  (n :: Num) = 3 :: Int
+  expect
+    match n
+      (i :: Int) -> "int"
+      (s :: String) -> "string"
+    end
+  is "int"
+end
+
+test "Raw Box(3) is a designation ambiguity across Int and Float field arms"
+  type NumBox concrete Box(Int | Float)
+  expect
+    match Box(3) :: NumBox
+      Box(n :: Int) -> "int"
+      Box(n :: Float) -> "float"
+    end
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+
+test "Explicitly typed Box field selects one arm"
+  type NumBox concrete Box(Int | Float)
+  (b :: NumBox) = Box(3 :: Int)
+  expect
+    match b
+      Box(n :: Int) -> "int"
+      Box(n :: Float) -> "float"
+    end
+  is "int"
+end
+
+todo test "A residual arm is rejected unless it is last"
+  expect
+    match 1 :: Int
+      _ -> 0
+      (i :: Int) -> i
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+```
+
+Trailing residual sketches (not settled; indented display-only):
+
+    match subject
+      P1 -> V1
+      P2 -> V2
+      _ -> fallback
+    end
+
+    match pack
+      P1 -> V1
+      else -> fallback
+    end
+
+Whether `_` / `else` may return an ordinary value, must raise, covers one
+positional residual vs any remaining pack (including labels), and whether an
+unreachable residual after total cover is allowed, remain open in
+[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md).
 
 ## Canonical expressions and typed text
 
