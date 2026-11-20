@@ -483,11 +483,12 @@ todo test "Outer wrapper and projected Inner arms overlap on one Outer value"
 end
 
 todo test "A refinement arm overlapping its base raises E_OVERLAPPING_MATCH_ARMS"
-  p = Int .where isPositive
-  assert 3 .matches p
+  type Positive pattern Int .where isPositive
+  n = 3 :: Int
+  assert n .matches Positive
   expect
-    match 3 :: Int
-      (x :: p) -> "positive"
+    match n
+      (x :: Positive) -> "positive"
       (i :: Int) -> "other"
     end
   fails "E_OVERLAPPING_MATCH_ARMS"
@@ -496,8 +497,8 @@ end
 todo test "Two different refinements of Int cannot select peer match arms"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
-  assert (-2) .matches NonZero
   n = -2 :: Int
+  assert n .matches NonZero
   expect
     match n
       (n :: Positive) -> "positive"
