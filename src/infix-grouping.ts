@@ -63,8 +63,9 @@ export function isGroupingSensitive(op: string): boolean {
  * operator. `^` and `::` are sensitive and non-associative, so mixes and
  * repetitions need parentheses — including a sensitive operator next to `::`.
  * Binding `=` is parsed at lowest precedence (not via this check). Arrow `->`
- * keeps a free right-hand side. Every other pair keeps its previous
- * unconstrained reading.
+ * keeps a free right-hand side for operators other than `=` (a `->` body with
+ * `=` needs parentheses). Every other pair keeps its previous unconstrained
+ * reading.
  */
 export function requiresParentheses(first: string, second: string): boolean {
   if (first === "=" || first === "->") return false;

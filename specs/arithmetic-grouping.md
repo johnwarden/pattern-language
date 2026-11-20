@@ -5,8 +5,9 @@ association, except that binding `=` has the lowest precedence. Among the
 grouping-sensitive operators, a chain may omit parentheses only when it
 repeats one associative operator. Every other adjacent pair of those
 operators requires explicit grouping. Operators outside that set keep their
-previous unconstrained reading. Every accepted expression keeps its current
-tree.
+previous unconstrained reading. Accepted expressions keep their previous trees
+except where lowest-precedence `=` changes the reading (for example
+`x :: Int = 5` and `x -> y = z`).
 [Surface grammar](../GRAMMAR.md#one-surface-tree)
 
 ## Why this rule
@@ -55,9 +56,11 @@ reads as `(a + b) = c`. That is simpler than a special left-of-`=` grouping
 rule and matches the typed-binding reading people expect. The right-hand side
 of `=` stays free, so `n = x + 1` needs no parentheses. When the left-hand
 side is not a valid pattern, evaluation fails with a pattern error such as
-`E_PATTERN_MISMATCH`, not `E_INFIX_GROUPING`. Arrow `->` is unchanged and keeps
-a free right-hand side (`f = x -> x + 1`, `x :: Int -> 5`). Plain `x :: Int`
-stays fine.
+`E_PATTERN_MISMATCH`, not `E_INFIX_GROUPING`. Arrow `->` still leaves a free
+right-hand side for operators other than `=` (`f = x -> x + 1`,
+`x :: Int -> 5`), but a `->` body that contains `=` needs parentheses:
+`x -> (y = z)`. Without them, `x -> y = z` reads as `(x -> y) = z`. Plain
+`x :: Int` stays fine.
 
 Check each parenthesized expression and each argument field independently.
 Parentheses around a single operand in a chain, as in `a - (b) - c`, leave both
@@ -88,6 +91,8 @@ and domain-specific expressions.
 | `n = x + 1` | `n = (x + 1)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
 | `f = x -> x .plus 1` | `f = (x -> (x .plus 1))`. |
+| `x -> y = z` | `(x -> y) = z`. |
+| `x -> (y = z)` | `->(x)(=(y)(z))`. |
 | `x :: Int = 5` | `(x :: Int) = 5`. |
 | `x :: Int -> 5` | `x :: (Int -> 5)`. |
 | `a + b = c` | `(a + b) = c`, then a pattern error such as `E_PATTERN_MISMATCH`. |
@@ -128,7 +133,8 @@ line, so `x :- y :* z` suggests `(x :- y) :* z` or `x :- (y :* z)`.
 `::` is grouping-sensitive and non-associative, so a sensitive operator next to
 `::` needs parentheses. Because `=` is lowest precedence, a typed binding does
 not need parentheses around the ascription. Arrow `->` still leaves its right
-side free.
+side free for operators other than `=`; write `x -> (y = z)` for a binding in
+the body.
 
 | Source | Reading |
 | --- | --- |
@@ -316,6 +322,8 @@ test "Independent fields and free binding and arrow rights stay accepted"
   assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
   assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
   assert parse(Code)("f = x -> x .plus 1") == parse(Code)("f = (x -> (x .plus 1))")
+  assert parse(Code)("x -> y = z") == parse(Code)("=(->(x)(y))(z)")
+  assert parse(Code)("x -> (y = z)") == parse(Code)("->(x)(=(y)(z))")
   assert parse(Code)("x :: Int = 5") == parse(Code)("=(::(x)(Int))(5)")
 end
 

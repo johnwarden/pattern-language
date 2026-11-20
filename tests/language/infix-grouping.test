@@ -72,6 +72,8 @@ test "Binding and arrow keep a free right-hand side"
   assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
   assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
   assert parse(Code)("f = x -> x .plus 1") == parse(Code)("f = (x -> (x .plus 1))")
+  assert parse(Code)("x -> y = z") == parse(Code)("=(->(x)(y))(z)")
+  assert parse(Code)("x -> (y = z)") == parse(Code)("->(x)(=(y)(z))")
 end
 
 test "Printed Code groups a binding under an arithmetic or logical parent"
