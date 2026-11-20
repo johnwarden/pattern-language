@@ -31,6 +31,9 @@ operators are `<`, `<=`, `>`, `>=`, `==`, `!=`, `===`, and `!==`. Logical
 operators are `&&` and `||`.
 
 At each expression level, check adjacent infix operators in source order.
+Use the symbol name for every grouping check. For example, `:+` and `+`
+both count as `+`. Preserve the quote on each operator in the expression
+tree and in both diagnostic suggestions.
 Require parentheses if any of the following hold.
 
 1. One operator is additive and the other is multiplicative.
@@ -45,6 +48,7 @@ Require parentheses if any of the following hold.
    `ok = a && b` need no extra parentheses. An ungrouped arithmetic,
    comparison, or logical operator directly left of `=` is rejected, so
    write `(a + b) = c` or `a + (b = c)` instead of `a + b = c`.
+6. Both operators are `+`.
 
 Check each parenthesized expression and each argument field independently.
 Parentheses around a single operand in a chain, as in `a - (b) - c`, leave
@@ -57,6 +61,7 @@ domain-specific expressions.
 
 | Source | Reading |
 | --- | --- |
+| `x :+ y :+ z` | Syntax error. Write `(x :+ y) :+ z` or `x :+ (y :+ z)`. Repeating :+ requires parentheses. |
 | `a + b * c` | Syntax error. Write `(a + b) * c` or `a + (b * c)`. Mixing + and * requires parentheses. |
 | `a * b + c` | Syntax error. Write `(a * b) + c` or `a * (b + c)`. Mixing * and + requires parentheses. |
 | `a - b + c` | Syntax error. Write `(a - b) + c` or `a - (b + c)`. Mixing - and + requires parentheses. |
@@ -103,8 +108,9 @@ Syntax error. Write `(price + tax) * count` or `price + (tax * count)`.
 Mixing + and * requires parentheses.
 ```
 
-For a repeated operator, use its source spelling. For example, `10 - 3 - 2`
-produces
+When the two source spellings match, use “Repeating” and that spelling.
+When they differ, use “Mixing” and show both spellings in source order.
+For example, `10 - 3 - 2` produces
 
 ```text
 Syntax error. Write `(10 - 3) - 2` or `10 - (3 - 2)`.
@@ -160,6 +166,48 @@ as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
 ## Test cases
 
 ```pattern test
+test "The same pairs require grouping with quoted or bare infix symbols"
+  todo expect parse(Code)("x :+ y :+ z") fails "
+    Syntax error. Write `(x :+ y) :+ z` or `x :+ (y :+ z)`.
+    Repeating :+ requires parentheses.
+  end
+  todo expect parse(Code)("x + y + z") fails "
+    Syntax error. Write `(x + y) + z` or `x + (y + z)`.
+    Repeating + requires parentheses.
+  end
+  todo expect parse(Code)("x + y :+ z") fails "
+    Syntax error. Write `(x + y) :+ z` or `x + (y :+ z)`.
+    Mixing + and :+ requires parentheses.
+  end
+  todo expect parse(Code)("x :+ y + z") fails "
+    Syntax error. Write `(x :+ y) + z` or `x :+ (y + z)`.
+    Mixing :+ and + requires parentheses.
+  end
+  todo expect parse(Code)("x :+ y :* z") fails "
+    Syntax error. Write `(x :+ y) :* z` or `x :+ (y :* z)`.
+    Mixing :+ and :* requires parentheses.
+  end
+  todo expect parse(Code)("x :- y .div z") fails "
+    Syntax error. Write `(x :- y) .div z` or `x :- (y .div z)`.
+    Mixing :- and .div requires parentheses.
+  end
+  todo expect parse(Code)("x :* y :== z") fails "
+    Syntax error. Write `(x :* y) :== z` or `x :* (y :== z)`.
+    Mixing :* and :== requires parentheses.
+  end
+  todo expect parse(Code)("x :&& y || z") fails "
+    Syntax error. Write `(x :&& y) || z` or `x :&& (y || z)`.
+    Mixing :&& and || requires parentheses.
+  end
+  todo expect parse(Code)("x :+ y := z") fails "
+    Syntax error. Write `(x :+ y) := z` or `x :+ (y := z)`.
+    Mixing :+ and := requires parentheses.
+  end
+  assert parse(Code)("(x :+ y) :+ z") == parse(Code)(":+(:+(x)(y))(z)")
+  assert parse(Code)("x :+ (y :+ z)") == parse(Code)(":+(x)(:+(y)(z))")
+  assert parse(Code)("x :&& y && z") == parse(Code)(":&&(x)(&&(y)(z))")
+end
+
 test "Mixed arithmetic shows both groupings in source order"
   todo expect parse(Code)("a + b * c") fails "
     Syntax error. Write `(a + b) * c` or `a + (b * c)`.
