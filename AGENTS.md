@@ -118,9 +118,9 @@ exercise the generated browser bundle. Checks use `America/Denver`.
 
 On a laptop, Devbox plus direnv is the development environment (Node.js 24, just, jq, git, bash, curl, shellcheck, coreutils, entr). Run `direnv allow` once per checkout, then `just`. `init_hook` and `just setup` both set `core.hooksPath=.githooks` (idempotent). Non-interactive laptop shells use `direnv exec . just …`. Cloud VMs have no direnv and run `just` directly from `.cursor/Dockerfile`; cloud `install` also sets `hooksPath`. Do not fetch shared agent files from install or start scripts.
 
-The source suite includes tests/**/*.test, `pattern test` fences, and plain
-`pattern` fences that contain a quoted-name `test "…"` (optionally `todo`/`legacy`)
-under `specs/`. Plain fences without that trigger stay illustrative. Source runs print each filename. Assertions use
+The source suite includes tests/**/*.test and top-level bare, `pattern`, and
+`pattern test` fences under `specs/`. Indented code blocks are illustrative.
+Source runs print each filename. Assertions use
 expect subject is expected [:: Type], expect subject
 contains "needle" (String substring), assert, and expect subject fails "reason".
 Expected results are data, not expressions to execute; without :: Type they take
@@ -139,9 +139,9 @@ Keep credentials out of source and browser bundles. CI requires no application s
 
 Follow [the development workflow](design/TESTING-WORKFLOW.md). Discuss new
 language rules with Jonathan. Start a topic branch and edit or add a document
-directly under `specs/`. Drafts may use illustrative `pattern` fences.
+directly under `specs/`. Use indented code blocks for draft sketches.
 Before merging a finalized spec, put its new behavior in executable
-`pattern test` fences. Use todo inside the fence for expected failures
+fences. Use todo inside the fence for expected failures
 and inspect the actual failures. Migrate existing tests in a follow-up PR
 where needed. An implementation PR names the cases it makes pass, removes
 fulfilled todos and retires the corresponding legacy expectations. The

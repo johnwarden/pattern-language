@@ -9,15 +9,13 @@ value designator. When more than one member of an expected type can accept the
 designator, it is ambiguous. The error is the same however the expected type
 reaches the designator, and it blames the designator, not the pattern:
 
-```pattern
-b = abstract Int | Float
+    b = abstract Int | Float
 
-3 .matches b
-(x :: b) = 3
+    3 .matches b
+    (x :: b) = 3
 
-type Foo concrete String? | Float?
-(x :: Foo) = :None
-```
+    type Foo concrete String? | Float?
+    (x :: Foo) = :None
 
 Each of these fails with `E_AMBIGUOUS_VALUE_DESIGNATOR`. The message lists the
 possible interpretations so the author can choose one, for example "ambiguous

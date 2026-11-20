@@ -19,7 +19,7 @@ try {
       fixture = decodeSource(readFileSync(path), path);
     } else if (arg === "--help") {
       console.log(
-        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: discover .test files under tests/, pattern test fences, and plain pattern fences with a quoted-name test under specs/. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
+        "node src/test-cli.ts [--list] [--fixture FILE] [FILE|DIRECTORY ...]\nDefault: discover .test files under tests/ and bare, pattern, or pattern test fences under specs/. Discovery reads source only. Todo assertions and whole todo tests run and must fail; legacy assertions must pass.",
       );
       process.exit(0);
     } else if (arg.startsWith("--")) throw new Error("unknown option " + arg);

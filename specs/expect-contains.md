@@ -3,9 +3,7 @@
 Approved by Jonathan in the project chat on 9 November 2026: initially support
 substring matching, and require the subject value to be a String.
 
-```pattern
-expect subject contains "needle"
-```
+    expect subject contains "needle"
 
 The subject must produce one String value. The expected needle is authored String
 data, following the Test DSL's existing inert expected-data rule. The check passes

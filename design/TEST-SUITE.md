@@ -10,19 +10,20 @@ specification todos, and put new contracts in the active suite.
 ## Files and basic forms
 
 The runner discovers `.test` files under `tests/` and Markdown under `specs/`,
-excluding the spec archive. Top-level `pattern test` fences always execute.
-A plain `pattern` fence executes only when it contains a top-level quoted-name
-test (`test "…"`, optionally prefixed by `todo`/`legacy`); otherwise it is
-illustrative. Specs without executable fences (including `README.md` and other
-prose records) are discovered and skipped.
-A `.test` file or marked fence contains one or more named test blocks. Setup
-belongs inside each test. Use `todo test` inside a `pattern test` fence for a
-whole-case todo; the fence label stays `pattern test`. Ordinary and `todo test`
-blocks may share a file or fence. Each fence is read as a separate test source,
-so a spec can contain several whole-case todos in separate fences. An unclosed
-fence of any kind in a scanned Markdown file is a hard discovery error, as is a
-`pattern test` fence nested inside another fence (which would otherwise silently
-swallow the executable block).
+excluding the spec archive. It reads top-level unlabeled, `pattern`, and
+`pattern test` fences in document order. Indented code blocks and fences with
+other labels are for display. A scanned Markdown fence must close.
+
+Put declarations and bindings in any runnable fence. A named `test` or
+`todo test` starts fresh with the ordinary code above it. Its own definitions
+and bindings stay local. A failure in shared setup fails the test run even
+before a `todo test` body has started.
+
+Top-level `expect` and `assert` run together as **Document examples**. They
+can use definitions from earlier fences. Named tests report independently.
+If a spec only has ordinary fenced code, the runner evaluates it as a smoke
+test. Ordinary code after the last named test is checked the same way.
+`.test` files use named test blocks.
 
 Run one spec with `just test-language specs/rational-literals-and-text.md`.
 Failures report the Markdown file and line. IDs use the file path and title

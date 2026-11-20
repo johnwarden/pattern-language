@@ -5,18 +5,14 @@ Approved by Jonathan in the project chat on 2026-11-09.
 A repeated pattern with no capture name uses a bare annotated ellipsis. An
 underscore is not required:
 
-```pattern
-concrete [... :: Float32*]
-```
+    concrete [... :: Float32*]
 
 An anonymous matrix pattern retains horizontal and vertical repetition:
 
-```pattern
-concrete [
-  ... :: Float32**
-  ...
-]
-```
+    concrete [
+      ... :: Float32**
+      ...
+    ]
 
 The annotation describes the aggregate repetition dimensions; the pattern
 structure specifies where those dimensions occur. The ellipsis is spelled with

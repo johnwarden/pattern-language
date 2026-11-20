@@ -6,8 +6,8 @@ and motivating examples with the draft until the behavior is agreed.
 
 | Stage | Change | What to review |
 | --- | --- | --- |
-| Draft spec | Edit or add a document under `specs/` on a topic branch. Use plain `pattern` fences for examples. | Intended behavior, motivating examples and open choices. |
-| Finalize spec | Put executable contracts beside the agreed rules in top-level `pattern test` fences. Cover the main positive, negative, boundary and cross-context cases. | The tests demonstrate the agreed behavior. Mark unmet expectations `todo` and inspect their failures. |
+| Draft spec | Edit or add a document under `specs/` on a topic branch. Use indented code blocks for sketches. | Intended behavior, motivating examples and open choices. |
+| Finalize spec | Put executable contracts beside the agreed rules in top-level unlabeled or Pattern fences. Cover the main positive, negative, boundary and cross-context cases. | The tests demonstrate the agreed behavior. Mark unmet expectations `todo` and inspect their failures. |
 | Migrate existing tests | In a follow-up PR, update tests affected by the new spec. Retain obsolete expectations that still pass as `legacy` while their replacements are pending. | Use a same-subject `todo` where required by the [legacy coverage rules](LEGACY-ASSERTIONS.md). |
 | Implement | Make the executable spec cases and affected tests pass. Remove fulfilled todos and retire the superseded legacy checks. | Run the contracts as ordinary checks. A partial implementation may leave explicit todos for later slices. |
 
@@ -19,15 +19,13 @@ PRs to `master` use squash merge when Jonathan authorizes the merge.
 
 ## Writing and validating contracts
 
-- Prefer a top-level `pattern test` fence for executable tests in a spec. A plain
-  `pattern` fence also runs when it contains a top-level quoted-name test
-  (`test "…"`, optionally `todo`/`legacy`); otherwise it stays illustrative. The
-  [Rational literals spec](../specs/rational-literals-and-text.md) shows tests next
-  to the rules they exercise.
-- Use `todo test` inside a `pattern test` fence when the whole case or its
-  shared setup needs the feature. Give each whole-test todo its own fence.
-  Use `todo expect` or `todo assert` for individual unmet expectations in an
-  otherwise working case. The fence label stays `pattern test`.
+- Use unlabeled, `pattern`, or `pattern test` fences for executable spec
+  examples. Definitions and values are available to later fences. Simple
+  checks can use `expect` or `assert` directly. Use named tests for independent
+  cases. The [Rational literals spec](../specs/rational-literals-and-text.md)
+  shows both forms.
+- Use `todo test` when the whole case or its local setup needs the feature.
+  Use `todo expect` or `todo assert` for individual unmet expectations.
 - Verify a todo fails for the intended reason. If new syntax is unavailable to
   the test reader, pass it as text to the relevant language reader inside the test.
 - Reuse coverage that already expresses the agreed behavior. Name the relevant

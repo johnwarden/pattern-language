@@ -6,15 +6,13 @@ way to declare a type. The motivation is one clear spelling for each role.
 
 Use dedicated declarations and ordinary type-producing expressions:
 
-```pattern
-type Rectangle concrete Rect(width :: Int, height :: Int)
-t = concrete Rect(Int, Int)
+    type Rectangle concrete Rect(width :: Int, height :: Int)
+    t = concrete Rect(Int, Int)
 
-type EitherFloat abstract Float32 | Float64
-u = abstract Float32 | Float64
+    type EitherFloat abstract Float32 | Float64
+    u = abstract Float32 | Float64
 
-alias = Rectangle
-```
+    alias = Rectangle
 
 The last binding stores an existing type value; it is not another declaration.
 Plain construction remains capture-free and does not install accessor products.
@@ -22,15 +20,13 @@ Named declarations retain their established declaration/accessor behavior.
 
 Retired forms must be rejected rather than silently normalized to the new syntax:
 
-```pattern
-t = type Rect(Int, Int)
+    t = type Rect(Int, Int)
 
-def Rectangle type Rect(width :: Int, height :: Int)
+    def Rectangle type Rect(width :: Int, height :: Int)
 
-def Rectangle concrete Rect(width :: Int, height :: Int)
+    def Rectangle concrete Rect(width :: Int, height :: Int)
 
-def EitherFloat abstract Float32 | Float64
-```
+    def EitherFloat abstract Float32 | Float64
 
 The last two are important: removing only the old `type pattern` expression must
 not leave `def Name concrete/abstract ...` as a confusing second declaration path.
@@ -43,9 +39,7 @@ The distinction between declaring a type and computing with Type values needs
 one explicit example. In particular, is an ordinary function returning a Type
 value still legal?
 
-```pattern
-def makeBox(t :: Type) concrete Box(t)
-```
+    def makeBox(t :: Type) concrete Box(t)
 
 Likewise, clarify `def` constants that merely refer to an existing Type value.
 Do not infer a blanket ban on Type-valued computation, or make indirect `def`
@@ -58,9 +52,7 @@ Approved by Jonathan in the project chat on 2026-11-10. The retired
 when the pattern was open, that is, when it included `...` or `**` (an open
 structural facet). Migrate such definitions to `abstract`, never `concrete`:
 
-```pattern
-type Rectangular abstract Rect(w :: Float, h :: Float, **)
-```
+    type Rectangular abstract Rect(w :: Float, h :: Float, **)
 
 replaces `def Rectangular type :Rect(w :: Float, h :: Float, **)`. A concrete
 type cannot be open: `ConcreteType({**})` is an error, and the same holds for

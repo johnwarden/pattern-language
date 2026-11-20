@@ -3,26 +3,25 @@ import { LanguageError } from "./diagnostics.ts";
 const openingFence = /^( {0,3})(`{3,}|~{3,})(.*)$/;
 const closingFence = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
 const patternTestInfo = /^pattern[ \t]+test$/;
-/** Plain `pattern` fences run only when a body line declares a quoted-name test. */
-const namedTestLine = /^(?:(?:todo|legacy)[ \t]+)?test[ \t]+"/;
 
 function isPatternTestInfo(info: string): boolean {
   return patternTestInfo.test(info.trim());
 }
 
-function hasNamedTest(body: string[]): boolean {
-  return body.some((line) => namedTestLine.test(line));
-}
-
-/** Read top-level fenced tests while preserving Markdown line numbers. */
-export function* markdownTestSources(
-  name: string,
-  source: string,
-): Generator<{ code: string; offsets: number[]; firstLine: number }> {
+/** Collect Pattern fences into one source while preserving document coordinates. */
+export function markdownTestSource(name: string, source: string) {
   const lines = source.replace(/^\uFEFF/, "").split(/\r?\n/);
+  const code = lines.map(() => "");
+  const offsets: number[] = [];
   let fence:
-    { marker: string; indent: number; line: number; test: boolean; plain: boolean } | undefined;
-  const body: string[] = [];
+    | {
+        marker: string;
+        indent: number;
+        line: number;
+        explicitTest: boolean;
+        runnable: boolean;
+      }
+    | undefined;
   const fenceError = (message: string, line: number, indent: number) =>
     new LanguageError(
       message,
@@ -34,12 +33,14 @@ export function* markdownTestSources(
     if (!fence) {
       const opener = openingFence.exec(line);
       if (opener && !(opener[2][0] === "`" && opener[3].includes("`"))) {
+        const info = opener[3].trim();
+        const explicitTest = isPatternTestInfo(info);
         fence = {
           marker: opener[2],
           indent: opener[1].length,
           line: index,
-          test: isPatternTestInfo(opener[3]),
-          plain: opener[3].trim() === "pattern",
+          explicitTest,
+          runnable: explicitTest || info === "" || info === "pattern",
         };
       }
       continue;
@@ -50,26 +51,15 @@ export function* markdownTestSources(
       closer[1][0] === fence.marker[0] &&
       closer[1].length >= fence.marker.length
     ) {
-      if (fence.test || (fence.plain && hasNamedTest(body))) {
-        const code = body.join("\n");
-        if (!code.trim())
-          throw fenceError(
-            "empty pattern test fence",
-            fence.line,
-            fence.indent,
-          );
-        const firstLine = fence.line + 2;
-        yield {
-          code: "\n".repeat(fence.line + 1) + code + "\n",
-          firstLine,
-          offsets: body.map((line, i) => lines[firstLine - 1 + i].length - line.length),
-        };
-      }
-      body.length = 0;
+      if (
+        fence.explicitTest &&
+        !code.slice(fence.line + 1, index).some((line) => line.trim())
+      )
+        throw fenceError("empty pattern test fence", fence.line, fence.indent);
       fence = undefined;
       continue;
     }
-    if (!fence.test) {
+    if (!fence.explicitTest) {
       const nested = openingFence.exec(line);
       if (
         nested &&
@@ -81,15 +71,23 @@ export function* markdownTestSources(
           index,
           nested[1].length,
         );
-      if (!fence.plain) continue;
     }
+    if (!fence.runnable) continue;
     const spaces = line.length - line.replace(/^ +/, "").length;
-    body.push(line.slice(Math.min(spaces, fence.indent)));
+    const indent = Math.min(spaces, fence.indent);
+    code[index] = line.slice(indent);
+    offsets[index + 1] = indent;
   }
   if (fence)
     throw fenceError(
-      fence.test ? "unclosed pattern test fence" : "unclosed Markdown fence",
+      fence.explicitTest
+        ? "unclosed pattern test fence"
+        : "unclosed Markdown fence",
       fence.line,
       fence.indent,
     );
+  return {
+    code: code.join("\n"),
+    offset: (line: number) => offsets[line] ?? 0,
+  };
 }

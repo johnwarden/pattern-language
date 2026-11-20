@@ -3,12 +3,10 @@
 Approved by Jonathan in the project chat on 9 November 2026; reaffirmed for
 implementation on 10 November. This is a coordinated surface-syntax migration.
 
-```pattern
-expect subject is expected
-expect subject is expected :: Type
-expect subject contains "needle"
-expect subject fails "diagnostic"
-```
+    expect subject is expected
+    expect subject is expected :: Type
+    expect subject contains "needle"
+    expect subject fails "diagnostic"
 
 `is` replaces `result`; `fails` replaces `error`. Preserve existing equality,
 inert authored expected data and diagnostic matching. An omitted RHS type uses

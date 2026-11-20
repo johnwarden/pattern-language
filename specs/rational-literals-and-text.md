@@ -58,11 +58,17 @@ used bare fractions. The active contracts below use the parenthesized spelling.
 ## Values
 
 Use direct source literals to check the exact values, including when a
-fraction appears inside an argument pack.
+fraction appears inside an argument pack. The following binding is used in
+later tests in this spec.
+
+```pattern
+oneThird = (1/3)
+expect oneThird is (1/3) :: Rational
+```
 
 ```pattern test
 test "Fraction literals denote exact reduced Rationals"
-  assert (1/3) == (1 / 3)
+  assert oneThird == (1 / 3)
   expect (2/4) is 0.5 :: Rational
   expect (3/1) is 3 :: Rational
   expect (0/5) is 0 :: Rational
@@ -298,7 +304,7 @@ test "A touching decimal exponent scales the whole fraction in typed text"
 end
 
 test "Typed Rational text reconstructs the same exact value"
-  assert parse(Rational)(toString(Rational)((1/3))) == (1/3)
+  assert parse(Rational)(toString(Rational)(oneThird)) == oneThird
   assert parse(Rational)(toString(Rational)((-2/6))) == (-1/3)
   assert parse(Rational)("(-1/3)") == (-1/3)
   assert parse(Rational)("-0.5") == (-1/2)
