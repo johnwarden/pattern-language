@@ -121,6 +121,9 @@ test "Reduced fraction text competes with exponent forms"
 end
 
 test "Canonical Rational text depends only on the exact value"
+  canonical = toString(Rational)(parse(Rational)("(2/4)"))
+  expect canonical is "0.5"
+  assert toString(Rational)(parse(Rational)(canonical)) == canonical
   assert toString(Rational)((2/4)) == toString(Rational)(0.5)
   assert toString(Rational)(0f0.1) == toString(Rational)((3602879701896397/36028797018963968))
   assert toString(Rational)(0.1) != toString(Rational)(0f0.1)

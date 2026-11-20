@@ -382,9 +382,11 @@ absence, while `(:None .as Int?) .as Int??` selects stored inner absence.
 
 Overloads of one function must have pairwise disjoint parameter domains.
 Adding a definition that shares an admitted argument pack with an existing
-overload raises `E_AMBIGUOUS_CALL` at the definition. For example, a
+overload raises `E_OVERLAPPING_OVERLOAD` at the definition. The specific
+code for overloads distinguished only by refinements is `E_REFINED_OVERLOAD`. For example, a
 base type and its refinement share the values admitted by the refinement.
-See [refinement evidence and functions](../VALUE-SPACES.md#refinement-evidence-and-functions).
+Compare the whole pack after erasing refinement predicates. A distinct tag in
+another argument can establish disjointness. See [disjointness of predicate-refined peers](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
 
 ```pattern
 test "Overlapping overload domains are rejected at definition time"
@@ -392,7 +394,7 @@ test "Overlapping overload domains are rejected at definition time"
     def f(x :: Any) 1
     def f(x :: Int) 2
     "definitions complete"
-  fails "E_AMBIGUOUS_CALL"
+  fails "E_OVERLAPPING_OVERLOAD"
 end
 ```
 
@@ -421,10 +423,9 @@ disjoint. `classify` gives the same results as the earlier `match`
 example. It takes a `Reading` and dispatches on the field's concrete
 type. Refinement requirements in either overload use existing evidence.
 
-An ordered match gives priority to the first matching arm. Its equivalent
-overloads must express disjoint effective domains by subtracting the
-values covered by earlier arms. Public notation for that subtraction is
-open.
+Peer match arms follow the same disjointness rule. A trailing residual
+covers the part of the subject domain outside all preceding arms. Public
+notation for that subtraction is open. See [match arm domains](https://github.com/johnwarden/pattern-language/pull/100).
 
 ## Canonical expressions and typed text
 
@@ -465,6 +466,13 @@ uses no lexical aliases. Where a struct wrapper's immediate member
 needs an ascription, the text preserves it independently of the outer
 ascription. For example, the outer and inner absence cases for
 `String??` must reconstruct different values.
+
+For any global text `s` accepted by `parse(T)`, let
+`c = toString(T)(parse(T)(s))`. Then `toString(T)(parse(T)(c)) == c`.
+Several input spellings may designate one value. For a fixed decoding type
+the first print already produces its canonical spelling. See the distinction
+between reading and choosing a printed spelling in [Rendel and Ostermann,
+*Invertible Syntax Descriptions*, §§2–3](https://www.informatik.uni-marburg.de/~rendel/unparse/).
 
 `toStringLocal` and diagnostics follow the established
 [exact local printing](library-closure-and-local-printing.md#exact-local-printing)

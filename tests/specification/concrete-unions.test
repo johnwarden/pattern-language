@@ -16,9 +16,13 @@ end
 test "Nested String options print relative to the requested grammar"
   (inner :: String??) = :None :: String?
 
-  expect toString(String??)(inner) is "None :: Type(:None | String)" :: String
-  assert parse(String??)(toString(String??)(inner)) == inner
-  assert parse(Any)(toString(Any)(inner)) == inner
+  optionText = toString(String??)(inner)
+  anyText = toString(Any)(inner)
+  expect optionText is "None :: Type(:None | String)" :: String
+  assert parse(String??)(optionText) == inner
+  assert parse(Any)(anyText) == inner
+  assert toString(String??)(parse(String??)(optionText)) == optionText
+  assert toString(Any)(parse(Any)(anyText)) == anyText
 end
 
 test "An explicit concrete member identifies an otherwise ambiguous branch"

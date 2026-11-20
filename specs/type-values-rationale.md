@@ -692,8 +692,8 @@ are pairwise disjoint at that boundary:
     def f(_ :: Remaining) V3
     f(x)
 
-`Remaining` represents the values of `T` outside `P1` and `P2`. A
-match gets this domain from arm order. An overloaded function would need
+`Remaining` represents the values of `T` outside `P1` and `P2`. The
+trailing residual arm has this domain by definition. An overloaded function would need
 a disjoint parameter pattern for that domain. Public notation for
 `Remaining` is open. The [Reading example](type-values.md#overload-domains-and-projection-dispatch)
 uses two disjoint patterns and needs no subtraction.
