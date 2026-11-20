@@ -574,8 +574,9 @@ todo test "An else arm is rejected unless it is last"
 end
 
 todo test "else covers a remaining multi-value pack"
+  pack = (1, 2)
   expect
-    match (1, 2)
+    match pack
       (a :: String, b :: String) -> "strings"
       else -> "other"
     end
@@ -583,8 +584,9 @@ todo test "else covers a remaining multi-value pack"
 end
 
 todo test "else covers a remaining labeled pack"
+  pack = (x = 1, y = 2)
   expect
-    match (x = 1, y = 2)
+    match pack
       (x = a :: String, y = b :: String) -> "strings"
       else -> "other"
     end
