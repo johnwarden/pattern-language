@@ -292,9 +292,9 @@ todo test "An abstract Color union preserves concrete enum members"
 end
 ```
 
-The two `describe` overloads are pairwise disjoint (`PrimaryColor` vs
-`Transparent`), so both may coexist. Overlap would be
-`E_AMBIGUOUS_CALL`. See
+The two `describe` overloads can coexist because `PrimaryColor` and
+`Transparent` are disjoint. A definition with an overlapping domain would
+raise `E_OVERLAPPING_OVERLOAD`. See
 [Overload domains and projection dispatch](type-values.md#overload-domains-and-projection-dispatch).
 
 ### Wrapped enum

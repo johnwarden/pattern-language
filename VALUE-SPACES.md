@@ -91,9 +91,9 @@ erase established concrete boundaries.
     (outer :: String??) = :None
     (sameOuter :: String??) = :None :: String??
     (inner :: String??) = :None :: String?
-    # outer == sameOuter; outer != inner.
+    # outer === sameOuter; outer !== inner.
 
-Present values of this convention are unwrapped (`"Hello" :: String?`). The
+`"Hello" :: String?` stores a `String` directly inside the `String?` value, without a `Some` constructor. The
 annotation on the inner absence identifies the String? member, and survives
 comparison and typed-text round trips. A peer union `String? | Float?` still
 requires an explicit member for `:None`. An independently defined
@@ -130,8 +130,9 @@ predicates; `.where` takes a `Predicate`, not a lambda.
 
 A function accepting only a refinement is legal. What remains excluded is choosing
 between overlapping base/refinement overloads by running their predicates.
-Overloads of one function must have pairwise disjoint parameter domains; overlap
-raises `E_AMBIGUOUS_CALL` at definition time. See
+Overloads of one function must have pairwise disjoint parameter domains.
+Overlap raises `E_OVERLAPPING_OVERLOAD` at definition time. Overloads
+distinguished only by refinements raise `E_REFINED_OVERLOAD`. See
 [Overload domains and projection dispatch](specs/type-values.md#overload-domains-and-projection-dispatch).
 
     def median(xs :: SortedList<Float32>) ...       # permitted with evidence
@@ -216,8 +217,8 @@ The keyword capture/spread spelling and unknown-shape typing remain provisional.
 
 For each supported T, the intended global contract is:
 
-    parse(T)(toString(T)(v)) == v
-    v == w  =>  toString(T)(v) == toString(T)(w)  # for the same T
+    parse(T)(toString(T)(v)) === v
+    v === w  =>  toString(T)(v) === toString(T)(w)  # for the same T
 
 Canonical text is relative to the expected decoding type/grammar. Global text does
 not depend on lexical type names; local variants may reuse valid visible aliases
