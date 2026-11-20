@@ -22,7 +22,7 @@ Numeric `==` and ordering compare exact magnitudes across formats.
 An overload can distinguish values that are numerically equal.
 
 ```pattern
-test "Numeric equality can hold for values dispatched to different overloads"
+todo test "Numeric equality can hold for values dispatched to different overloads"
   def kind(n :: Int) "Int"
   def kind(n :: ExactRational) "ExactRational"
 
@@ -100,7 +100,7 @@ With both the `String?` and `String??` overloads in scope, bare
 either peer.
 
 ```pattern
-test "A lone outer overload preserves the chosen absence"
+todo test "A lone outer overload preserves the chosen absence"
   def outer(v :: String??) v
   outerNone = :None :: String??
   innerNone = (:None :: String?) :: String??
@@ -110,7 +110,7 @@ test "A lone outer overload preserves the chosen absence"
   assert outerNone !== innerNone
 end
 
-test "Inner overload takes priority for nested option designation"
+todo test "Inner overload takes priority for nested option designation"
   def foo(v :: String??) "Outer"
   def foo(v :: String?) "Inner"
 

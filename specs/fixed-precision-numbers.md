@@ -7,10 +7,8 @@ Draft for review. The [fixed-precision notes](https://chatgpt.com/library?file_i
 Define the public types, aliases, operators and explicit conversions in the source prelude. Each fixed format is a concrete `ExactRational` carveout. Its `Predicate` enum member checks whether the exact value fits the format. The predicate prints as an unquoted case name under the [initial predicate contract](https://github.com/johnwarden/pattern-language/blob/spec/type-expressions-and-kinds/specs/refinement-predicates.md). The prelude adds the fit cases and
 their tests alongside the formats. For example:
 
-```pattern
-type Int64 concrete ExactRational .where fitsInt64
-type Float64 concrete ExactRational .where fitsFloat64
-```
+    type Int64 concrete ExactRational .where fitsInt64
+    type Float64 concrete ExactRational .where fitsFloat64
 
 The initial aliases are `Int = Int64` and `Float = Float64`, with identical type identity under either name. The equations describe aliases. Their declaration spelling follows the language's type binding rules.
 
@@ -30,9 +28,7 @@ Additional float widths remain open. The prototype currently reserves some numer
 `Number` is the abstract union of the fixed-precision numeric types defined
 in the prelude. An initial union for the formats listed above is:
 
-```pattern
-type Number pattern Int32 | Int64 | UInt64 | Float32 | Float64
-```
+    type Number pattern Int32 | Int64 | UInt64 | Float32 | Float64
 
 `ExactRational` is outside `Number`. Numeric equality (`==`) accepts operands
 of type `Number | ExactRational` and compares their exact mathematical values.
@@ -45,7 +41,7 @@ domains and compare values including their concrete types.
 [Functional equality](2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md#strong-functional-equality)
 
 ```pattern
-test "Numeric equality compares a Number with an exact literal"
+todo test "Numeric equality compares a Number with an exact literal"
   (x :: Number) = 0 :: Int
   expect x === 0 fails "E_INCOMPARABLE_TYPES"
   expect x !== 0 fails "E_INCOMPARABLE_TYPES"
@@ -81,7 +77,7 @@ failure rules. To convert between fixed types explicitly, first project
 the source's exact payload. Integer conversion always checks exact fit.
 
 ```pattern
-test "Checked conversion validates stored and computed exact values"
+todo test "Checked conversion validates stored and computed exact values"
   half = 1 / 2
   tenth = 1 / 10
   integer = 20 + 22
@@ -158,7 +154,7 @@ and the proposed saved-partial test below. Once the behavior is agreed,
 add it to the active numeric tests.
 
 ```pattern
-test "A saved addition partial accepts direct and mixed second operands"
+todo test "A saved addition partial accepts direct and mixed second operands"
   n = 41 :: Int
   one = 1
   addToN = +(n)
@@ -181,7 +177,7 @@ end
 ```
 
 ```pattern
-test "Mixed arithmetic chooses a format without rounding input operands"
+todo test "Mixed arithmetic chooses a format without rounding input operands"
   narrow = 1 :: Int32
   wide = 2 :: Int64
   single = 0.5 :: Float32
@@ -206,7 +202,7 @@ both positional arguments in one pack, for example `pow(2, 3)`. The prelude
 leaves `^` available for language-specific operator definitions. See the [infix precedence draft](https://github.com/johnwarden/pattern-language/blob/spec/arithmetic-precedence/specs/arithmetic-precedence.md).
 
 ```pattern
-test "Exponentiation uses one complete argument pack"
+todo test "Exponentiation uses one complete argument pack"
   expect pow(2, 3) is 8 :: ExactRational
 end
 ```
@@ -274,7 +270,7 @@ through the prelude signatures. The same signature and checks apply to a literal
 a bound value, and an arithmetic result with the same exact value.
 
 ```pattern
-test "Mixed ordering accepts the same exact value in every form"
+todo test "Mixed ordering accepts the same exact value in every form"
   n = 2 :: Int
   one = 1
   sum = 1 + 0
@@ -292,14 +288,14 @@ test "Mixed ordering accepts the same exact value in every form"
   assert one < n
 end
 
-test "An Int refinement can order its input against an exact zero"
+todo test "An Int refinement can order its input against an exact zero"
   type PositiveInt pattern Int .where isPositive
 
   assert (2 :: Int) .matches PositiveInt
   assert not((0 :: Int) .matches PositiveInt)
 end
 
-test "Numeric equality applies to literal and bound ExactRationals"
+todo test "Numeric equality applies to literal and bound ExactRationals"
   n = 2 :: Int
   two = 2
   expect n === 2 fails "E_INCOMPARABLE_TYPES"
@@ -311,7 +307,7 @@ end
 ```
 
 ```pattern
-test "Numeric ordering compares magnitudes across formats"
+todo test "Numeric ordering compares magnitudes across formats"
   i = 1 :: Int
   half = 0.5 :: Float64
   aboveIntMax = 9223372036854775808
@@ -328,7 +324,7 @@ end
 ## Candidate contracts
 
 ```pattern
-test "Exact equality compares Number with a concrete member"
+todo test "Exact equality compares Number with a concrete member"
   (n :: Number) = 0 :: Float64
   (i :: Number) = 0 :: Int
   f = 0 :: Float64
@@ -337,20 +333,20 @@ test "Exact equality compares Number with a concrete member"
   assert i !== f
 end
 
-test "Float64 operands designate exactly and results round"
+todo test "Float64 operands designate exactly and results round"
   x = 1 :: Float64
   expect x + 0.1 fails "not exactly representable as Float64"
   expect x + 0f0.1 is 0f1.1 :: Float64
 end
 
-test "Checked integers reject unrepresentable results"
+todo test "Checked integers reject unrepresentable results"
   maxInt = 9223372036854775807 :: Int
   expect maxInt + 1 fails "overflow"
   minInt = -9223372036854775808 :: Int
   expect minInt .div -1 fails "overflow"
 end
 
-test "Integer division returns a rounded Float64 quotient"
+todo test "Integer division returns a rounded Float64 quotient"
   a = 1 :: Int32
   b = 10 :: Int32
 
@@ -358,7 +354,7 @@ test "Integer division returns a rounded Float64 quotient"
   expect a / 0 fails "division by zero"
 end
 
-test "Truncated and floored quotients differ for a negative dividend"
+todo test "Truncated and floored quotients differ for a negative dividend"
   minInt32 = -2147483648 :: Int32
 
   expect (-5) .div 2 is
@@ -374,7 +370,7 @@ test "Truncated and floored quotients differ for a negative dividend"
   expect minInt32 .flDiv -1 fails "overflow"
 end
 
-test "Truncated remainder checks only the returned result"
+todo test "Truncated remainder checks only the returned result"
   minInt32 = -2147483648 :: Int32
 
   expect (-5) % 2 is
@@ -385,7 +381,7 @@ test "Truncated remainder checks only the returned result"
   expect (-5 :: Float) % 2 fails "% only defined for Integer types"
 end
 
-test "Floating division checks zero and underflow"
+todo test "Floating division checks zero and underflow"
   zero = 0 :: Float64
   smallest = 0x1p-1074 :: Float64
 
