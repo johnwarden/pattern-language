@@ -5,7 +5,7 @@ test "Inserted caller references stay separate from template lambda binders"
     (withTemp Args(temp))
   is 7 :: Rational
 
-  macro :twice Args(x) Code$` (temp -> (temp + temp))($(x))
+  macro :twice Args(x) Code$` (temp -> temp + temp)($(x))
   expect
     (twice Args(5))
   is 10 :: Rational

@@ -20,6 +20,18 @@ const COMPARISON = new Set([
 ]);
 const LOGICAL = new Set(["&&", "||", "and", "or"]);
 
+/**
+ * Operators the associative-chain rule covers. Dotted word operators such as
+ * `.plus` / `.div` / `.times`, ascription `::`, and arrow `->` stay outside.
+ */
+const GROUPING_SENSITIVE = new Set([
+  ...ADDITIVE,
+  ...MULTIPLICATIVE,
+  ...COMPARISON,
+  ...LOGICAL,
+  "|",
+]);
+
 export function isArithmetic(op: string): boolean {
   return ADDITIVE.has(op) || MULTIPLICATIVE.has(op);
 }
@@ -36,6 +48,10 @@ export function isAssociative(op: string): boolean {
   return ASSOCIATIVE.has(op);
 }
 
+export function isGroupingSensitive(op: string): boolean {
+  return GROUPING_SENSITIVE.has(op);
+}
+
 /** Operators that cannot sit unparenthesized directly left of `=`. */
 export function isBindingLeftSensitive(op: string): boolean {
   return isArithmetic(op) || isComparison(op) || isLogical(op);
@@ -43,14 +59,17 @@ export function isBindingLeftSensitive(op: string): boolean {
 
 /**
  * True when adjacent infix operators at one expression level need parentheses.
- * A chain may omit parentheses only when it repeats one associative operator
- * (`+`, `*`, `|`, `&&`/`and`, `||`/`or`). Binding keeps a free right-hand side;
- * an arithmetic, comparison, or logical operator directly left of `=` must be
- * grouped.
+ * The associative-chain rule applies only when both operators are grouping-
+ * sensitive (`+ - * / %`, comparisons, `&&`/`||`/`and`/`or`, and `|`). A chain
+ * of those may omit parentheses only when it repeats one associative operator.
+ * Binding `=` and arrow `->` keep a free right-hand side. An arithmetic,
+ * comparison, or logical operator directly left of `=` must be grouped.
+ * Every other pair keeps its previous unconstrained reading.
  */
 export function requiresParentheses(first: string, second: string): boolean {
   if (second === "=") return isBindingLeftSensitive(first);
-  if (first === "=") return false;
+  if (first === "=" || first === "->") return false;
+  if (!isGroupingSensitive(first) || !isGroupingSensitive(second)) return false;
   return !(first === second && ASSOCIATIVE.has(first));
 }
 

@@ -53,7 +53,7 @@ test "Typed Code: recursive for each macro"
   end
 
   def Binding type
-    (n :: Expression) .:in (e :: Expression)
+    (n :: Expression) .:in e :: Expression
   end
   def expandFor(bindings :: [_... :: Binding*], body :: Expression)
     match bindings
@@ -73,7 +73,7 @@ test "Typed Code: recursive for each macro"
   value = for each(x .in [1, 2, 3], y .in [4, 5, 6]) x * y
 
   expect code is
-    (each([1, 2, 3])(x -> each([4, 5, 6])(y -> (x * y)))) :: Code
+    (each([1, 2, 3])(x -> each([4, 5, 6])(y -> x * y))) :: Code
   end
   legacy expect value is [[4, 5, 6], [8, 10, 12], [12, 15, 18]] :: Expression
   (code, value)

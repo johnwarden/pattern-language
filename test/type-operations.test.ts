@@ -33,23 +33,23 @@ test("where and matches have no reserved surface syntax", () => {
 
 test("refinement is an ordinary call that can be partially applied and wrapped", () => {
   assert.equal(
-    run("small = (type Int) .where (x -> (x < (5 :: Int)))\n3 :: small"),
+    run("small = (type Int) .where (x -> x < (5 :: Int))\n3 :: small"),
     "3",
   );
   assert.equal(
     run(
-      "restrict = where(type Int)\nsmall = restrict(x -> (x < (5 :: Int)))\n3 :: small",
+      "restrict = where(type Int)\nsmall = restrict(x -> x < (5 :: Int))\n3 :: small",
     ),
     "3",
   );
   assert.equal(
     run(
-      "def refine(base)(p) base .where p\ndef Small refine(type Int)(x -> (x < (5 :: Int)))\n3 :: Small",
+      "def refine(base)(p) base .where p\ndef Small refine(type Int)(x -> x < (5 :: Int))\n3 :: Small",
     ),
     "3",
   );
   assert.equal(
-    run("def Small where(type Int)(x -> (x < (5 :: Int)))\n3 :: Small"),
+    run("def Small where(type Int)(x -> x < (5 :: Int))\n3 :: Small"),
     "3",
   );
   errorCode("where((type Int),x -> True)", "E_NO_METHOD");
@@ -67,11 +67,11 @@ test("computed type aliases preserve recursive identity", () => {
 
 test("refinement predicates are lexical closures and never create accessors", () => {
   const source =
-    "def lessThan(limit) x -> (x < limit)\ndef Small\n  (type Int) .where lessThan(5 :: Int)\nend\n";
+    "def lessThan(limit) x -> x < limit\ndef Small\n  (type Int) .where lessThan(5 :: Int)\nend\n";
   assert.equal(run(source + "3 :: Small"), "3");
   assert.throws(() => run(source + "5 :: Small"), /subset/);
   errorCode(
-    "def NoInt Int? .where (v -> (v .matches :None))\nv",
+    "def NoInt Int? .where (v -> v .matches :None)\nv",
     "E_UNBOUND_NAME",
   );
   errorCode(
@@ -88,7 +88,7 @@ test("matches evaluates both arguments and uses the shared pattern specification
   );
   assert.equal(
     run(
-      "p = (type :Pair(Int,Int)) .where (Pair(a,b) -> (a == b))\n(Pair(1,1) .matches p,Pair(1,2) .matches p)",
+      "p = (type :Pair(Int,Int)) .where (Pair(a,b) -> a == b)\n(Pair(1,1) .matches p,Pair(1,2) .matches p)",
     ),
     "(True, False)",
   );
@@ -140,7 +140,7 @@ test("ordinary dispatch reports competing where and matches definitions", () => 
     "E_AMBIGUOUS_CALL",
   );
   errorCode(
-    "matches = v -> (p -> False)\nSome(3) .matches (type :Some(Int))",
+    "matches = v -> p -> False\nSome(3) .matches (type :Some(Int))",
     "E_AMBIGUOUS_CALL",
   );
 });

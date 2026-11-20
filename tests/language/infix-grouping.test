@@ -93,10 +93,8 @@ test "Accepted grouped forms keep their current trees"
   assert parse(Code)("A | B | C") == parse(Code)("A | (B | C)")
   assert parse(Code)("a .and b .and c") == parse(Code)("a .and (b .and c)")
   assert parse(Code)("a .or b .or c") == parse(Code)("a .or (b .or c)")
-  expect parse(Code)("a * b ^ c") fails "
-    Syntax error. Write `(a * b) ^ c` or `a * (b ^ c)`.
-    Mixing * and ^ requires parentheses.
-  end
+  assert parse(Code)("a * b ^ c") == parse(Code)("a * (b ^ c)")
+  assert parse(Code)("a .plus b .times c") == parse(Code)("a .plus (b .times c)")
   expect parse(Code)("a .and b .or c") fails "
     Syntax error. Write `(a .and b) .or c` or `a .and (b .or c)`.
     Mixing .and and .or requires parentheses.
@@ -108,12 +106,13 @@ test "Grouped arithmetic evaluations keep their current results"
   expect (12 / 3) * 2 is 8 :: Rational
 end
 
-test "Binding keeps a free right-hand side"
+test "Binding and arrow keep a free right-hand side"
   assert parse(Code)("n = x + 1") == parse(Code)("=(n)(+(x)(1))")
   assert parse(Code)("ok = a && b") == parse(Code)("=(ok)(&&(a)(b))")
   assert parse(Code)("flag = a == b") == parse(Code)("=(flag)(==(a)(b))")
   assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
-  assert parse(Code)("f = x -> (x + 1)") == parse(Code)("f = (x -> (x + 1))")
+  assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
+  assert parse(Code)("f = x -> x .plus 1") == parse(Code)("f = (x -> (x .plus 1))")
 end
 
 test "Printed Code groups a binding under an arithmetic or logical parent"

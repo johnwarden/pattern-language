@@ -22,7 +22,7 @@ test "A variable and a defined function can share a name"
 end
 
 test "A callable variable is invoked by a call"
-  f = x -> (x + 1)
+  f = x -> x + 1
 
   expect f(2) is 3 :: Rational
 end
@@ -137,7 +137,7 @@ end
 test "A callable variable is ambiguous with a defined function of the same domain"
   expect
     def f(x) x
-    f = x -> (x + 1)
+    f = x -> x + 1
     f(2)
   fails "ambiguous"
 end

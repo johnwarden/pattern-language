@@ -180,14 +180,12 @@ test("grouping preserves symbolic binary expected data and does not evaluate it"
     ).passed,
     true,
   );
-  assert.throws(
-    () =>
-      run(
-        `test "Wrong grouping"\n e = :(1 + 1)\n legacy expect e is 1 + 1 :: Expression\nend`,
-      ),
-    (e: unknown) =>
-      e instanceof Error && /E_INFIX_GROUPING|Mixing \+ and ::/.test(e.message),
+  const ungrouped = run(
+    `test "Wrong grouping"\n e = :(1 + 1)\n legacy expect e is 1 + 1 :: Expression\nend`,
   );
+  assert.equal(ungrouped.passed, false);
+  assert.equal(ungrouped.phase, "expectation");
+  assert.match(ungrouped.message, /E_TEST_VALUE_SYNTAX/);
 });
 test("expected errors apply only to the subject", () => {
   assert.equal(

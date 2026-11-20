@@ -118,10 +118,10 @@ not establish actual iOS lifecycle/storage behavior.
 - Each application has exactly one argument pack. Successive applications remain
   distinct: `f(a)(b)` is not `f(a,b)`.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
-- Accepted infix chains have equal precedence and associate right. They require
-  spaces on both sides. Parentheses may be omitted only when a chain repeats one
-  associative operator (`+`, `*`, `|`, `&&`/`and`, `||`/`or`); `2 * (3 + 4)` evaluates
-  to 14.
+- All infix operators have equal precedence and associate right. They require
+  spaces on both sides. Among grouping-sensitive operators, parentheses may be
+  omitted only for repeated `+`, `*`, `|`, `&&`/`and`, or `||`/`or`; write
+  `2 * (3 + 4)` rather than `2 * 3 + 4`.
 - Prefix punctuation is a maximal symbol. Tight postfix `~ ! @ $ % ^ & * ?` are
   distinct from prefix/infix application. `#` is a comment, not a postfix
   operator. Prefix and postfix operators must touch their operand: `T**` is
@@ -785,14 +785,14 @@ Scoped definition lowering and moving `if`/`match` to macros remain follow-up wo
 See [VALUE-SPACES.md](VALUE-SPACES.md) for the current contract and limits.
 
 ```text
-(x :: (Float .where (n -> isInt64(n)))) = 10
+(x :: Float .where (n -> isInt64(n))) = 10
 (y :: Int) = 10
 x.toInt == y
 # True; x == y instead reports E_INCOMPARABLE_TYPES.
 ```
 
 ```text
-def NoInt Int? .where (v -> (v .matches :None))
+def NoInt Int? .where (v -> v .matches :None)
 a = :None :: NoInt
 b = :None :: Option(Int)
 a == b
@@ -809,7 +809,7 @@ defined function with a closure such as `n -> isInt64(n)`.
 
 ```text
 def restrict(base)(predicate) base .where predicate
-small = restrict(type Int)(n -> (n < 5))
+small = restrict(type Int)(n -> n < 5)
 3 :: small
 
 pattern = type :Pair(Int,Int)

@@ -151,7 +151,7 @@ test("overload constraints can refer to later siblings and still reject same-spa
   assert.throws(
     () =>
       run(
-        "def f(x :: P) 1\ndef f(x :: N) 2\ndef P Int .where (n -> (n > (0 :: Int)))\ndef N Int .where (n -> (n < (0 :: Int)))\n0",
+        "def f(x :: P) 1\ndef f(x :: N) 2\ndef P Int .where (n -> n > (0 :: Int))\ndef N Int .where (n -> n < (0 :: Int))\n0",
       ),
     /overloads cannot differ only by refinements/,
   );

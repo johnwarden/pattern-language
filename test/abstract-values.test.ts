@@ -62,7 +62,7 @@ test("abstract slots narrow through parameter and match patterns", () => {
   assert.equal(
     run(
       prefix +
-        "(a :: U) = 3 :: Int\nmatch a\n  (x :: Int) -> (x + (1 :: Int))\n  (x :: String) -> x\nend",
+        "(a :: U) = 3 :: Int\nmatch a\n  (x :: Int) -> x + (1 :: Int)\n  (x :: String) -> x\nend",
     ),
     "4",
   );
@@ -70,7 +70,7 @@ test("abstract slots narrow through parameter and match patterns", () => {
 
 test("same-space refinement union members are rejected independent of overlap", () => {
   const defs =
-    "def Positive\n  (type Int) .where (x -> (x > (0 :: Int)))\nend\ndef Negative\n  (type Int) .where (x -> (x < (0 :: Int)))\nend\n";
+    "def Positive\n  (type Int) .where (x -> x > (0 :: Int))\nend\ndef Negative\n  (type Int) .where (x -> x < (0 :: Int))\nend\n";
   for (const body of [
     "UnionType(type Positive,type Negative)",
     "UnionType(type Int,type Positive)",
@@ -92,7 +92,7 @@ test("same-space refinement union members are rejected independent of overlap", 
 
 test("refinements cannot distinguish overloads with the same whole pack domain", () => {
   const defs =
-    "def Positive\n  (type Int) .where (x -> (x > (0 :: Int)))\nend\ndef Negative\n  (type Int) .where (x -> (x < (0 :: Int)))\nend\n";
+    "def Positive\n  (type Int) .where (x -> x > (0 :: Int))\nend\ndef Negative\n  (type Int) .where (x -> x < (0 :: Int))\nend\n";
   assert.throws(
     () => run(defs + "def f(x :: Positive) 1\ndef f(y :: Negative) 2\n0"),
     /cannot differ only by refinements/,

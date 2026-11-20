@@ -19,7 +19,7 @@ end
 test "UpperCamel captures work in match arms"
   assert
     match Int
-      (T :: Type) -> (T == (type Int))
+      (T :: Type) -> T == (type Int)
     end
   end
 end

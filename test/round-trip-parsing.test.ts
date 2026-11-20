@@ -888,7 +888,7 @@ test("ordinary type trees work in type positions without a preexisting matcher",
     run("def factory() :(Type(Rect(Int)))\ndef R factory()\nRect(3) :: R"),
     "Rect(3)",
   );
-  assert.equal(run("t = Int\nr = t .where (n -> (n > (0 :: Int)))\n1 :: r"), "1");
+  assert.equal(run("t = Int\nr = t .where (n -> n > (0 :: Int))\n1 :: r"), "1");
   assert.equal(run("def accept(t :: Type) 1 .matches t\naccept(Int)"), "True");
   assert.equal(
     run(

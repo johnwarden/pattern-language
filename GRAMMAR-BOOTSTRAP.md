@@ -118,7 +118,7 @@ remain ordinary infix operators.
 Prefix punctuation is maximal; each postfix modifier is interpreted separately.
 
 Normalized syntax prints punctuation applied to two successive argument packs
-infix: `->(n)(<(n)(5))` becomes `n -> (n < 5)`. Parentheses preserve a nested left
+infix: `->(n)(<(n)(5))` becomes `n -> n < 5`. Parentheses preserve a nested left
 operand, an operator expression used as a head, and non-singleton or labeled
 packs. Thus `*(+(a)(b))(c)` becomes `(a + b) * c`, and `+(a)(b)(c)` becomes
 `(a + b)(c)`. Unary and partial applications remain prefix. Named applications
@@ -322,8 +322,8 @@ as a value. Use a closure, for example `n -> isInt64(n)`.
 
 ```text
 def Option(T :: Type) type :None | Some(T)
-def NoInt Option(Int) .where (v -> (v .matches :None))
-(x :: (Float .where (n -> isInt64(n)))) = 10
+def NoInt Option(Int) .where (v -> v .matches :None)
+(x :: Float .where (n -> isInt64(n))) = 10
 ```
 
 `value .matches pattern` means `matches(value)(pattern)`. A type value supplies
@@ -350,7 +350,7 @@ leaves. A user-defined function can receive a type value and return a refinement
 
 ```text
 def restrict(base)(predicate) base .where predicate
-small = restrict(type Int)(n -> (n < 5))
+small = restrict(type Int)(n -> n < 5)
 3 :: small
 ```
 

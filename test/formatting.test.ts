@@ -12,7 +12,7 @@ const run = (source: string) => displayResults(new Interpreter().run(source));
 
 test("binary punctuation has one infix normal form and preserves syntax trees", () => {
   const cases = [
-    ["->(n)(<(n)(5))", "n -> (n < 5)"],
+    ["->(n)(<(n)(5))", "n -> n < 5"],
     ["*(+(a)(b))(c)", "(a + b) * c"],
     ["+(a)(*(b)(c))", "a + (b * c)"],
     ["<=(a)(b)", "a <= b"],
@@ -51,7 +51,7 @@ test("binary punctuation has one infix normal form and preserves syntax trees", 
 
 test("quoted expression values use the same punctuation notation and round trip as data", () => {
   for (const [source, expected] of [
-    ["n -> (n < 5)", "n -> (n < 5)"],
+    ["n -> n < 5", "n -> n < 5"],
     ["(a + b) * c", "(a + b) * c"],
     ["a + (b * c)", "a + (b * c)"],
     ["(a, b) + (c, d)", "(a, b) + (c, d)"],
@@ -76,12 +76,12 @@ test("quoted expression values use the same punctuation notation and round trip 
 
 test("refinement arrows and their comparison bodies share infix formatting", () => {
   assert.equal(
-    run("(type Int) .where (n -> (n < 5))"),
-    "Int .where (n -> (n < 5))",
+    run("(type Int) .where (n -> n < 5)"),
+    "Int .where (n -> n < 5)",
   );
   assert.equal(
-    run("(type Int) .where (n -> ((n + 1) < 5))"),
-    "Int .where (n -> ((n + 1) < 5))",
+    run("(type Int) .where (n -> (n + 1) < 5)"),
+    "Int .where (n -> (n + 1) < 5)",
   );
 });
 

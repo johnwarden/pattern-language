@@ -236,7 +236,7 @@ form's final `end`. Dedentation alone is not a semantic delimiter.
 The formatting principle is a design requirement, not a claim that every
 whitespace boundary is already checked. Ordinary expression-row boundaries need
 classification against the raw-layout exception: the bootstrap evaluates
-`f = x -> (x + 1)` followed by `f(2)` to 3, but splitting that call into `f` and
+`f = x -> x + 1` followed by `f(2)` to 3, but splitting that call into `f` and
 `(2)` on separate rows returns 2. This behavior is observed; whether that boundary
 should require stronger syntax is unresolved here. Collection rows, quotation
 boundaries and custom-grammar reflow also need systematic review. No new rejection

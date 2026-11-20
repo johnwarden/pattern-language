@@ -34,7 +34,7 @@ test("local names abbreviate REPL type annotations, not structural type values",
   const i = new Interpreter();
   assert.equal(
     i.inspect(
-      i.run("def Color type :Red | :Green\n(v :: (:Green | :Red)) = :Red\nv"),
+      i.run("def Color type :Red | :Green\n(v :: :Green | :Red) = :Red\nv"),
     ),
     "Red :: Color",
   );

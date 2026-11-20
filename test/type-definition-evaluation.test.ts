@@ -36,7 +36,7 @@ test("named type declarations retain generated local accessors", () => {
   );
   assert.equal(
     run(
-      "def Positive where(type :P(n :: Int))(P(n) -> (n > (0 :: Int)))\np = P(3) :: Positive\np.n",
+      "def Positive where(type :P(n :: Int))(P(n) -> n > (0 :: Int))\np = P(3) :: Positive\np.n",
     ),
     "3",
   );

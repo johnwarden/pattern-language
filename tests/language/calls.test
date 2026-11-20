@@ -79,8 +79,8 @@ test "Pack partial applications remain values"
 end
 
 test "Macro in head"
-  f = x -> (x + 1)
-  g = x -> (x + 2)
+  f = x -> x + 1
+  g = x -> x + 2
 
   expect (if True f else g)(3) is 4 :: Rational
 end

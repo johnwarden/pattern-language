@@ -232,7 +232,7 @@ test "Ordinary factory with defaults"
 end
 
 test "Subset of an optional type"
-  def NoInt Int? .where (v -> (v .matches :None))
+  def NoInt Int? .where v -> v .matches :None
   a = :None :: NoInt
   b = :None :: Int?
 
@@ -260,7 +260,7 @@ end
 
 test "Type factory · ordinary calls"
   def restrict(base)(predicate) base .where predicate
-  small = restrict(type Int)(n -> (n < (5 :: Int)))
+  small = restrict(type Int)(n -> n < (5 :: Int))
 
   expect 3 :: small is 3 :: Int
 end
@@ -305,9 +305,9 @@ test "Inspect a typed code binding without evaluating it"
       _ -> False
     end
   end
-  def Binding Code .where (e -> isBinding(e))
+  def Binding Code .where e -> isBinding(e)
 
-  code = Code` f = x -> (x * 2)
+  code = Code` f = x -> x * 2
   (patternText, bodyText) =
     match code
       (binding :: Binding) ->
@@ -319,7 +319,7 @@ test "Inspect a typed code binding without evaluating it"
   end
 
   expect patternText is "f" :: String
-  expect bodyText is "x -> (x * 2)" :: String
+  expect bodyText is "x -> x * 2" :: String
   expect isBinding(Code` f(x)) is False :: Bool
   expect isBinding(Code` f == x) is False :: Bool
   (patternText, bodyText)
@@ -334,7 +334,7 @@ test "Overlapping unions and narrowing"
   assert
     match x
       (a :: Int) -> match y
-        (b :: Int) -> (a == b)
+        (b :: Int) -> a == b
         _ -> False
       end
       _ -> False
@@ -343,7 +343,7 @@ test "Overlapping unions and narrowing"
 end
 
 test "Numeric spaces and conversion"
-  (x :: (Float .where (n -> isInt64(n)))) = 10
+  (x :: Float .where (n -> isInt64(n))) = 10
   (y :: Int) = 10
 
   assert x.toInt == y

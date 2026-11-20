@@ -25,7 +25,7 @@ const examples = [
   "x = 1\nf = () -> x\nx + 10\n(f(),x)",
   "(x,y) = (1,2)\n(y,x,label: True)",
   "x = 1\n()",
-  "x = 3\nf = x -> (x + 1)\n(f(8),x)",
+  "x = 3\nf = x -> x + 1\n(f(8),x)",
 ];
 for (const source of examples)
   test("block and explicit core agree: " + source.split("\n")[0], () => {
