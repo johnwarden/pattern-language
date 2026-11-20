@@ -1,7 +1,7 @@
 # Roadmap and conformance status
 
-Updated 10 November 2026. This is the current design, implementation boundary and
-milestone sequence, not a development history. The integrated
+This is the current design, implementation boundary and milestone sequence, not a
+development history. The integrated
 [decision/conformance record](design/LANGUAGE-DECISIONS.md) supplies reasons, status
 and 27 named design cases. [VALUE-SPACES.md](VALUE-SPACES.md),
 [the type-value spec](specs/type-values.md) and [GRAMMAR.md](GRAMMAR.md) detail the contract.
@@ -156,11 +156,17 @@ rewrite their current observations as if all target changes were shipped.
 
 ### Immediate priority: implement the executable specification
 
-Development is specification first. Finalize rules with executable spec tests,
-migrate affected source tests, then implement against those contracts. Prioritize the accepted todo
-cases already under `tests/specification/` over unrelated new foundations. See
-[TESTING-WORKFLOW.md](design/TESTING-WORKFLOW.md) for the implementation loop. A todo failing at an unsupported declaration does not demonstrate
-that the deeper rule in that assertion has been implemented correctly.
+Development is specification first:
+
+1. Finalize rules with executable spec contracts (`todo` where unmet).
+2. Migrate affected source tests in a follow-up PR (same-subject `todo` /
+   `legacy` as required).
+3. Implement against those contracts; remove fulfilled todos.
+
+The todo cases in `tests/` and `specs/` are the work queue. See
+[TESTING-WORKFLOW.md](design/TESTING-WORKFLOW.md). A todo failing at an
+unsupported declaration does not demonstrate that the deeper rule in that
+assertion has been implemented correctly.
 
 The current declaration syntax includes these targets:
 
@@ -174,16 +180,17 @@ The current declaration syntax includes these targets:
 | `type Box<T> struct Box(T)` and `Box<String>` | C05/C12/C18: accepted but deferred; #62 is parked. Use ordinary-pack type factories for current work |
 | `type NonZero pattern ExactRational .where isNonZero` | C07-C10: refinement syntax, then the separately specified evidence and overload rules |
 
-#31's value alignment and #32's declaration-product separation are integrated.
-#39's inbox handoff is closed; accepted parts now have contracts and remaining
-questions return to the project chat. #48's non-generic struct/pattern
-syntax is integrated. #52 is retired. The [proposed todo implementation queue](design/workstreams/08-todo-implementation-queue.md)
-links the remaining generic, refinement, spreading and value-boundary slices.
-Implement them against their existing cases and isolate recognition from later
-evidence obligations so failures identify the actual missing feature. Preserve current
-equivalent-declaration/accessor-collision errors and the deferred public inspection
-boundary. Add missing focused cases before implementing a gap; reconcile stale
-tests with settled decisions rather than changing the language to satisfy them.
+#31's value alignment, #32's declaration-product separation and #48's non-generic
+declaration recognition are landed (bootstrap `concrete` / `abstract` spelling;
+#88 retargets the destination forms to `struct` / `pattern`). #39's inbox handoff
+is closed; accepted parts now have contracts. #52 is retired. Remaining work is
+the open todos and specs themselves—generic packing (#62 parked), refinements,
+spreading and value-boundary slices—not a separate queue document. Isolate
+recognition from later evidence obligations so failures identify the actual
+missing feature. Preserve current equivalent-declaration/accessor-collision
+errors and the deferred public inspection boundary. Add missing focused cases
+before implementing a gap; reconcile stale tests with settled decisions rather
+than changing the language to satisfy them.
 
 The internal-foundation drafts #43, #44 and #45 are parked behind this conformance
 work. Their existence is not authorization to start implementation before their

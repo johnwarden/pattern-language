@@ -1,12 +1,8 @@
 # Workstream 3: plain type values and declaration products
 
-Status: implementation rebased by the coordinator after #31; local Node checks pass.
-Original implementation was claimed by session
-bc-7204d047-b24b-5bf8-b29e-d6a2f331f378
-(https://cursor.com/agents/bc-7204d047-b24b-5bf8-b29e-d6a2f331f378) on branch
-`codex/workstream-declaration-products-2026-11-09`. The updated candidate passes typecheck/build, 696 host tests and 255 source cases.
-Full `just check` is unavailable locally because just is not installed; current-head
-CI supplies the shell/recipe gate before merge.
+Status: **landed** in [#32](https://github.com/johnwarden/pattern-language/pull/32).
+Historical note: implementation was rebased after #31 on
+`codex/workstream-declaration-products-2026-11-09`.
 
 The executable contract is [declarations.test](../../tests/specification/declarations.test).
 This file tracks implementation ownership and validation, not a separate language
@@ -42,9 +38,10 @@ of an equal type value or equivalent types in independent lexical scopes.
   rollback behavior, including valid accessor overloads on disjoint domains.
   Add no alias priority, multiple-name policy, implicit bundle
   import, preferred-name selection or first-match resolution.
-- Test C05/C16/C18 semantics using supported bootstrap notation where possible.
-  Declaration/angle-parameter syntax remains an existing todo target in #48; do
-  not invent grammar or remove a todo solely because another spelling works.
+- Test C05/C16/C18 semantics using supported notation. #48 landed non-generic
+  `concrete` / `abstract` recognition; #88 retargets destination spelling to
+  `struct` / `pattern`. Angle parameters remain parked (#62). Do not remove a
+  todo solely because another spelling works.
 - The public Expression/Code/Type inspection and decoding boundary remains open
   for the author's examples. Do not introduce coercions or a metatype redesign.
 

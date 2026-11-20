@@ -15,7 +15,9 @@ The spec PR, test migration PR and implementation PRs can each merge to
 `master` when reviewed and authorized. Skip the migration PR when existing
 tests need no changes. After a prerequisite is squash-merged, update any
 stacked follow-up on top of `master` so its diff shows only its own work.
-PRs to `master` use squash merge when Jonathan authorizes the merge.
+PRs to `master` use squash merge when Jonathan authorizes the merge. The todo
+cases themselves are the implementation queue; do not maintain a parallel
+backlog document that duplicates them.
 
 ## Writing and validating contracts
 

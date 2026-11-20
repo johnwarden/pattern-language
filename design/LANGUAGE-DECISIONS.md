@@ -1,12 +1,12 @@
 # Language decisions and conformance notes
 
-**Decision rationale and case index. Executable language contracts live in `.test` files and in `pattern test` fences under `specs/`.**
+**Decision rationale and case index. Executable language contracts live in `.test` files and in unlabeled or `pattern` fences under `specs/`.**
 
 This is the integrated decision record authorized by the author. Confirmed and retained rules are the intended contract; passages explicitly marked proposed or deferred keep that status. Named cases C01–C27 live in [tests/specification](../tests/specification) and execute through the test DSL, with assertion-level todo and legacy modifiers. Those `.test` files and executable Markdown fences are the executable specs; this document explains the decisions with focused examples and does not have to match them byte-for-byte. Expected failures record future contracts; supported assertions already pass normally. This does not claim conformance with all of the future language semantics. [TEST-SUITE.md](TEST-SUITE.md) defines the runner contract; the [roadmap](../ROADMAP.md) tracks the language work separately.
 
 ## Status and sources
 
-The source suite (`.test` files and `pattern test` fences) is the language
+The source suite (`.test` files and unlabeled or `pattern` fences) is the language
 specification. This record preserves rationale and links to cases; it must not
 evolve into a competing prose contract. New rules are discussed in the project
 chat and proposed under `specs/` on topic branches. Once settled, write or revise
@@ -274,8 +274,11 @@ constructor binding through the concrete boundary remains a todo rejection.
 
 ### C05 — ordinary capture-free type values and a type factory
 
-Todo. A named `type Rectangle struct Rect(w :: Rational, h :: Rational)` equals
-the capture-free `struct Rect(Rational, Rational)`. `Box<String>` equals
+Live (non-generic): a named concrete declaration equals its capture-free plain
+construction under today's bootstrap `concrete` spelling in
+[type-values.test](../tests/specification/type-values.test). Destination spelling
+under #88 is `type Rectangle struct Rect(w :: Rational, h :: Rational)` equals
+`struct Rect(Rational, Rational)`. Todo: parameterized `Box<String>` equals
 `struct Box(String)`, and an explicit match opens
 `Box("hello") :: Box<String>` to obtain `"hello"`. An ordinary constructor binding
 does not open that concrete boundary.
@@ -283,8 +286,10 @@ This does not compare an Expression-typed descriptor with a type, or decide bare
 
 ### C06 — alternative sets determine concrete identity
 
-Todo. `:Red :: PrimaryColor` and `:Red :: TicketStatus` are incomparable concrete
-spaces even though the source spelling `:Red` overlaps.
+Live: `:Red :: PrimaryColor` and `:Red :: TicketStatus` are incomparable concrete
+spaces even though the source spelling `:Red` overlaps
+([type-values.test](../tests/specification/type-values.test)). Destination
+declarations use `struct` under #88.
 
 ### C07 — where evidence preserves identity and permits a sole refined function
 
@@ -342,10 +347,13 @@ uses a tagged `:None | Some(T)` representation, which is a different convention.
 
 ### C13 — a general union admits overlapping spellings
 
-Todo. `type EitherFloat pattern Float32 | Float64` keeps each member's concrete
-identity: `float32(0.5)` stays Float32, `float64(0.5)` stays Float64.
-`parse(EitherFloat)(toString(EitherFloat)(a)) == a` must reconstruct Float32.
-The text must retain enough information; no exact descriptor spelling is approved here.
+Live under bootstrap `abstract` spelling in
+[interpretations.test](../tests/specification/interpretations.test). Destination
+spelling under #88 is `type EitherFloat pattern Float32 | Float64`. Each member's
+concrete identity is retained: `float32(0.5)` stays Float32, `float64(0.5)` stays
+Float64. `parse(EitherFloat)(toString(EitherFloat)(a)) == a` reconstructs
+Float32. The text must retain enough information; no exact descriptor spelling is
+approved here.
 
 ### C14 — unambiguous grammar requirements are separate
 
@@ -364,10 +372,12 @@ complete member, not a merged record.
 
 ### C16 — accessor installation belongs to a declaration
 
-Todo. `r.w` works after `type Rectangle struct Rect(w :: Rational, h :: Rational)`.
-`t = struct Rect(width :: Rational, height :: Rational)` cannot declare
-captures/accessors. No case assumes that two equal local declarations are either
-permitted or forbidden; that policy is still pending.
+Live under bootstrap `concrete` spelling in
+[declarations.test](../tests/specification/declarations.test): `r.w` works after
+a named declaration; plain construction cannot declare captures/accessors.
+Destination spelling under #88 is `type Rectangle struct …` /
+`t = struct Rect(…)`. No case assumes that two equal local declarations are
+either permitted or forbidden; that policy is still pending.
 
 ### C17 — ordinary factories keep defaults out of types
 

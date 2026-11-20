@@ -148,6 +148,10 @@ fulfilled todos and retires the corresponding legacy expectations. The
 spec and test migration can land on `master` ahead of implementation.
 Each stage uses authorized squash merge.
 
+The work queue is those todo cases (and ordinary unmet contracts) under
+`tests/` and `specs/`. Do not maintain a separate implementation-queue
+document; roadmap milestones name themes, and the todos name the work.
+
 Existing cases on master can already satisfy the test contract requirement.
 A specification can require edits to many cases or just an illustrative example.
 Tooling and host work should explain the boundary checked by its host tests.
