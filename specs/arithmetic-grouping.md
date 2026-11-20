@@ -9,11 +9,14 @@ explicit grouping. Every accepted expression keeps its current tree.
 ## Why this rule
 
 Readers should never need a precedence or associativity table to know how a
-chain groups. Only truly associative repetition is unambiguous: `a + b + c`,
-`a * b * c`, `a && b && c`, `a || b || c`, and `A | B | C` mean the same under
-left or right association. Subtraction, division, remainder, comparisons, mixed
-operators, and comparison chains like `a < b < c` do not, so they need
-parentheses.
+chain groups. Only repetition of one associative operator may omit parentheses:
+`a + b + c`, `a * b * c`, `a && b && c`, `a || b || c`, and `A | B | C`. Accepted
+chains still have one defined reading — right association — so `a + b + c`
+means `a + (b + c)`. For Rationals that reading matches left association; for
+fixed-precision floats such as Float64 ([#86](https://github.com/johnwarden/pattern-language/pull/86))
+it is the defined evaluation order, not merely a convention. Subtraction,
+division, remainder, comparisons, mixed operators, and comparison chains like
+`a < b < c` do not share that property, so they need parentheses.
 [PR #91](https://github.com/johnwarden/pattern-language/pull/91) ·
 [Pony's infix operators](https://tutorial.ponylang.io/expressions/ops.html)
 

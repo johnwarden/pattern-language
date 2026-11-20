@@ -88,10 +88,19 @@ test "Accepted grouped forms keep their current trees"
   assert parse(Code)("(a * b) == (c + d)") == parse(Code)("==(*(a)(b))(+(c)(d))")
   assert parse(Code)("(a == b) && (c == d)") == parse(Code)("&&(==(a)(b))(==(c)(d))")
   assert parse(Code)("(a && b) || c") == parse(Code)("||(&&(a)(b))(c)")
-  assert parse(Code)("a * (b ^ c)") == parse(Code)("a * (b ^ c)")
-  assert parse(Code)("(a .and b) .or c") == parse(Code)("(a .and b) .or c")
   assert parse(Code)("a + b + c") == parse(Code)("a + (b + c)")
   assert parse(Code)("a * b * c") == parse(Code)("a * (b * c)")
+  assert parse(Code)("A | B | C") == parse(Code)("A | (B | C)")
+  assert parse(Code)("a .and b .and c") == parse(Code)("a .and (b .and c)")
+  assert parse(Code)("a .or b .or c") == parse(Code)("a .or (b .or c)")
+  expect parse(Code)("a * b ^ c") fails "
+    Syntax error. Write `(a * b) ^ c` or `a * (b ^ c)`.
+    Mixing * and ^ requires parentheses.
+  end
+  expect parse(Code)("a .and b .or c") fails "
+    Syntax error. Write `(a .and b) .or c` or `a .and (b .or c)`.
+    Mixing .and and .or requires parentheses.
+  end
 end
 
 test "Grouped arithmetic evaluations keep their current results"

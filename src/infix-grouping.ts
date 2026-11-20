@@ -2,7 +2,7 @@
 
 /**
  * Operators that may repeat without parentheses.
- * `|` is the associative union constructor (same reading left or right).
+ * `|` is the associative union constructor (defined right association).
  */
 const ASSOCIATIVE = new Set(["+", "*", "&&", "||", "and", "or", "|"]);
 
