@@ -62,9 +62,11 @@ must test composition and state role differences explicitly.
   captures only; type defaults and implicit normalization remain excluded.
 - Refinement-qualified functions are legal. Missing evidence is a checking failure;
   overlapping base/refinement overloads do not gain priority by evaluating predicates.
-- Raw runtime Expressions are allowed for now; an expected type can establish a
-  concrete interpretation. [C04 and the raw-expression cases](specs/raw-expression-values.md)
-  cover the distinction and explicit projection. Distinct
+- A constructor expression or symbol tag requires a concrete interpretation from
+  its context or an explicit ascription. That requirement supersedes bare raw
+  runtime construction; see
+  [Designation and matching](specs/type-values.md#designation-and-matching) and
+  the deprecated [raw-expression note](specs/raw-expression-values.md). Distinct
   source syntax evaluating to the same primitive is not a type-equality exception.
   The parser destination is Expression, not a lasting parallel syntax tree:
   number literals in Expressions are exact Rationals. Host `Syntax`, public
@@ -96,22 +98,22 @@ family aliases and fixed-format rounding and overflow remain provisional.
 [Shortest exact Rational text](specs/rational-canonical-text.md) defines
 round-trip spelling for exact numeric values.
 
-The concrete/abstract declaration forms already written in
-`tests/specification/` remain current implementation targets. Angle-bracket generic
-syntax is accepted but deferred: [#62](https://github.com/johnwarden/pattern-language/pull/62)
-is parked at the author's request. Ordinary argument packs for type-valued
-factories cover the current milestones. Preserve the angle-syntax todos, but do
-not treat them as blockers for 5a.2 or 5b while this work is parked.
-Unspecified extensions to generic constraints, MemberOf,
-bare-family facets, parameter recovery and singleton abstract policy remain
-provisional/unresolved. Equivalent local declarations and accessor collisions
-remain errors for now; their replacement alias/import policy is deferred by the
-author. First-class overload sets are
+The `struct` / `pattern` declaration forms already written in
+`tests/specification/` and [type-values](specs/type-values.md) remain current
+implementation targets. Angle-bracket generic syntax is accepted but deferred:
+[#62](https://github.com/johnwarden/pattern-language/pull/62) is parked at the
+author's request. Ordinary argument packs for type-valued factories cover the
+current milestones. Preserve the angle-syntax todos, but do not treat them as
+blockers for 5a.2 or 5b while this work is parked. Unspecified extensions to
+generic constraints, MemberOf, bare-family facets, parameter recovery and
+singleton abstract policy remain provisional/unresolved. Equivalent local
+declarations and accessor collisions remain errors for now; their replacement
+alias/import policy is deferred by the author. First-class overload sets are
 not accepted. Specialization is only a deferred optimization of already defined
 abstract-call semantics, never a source-visible overload generator. The rule for
 multiple definitions when resolving a name to a function value remains open.
-Permitting raw runtime Expressions does not settle public descriptor decoding
-or require the parser's Expression migration to be completed first.
+Requiring concrete interpretation does not settle public descriptor decoding or
+require the parser's Expression migration to be completed first.
 
 ## What is implemented now
 
@@ -141,8 +143,9 @@ figures into this document.
   overlapping UnionType members are supported.
 - Old def/type construction and accessor products. Duplicate structural declarations
   and accessor collisions remain errors while their replacement policy is deferred.
-- Raw Expression compatibility values, legacy primitive-atom/cache equality and runtime
-  subset checking; the revised identity/evidence/designation model is not yet integrated.
+- Legacy bare-raw Expression compatibility values, legacy primitive-atom/cache equality
+  and runtime subset checking; the revised identity/evidence/designation model is
+  not yet integrated.
 - Ordinary parameter packs for generics; proposed angle sugar is not in the current parser.
 
 The [bootstrap guide](BOOTSTRAP-GUIDE.md), [grammar](GRAMMAR-BOOTSTRAP.md) and
@@ -163,17 +166,17 @@ The current declaration syntax includes these targets:
 
 | Target form | Existing specification and next work |
 | --- | --- |
-| `type Rectangle concrete Rect(w :: Rational, h :: Rational)` | C05/C06/C16: declare one concrete space and its local products |
-| `concrete Rect(Rational, Rational)` | C05/C16: construct an equal capture-free type value without declaration/accessor effects |
-| `type EitherFloat abstract Float32 \| Float64` | C13: retain overlapping members and their concrete identities; no first-match branch priority |
-| `abstract Float32 \| Float64` | C13: construct the same abstract member domain as an ordinary value without a named declaration |
-| `type Rectangular abstract {width: Float32, height: Float32, **}` | C15: identity-preserving abstract views and facet composition |
-| `type Box<T> concrete Box(T)` and `Box<String>` | C05/C12/C18: accepted but deferred; #62 is parked. Use ordinary-pack type factories for current work |
-| `type NonZero refinement Rational .where nonZero` | C07-C10: refinement syntax, then the separately specified evidence and overload rules |
+| `type Rectangle struct Rect(w :: Rational, h :: Rational)` | C05/C06/C16: declare one concrete space and its local products |
+| `struct Rect(Rational, Rational)` | C05/C16: construct an equal capture-free type value without declaration/accessor effects |
+| `type EitherFloat pattern Float32 \| Float64` | C13: retain overlapping members and their concrete identities; no first-match branch priority |
+| `pattern Float32 \| Float64` | C13: construct the same abstract member domain as an ordinary value without a named declaration |
+| `type Rectangular pattern {width: Float32, height: Float32, **}` | C15: identity-preserving abstract views and facet composition |
+| `type Box<T> struct Box(T)` and `Box<String>` | C05/C12/C18: accepted but deferred; #62 is parked. Use ordinary-pack type factories for current work |
+| `type NonZero pattern ExactRational .where isNonZero` | C07-C10: refinement syntax, then the separately specified evidence and overload rules |
 
 #31's value alignment and #32's declaration-product separation are integrated.
 #39's inbox handoff is closed; accepted parts now have contracts and remaining
-questions return to the project chat. #48's non-generic concrete/abstract
+questions return to the project chat. #48's non-generic struct/pattern
 syntax is integrated. #52 is retired. The [proposed todo implementation queue](design/workstreams/08-todo-implementation-queue.md)
 links the remaining generic, refinement, spreading and value-boundary slices.
 Implement them against their existing cases and isolate recognition from later
@@ -283,7 +286,7 @@ passing contract. C03's supported Float32/Float64 designation, C19's empty/singl
 rest checks, C24's successive-pack results and C25's equal-precedence infix have no
 todo on those supported checks. C24 still records the intended two-result capture
 error; C27 remains exploratory. Current bootstrap observations are explicitly
-legacy where they depend on raw Expression behavior.
+legacy where they depend on superseded bare-raw Expression behavior.
 
 Original source cases retain their intended payloads, with inaccurate type
 and expected-spelling assertions fixed. Migrated binding/default host tests

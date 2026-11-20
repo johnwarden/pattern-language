@@ -81,24 +81,25 @@ lookup. Keyword-rest record capture/spread is prefix `**rest` / `**(x)` and rema
 
 Working target notation:
 
-```text
-type Rectangle concrete Rect(w :: Float32,h :: Float32)
-type NonZero refinement Rational .where nonZero
-type Number abstract Float32 | Float64
-type Binding unambiguous abstract Definition | DestructuringBinding
-```
+    type Rectangle struct Rect(w :: Float32, h :: Float32)
+    type NonZero pattern ExactRational .where isNonZero
+    type Number pattern Float32 | Float64
+    type Binding unambiguous pattern Definition | DestructuringBinding
 
 The declaration registers a local name/accessor/display interpretation. Plain
-concrete/refinement/abstract expressions produce values without installing captures.
-Their exact keywords, qualifier order and angle-parameter sugar remain provisional.
-Do not implement an ad-hoc parser exception for a semantic requirement: grammar forms
-must remain ordinary tree patterns or an explicitly documented bootstrap seed.
+`struct` / `pattern` expressions produce values without installing captures.
+Refinements use `T .where p` inside either form. Angle-parameter sugar remains
+provisional. Do not implement an ad-hoc parser exception for a semantic
+requirement: grammar forms must remain ordinary tree patterns or an explicitly
+documented bootstrap seed.
 
-Raw structured expressions are allowed at runtime for now. An annotation, typed
-quote or sufficient expected context can give that expression a concrete
-interpretation. [C04 and the raw-expression contracts](specs/raw-expression-values.md)
-record the distinction. Parsed Code and evaluated raw values are separate roles;
-automatic descriptor decoding and the public inspection API remain unsettled.
+A constructor expression or symbol tag requires a concrete interpretation from
+its context or an explicit ascription. That requirement supersedes bare raw
+runtime expression construction; see
+[Designation and matching](specs/type-values.md#designation-and-matching) and
+the deprecated [raw-expression note](specs/raw-expression-values.md). Parsed Code
+and evaluated Expression values remain separate roles; automatic descriptor
+decoding and the public inspection API remain unsettled.
 
 ## Designation, projection and evidence
 
@@ -155,12 +156,10 @@ portable closed dependencies remain later work.
 A standalone ... pattern row repeats its preceding row. Each repeated dimension
 adds one list layer to the complete capture annotation:
 
-```text
-type Matrix concrete [
-  cells... :: Float32**
-  ...
-]
-```
+    type Matrix struct [
+      cells... :: Float32**
+      ...
+    ]
 
 Horizontal-only rest has T*. Horizontal rest across repeated rows has T**. Vertical-only
 capture followed by ... has T*. Labels sort per pack, while positional and row order
