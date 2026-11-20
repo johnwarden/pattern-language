@@ -62,26 +62,10 @@ export function isGroupingSensitive(op: string): boolean {
  * A chain of those may omit parentheses only when it repeats one associative
  * operator. `^` and `::` are sensitive and non-associative, so mixes and
  * repetitions need parentheses — including a sensitive operator next to `::`.
- * Binding `=` is parsed at lowest precedence (not via this check). Arrow `->`
- * keeps a free right-hand side for operators other than `=` (a `->` body with
- * `=` needs parentheses). Every other pair keeps its previous unconstrained
- * reading.
  */
 export function requiresParentheses(first: string, second: string): boolean {
-  if (first === "=" || first === "->") return false;
   if (!isGroupingSensitive(first) || !isGroupingSensitive(second)) return false;
   return !(first === second && ASSOCIATIVE.has(first));
-}
-
-/**
- * Printer wrap for a right infix child next to its parent. Because `=` is
- * lowest precedence, any non-`=` parent with `=` as its right child needs
- * parentheses (`a + (b = c)`), or else `a + b = c` would re-read as
- * `(a + b) = c`. The right-hand side of `=` itself stays free.
- */
-export function needsPrintGrouping(parent: string, child: string): boolean {
-  if (child === "=" && parent !== "=") return true;
-  return requiresParentheses(parent, child);
 }
 
 export const INFIX_GROUPING_CODE = "E_INFIX_GROUPING";

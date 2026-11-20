@@ -118,8 +118,7 @@ not establish actual iOS lifecycle/storage behavior.
 - Each application has exactly one argument pack. Successive applications remain
   distinct: `f(a)(b)` is not `f(a,b)`.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
-- All infix operators have equal precedence and associate right, except that
-  binding `=` has the lowest precedence. They require spaces on both sides.
+- All infix operators have equal precedence and associate right. They require spaces on both sides.
   Among grouping-sensitive operators (`+ - * / % ^`, comparisons,
   `&&`/`||`/`and`/`or`, `|`, `::`), parentheses may be omitted only for repeated
   `+`, `*`, `|`, `&&`/`and`, or `||`/`or`; write `2 * (3 + 4)` rather than

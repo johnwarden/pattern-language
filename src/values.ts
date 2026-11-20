@@ -45,7 +45,7 @@ import { encodeSyntax } from "./language-description.ts";
 import type { TextDomain } from "./value-text.ts";
 import { infixPunctuation } from "./lexical.ts";
 import { applicationHead, infixApplication } from "./application-format.ts";
-import { needsPrintGrouping } from "./infix-grouping.ts";
+import { requiresParentheses } from "./infix-grouping.ts";
 import type { ApplicationNotation } from "./application-format.ts";
 export const syntaxOrigins = new WeakMap<object, Syntax>();
 export interface TypeValue {
@@ -262,7 +262,7 @@ export function display(v: Value): string {
         },
         render: display,
         fields: body,
-        rejectedAdjacent: needsPrintGrouping,
+        rejectedAdjacent: requiresParentheses,
       };
       return v.head.kind === "symbol" && ["[]", "{}"].includes(v.head.name)
         ? v.head.name[0] + body(v.body) + v.head.name[1]
