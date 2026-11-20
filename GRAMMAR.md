@@ -49,10 +49,10 @@ Prefix `-(x)` negates; infix `1 - x` is `-(1)(x)` and subtracts. `#` always
 starts a comment.
 
 Infix operators require surrounding spaces. Accepted chains have equal precedence
-and associate right. Among grouping-sensitive operators (`+ - * / %`, comparisons,
+and associate right. Among grouping-sensitive operators (`+ - * / % ^`, comparisons,
 `&&`/`||`/`and`/`or`, and `|`), a chain may omit parentheses only when it repeats one
 associative operator (`+`, `*`, `|`, `&&`/`and`, `||`/`or`); every other adjacent pair
-in that set needs explicit parentheses. `::`, `->`, `^`, and dotted word operators
+in that set needs explicit parentheses. `::`, `->`, and dotted word operators
 such as `.plus` stay outside the rule — see [explicit grouping](specs/arithmetic-grouping.md).
 Prefix punctuation groups a maximal symbol except the quote prefix; postfix
 modifiers are read individually.

@@ -19,8 +19,9 @@ association — so `a + b + c` means `a + (b + c)`. For Rationals that reading
 matches left association; for fixed-precision floats such as Float64
 ([#86](https://github.com/johnwarden/pattern-language/pull/86)) it is the
 defined evaluation order, not merely a convention. Subtraction, division,
-remainder, comparisons, mixed operators in the set, and comparison chains
-like `a < b < c` do not share that property, so they need parentheses.
+remainder, exponentiation, comparisons, mixed operators in the set, and
+comparison chains like `a < b < c` do not share that property, so they need
+parentheses.
 [PR #91](https://github.com/johnwarden/pattern-language/pull/91) ·
 [Pony's infix operators](https://tutorial.ponylang.io/expressions/ops.html)
 
@@ -28,22 +29,23 @@ like `a < b < c` do not share that property, so they need parentheses.
 
 The grouping-sensitive operators are:
 
-- arithmetic: `+`, `-`, `*`, `/`, `%`
+- arithmetic: `+`, `-`, `*`, `/`, `%`, and `^`
 - comparison: `<`, `<=`, `>`, `>=`, `==`, `!=`, `===`, `!==`
 - logical: `&&`, `||`, and the word forms `and`, `or`
 - union: `|`
 
 The associative operators in that set are `+`, `*`, `&&` / `and`, `||` / `or`,
-and `|`. At each expression level, check adjacent infix operators in source
-order. When both operators are grouping-sensitive, require parentheses unless
-they are the same associative operator.
+and `|`. `^` is grouping-sensitive and non-associative. At each expression
+level, check adjacent infix operators in source order. When both operators are
+grouping-sensitive, require parentheses unless they are the same associative
+operator.
 
-Operators outside that set — including ascription `::`, arrow `->`, exponent
-`^`, and dotted word operators such as `.plus`, `.div`, `.times`, and
-`.where` — keep their previous master reading. A dotted word chain such as
-`a .plus b .times c` needs no extra parentheses. Mixing a grouping-sensitive
-operator with an outside operator also keeps the previous reading, so
-`a .div b * c` is `a .div (b * c)` and `a * b ^ c` is `a * (b ^ c)`.
+Operators outside that set — including ascription `::`, arrow `->`, and dotted
+word operators such as `.plus`, `.div`, `.times`, and `.where` — keep their
+previous master reading. A dotted word chain such as `a .plus b .times c` needs
+no extra parentheses. Mixing a grouping-sensitive operator with an outside
+operator also keeps the previous reading, so `a .div b * c` is
+`a .div (b * c)`.
 
 Binding `=` and arrow `->` each keep a free right-hand side, so `n = x + 1`,
 `ok = a && b`, `f = x -> x + 1`, and `f = x -> x .plus 1` need no extra
@@ -71,7 +73,9 @@ and domain-specific expressions.
 | `a .and b .or c` | Syntax error. Write `(a .and b) .or c` or `a .and (b .or c)`. Mixing .and and .or requires parentheses. |
 | `a .plus b .times c` | `a .plus (b .times c)`. Dotted word operators stay outside the rule. |
 | `a .div b * c` | `a .div (b * c)`. |
-| `a * b ^ c` | `a * (b ^ c)`. |
+| `a * b ^ c` | Syntax error. Write `(a * b) ^ c` or `a * (b ^ c)`. Mixing * and ^ requires parentheses. |
+| `2 ^ 3 + 1` | Syntax error. Write `(2 ^ 3) + 1` or `2 ^ (3 + 1)`. Mixing ^ and + requires parentheses. |
+| `a ^ b ^ c` | Syntax error. Write `(a ^ b) ^ c` or `a ^ (b ^ c)`. Repeating ^ requires parentheses. |
 | `n = x + 1` | `n = (x + 1)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
 | `f = x -> x .plus 1` | `f = (x -> (x .plus 1))`. |
@@ -164,6 +168,14 @@ test "Mixed operators show both groupings"
     Syntax error. Write `(a .and b) .or c` or `a .and (b .or c)`.
     Mixing .and and .or requires parentheses.
   end
+  expect parse(Code)("a * b ^ c") fails "
+    Syntax error. Write `(a * b) ^ c` or `a * (b ^ c)`.
+    Mixing * and ^ requires parentheses.
+  end
+  expect parse(Code)("2 ^ 3 + 1") fails "
+    Syntax error. Write `(2 ^ 3) + 1` or `2 ^ (3 + 1)`.
+    Mixing ^ and + requires parentheses.
+  end
   expect parse(Code)("f(a * b + c, d)") fails "
     Syntax error. Write `(a * b) + c` or `a * (b + c)`.
     Mixing * and + requires parentheses.
@@ -203,6 +215,10 @@ test "Non-associative repetition needs grouping"
     Syntax error. Write `(a == b) == c` or `a == (b == c)`.
     Repeating == requires parentheses.
   end
+  expect parse(Code)("a ^ b ^ c") fails "
+    Syntax error. Write `(a ^ b) ^ c` or `a ^ (b ^ c)`.
+    Repeating ^ requires parentheses.
+  end
 end
 
 test "Arithmetic, comparison and logical mixes identify the operands to group"
@@ -231,7 +247,6 @@ end
 test "Operators outside the rule keep their previous reading"
   assert parse(Code)("a .div b * c") == parse(Code)("a .div (b * c)")
   assert parse(Code)("a - b .div c") == parse(Code)("a - (b .div c)")
-  assert parse(Code)("a * b ^ c") == parse(Code)("a * (b ^ c)")
   assert parse(Code)("a .plus b .times c") == parse(Code)("a .plus (b .times c)")
   assert parse(Code)("x + y :: Int") == parse(Code)("x + (y :: Int)")
   assert parse(Code)("x - y :: Int") == parse(Code)("x - (y :: Int)")
@@ -297,6 +312,10 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   expect toString(Code)(arithmeticBinding) is "n = x + 1"
   expect toString(Code)(logical) is "a && (b || c)"
   expect toString(Code)(compared) is "(a == b) && (c == d)"
+  powerUnderMul = parse(Code)("*(a)(^(b)(c))")
+  repeatedPower = parse(Code)("^(a)(^(b)(c))")
+  expect toString(Code)(powerUnderMul) is "a * (b ^ c)"
+  expect toString(Code)(repeatedPower) is "a ^ (b ^ c)"
   bindingUnderAdd = parse(Code)("+(a)(=(b)(c))")
   expect toString(Code)(bindingUnderAdd) is "a + (b = c)"
   assert parse(Code)(toString(Code)(right)) == right
@@ -310,6 +329,8 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   assert parse(Code)(toString(Code)(arithmeticBinding)) == arithmeticBinding
   assert parse(Code)(toString(Code)(logical)) == logical
   assert parse(Code)(toString(Code)(compared)) == compared
+  assert parse(Code)(toString(Code)(powerUnderMul)) == powerUnderMul
+  assert parse(Code)(toString(Code)(repeatedPower)) == repeatedPower
   assert parse(Code)(toString(Code)(bindingUnderAdd)) == bindingUnderAdd
 end
 ```

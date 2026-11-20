@@ -119,9 +119,10 @@ not establish actual iOS lifecycle/storage behavior.
   distinct: `f(a)(b)` is not `f(a,b)`.
 - `a.b` means `b(a)`; `a .b c` means `b(a)(c)`.
 - All infix operators have equal precedence and associate right. They require
-  spaces on both sides. Among grouping-sensitive operators, parentheses may be
-  omitted only for repeated `+`, `*`, `|`, `&&`/`and`, or `||`/`or`; write
-  `2 * (3 + 4)` rather than `2 * 3 + 4`.
+  spaces on both sides. Among grouping-sensitive operators (`+ - * / % ^`,
+  comparisons, `&&`/`||`/`and`/`or`, `|`), parentheses may be omitted only for
+  repeated `+`, `*`, `|`, `&&`/`and`, or `||`/`or`; write `2 * (3 + 4)` rather
+  than `2 * 3 + 4`, and group `^` mixes and repetitions.
 - Prefix punctuation is a maximal symbol. Tight postfix `~ ! @ $ % ^ & * ?` are
   distinct from prefix/infix application. `#` is a comment, not a postfix
   operator. Prefix and postfix operators must touch their operand: `T**` is

@@ -30,8 +30,9 @@ must test composition and state role differences explicitly.
 - One application has an expression head and one complete pack. f(a)(b), f(a,b), f()
   and f are distinct. Dot/infix/outfix are sugar; accepted infix chains have equal
   precedence and right associativity, and among grouping-sensitive operators
-  parentheses may be omitted only for repeated associative operators (`+`, `*`,
-  `|`, `&&`/`and`, `||`/`or`); `::`, `->`, and dotted word operators stay outside
+  (`+ - * / % ^`, comparisons, `&&`/`||`/`and`/`or`, `|`) parentheses may be
+  omitted only for repeated associative operators (`+`, `*`, `|`, `&&`/`and`,
+  `||`/`or`); `::`, `->`, and dotted word operators stay outside
   ([arithmetic-grouping](specs/arithmetic-grouping.md)). Labels are lowercase,
   unique and canonically sorted after positional fields. () is an empty pack, not
   an implicit unit value.

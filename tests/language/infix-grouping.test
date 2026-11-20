@@ -93,11 +93,22 @@ test "Accepted grouped forms keep their current trees"
   assert parse(Code)("A | B | C") == parse(Code)("A | (B | C)")
   assert parse(Code)("a .and b .and c") == parse(Code)("a .and (b .and c)")
   assert parse(Code)("a .or b .or c") == parse(Code)("a .or (b .or c)")
-  assert parse(Code)("a * b ^ c") == parse(Code)("a * (b ^ c)")
   assert parse(Code)("a .plus b .times c") == parse(Code)("a .plus (b .times c)")
   expect parse(Code)("a .and b .or c") fails "
     Syntax error. Write `(a .and b) .or c` or `a .and (b .or c)`.
     Mixing .and and .or requires parentheses.
+  end
+  expect parse(Code)("a * b ^ c") fails "
+    Syntax error. Write `(a * b) ^ c` or `a * (b ^ c)`.
+    Mixing * and ^ requires parentheses.
+  end
+  expect parse(Code)("2 ^ 3 + 1") fails "
+    Syntax error. Write `(2 ^ 3) + 1` or `2 ^ (3 + 1)`.
+    Mixing ^ and + requires parentheses.
+  end
+  expect parse(Code)("a ^ b ^ c") fails "
+    Syntax error. Write `(a ^ b) ^ c` or `a ^ (b ^ c)`.
+    Repeating ^ requires parentheses.
   end
 end
 
