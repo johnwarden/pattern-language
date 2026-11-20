@@ -50,6 +50,11 @@ Require parentheses if any of the following hold.
    write `(a + b) = c` or `a + (b = c)` instead of `a + b = c`.
 6. Both operators are `+`.
 
+Rule 2 applies with any infix operator on the right. For example,
+`a - b .div c` needs parentheses because `-` comes first. With `*` in
+that position, `a * b .div c` follows ordinary right association. The
+same distinction applies to any word operator in place of `.div`.
+
 Check each parenthesized expression and each argument field independently.
 Parentheses around a single operand in a chain, as in `a - (b) - c`, leave
 both operators at the same level. Prefix signs, postfix operators, and
@@ -67,8 +72,9 @@ domain-specific expressions.
 | `a - b + c` | Syntax error. Write `(a - b) + c` or `a - (b + c)`. Mixing - and + requires parentheses. |
 | `10 - 3 - 2` | Syntax error. Write `(10 - 3) - 2` or `10 - (3 - 2)`. Repeating - requires parentheses. |
 | `12 / 3 * 2` | Syntax error. Write `(12 / 3) * 2` or `12 / (3 * 2)`. Mixing / and * requires parentheses. |
-| `a .div b * c` | `a .div (b * c)`. |
 | `a - b .div c` | Syntax error. Write `(a - b) .div c` or `a - (b .div c)`. Mixing - and .div requires parentheses. |
+| `a * b .div c` | `a * (b .div c)`. |
+| `a .div b * c` | `a .div (b * c)`. |
 | `a * b == c + d` | Syntax error. Write `(a * b) == c` or `a * (b == c)`. Mixing * and == requires parentheses. |
 | `a == b + c` | Syntax error. Write `(a == b) + c` or `a == (b + c)`. Mixing == and + requires parentheses. |
 | `n = x + 1` | `n = (x + 1)`. |
@@ -359,6 +365,7 @@ end
 test "Operators outside the rejected pairs still compose without parentheses"
   assert parse(Code)("f(a * b, c + d)") == parse(Code)("f((a * b), (c + d))")
   assert parse(Code)("a + b - c") == parse(Code)("a + (b - c)")
+  assert parse(Code)("a * b .div c") == parse(Code)("a * (b .div c)")
   assert parse(Code)("a .div b * c") == parse(Code)("a .div (b * c)")
   assert parse(Code)("a && b && c") == parse(Code)("a && (b && c)")
   assert parse(Code)("x :: Int = 5") == parse(Code)("x :: (Int = 5)")
