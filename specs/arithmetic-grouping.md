@@ -48,7 +48,6 @@ Require parentheses if any of the following hold.
    `ok = a && b` need no extra parentheses. An ungrouped arithmetic,
    comparison, or logical operator directly left of `=` is rejected, so
    write `(a + b) = c` or `a + (b = c)` instead of `a + b = c`.
-6. Both operators are `+`.
 
 Rule 2 applies with any infix operator on the right. For example,
 `a - b .div c` needs parentheses because `-` comes first. With `*` in
@@ -66,7 +65,7 @@ domain-specific expressions.
 
 | Source | Reading |
 | --- | --- |
-| `x :+ y :+ z` | Syntax error. Write `(x :+ y) :+ z` or `x :+ (y :+ z)`. Repeating :+ requires parentheses. |
+| `x :- y :* z` | Syntax error. Write `(x :- y) :* z` or `x :- (y :* z)`. Mixing :- and :* requires parentheses. |
 | `a + b * c` | Syntax error. Write `(a + b) * c` or `a + (b * c)`. Mixing + and * requires parentheses. |
 | `a * b + c` | Syntax error. Write `(a * b) + c` or `a * (b + c)`. Mixing * and + requires parentheses. |
 | `a - b + c` | Syntax error. Write `(a - b) + c` or `a - (b + c)`. Mixing - and + requires parentheses. |
@@ -173,25 +172,9 @@ as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
 
 ```pattern test
 test "The same pairs require grouping with quoted or bare infix symbols"
-  todo expect parse(Code)("x :+ y :+ z") fails "
-    Syntax error. Write `(x :+ y) :+ z` or `x :+ (y :+ z)`.
-    Repeating :+ requires parentheses.
-  end
-  todo expect parse(Code)("x + y + z") fails "
-    Syntax error. Write `(x + y) + z` or `x + (y + z)`.
-    Repeating + requires parentheses.
-  end
-  todo expect parse(Code)("x + y :+ z") fails "
-    Syntax error. Write `(x + y) :+ z` or `x + (y :+ z)`.
-    Mixing + and :+ requires parentheses.
-  end
-  todo expect parse(Code)("x :+ y + z") fails "
-    Syntax error. Write `(x :+ y) + z` or `x :+ (y + z)`.
-    Mixing :+ and + requires parentheses.
-  end
-  todo expect parse(Code)("x :+ y :* z") fails "
-    Syntax error. Write `(x :+ y) :* z` or `x :+ (y :* z)`.
-    Mixing :+ and :* requires parentheses.
+  todo expect parse(Code)("x :- y :* z") fails "
+    Syntax error. Write `(x :- y) :* z` or `x :- (y :* z)`.
+    Mixing :- and :* requires parentheses.
   end
   todo expect parse(Code)("x :- y .div z") fails "
     Syntax error. Write `(x :- y) .div z` or `x :- (y .div z)`.
@@ -209,8 +192,10 @@ test "The same pairs require grouping with quoted or bare infix symbols"
     Syntax error. Write `(x :+ y) := z` or `x :+ (y := z)`.
     Mixing :+ and := requires parentheses.
   end
-  assert parse(Code)("(x :+ y) :+ z") == parse(Code)(":+(:+(x)(y))(z)")
-  assert parse(Code)("x :+ (y :+ z)") == parse(Code)(":+(x)(:+(y)(z))")
+  assert parse(Code)("x + y + z") == parse(Code)("x + (y + z)")
+  assert parse(Code)("x :+ y :+ z") == parse(Code)("x :+ (y :+ z)")
+  assert parse(Code)("(x :- y) :* z") == parse(Code)(":*(:-(x)(y))(z)")
+  assert parse(Code)("x :- (y :* z)") == parse(Code)(":-(x)(:*(y)(z))")
   assert parse(Code)("x :&& y && z") == parse(Code)(":&&(x)(&&(y)(z))")
 end
 
