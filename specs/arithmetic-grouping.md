@@ -27,6 +27,11 @@ parentheses.
 [PR #91](https://github.com/johnwarden/pattern-language/pull/91) ·
 [Pony's infix operators](https://tutorial.ponylang.io/expressions/ops.html)
 
+Rhombus also requests explicit grouping when adjacent operators lack a declared
+precedence relationship. Its relations attach to lexical bindings. Pattern checks
+grouping on surface spellings so the same rule works inside quoted code. See
+[Flatt et al., *Rhombus*, §2.1](https://users.cs.utah.edu/plt/publications/oopsla23-faadffggkkmppst.pdf).
+
 ## Surface rule
 
 The grouping-sensitive operators are:
