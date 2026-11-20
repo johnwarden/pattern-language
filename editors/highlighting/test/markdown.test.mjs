@@ -107,3 +107,50 @@ test("automatic Markdown syntax selection and archive contents", () => {
   const result = spawnSync("python3", [fileURLToPath(new URL("markdown_plugin_test.py", import.meta.url))], { encoding: "utf8" });
   assert.equal(result.status, 0, result.stdout + result.stderr);
 });
+
+test("empty info strings embed Pattern", () => {
+  for (const source of ["```\n", "  ~~~~  \t\r\n"]) {
+    const open = opening(source);
+    assert.ok(open);
+    assert.ok(closes(open, open.fence + "\n"));
+  }
+});
+
+test("inline delimiters pair only with a whole run of matching length", () => {
+  const [rule] = syntax.contexts["pattern-inline"];
+  const scanner = new oniguruma.OnigScanner([rule.match]);
+  try {
+    for (const [line, delimiter, end] of [
+      ["Use `Int`.", "`", 8],
+      ["Use ``Code` x``.", "``", 13],
+    ]) {
+      const open = scanner.findNextMatchSync(line, 0);
+      assert.equal(open.captureIndices[1].length, delimiter.length);
+      const close = new oniguruma.OnigScanner([rule.escape.replace("\\1", delimiter)]);
+      try {
+        assert.equal(close.findNextMatchSync(line, open.captureIndices[0].end).captureIndices[0].start, end);
+      } finally {
+        close.dispose();
+      }
+    }
+    assert.equal(scanner.findNextMatchSync("An unmatched ` here", 0), null);
+  } finally {
+    scanner.dispose();
+  }
+});
+
+test("indented blocks continue across blank lines and release dedented prose", () => {
+  const [block, nested] = syntax.contexts["indented-code-blocks"];
+  const indent = "(?:[ ]{4}|[ ]{0,3}\\t)";
+  const compile = (regex) => new RegExp(regex.replaceAll("{{indented_code_block}}", indent));
+  for (const line of ["    Some(Int)", "\t42", "  \tx"]) {
+    assert.ok(compile(block.match).test(line));
+    assert.equal(compile(block.escape).test(line), false);
+  }
+  for (const line of ["", "  ", "\r"]) assert.equal(compile(block.escape).test(line), false);
+  for (const line of ["   prose", "> quoted prose", "# Heading"]) {
+    assert.equal(compile(block.match).test(line), false);
+    assert.ok(compile(block.escape).test(line));
+  }
+  assert.ok(compile(nested.escape).test("\n"));
+});

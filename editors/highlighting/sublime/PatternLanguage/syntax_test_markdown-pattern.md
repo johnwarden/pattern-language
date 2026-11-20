@@ -60,3 +60,27 @@ text = "
 
 # Heading after an unfinished Pattern string
 <!-- <- markup.heading.1.markdown - source.pattern-language -->
+
+```
+value = Some(Int)
+<!--    ^^^^ constant.other.symbol.constructor.pattern-language -->
+```
+
+A value like `Some(Int)` in prose.
+<!--          ^^^^ constant.other.symbol.constructor.pattern-language -->
+<!--               ^^^ support.type.pattern-language -->
+<!--                     ^ - source.pattern-language -->
+
+    value = Some(Int)
+<!--        ^^^^ constant.other.symbol.constructor.pattern-language -->
+
+    answer = 42
+<!--         ^^ constant.numeric.pattern-language -->
+Ordinary prose after the block.
+<!-- <- - source.pattern-language -->
+
+> Ordinary quoted prose.
+<!--   ^ - source.pattern-language -->
+
+>     value = Some(Int)
+<!--          ^^^^ constant.other.symbol.constructor.pattern-language -->

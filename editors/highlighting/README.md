@@ -29,10 +29,11 @@ and [4075 changelog](https://www.sublimetext.com/dev). Compatibility with build
 4166 is based on that format support. A native Sublime 4166 run has not been
 performed in the development environment.
 
-## Pattern fences in Markdown
+## Pattern code in Markdown
 
-Markdown files using Sublime's built-in Markdown syntax automatically gain Pattern
-highlighting when they contain a fence labelled `pattern` or `pattern test`:
+Markdown files using Sublime's built-in Markdown syntax use Pattern highlighting for
+four-space-indented code blocks, unlabelled fences, and single-line backtick spans. Explicit fence
+labels select their language, including `pattern` and `pattern test`.
 
 ````markdown
 ```pattern
