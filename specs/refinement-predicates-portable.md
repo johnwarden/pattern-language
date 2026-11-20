@@ -3,8 +3,9 @@
 Draft for milestone 10. Extend the initial [predicate enum contract](refinement-predicates.md)
 to user-defined predicates after the language has a portable
 [closed function representation](../design/FUNCTION-VALUES.md).
-Existing enum predicates retain their bare spelling after `.where` and
-their enum identity.
+A bare name after `.where` always designates a `Predicate` enum case.
+An unknown case gives `E_EXPECTED_PREDICATE`, even if a local function has
+that name. This extension adds an explicit callable operand, `(name :: (T => Bool))`.
 
 ## Closed predicate values
 
@@ -22,35 +23,43 @@ predicates accept. The enclosing refined descriptor compares its
 base pattern and predicate through their ordinary structural rules.
 
 A local predicate can check whether a rectangle is at least twice as wide as
-it is tall. This example uses a name distinct from the prelude enum cases
-to exercise ordinary callable resolution.
+it is tall. The ascription selects the function and its captured ratio.
 
     type Rectangle struct Rect(width :: Int, height :: Int)
     ratio = 2 :: Int
     def isWide(r :: Rectangle) r.width >= (r.height * ratio)
-    type WideRectangle pattern Rectangle .where isWide
+    type WideRectangle pattern Rectangle .where (isWide :: (Rectangle => Bool))
 
     wide = Rect(6, 3) :: Rectangle
     tall = Rect(3, 6) :: Rectangle
     assert wide .matches WideRectangle
     assert not(tall .matches WideRectangle)
 
-The initial enum grammar reports an unknown case for `isWide`. In the
-portable extension, the function's captured `ratio` admits the first value
-and rejects the second.
+Even when a function and an enum case share a name, the two spellings select
+their respective values.
+
+```pattern
+todo test "An explicitly ascribed predicate selects a local function with an enum case's name"
+  def isNonZero(n :: ExactRational) False
+  type NonZero pattern ExactRational .where isNonZero
+  type Never pattern ExactRational .where (isNonZero :: (ExactRational => Bool))
+
+  assert (1 :: ExactRational) .matches NonZero
+  assert not((1 :: ExactRational) .matches Never)
+  assert not((0 :: ExactRational) .matches Never)
+end
+```
 
 To reconstruct the refined type, global text must carry the closed predicate and any
-definitions it depends on. The local name is usable in local text
-only when it resolves to the same closed value. Global text for an
-enum predicate still prints its bare case name after `.where`.
+definitions it depends on. Local text may abbreviate the callable with
+an ascribed name when that name resolves to the same closed value.
+An enum predicate prints its bare case name in both contexts.
 
 ## Decisions and contract coverage
 
 - Choose the public closed callable expression and its placement in
   canonical type text. A parenthesized lambda is a candidate for a
   noncapturing predicate once it has a portable identity.
-- Specify how to resolve a portable predicate name that also names an
-  enum case. Preserve round trips for the existing bare enum spelling.
 - Specify admissible captures and dependency identity, including
   recursive helpers and predicate references to type values.
 - Round-trip a predicate with a captured value in a fresh scope.
