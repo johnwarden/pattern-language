@@ -113,3 +113,27 @@ test "Printed Code groups a binding under an arithmetic or logical parent"
   assert parse(Code)(toString(Code)(bindingUnderAdd)) == bindingUnderAdd
   assert parse(Code)(toString(Code)(bindingUnderAnd)) == bindingUnderAnd
 end
+
+test "Write suggestions name only the offending infix expression"
+  expect parse(Code)("f(a * b + c, d)") fails "
+    Syntax error. Write `(a * b) + c` or `a * (b + c)`.
+    Mixing * and + requires parentheses.
+  end
+  src = "
+    x = 1
+    y = a + b * c
+  end
+  expect parse(Code)(src) fails "
+    Syntax error. Write `(a + b) * c` or `a + (b * c)`.
+    Mixing + and * requires parentheses.
+  end
+  nested = "
+    def f()
+      a + b * c
+    end
+  end
+  expect parse(Code)(nested) fails "
+    Syntax error. Write `(a + b) * c` or `a + (b * c)`.
+    Mixing + and * requires parentheses.
+  end
+end

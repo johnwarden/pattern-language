@@ -73,9 +73,11 @@ export interface InfixOperatorSpelling {
   display: string;
 }
 
-export interface SourceRange {
-  start: number;
-  end: number;
+/** One infix operand: prefer source slice when spanned, else its printed form. */
+export interface InfixOperandText {
+  start?: number;
+  end?: number;
+  printed: string;
 }
 
 /** True when the operator list still has a rejected adjacent pair. */
@@ -93,10 +95,7 @@ function remainingConflict(
   // Left groups operators[pairIndex]; right groups operators[pairIndex + 1].
   const next =
     side === "left"
-      ? [
-          ...operators.slice(0, pairIndex),
-          ...operators.slice(pairIndex + 1),
-        ]
+      ? [...operators.slice(0, pairIndex), ...operators.slice(pairIndex + 1)]
       : [
           ...operators.slice(0, pairIndex + 1),
           ...operators.slice(pairIndex + 2),
@@ -104,53 +103,71 @@ function remainingConflict(
   return chainHasGroupingConflict(next);
 }
 
-function spliceParens(
+function operandText(source: string, operand: InfixOperandText): string {
+  if (operand.start === undefined || operand.end === undefined)
+    return operand.printed;
+  return source.slice(operand.start, operand.end);
+}
+
+/** Render an infix chain, optionally wrapping one inclusive operand range. */
+function formatChain(
   source: string,
-  from: number,
-  to: number,
+  operands: InfixOperandText[],
+  operators: InfixOperatorSpelling[],
+  wrapFrom?: number,
+  wrapTo?: number,
 ): string {
-  return source.slice(0, from) + "(" + source.slice(from, to) + ")" + source.slice(to);
+  let out = "";
+  for (let i = 0; i < operands.length; i++) {
+    if (wrapFrom !== undefined && i === wrapFrom) out += "(";
+    out += operandText(source, operands[i]!);
+    if (wrapTo !== undefined && i === wrapTo) out += ")";
+    if (i < operators.length) out += " " + operators[i]!.display + " ";
+  }
+  return out;
 }
 
 /**
  * Build the Write / Mixing-or-Repeating diagnostic for the first rejected pair.
- * `operands` and `operators` are parallel chain slots; ranges slice `source`.
+ * Suggestions cover only this infix expression node, never the surrounding
+ * call, statement, or buffer. Prefer source slices; fall back to printed forms.
  */
 export function parenthesesRequiredMessage(
   source: string,
-  operands: SourceRange[],
+  operands: InfixOperandText[],
   operators: InfixOperatorSpelling[],
   pairIndex: number,
 ): string {
-  const left = operands[pairIndex]!;
-  const mid = operands[pairIndex + 1]!;
-  const right = operands[pairIndex + 2]!;
   const first = operators[pairIndex]!;
   const second = operators[pairIndex + 1]!;
-  const leftOption = spliceParens(source, left.start, mid.end);
-  const rightOption = spliceParens(source, mid.start, right.end);
-  const leftClears = !remainingConflict(
-    operators.map((op) => op.text),
-    pairIndex,
-    "left",
+  const texts = operators.map((op) => op.text);
+  const leftClears = !remainingConflict(texts, pairIndex, "left");
+  const rightClears = !remainingConflict(texts, pairIndex, "right");
+  // Suggestions start at the rejected pair's left operand so a free binding,
+  // call, or earlier chain prefix is never reprinted.
+  const fragment = leftClears && rightClears
+    ? {
+        operands: operands.slice(pairIndex),
+        operators: operators.slice(pairIndex),
+      }
+    : {
+        operands: operands.slice(pairIndex, pairIndex + 3),
+        operators: operators.slice(pairIndex, pairIndex + 2),
+      };
+  const leftText = formatChain(
+    source,
+    fragment.operands,
+    fragment.operators,
+    0,
+    1,
   );
-  const rightClears = !remainingConflict(
-    operators.map((op) => op.text),
-    pairIndex,
-    "right",
+  const rightText = formatChain(
+    source,
+    fragment.operands,
+    fragment.operators,
+    1,
+    2,
   );
-  let leftText: string;
-  let rightText: string;
-  if (leftClears && rightClears) {
-    leftText = leftOption;
-    rightText = rightOption;
-  } else {
-    const a = source.slice(left.start, left.end);
-    const b = source.slice(mid.start, mid.end);
-    const c = source.slice(right.start, right.end);
-    leftText = `(${a} ${first.display} ${b}) ${second.display} ${c}`;
-    rightText = `${a} ${first.display} (${b} ${second.display} ${c})`;
-  }
   const rule =
     first.display === second.display
       ? `Repeating ${first.display} requires parentheses.`

@@ -111,16 +111,31 @@ Syntax error. Write `(10 - 3) - 2` or `10 - (3 - 2)`.
 Repeating - requires parentheses.
 ```
 
-When both alternatives resolve the grouping errors in the expression,
-keep the surrounding source in each option, including any call or other
-argument fields. If a conflict remains in
-at least one alternative, show just the three operands around the first
-rejected pair. For `a * b == c + d`, the message reads
+Write suggestions cover only the offending infix expression, starting at the
+left operand of the first rejected pair. They never reprint a surrounding call,
+binding target, earlier chain prefix, statement, or buffer. When both
+alternatives resolve the remaining grouping errors from that pair onward, show
+that suffix with parentheses at the rejected pair. If a conflict remains in at
+least one alternative, show just the three operands around the pair. For
+`a * b == c + d`, the message reads
 
 ```text
 Syntax error. Write `(a * b) == c` or `a * (b == c)`.
 Mixing * and == requires parentheses.
 ```
+
+For `f(a * b + c, d)`, `a .div b * c + d`, and a multi-line program such as
+
+```text
+x = 1
+y = a + b * c
+```
+
+the Write choices name only the rejected pair's expression, for example
+`(a * b) + c` / `a * (b + c)`, `(b * c) + d` / `b * (c + d)`, or
+`(a + b) * c` / `a + (b * c)`. Prefer source slices of each operand so existing
+parentheses stay intact; if an operand has no span, use its printed form
+instead.
 
 ## Ascriptions in infix chains
 
@@ -174,12 +189,20 @@ test "Mixed arithmetic shows both groupings in source order"
     Mixing * and + requires parentheses.
   end
   expect parse(Code)("a .div b * c + d") fails "
-    Syntax error. Write `a .div (b * c) + d` or `a .div b * (c + d)`.
+    Syntax error. Write `(b * c) + d` or `b * (c + d)`.
     Mixing * and + requires parentheses.
   end
   expect parse(Code)("f(a * b + c, d)") fails "
-    Syntax error. Write `f((a * b) + c, d)` or `f(a * (b + c), d)`.
+    Syntax error. Write `(a * b) + c` or `a * (b + c)`.
     Mixing * and + requires parentheses.
+  end
+  src = "
+    x = 1
+    y = a + b * c
+  end
+  expect parse(Code)(src) fails "
+    Syntax error. Write `(a + b) * c` or `a + (b * c)`.
+    Mixing + and * requires parentheses.
   end
 end
 

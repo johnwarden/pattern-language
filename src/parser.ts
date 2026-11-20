@@ -10,6 +10,7 @@ import {
   isName,
   postfix,
   POSTFIX_SUFFIX,
+  normal,
 } from "./syntax.ts";
 import {
   matchNumericSource,
@@ -639,12 +640,13 @@ class Reader {
       const first = operators[i]!;
       const second = operators[i + 1]!;
       if (!requiresParentheses(first.text, second.text)) continue;
-      const ranges = operands.map((operand) => ({
-        start: operand.span?.start ?? 0,
-        end: operand.span?.end ?? 0,
+      const texts = operands.map((operand) => ({
+        start: operand.span?.start,
+        end: operand.span?.end,
+        printed: normal(operand),
       }));
       throw new LanguageError(
-        parenthesesRequiredMessage(this.source, ranges, operators, i),
+        parenthesesRequiredMessage(this.source, texts, operators, i),
         second.span,
         { code: INFIX_GROUPING_CODE, phase: "parse" },
       );
