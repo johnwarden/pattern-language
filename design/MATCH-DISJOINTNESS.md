@@ -177,12 +177,20 @@ separator change is a wide mechanical edit plus printer/grammar/`Arms` work.
 
 ## Other open items
 
-1. **Unreachable `else`:** after arms that already cover the scrutinee, is a
-   trailing `else` allowed (vacuous Remaining) or rejected?
-2. **Public `P \ Q` / `Remaining` in types** for named residual domains.
-3. **When is overlap checked?** Elaboration time only, or also after later
-   type edits?
-4. **Exhaustiveness** as warning vs hard error vs `else`-only convention.
+Precise questions (also posted on the PR); each line is the recommended answer:
+
+1. **When is arm overlap checked?** At elaboration of the `match` (same
+   definition-time phase as overload-domain overlap), not on first evaluation.
+   A later static-checker milestone may be the first enforcer if bootstrap
+   elaboration still skips it.
+2. **Unreachable trailing `else`?** Reject as an error (empty `Remaining`),
+   not a warning and not allowed.
+3. **Non-exhaustive `match` with no `else`?** Static error once domain coverage
+   can be proved; until then, keep today’s runtime miss (`E_NO_MATCH`-style) as
+   bootstrap behavior only.
+4. **Public `P \ Q` / `Remaining` in types?** Defer user-written subtraction /
+   `Remaining` types; treat `Remaining` as the implicit domain of `else` only
+   until a separate notation PR.
 
 No runtime implementation in this PR. Spec todos record the decided
 diagnostics; remove them when an implementation PR makes them pass.
