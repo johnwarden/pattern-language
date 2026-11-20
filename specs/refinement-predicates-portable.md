@@ -21,9 +21,25 @@ representation. Equality does not compare which inputs two
 predicates accept. The enclosing refined descriptor compares its
 base pattern and predicate through their ordinary structural rules.
 
-For example, a program can refine a rectangle with a local function
-that checks whether its width and height match. To reconstruct the
-refined type, global text must carry the closed predicate and any
+A local predicate can check whether a rectangle is at least twice as wide as
+it is tall. This example uses a name distinct from the prelude enum cases
+to exercise ordinary callable resolution.
+
+    type Rectangle struct Rect(width :: Int, height :: Int)
+    ratio = 2 :: Int
+    def isWide(r :: Rectangle) r.width >= (r.height * ratio)
+    type WideRectangle pattern Rectangle .where isWide
+
+    wide = Rect(6, 3) :: Rectangle
+    tall = Rect(3, 6) :: Rectangle
+    assert wide .matches WideRectangle
+    assert not(tall .matches WideRectangle)
+
+The initial enum grammar reports an unknown case for `isWide`. In the
+portable extension, the function's captured `ratio` admits the first value
+and rejects the second.
+
+To reconstruct the refined type, global text must carry the closed predicate and any
 definitions it depends on. The local name is usable in local text
 only when it resolves to the same closed value. Global text for an
 enum predicate still prints its bare case name after `.where`.
