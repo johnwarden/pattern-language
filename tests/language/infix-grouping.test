@@ -110,6 +110,17 @@ test "Accepted grouped forms keep their current trees"
     Syntax error. Write `(a ^ b) ^ c` or `a ^ (b ^ c)`.
     Repeating ^ requires parentheses.
   end
+  expect parse(Code)("x - y :: Int") fails "
+    Syntax error. Write `(x - y) :: Int` or `x - (y :: Int)`.
+    Mixing - and :: requires parentheses.
+  end
+  expect parse(Code)("x + y :: Int") fails "
+    Syntax error. Write `(x + y) :: Int` or `x + (y :: Int)`.
+    Mixing + and :: requires parentheses.
+  end
+  assert parse(Code)("x :: Int") == parse(Code)("::(x)(Int)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("x :: (Int = 5)")
+  assert parse(Code)("(x :: Int) = 5") == parse(Code)("=(::(x)(Int))(5)")
 end
 
 test "Grouped arithmetic evaluations keep their current results"

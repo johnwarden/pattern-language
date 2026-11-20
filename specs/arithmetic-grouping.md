@@ -33,25 +33,27 @@ The grouping-sensitive operators are:
 - comparison: `<`, `<=`, `>`, `>=`, `==`, `!=`, `===`, `!==`
 - logical: `&&`, `||`, and the word forms `and`, `or`
 - union: `|`
+- ascription: `::`
 
 The associative operators in that set are `+`, `*`, `&&` / `and`, `||` / `or`,
-and `|`. `^` is grouping-sensitive and non-associative. At each expression
-level, check adjacent infix operators in source order. When both operators are
-grouping-sensitive, require parentheses unless they are the same associative
-operator.
+and `|`. `^` and `::` are grouping-sensitive and non-associative. At each
+expression level, check adjacent infix operators in source order. When both
+operators are grouping-sensitive, require parentheses unless they are the same
+associative operator. In particular, a grouping-sensitive operator directly
+adjacent to `::` needs parentheses.
 
-Operators outside that set — including ascription `::`, arrow `->`, and dotted
-word operators such as `.plus`, `.div`, `.times`, and `.where` — keep their
-previous master reading. A dotted word chain such as `a .plus b .times c` needs
-no extra parentheses. Mixing a grouping-sensitive operator with an outside
-operator also keeps the previous reading, so `a .div b * c` is
-`a .div (b * c)`.
+Operators outside that set — including arrow `->` and dotted word operators
+such as `.plus`, `.div`, `.times`, and `.where` — keep their previous master
+reading. A dotted word chain such as `a .plus b .times c` needs no extra
+parentheses. Mixing a grouping-sensitive operator with an outside operator also
+keeps the previous reading, so `a .div b * c` is `a .div (b * c)`.
 
 Binding `=` and arrow `->` each keep a free right-hand side, so `n = x + 1`,
-`ok = a && b`, `f = x -> x + 1`, and `f = x -> x .plus 1` need no extra
-parentheses for the right-hand operator. An arithmetic, comparison, or logical
-operator directly left of `=` still requires grouping: write `(a + b) = c` or
-`a + (b = c)` instead of `a + b = c`.
+`ok = a && b`, `f = x -> x + 1`, `f = x -> x .plus 1`, `x :: Int = 5`, and
+`x :: Int -> 5` need no extra parentheses for that neighbor. An arithmetic,
+comparison, or logical operator directly left of `=` still requires grouping:
+write `(a + b) = c` or `a + (b = c)` instead of `a + b = c`. Plain `x :: Int`
+stays fine.
 
 Check each parenthesized expression and each argument field independently.
 Parentheses around a single operand in a chain, as in `a - (b) - c`, leave both
@@ -76,9 +78,14 @@ and domain-specific expressions.
 | `a * b ^ c` | Syntax error. Write `(a * b) ^ c` or `a * (b ^ c)`. Mixing * and ^ requires parentheses. |
 | `2 ^ 3 + 1` | Syntax error. Write `(2 ^ 3) + 1` or `2 ^ (3 + 1)`. Mixing ^ and + requires parentheses. |
 | `a ^ b ^ c` | Syntax error. Write `(a ^ b) ^ c` or `a ^ (b ^ c)`. Repeating ^ requires parentheses. |
+| `x - y :: Int` | Syntax error. Write `(x - y) :: Int` or `x - (y :: Int)`. Mixing - and :: requires parentheses. |
+| `x + y :: Int` | Syntax error. Write `(x + y) :: Int` or `x + (y :: Int)`. Mixing + and :: requires parentheses. |
+| `x :: Int` | `::(x)(Int)`. |
 | `n = x + 1` | `n = (x + 1)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
 | `f = x -> x .plus 1` | `f = (x -> (x .plus 1))`. |
+| `x :: Int = 5` | `x :: (Int = 5)`. |
+| `x :: Int -> 5` | `x :: (Int -> 5)`. |
 | `a + b = c` | Syntax error. Write `(a + b) = c` or `a + (b = c)`. Mixing + and = requires parentheses. |
 | `f(a * b, c + d)` | Each argument field is checked independently. |
 
@@ -111,8 +118,9 @@ slices of each operand; if an operand has no span, use its printed form.
 
 ## Ascriptions in infix chains
 
-`::` stays outside the grouping rule, so it keeps right association with its
-neighbors. Binding still leaves its right side free after `=`.
+`::` is grouping-sensitive and non-associative, so a sensitive operator next to
+`::` needs parentheses. Binding `=` and arrow `->` still leave their right side
+free, and a typed left operand can be parenthesized for `=` or `->`.
 
 | Source | Reading |
 | --- | --- |
@@ -120,8 +128,10 @@ neighbors. Binding still leaves its right side free after `=`.
 | `(x :: Int) = 5` | `=(::(x)(Int))(5)`. |
 | `x :: Int -> 5` | `x :: (Int -> 5)`. |
 | `(x :: Int) -> 5` | `->(::(x)(Int))(5)`. |
-| `x + y :: Int` | `x + (y :: Int)`. |
-| `x - y :: Int` | `x - (y :: Int)`. |
+| `x + y :: Int` | Syntax error. Mixing + and :: requires parentheses. |
+| `x - y :: Int` | Syntax error. Mixing - and :: requires parentheses. |
+| `x - (y :: Int)` | `-(x)(::(y)(Int))`. |
+| `(x - y) :: Int` | `::(-(x)(y))(Int)`. |
 
 ## Printing
 
@@ -248,8 +258,22 @@ test "Operators outside the rule keep their previous reading"
   assert parse(Code)("a .div b * c") == parse(Code)("a .div (b * c)")
   assert parse(Code)("a - b .div c") == parse(Code)("a - (b .div c)")
   assert parse(Code)("a .plus b .times c") == parse(Code)("a .plus (b .times c)")
-  assert parse(Code)("x + y :: Int") == parse(Code)("x + (y :: Int)")
-  assert parse(Code)("x - y :: Int") == parse(Code)("x - (y :: Int)")
+end
+
+test "Ascription next to a sensitive operator needs grouping"
+  expect parse(Code)("x - y :: Int") fails "
+    Syntax error. Write `(x - y) :: Int` or `x - (y :: Int)`.
+    Mixing - and :: requires parentheses.
+  end
+  expect parse(Code)("x + y :: Int") fails "
+    Syntax error. Write `(x + y) :: Int` or `x + (y :: Int)`.
+    Mixing + and :: requires parentheses.
+  end
+  assert parse(Code)("x - (y :: Int)") == parse(Code)("-(x)(::(y)(Int))")
+  assert parse(Code)("(x - y) :: Int") == parse(Code)("::(-(x)(y))(Int)")
+  assert parse(Code)("x :: Int") == parse(Code)("::(x)(Int)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("x :: (Int = 5)")
+  assert parse(Code)("x :: Int -> 5") == parse(Code)("x :: (Int -> 5)")
 end
 
 test "A binding after arithmetic, comparison or logic shows both groupings"
@@ -308,7 +332,7 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   expect toString(Code)(comparison) is "a == (b + c)"
   expect toString(Code)(wordOperator) is "div(a)(b * c)"
   expect toString(Code)(typedBinding) is "(x :: Int) = 5"
-  expect toString(Code)(ascribedSubtrahend) is "x - y :: Int"
+  expect toString(Code)(ascribedSubtrahend) is "x - (y :: Int)"
   expect toString(Code)(arithmeticBinding) is "n = x + 1"
   expect toString(Code)(logical) is "a && (b || c)"
   expect toString(Code)(compared) is "(a == b) && (c == d)"
