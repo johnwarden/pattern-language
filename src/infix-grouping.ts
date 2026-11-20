@@ -55,11 +55,6 @@ export function isGroupingSensitive(op: string): boolean {
   return GROUPING_SENSITIVE.has(op);
 }
 
-/** Operators that cannot sit unparenthesized directly left of `=`. */
-export function isBindingLeftSensitive(op: string): boolean {
-  return isArithmetic(op) || isComparison(op) || isLogical(op);
-}
-
 /**
  * True when adjacent infix operators at one expression level need parentheses.
  * The associative-chain rule applies only when both operators are grouping-
@@ -67,20 +62,24 @@ export function isBindingLeftSensitive(op: string): boolean {
  * A chain of those may omit parentheses only when it repeats one associative
  * operator. `^` and `::` are sensitive and non-associative, so mixes and
  * repetitions need parentheses — including a sensitive operator next to `::`.
- * Binding `=` and arrow `->` keep a free right-hand side, so `x :: Int = 5` and
- * `x :: Int -> 5` stay accepted. An arithmetic, comparison, or logical operator
- * directly left of `=` must be grouped. Every other pair keeps its previous
+ * Binding `=` is parsed at lowest precedence (not via this check). Arrow `->`
+ * keeps a free right-hand side. Every other pair keeps its previous
  * unconstrained reading.
  */
 export function requiresParentheses(first: string, second: string): boolean {
-  if (second === "=") return isBindingLeftSensitive(first);
   if (first === "=" || first === "->") return false;
   if (!isGroupingSensitive(first) || !isGroupingSensitive(second)) return false;
   return !(first === second && ASSOCIATIVE.has(first));
 }
 
-/** Printer wrap for a right infix child next to its parent. */
+/**
+ * Printer wrap for a right infix child next to its parent. Because `=` is
+ * lowest precedence, any non-`=` parent with `=` as its right child needs
+ * parentheses (`a + (b = c)`), or else `a + b = c` would re-read as
+ * `(a + b) = c`. The right-hand side of `=` itself stays free.
+ */
 export function needsPrintGrouping(parent: string, child: string): boolean {
+  if (child === "=" && parent !== "=") return true;
   return requiresParentheses(parent, child);
 }
 

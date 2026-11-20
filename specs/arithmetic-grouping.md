@@ -1,11 +1,12 @@
 # Explicit grouping for infix operators
 
 Pattern reads accepted infix chains with equal precedence and right
-association. Among the grouping-sensitive operators, a chain may omit
-parentheses only when it repeats one associative operator. Every other
-adjacent pair of those operators requires explicit grouping. Operators
-outside that set keep their previous unconstrained reading. Every accepted
-expression keeps its current tree.
+association, except that binding `=` has the lowest precedence. Among the
+grouping-sensitive operators, a chain may omit parentheses only when it
+repeats one associative operator. Every other adjacent pair of those
+operators requires explicit grouping. Operators outside that set keep their
+previous unconstrained reading. Every accepted expression keeps its current
+tree.
 [Surface grammar](../GRAMMAR.md#one-surface-tree)
 
 ## Why this rule
@@ -48,11 +49,14 @@ reading. A dotted word chain such as `a .plus b .times c` needs no extra
 parentheses. Mixing a grouping-sensitive operator with an outside operator also
 keeps the previous reading, so `a .div b * c` is `a .div (b * c)`.
 
-Binding `=` and arrow `->` each keep a free right-hand side, so `n = x + 1`,
-`ok = a && b`, `f = x -> x + 1`, `f = x -> x .plus 1`, `x :: Int = 5`, and
-`x :: Int -> 5` need no extra parentheses for that neighbor. An arithmetic,
-comparison, or logical operator directly left of `=` still requires grouping:
-write `(a + b) = c` or `a + (b = c)` instead of `a + b = c`. Plain `x :: Int`
+Binding `=` is the only precedence exception: it is lower than every other
+infix operator, so `x :: Int = 5` reads as `(x :: Int) = 5` and `a + b = c`
+reads as `(a + b) = c`. That is simpler than a special left-of-`=` grouping
+rule and matches the typed-binding reading people expect. The right-hand side
+of `=` stays free, so `n = x + 1` needs no parentheses. When the left-hand
+side is not a valid pattern, evaluation fails with a pattern error such as
+`E_PATTERN_MISMATCH`, not `E_INFIX_GROUPING`. Arrow `->` is unchanged and keeps
+a free right-hand side (`f = x -> x + 1`, `x :: Int -> 5`). Plain `x :: Int`
 stays fine.
 
 Check each parenthesized expression and each argument field independently.
@@ -84,9 +88,10 @@ and domain-specific expressions.
 | `n = x + 1` | `n = (x + 1)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
 | `f = x -> x .plus 1` | `f = (x -> (x .plus 1))`. |
-| `x :: Int = 5` | `x :: (Int = 5)`. |
+| `x :: Int = 5` | `(x :: Int) = 5`. |
 | `x :: Int -> 5` | `x :: (Int -> 5)`. |
-| `a + b = c` | Syntax error. Write `(a + b) = c` or `a + (b = c)`. Mixing + and = requires parentheses. |
+| `a + b = c` | `(a + b) = c`, then a pattern error such as `E_PATTERN_MISMATCH`. |
+| `a ^ b = c` | `(a ^ b) = c`, then a pattern error such as `E_PATTERN_MISMATCH`. |
 | `f(a * b, c + d)` | Each argument field is checked independently. |
 
 ## Grouping diagnostics
@@ -119,12 +124,13 @@ slices of each operand; if an operand has no span, use its printed form.
 ## Ascriptions in infix chains
 
 `::` is grouping-sensitive and non-associative, so a sensitive operator next to
-`::` needs parentheses. Binding `=` and arrow `->` still leave their right side
-free, and a typed left operand can be parenthesized for `=` or `->`.
+`::` needs parentheses. Because `=` is lowest precedence, a typed binding does
+not need parentheses around the ascription. Arrow `->` still leaves its right
+side free.
 
 | Source | Reading |
 | --- | --- |
-| `x :: Int = 5` | `x :: (Int = 5)`. |
+| `x :: Int = 5` | `(x :: Int) = 5`. |
 | `(x :: Int) = 5` | `=(::(x)(Int))(5)`. |
 | `x :: Int -> 5` | `x :: (Int -> 5)`. |
 | `(x :: Int) -> 5` | `->(::(x)(Int))(5)`. |
@@ -141,8 +147,8 @@ rejected pair under the rule above. Use the spellings the printer emits. Call
 notation such as `div(a)(b * c)` already delimits its arguments.
 
 For example, print `+(a)(*(b)(c))` as `a + (b * c)`, `*(+(a)(b))(c)` as
-`(a + b) * c`, and `+(a)(=(b)(c))` as `a + (b = c)`. Each form reads back to its
-original application tree.
+`(a + b) * c`, `+(a)(=(b)(c))` as `a + (b = c)`, and `=(+(a)(b))(c)` as
+`(a + b) = c`. Each form reads back to its original application tree.
 
 ## Test cases
 
@@ -272,23 +278,28 @@ test "Ascription next to a sensitive operator needs grouping"
   assert parse(Code)("x - (y :: Int)") == parse(Code)("-(x)(::(y)(Int))")
   assert parse(Code)("(x - y) :: Int") == parse(Code)("::(-(x)(y))(Int)")
   assert parse(Code)("x :: Int") == parse(Code)("::(x)(Int)")
-  assert parse(Code)("x :: Int = 5") == parse(Code)("x :: (Int = 5)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("=(::(x)(Int))(5)")
   assert parse(Code)("x :: Int -> 5") == parse(Code)("x :: (Int -> 5)")
 end
 
-test "A binding after arithmetic, comparison or logic shows both groupings"
-  expect parse(Code)("a + b = c") fails "
-    Syntax error. Write `(a + b) = c` or `a + (b = c)`.
-    Mixing + and = requires parentheses.
-  end
-  expect parse(Code)("a == b = c") fails "
-    Syntax error. Write `(a == b) = c` or `a == (b = c)`.
-    Mixing == and = requires parentheses.
-  end
-  expect parse(Code)("a && b = c") fails "
-    Syntax error. Write `(a && b) = c` or `a && (b = c)`.
-    Mixing && and = requires parentheses.
-  end
+test "Lowest-precedence = binds typed names and rejects invalid pattern left-hand sides"
+  assert parse(Code)("x :: Int = 5") == parse(Code)("=(::(x)(Int))(5)")
+  assert parse(Code)("a + b = c") == parse(Code)("=(+(a)(b))(c)")
+  assert parse(Code)("a ^ b = c") == parse(Code)("=(^(a)(b))(c)")
+  expect
+    x :: Int = 5
+    x
+  is 5 :: Int
+  expect
+    c = 1
+    a + b = c
+    0
+  fails "E_PATTERN_MISMATCH"
+  expect
+    c = 1
+    a ^ b = c
+    0
+  fails "E_PATTERN_MISMATCH"
 end
 
 test "Choosing a grouping changes the subtraction result"
@@ -303,11 +314,12 @@ test "Independent fields and free binding and arrow rights stay accepted"
   assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
   assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
   assert parse(Code)("f = x -> x .plus 1") == parse(Code)("f = (x -> (x .plus 1))")
-  assert parse(Code)("x :: Int = 5") == parse(Code)("x :: (Int = 5)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("=(::(x)(Int))(5)")
 end
 
 test "A typed left operand retains its ascription"
   assert parse(Code)("(x :: Int) = 5") == parse(Code)("=(::(x)(Int))(5)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("(x :: Int) = 5")
   assert parse(Code)("(x :: Int) -> 5") == parse(Code)("->(::(x)(Int))(5)")
   assert parse(Code)("x :: Int -> 5") == parse(Code)("x :: (Int -> 5)")
   assert parse(Code)("(f :: (Int => Int)) = x -> x ^ 2") == parse(Code)("=(::(f)(Int => Int))(->(x)(^(x)(2)))")
@@ -341,7 +353,9 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   expect toString(Code)(powerUnderMul) is "a * (b ^ c)"
   expect toString(Code)(repeatedPower) is "a ^ (b ^ c)"
   bindingUnderAdd = parse(Code)("+(a)(=(b)(c))")
+  addUnderBinding = parse(Code)("=(+(a)(b))(c)")
   expect toString(Code)(bindingUnderAdd) is "a + (b = c)"
+  expect toString(Code)(addUnderBinding) is "(a + b) = c"
   assert parse(Code)(toString(Code)(right)) == right
   assert parse(Code)(toString(Code)(left)) == left
   assert parse(Code)(toString(Code)(sameGroup)) == sameGroup
@@ -356,6 +370,7 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   assert parse(Code)(toString(Code)(powerUnderMul)) == powerUnderMul
   assert parse(Code)(toString(Code)(repeatedPower)) == repeatedPower
   assert parse(Code)(toString(Code)(bindingUnderAdd)) == bindingUnderAdd
+  assert parse(Code)(toString(Code)(addUnderBinding)) == addUnderBinding
 end
 ```
 

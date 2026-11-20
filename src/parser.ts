@@ -636,6 +636,37 @@ class Reader {
         );
       operands.push(right);
     }
+    return this.buildInfix(operands, operators);
+  }
+  /** `=` is lowest precedence (right-associative); other infix stay equal and right-assoc. */
+  private buildInfix(
+    operands: Syntax[],
+    operators: {
+      text: string;
+      display: string;
+      quoted: boolean;
+      span: Span;
+    }[],
+  ): Syntax {
+    const eq = operators.findIndex((op) => op.text === "=");
+    if (eq >= 0) {
+      const left = this.buildInfix(
+        operands.slice(0, eq + 1),
+        operators.slice(0, eq),
+      );
+      const right = this.buildInfix(
+        operands.slice(eq + 1),
+        operators.slice(eq + 1),
+      );
+      const op = operators[eq]!;
+      return {
+        ...apply(
+          apply(symbol(op.text, op.quoted), packOf(left)),
+          packOf(right),
+        ),
+        span: left.span,
+      };
+    }
     for (let i = 0; i < operators.length - 1; i++) {
       const first = operators[i]!;
       const second = operators[i + 1]!;

@@ -1,84 +1,21 @@
-test "Missing parentheses before a binding show both grouping choices"
-  expect parse(Code)("a + b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a + b = c") fails "
-    Syntax error. Write `(a + b) = c` or `a + (b = c)`.
-    Mixing + and = requires parentheses.
-  end
-  expect parse(Code)("a - b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a - b = c") fails "
-    Syntax error. Write `(a - b) = c` or `a - (b = c)`.
-    Mixing - and = requires parentheses.
-  end
-  expect parse(Code)("a * b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a * b = c") fails "
-    Syntax error. Write `(a * b) = c` or `a * (b = c)`.
-    Mixing * and = requires parentheses.
-  end
-  expect parse(Code)("a / b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a / b = c") fails "
-    Syntax error. Write `(a / b) = c` or `a / (b = c)`.
-    Mixing / and = requires parentheses.
-  end
-  expect parse(Code)("a % b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a % b = c") fails "
-    Syntax error. Write `(a % b) = c` or `a % (b = c)`.
-    Mixing % and = requires parentheses.
-  end
-  expect parse(Code)("a == b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a == b = c") fails "
-    Syntax error. Write `(a == b) = c` or `a == (b = c)`.
-    Mixing == and = requires parentheses.
-  end
-  expect parse(Code)("a != b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a != b = c") fails "
-    Syntax error. Write `(a != b) = c` or `a != (b = c)`.
-    Mixing != and = requires parentheses.
-  end
-  expect parse(Code)("a === b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a === b = c") fails "
-    Syntax error. Write `(a === b) = c` or `a === (b = c)`.
-    Mixing === and = requires parentheses.
-  end
-  expect parse(Code)("a !== b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a !== b = c") fails "
-    Syntax error. Write `(a !== b) = c` or `a !== (b = c)`.
-    Mixing !== and = requires parentheses.
-  end
-  expect parse(Code)("a < b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a < b = c") fails "
-    Syntax error. Write `(a < b) = c` or `a < (b = c)`.
-    Mixing < and = requires parentheses.
-  end
-  expect parse(Code)("a <= b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a <= b = c") fails "
-    Syntax error. Write `(a <= b) = c` or `a <= (b = c)`.
-    Mixing <= and = requires parentheses.
-  end
-  expect parse(Code)("a > b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a > b = c") fails "
-    Syntax error. Write `(a > b) = c` or `a > (b = c)`.
-    Mixing > and = requires parentheses.
-  end
-  expect parse(Code)("a >= b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a >= b = c") fails "
-    Syntax error. Write `(a >= b) = c` or `a >= (b = c)`.
-    Mixing >= and = requires parentheses.
-  end
-  expect parse(Code)("a && b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a && b = c") fails "
-    Syntax error. Write `(a && b) = c` or `a && (b = c)`.
-    Mixing && and = requires parentheses.
-  end
-  expect parse(Code)("a || b = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a || b = c") fails "
-    Syntax error. Write `(a || b) = c` or `a || (b = c)`.
-    Mixing || and = requires parentheses.
-  end
-  expect parse(Code)("a + (b) = c") fails "E_INFIX_GROUPING"
-  expect parse(Code)("a + (b) = c") fails "
-    Syntax error. Write `(a + (b)) = c` or `a + ((b) = c)`.
-    Mixing + and = requires parentheses.
-  end
+test "Lowest-precedence = binds typed names and rejects invalid pattern left-hand sides"
+  assert parse(Code)("x :: Int = 5") == parse(Code)("=(::(x)(Int))(5)")
+  assert parse(Code)("a + b = c") == parse(Code)("=(+(a)(b))(c)")
+  assert parse(Code)("a ^ b = c") == parse(Code)("=(^(a)(b))(c)")
+  expect
+    x :: Int = 5
+    x
+  is 5 :: Int
+  expect
+    c = 1
+    a + b = c
+    0
+  fails "E_PATTERN_MISMATCH"
+  expect
+    c = 1
+    a ^ b = c
+    0
+  fails "E_PATTERN_MISMATCH"
 end
 
 test "Accepted grouped forms keep their current trees"
@@ -119,7 +56,7 @@ test "Accepted grouped forms keep their current trees"
     Mixing + and :: requires parentheses.
   end
   assert parse(Code)("x :: Int") == parse(Code)("::(x)(Int)")
-  assert parse(Code)("x :: Int = 5") == parse(Code)("x :: (Int = 5)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("(x :: Int) = 5")
   assert parse(Code)("(x :: Int) = 5") == parse(Code)("=(::(x)(Int))(5)")
 end
 
@@ -140,10 +77,13 @@ end
 test "Printed Code groups a binding under an arithmetic or logical parent"
   bindingUnderAdd = parse(Code)("+(a)(=(b)(c))")
   bindingUnderAnd = parse(Code)("&&(a)(=(b)(c))")
+  addUnderBinding = parse(Code)("=(+(a)(b))(c)")
   expect toString(Code)(bindingUnderAdd) is "a + (b = c)"
   expect toString(Code)(bindingUnderAnd) is "a && (b = c)"
+  expect toString(Code)(addUnderBinding) is "(a + b) = c"
   assert parse(Code)(toString(Code)(bindingUnderAdd)) == bindingUnderAdd
   assert parse(Code)(toString(Code)(bindingUnderAnd)) == bindingUnderAnd
+  assert parse(Code)(toString(Code)(addUnderBinding)) == addUnderBinding
 end
 
 test "Write suggestions name only the offending infix expression"
