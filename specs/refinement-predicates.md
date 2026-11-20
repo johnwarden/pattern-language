@@ -5,7 +5,7 @@ one Boolean test with a declared input domain. A descriptor can store
 the enum value structurally and print it by name, so a reader can recover
 the same predicate without the caller's lexical environment.
 
-```pattern test
+```pattern
 todo test "Predicate is a concrete enum of named cases"
   type Predicate struct :isNonZero | :isPositive | :isSquare
 
@@ -56,7 +56,7 @@ member under the same prelude. When an expression needs to identify the
 enum value on its own, use `:isNonZero :: Predicate` or
 `:isSquare :: Predicate`.
 
-```pattern test
+```pattern
 todo test "Refinement descriptors print bare predicate case names"
   p = Pattern(ExactRational .where isNonZero)
   t = Struct(ExactRational .where isNonZero)
@@ -82,7 +82,7 @@ A successful explicit `.matches` check can establish evidence for its
 predicate. Dispatch uses existing evidence. See the
 [refinement evidence proposal](https://github.com/johnwarden/pattern-language/pull/89).
 
-```pattern test
+```pattern
 test "Refinements require Predicate operands"
   todo expect
     Int .where unknownPredicate
@@ -98,7 +98,7 @@ test "Refinements require Predicate operands"
 end
 ```
 
-```pattern test
+```pattern
 todo test "isSquare designates a Predicate case, not a local function"
   type Rectangular pattern Rect(w :: Float, h :: Float)
   type Rectangle struct Rect(w :: Float, h :: Float)

@@ -12,7 +12,7 @@ the supplied structure so that canonical text can reproduce a descriptor
 exactly, even if it contains repeated or reordered alternatives. A
 concrete boundary is part of the type's identity.
 
-```pattern test
+```pattern
 todo test "struct and pattern macros build Struct and Pattern descriptors"
   type Foo pattern Int | String
   type Bar struct Int | String
@@ -34,7 +34,7 @@ pattern.
 Nested `pattern` forms collapse. A lone type reference resolves to the
 referenced type, so applying `pattern` to it again returns that same type.
 
-```pattern test
+```pattern
 todo test "Nested pattern collapses; nested struct does not"
   type Scalar pattern Int | String
   assert (struct Scalar) === (struct Int | String)
@@ -68,7 +68,7 @@ Patterns can be:
 Any of these patterns can be wrapped in `struct`. Packs and repetitions
 belong to the fields of a constructed shape.
 
-```pattern test
+```pattern
 todo test "Each pattern form constructs a descriptor"
   assert (pattern :Singleton) === Pattern(:Singleton)
   assert (pattern Int) === Int
@@ -85,7 +85,7 @@ end
 A symbol tag or constructor expression describes a value that takes its
 concrete type from an expected grammar or an explicit ascription.
 
-```pattern test
+```pattern
 test "A bare symbol needs a concrete type"
   todo expect
     x = :None
@@ -94,7 +94,7 @@ test "A bare symbol needs a concrete type"
 end
 ```
 
-```pattern test
+```pattern
 todo test "A struct singleton interprets a symbol"
   t = struct :None
   x = :None :: t
@@ -106,7 +106,7 @@ end
 
 So what if a pattern is an expression tree:
 
-```pattern test
+```pattern
 todo test "An expression-tree pattern is a facet descriptor"
   assert (pattern Rect(Float, Float)) === Pattern(Rect(Float, Float))
 end
@@ -116,7 +116,7 @@ This is a *facet*. It is an abstract type that can match many different
 concrete types: namely `struct Rect(Float, Float)` but also any concrete
 refinements such as `struct Rect(Float, Float) .where isSquare`.
 
-```pattern test
+```pattern
 todo test "A facet admits a concrete refinement of the same shape"
   type Rectangular pattern Rect(Float, Float)
   type Square struct Rect(Float, Float) .where isSquare
@@ -131,7 +131,7 @@ shows how a residual capture collects those fields.
 
 Example: nested union pattern
 
-```pattern test
+```pattern
 todo test "A nested union facet admits a concrete field combination"
   type Num pattern Int | Float
   type Rectangular pattern Rect(Num, Num)
@@ -150,7 +150,7 @@ normalization rule that distributes a union across fields.
 A constructor pattern and a reference to a concrete type have different
 roles in a concrete description:
 
-```pattern test
+```pattern
 todo test "Constructor patterns build structs; wrapping preserves identity"
   type Num pattern Int | Float
   type Rectangle struct Rect(Num, Num)
@@ -180,7 +180,7 @@ different and direct comparison between instances is an error.
 
 Note the difference here:
 
-```pattern test
+```pattern
 todo test "Wrapped Num fields retain their boundary during facet matching"
   type Num pattern Int | Float
   type NumRectangle struct Rect(struct Num, struct Num)
@@ -208,7 +208,7 @@ boundary deeper.
 
 A tag facet can recognize the absence case of a typed option:
 
-```pattern test
+```pattern
 todo test "An abstract tag facet admits typed absence only"
   type None pattern :None
 
@@ -226,7 +226,7 @@ The ordinary symbol classes are abstract primitive types. The prelude
 combines them in `Symbol`. Wrapping one class in a struct supplies a
 concrete space for designation.
 
-```pattern test
+```pattern
 test "Ordinary symbol classes need a concrete host type for designation"
   todo expect
     y = :Foo :: UpperCamelSymbol
@@ -235,7 +235,7 @@ test "Ordinary symbol classes need a concrete host type for designation"
 end
 ```
 
-```pattern test
+```pattern
 todo test "A struct over UpperCamelSymbol supplies the concrete host"
   type TypeName struct UpperCamelSymbol
   x = :MyType :: TypeName
@@ -252,7 +252,7 @@ A union can combine a concrete type and a tag facet. In the example,
 `AbstractOption(Int)` accepts an `Int` directly or the absence case of
 any concrete option type:
 
-```pattern test
+```pattern
 todo test "An abstract option admits Int or a typed :None"
   MaybeInt = pattern :None | Int
   assert MaybeInt === (pattern Int | :None)
@@ -292,7 +292,7 @@ concrete type with a single value.
 
 ### Abstract symbol patterns
 
-```pattern test
+```pattern
 todo test "An abstract symbol pattern admits a typed tag and preserves identity"
   t = pattern :None
   expect
@@ -306,7 +306,7 @@ end
 
 ### Concrete singleton
 
-```pattern test
+```pattern
 todo test "A struct singleton is a distinct concrete space"
   t = struct :None
   (v :: t) = :None
@@ -316,7 +316,7 @@ end
 
 ### Enums: unions of single-symbol patterns
 
-```pattern test
+```pattern
 todo test "An abstract Color union preserves concrete enum members"
   type PrimaryColor struct :Red | :Green | :Blue
   type Transparent struct :Transparent
@@ -342,7 +342,7 @@ The two `describe` overloads are pairwise disjoint (`PrimaryColor` vs
 
 ### Wrapped enum
 
-```pattern test
+```pattern
 todo test "Wrapping an enum adds a concrete boundary"
   type PrimaryColor struct :Red | :Green | :Blue
   type Status struct PrimaryColor
@@ -364,7 +364,7 @@ end
 
 An abstract symbol pattern can admit a value from a different concrete enum:
 
-```pattern test
+```pattern
 todo test "Abstract :Red admits TrafficLight red but not Status"
   type PrimaryColor struct :Red | :Green | :Blue
   type Status struct PrimaryColor
@@ -405,7 +405,7 @@ the symbol inside `Status`.
 
 ### Abstract single-type pattern: alias
 
-```pattern test
+```pattern
 todo test "pattern String aliases the primitive"
   t = pattern String
   expect t is String :: PrimitiveType
@@ -416,7 +416,7 @@ end
 
 ### Concrete single-type pattern: "newtypes"
 
-```pattern test
+```pattern
 todo test "struct Int is a newtype wrapper"
   id = struct Int
   expect id is Struct(Int)
@@ -435,7 +435,7 @@ end
 
 ### Unwrapped: abstract unions
 
-```pattern test
+```pattern
 todo test "Abstract unions preserve member concrete identities"
   t = pattern String | :None
   assert t === (pattern :None | String)
@@ -462,7 +462,7 @@ supplied order and duplicates.
 
 ### Wrapped: concrete unions
 
-```pattern test
+```pattern
 todo test "Concrete option unions are distinct value spaces"
   type Option(T) struct T | :None
 
@@ -492,7 +492,7 @@ identities that can be written in type expressions and typed text.
 
 ### Pattern: refinements
 
-```pattern test
+```pattern
 todo test "An abstract refinement preserves Int operations"
   t = pattern Int .where isNonZero
   assert t === Pattern(Int .where isNonZero)
@@ -514,7 +514,7 @@ available; dispatch does not run predicates.
 
 ### Concrete: carveouts
 
-```pattern test
+```pattern
 todo test "A concrete carveout has its own operations"
   t = struct ExactRational .where isPositive
   expect t is Struct(ExactRational .where isPositive)
@@ -536,7 +536,7 @@ pattern form.
 
 ### Concrete expression trees
 
-```pattern test
+```pattern
 todo test "A concrete Rect supports an area match"
   t = struct Rect(Int, Int)
   expect t is Struct(Rect(Int, Int))
@@ -568,7 +568,7 @@ includes facets that admit rectangles with different sets of labels.
 
 ### Wrapped abstract expression trees: variadic structs
 
-```pattern test
+```pattern
 todo test "A Picture holds mixed concrete shapes"
   type Circle struct Circle(radius :: UInt64)
   type Rectangle struct Rect(w :: UInt64, h :: UInt64)
@@ -596,7 +596,7 @@ that the preceding patterns left unmatched.
 A facet can guarantee the fields a predicate needs. The prelude's
 `isSquare` case can test a value that provides the rectangular fields.
 
-```pattern test
+```pattern
 todo test "isSquare is a named Predicate on a Rectangular facet"
   type Rectangular pattern Rect(w :: Float, h :: Float)
   type Rectangle struct Rect(w :: Float, h :: Float)
@@ -620,7 +620,7 @@ retains the same concrete `Rectangle` value.
 A refinement over a numeric type behaves the same way. `NonZeroNumber`
 is the static type of `x`. The bound value still has concrete type `Int`.
 
-```pattern test
+```pattern
 todo test "A Number refinement keeps the Int concrete member"
   type NonZeroNumber pattern Number .where isNonZero
   (x :: NonZeroNumber) = 2 :: Int
@@ -630,7 +630,7 @@ end
 
 A concrete carveout has its own concrete identity.
 
-```pattern test
+```pattern
 todo test "A concrete Square carveout wraps the facet refinement"
   type Rectangular pattern Rect(w :: Float, h :: Float)
   type ConcreteSquare struct Rectangular .where isSquare
@@ -645,7 +645,7 @@ A facet name in a `struct` declaration supplies its pattern. A constructor
 pattern gives the new concrete type its outer constructor and fields.
 A reference to a concrete type supplies a typed member.
 
-```pattern test
+```pattern
 todo test "struct Rectangular wraps the facet; Bar does not unwrap to Foo"
   type Rectangular pattern Rect(Int, Int)
   type Rectangle struct Rectangular
@@ -674,7 +674,7 @@ alternative can select an arm without producing a raw symbol value.
 An explicit match projects one concrete boundary at a time. Ordinary
 bindings and function arguments respect that boundary.
 
-```pattern test
+```pattern
 todo test "Match projects one concrete union boundary"
   t = struct Int | String
   (y :: t) = 5 :: Int
@@ -690,7 +690,7 @@ end
 
 An abstract binding stores its member with the original concrete type.
 
-```pattern test
+```pattern
 todo test "An abstract union binding keeps the stored Int"
   t = pattern Int | String
   (y :: t) = 5 :: Int
@@ -703,7 +703,7 @@ A `Rectangle` whose two `Num` fields hold Int values matches
 `pattern Rect(Int, Int)`. The `Rectangle` keeps its concrete type. A
 rectangle with a Float in the second field reaches the other arm.
 
-```pattern test
+```pattern
 todo test "A rectangle matches the concrete members held in its fields"
   type Num pattern Int | Float
   type Rectangle struct Rect(Num, Num)
@@ -723,7 +723,7 @@ todo test "A rectangle matches the concrete members held in its fields"
 end
 ```
 
-```pattern test
+```pattern
 test "A match selects absence without binding a raw symbol"
   absent = :None :: Int?
   result = match absent
@@ -737,7 +737,7 @@ end
 An enum arm selects a tag. A whole-value binding can retain the typed
 enum, while selecting a tag alone discards the tag payload.
 
-```pattern test
+```pattern
 todo test "An enum match selects a tag without a raw symbol value"
   type TrafficLight struct :Red | :Amber | :Green
   x = :Green :: TrafficLight
@@ -763,12 +763,10 @@ immediate stored value. Another `.as` can open that member’s boundary.
 On `Int??`, `:None .as Int??` selects outer absence, and
 `(:None .as Int?) .as Int??` selects stored inner absence.
 
-```pattern
-type SomeInt pattern (inner :: Int) .as Int?
+    type SomeInt pattern (inner :: Int) .as Int?
 
-(i :: SomeInt) = 5 :: Int?
-i.inner
-```
+    (i :: SomeInt) = 5 :: Int?
+    i.inner
 
 The binding retains the `Int?` value. Its `inner` accessor yields the
 stored `5 :: Int`.
@@ -777,18 +775,16 @@ For `x` of concrete wrapper type `T`, the following match has the same
 behavior as a call to one local overloaded function when `P1` and `P2`
 are pairwise disjoint at that boundary:
 
-```pattern
-match x
-  P1 -> V1
-  P2 -> V2
-  _ -> V3
-end
+    match x
+      P1 -> V1
+      P2 -> V2
+      _ -> V3
+    end
 
-def f(P1 .as T) V1
-def f(P2 .as T) V2
-def f(_ :: Remaining) V3
-f(x)
-```
+    def f(P1 .as T) V1
+    def f(P2 .as T) V2
+    def f(_ :: Remaining) V3
+    f(x)
 
 `Remaining` represents the values of `T` outside `P1` and `P2`. A
 match gets this domain from arm order. An overloaded function would need
@@ -798,7 +794,7 @@ uses two disjoint patterns and needs no subtraction.
 
 A concrete carveout can be used as a field type.
 
-```pattern test
+```pattern
 todo test "A carveout can be a struct field type"
   type PositiveInt pattern ExactRational .where isPositive
   type Id struct PositiveInt
@@ -821,7 +817,7 @@ rectangle when the expected type supplies its shape. The same structural
 notation can serve either role because the surrounding expression
 supplies the context.
 
-```pattern test
+```pattern
 todo test "Nested union patterns are allowed inside struct fields"
   type Foo struct Foo(String | Float, String | Float)
   expect Foo is Struct(Foo(String | Float, String | Float))
@@ -831,21 +827,17 @@ end
 The only issue for a future shorthand is expression-tree patterns. If I
 just say:
 
-```pattern
-t = Rect(Float, Float)
-```
+    t = Rect(Float, Float)
 
 this looks like a value, not a type. A single symbol is similarly
 ambiguous:
 
-```pattern
-:Foo
-```
+    :Foo
 
 So those remain a future goal. For now the required spellings are
 current syntax and are tested:
 
-```pattern test
+```pattern
 todo test "Current spellings require pattern or Pattern for facets and tags"
   assert (pattern Rect(Float, Float)) === Pattern(Rect(Float, Float))
   expect Pattern(Rect(Float, Float)) is Pattern(Rect(Float, Float))

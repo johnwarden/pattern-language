@@ -43,7 +43,7 @@ explicit projection to reach the rectangle inside `wrapped`.
 `Float` field. Below, it matches values of two distinct concrete types
 whose field declarations fix different types.
 
-```pattern test
+```pattern
 todo test "A facet with a union field admits different concrete field types"
   type NumericReading pattern Reading(Int | Float)
   type IntReading struct Reading(value :: Int)
@@ -61,7 +61,7 @@ instance stores one concrete member of that union. When a match inspects the
 field, the arm `Reading(Int)` selects instances whose field holds an
 `Int`.
 
-```pattern test
+```pattern
 todo test "A match sees the concrete member stored in an abstract field"
   type Reading struct Reading(value :: Int | Float)
 
@@ -82,7 +82,7 @@ admit the same readings. Their descriptors compare unequal. The first has a
 union inside one constructor pattern. The second has a union of two
 constructor patterns.
 
-```pattern test
+```pattern
 todo test "A field union and a union of shapes have distinct descriptors"
   fieldUnion = pattern Reading(Int | Float)
   shapeUnion = pattern Reading(Int) | Reading(Float)
@@ -153,7 +153,7 @@ The prelude defines `type Bool struct True | False`. The values `True`
 and `False` are self-evaluating. Boolean literals and computed Boolean
 results share that concrete type.
 
-```pattern test
+```pattern
 test "Boolean literals and comparison results belong to Bool"
   assert True .matches Bool
   assert False .matches Bool
@@ -179,7 +179,7 @@ test "Ordinary symbol classes reject reserved names"
 end
 ```
 
-```pattern test
+```pattern
 todo test "A lower snake symbol belongs to its ordinary symbol class"
   type SensorName struct LowerSnakeSymbol
   name = parse(SensorName)("sensor_id")
@@ -223,10 +223,11 @@ The wrapper and its payload are also distinct when comparing member values.
 same field.
 
 The field's grammar defines which patterns it accepts, including how
-recursive references are scoped. Descriptor patterns are capture-free.
-Rules that need to inspect the parsed pattern can use predicates in the
-grammar. An ordinary match can extract the field and use it to
-construct another descriptor.
+recursive references are scoped. Descriptor patterns reject captures and
+defaults at any depth. Rules that need to inspect the parsed pattern can
+use pure prelude predicates in the grammar; they do not run user code.
+An ordinary match can extract the field and use it to construct another
+descriptor.
 
 ```pattern
 todo test "Descriptor inspection binds the typed pattern field"
@@ -247,7 +248,14 @@ type argument.
 `parse(Type)("Struct(Rect(Int))")` reads a `Struct` value. That value
 matches the abstract type `Type`.
 
-```pattern test
+Parsing or validating a type descriptor runs no user code. It does not
+call refinement predicates and does not execute arbitrary syntax. At most
+it may consult pure prelude predicates that belong to the descriptor
+grammar. It rejects captures and defaults at any depth. The same rules
+apply to direct `Struct(...)` / `Pattern(...)` construction and to
+`parse(Type)`.
+
+```pattern
 todo test "Reading a descriptor as Type produces a Struct value"
   code = parse(Code)("Struct(Rect(Int))")
   descriptor = parse(Type)("Struct(Rect(Int))")
@@ -257,6 +265,19 @@ todo test "Reading a descriptor as Type produces a Struct value"
   assert descriptor .matches Struct
   assert descriptor .matches Type
   assert descriptor === Struct(Rect(Int))
+end
+```
+
+```pattern
+todo test "parse(Type) on text with .where p does not call p"
+  calls = 0
+  def p(n :: ExactRational)
+    calls = calls + 1
+    n != 0
+  end
+
+  expect parse(Type)("Pattern(ExactRational .where p)") fails "E_EXPECTED_PREDICATE"
+  assert calls == 0
 end
 ```
 
