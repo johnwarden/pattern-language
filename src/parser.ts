@@ -593,15 +593,10 @@ class Reader {
         );
       this.take();
       let name = t;
-      let display = t.text;
       if (t.kind === ".") {
         name = this.take();
         if (name.kind !== "name" || name.start !== t.end)
           throw new LanguageError("expected .name", name);
-        display = "." + name.text;
-      } else if (name.quoted) {
-        // Classify by unquoted name (`-`, `*`); show the source spelling (`:-`).
-        display = this.source.slice(name.start, name.end);
       }
       const rhs = this.peek();
       if (!rhs)
@@ -616,7 +611,7 @@ class Reader {
         );
       operators.push({
         text: name.text,
-        display,
+        display: this.source.slice(t.start, name.end),
         quoted: !!name.quoted,
         span: {
           line: name.line,
