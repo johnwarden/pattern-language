@@ -17,11 +17,11 @@ build, host tests and the source suite.
 
 | Intended contract | Current bootstrap |
 | --- | --- |
-| Concrete construction, identity-preserving refinements and abstract views | Structural types, subset checks, abstract slots and facets; revised boundary rules still need integration |
+| `struct` construction, identity-preserving `.where` refinements and `pattern` views | Structural types, subset checks, abstract slots and facets; revised boundary rules still need integration |
 | Numeric literals denote exact Rational values; `0f` is a Float64-rounded Rational | Exact Rational values and syntax payloads; explicit Float32/Float64 conversion and canonical numeric text |
 | General abstract unions; unambiguous grammars are a separate requirement | Overlapping `UnionType` members are allowed; `unambiguous` is unimplemented |
 | Named type declarations register accessors; plain type construction is capture-free | `def ... type ...` and existing type-expression accessor products |
-| Raw runtime Expressions are allowed for now; expected types can establish concrete interpretations | Raw construction, designation and one-boundary explicit matching work; ordinary constructor-binding rejection remains todo |
+| Constructor expressions need a concrete interpretation from context or ascription | Designation and one-boundary explicit matching work; ordinary constructor-binding rejection remains todo |
 | Refinement requirements use evidence; projection crosses one explicit boundary | One-boundary match projection and direct-member designation; proof checking remains future work |
 | Test DSL supports whole-test todo and assertion-level todo/legacy contracts | Implemented source-defined steps, grouped .test files, executed expected-failure assertions, shared CLI/CI/browser corpus |
 
@@ -38,7 +38,7 @@ configuration. Analysis never executes open programs or tests.
 
 - [Roadmap](ROADMAP.md): current state, boundaries, milestones and completion gates.
 - [Value spaces](VALUE-SPACES.md): identity, construction, projection and abstract storage.
-- [Type values](TYPE-VALUES.md): declarations, descriptors, factories and typed text.
+- [Type values](specs/type-values.md): declarations, descriptors, factories and typed text.
 - [Grammar](GRAMMAR.md): shared surface rules and intended interpretation boundaries.
 - [Postfix conventions](design/POSTFIX.md): generic operators, source-defined optionals, nested union designation and future lifting.
 - [Decision record and 27 design cases](design/LANGUAGE-DECISIONS.md): reasons,
@@ -62,21 +62,18 @@ must not be mistaken for the revised intended language.
 Examples in this section specify future behavior; the declaration spellings and
 angle type parameters are working notation where still marked provisional.
 
-```text
-type Rectangle concrete Rect(w :: Float32,h :: Float32)
-r = (Rect(2,3) :: Rectangle)
-(r.w,w(r))
-```
+    type Rectangle struct Rect(w :: Float32, h :: Float32)
+    r = (Rect(2, 3) :: Rectangle)
+    (r.w, w(r))
 
-Concrete types establish structural value spaces. Refinements preserve a base
-space while adding a guarantee. Abstract unions/facets preserve the actual member
-space; storing through an abstract variable does not change the value.
+`struct` types establish structural value spaces. Refinements (`T .where p`)
+preserve a base space while adding a guarantee. Abstract unions/facets from
+`pattern` preserve the actual member space; storing through an abstract
+variable does not change the value.
 
-```text
-type EitherFloat abstract Float32 | Float64
-(a :: EitherFloat) = float32(0.5)
-(b :: EitherFloat) = float64(0.5)
-```
+    type EitherFloat pattern Float32 | Float64
+    (a :: EitherFloat) = float32(0.5)
+    (b :: EitherFloat) = float64(0.5)
 
 The two members can use overlapping numeric syntax. Typed text supplies enough
 information to recover the member. A separate unambiguous-grammar requirement
@@ -86,11 +83,9 @@ Every numeric literal denotes an exact Rational value. `0f0.1` denotes the exact
 Rational selected by Float64 rounding, rather than a Float64-typed value. Exact
 designation cannot silently round; explicit converters return typed values:
 
-```text
-(0.5 :: Float32)       # exact
-float32(0.1)           # explicit rounding, returns Float32
-(0.1 :: Float32)       # rejected: not exactly representable
-```
+    (0.5 :: Float32)       # exact
+    float32(0.1)           # explicit rounding, returns Float32
+    (0.1 :: Float32)       # rejected: not exactly representable
 
 One application has an expression head and one pack. `f(a)(b)` is distinct from
 `f(a,b)`; `f()` is distinct from `f`. Dot notation preserves that structure:

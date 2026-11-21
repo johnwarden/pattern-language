@@ -7,7 +7,7 @@ self-hosted or move expansion ahead of runtime execution; those are later milest
 ## Status boundary — 7 November 2026
 
 This file describes the unchanged bootstrap protocols and executable schemas.
-The revised language contract is in [TYPE-VALUES.md](TYPE-VALUES.md) and
+The revised language contract is in [the type-value spec](specs/type-values.md) and
 [VALUE-SPACES.md](VALUE-SPACES.md); it does not require this transport taxonomy to
 become permanent user-facing syntax. Exact Rational primitives, declaration-only
 accessors, general unions and evidence-based checking are planned alignment work.

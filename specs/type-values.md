@@ -1,329 +1,501 @@
-# Type values without a reserved `Type`
+# Types, descriptors, and type expressions
 
-Approved by Jonathan in the project chat on 10 November 2026. Origin:
-`specs/inbox/type-values.md`, moved here with the agreed migration correction.
+A type is a value with a writable expression. A pattern describes the values
+a type admits.
 
-The examples below are approved source contracts. Capture them in
-`tests/specification/` before implementation. They approve the constructor forms
-and behavior shown here. Descriptor values are ordinary data: inspecting one is
-ordinary pattern matching on its kind constructor, and its text is its ordinary
-value text. This does not approve decoding from arbitrary Expressions (see
-below) or a wire format. `Type` is a prelude abstract union of
-`AbstractType | ConcreteType | RefinementType | PrimitiveType`; the first three
-kinds are defined with ordinary patterns. Primitive atoms retain their existing
-special status. `Type(...)` is retired as a native type-value wrapper.
+See [worked examples and rationale](type-values-rationale.md).
 
-## Prelude and ordinary values
+## Concrete spaces and abstract patterns
+
+A constructor pattern such as `Rect(Int, Int)` describes a shape. With
+`struct`, it defines a concrete type with that shape. With `pattern`, it
+defines a facet, an abstract type that can match values of several concrete
+types. A facet view preserves the value's concrete type.
+
+Using an existing concrete type as the pattern in a `struct` creates a
+wrapper. The wrapper has a new concrete type and stores a value of the
+original type inside it.
 
 ```pattern
-todo test "Type is a prelude union, not a reserved symbol"
-  assert :Type .matches UpperCamelSymbol
-  assert not(Type .matches ReservedSymbol)
-  assert Int .matches Type
-  assert Bool .matches PrimitiveType
-  assert PrimitiveType .matches PrimitiveType
-  assert not(:Type .matches Type)
+todo test "A facet view preserves concrete identity; a struct wrap adds a boundary"
+  type Rectangular pattern Rect(Int, Int)
+  type Rectangle struct Rect(w :: Int, h :: Int)
+  type WrappedRectangle struct Rectangle
 
-  concreteValue = ConcreteType(Rect(Rational))
-  abstractValue = AbstractType(Rational | String)
-  predicate = n -> n != 0
-  refined = RefinementType(Rational, predicate)
-  assert concreteValue .matches ConcreteType
-  assert abstractValue .matches AbstractType
-  assert refined .matches RefinementType
-  assert concreteValue .matches Type
-  assert abstractValue .matches Type
-  assert refined .matches Type
-  assert not(concreteValue .matches AbstractType)
-  assert not(refined .matches ConcreteType)
-end
-
-todo test "A primitive is already a type value"
-  expect Int is Int :: PrimitiveType
-  assert Int .matches Type
-  expect :Int fails "E_QUOTED_PRIMITIVE"
-end
-
-todo test "Type value constructors differ from applying a type to data"
-  type Rectangle concrete Rect(w :: Rational, h :: Rational)
-  t = ConcreteType(Rect(Rational, Rational))
-  assert t == Rectangle
-  assert Rect(2, 3) .matches t
-  expect Rect(2, 3) :: t is Rect(2, 3) :: Rectangle
-  expect t(2, 3) fails "E_NOT_CALLABLE"
-  expect Type(Rect(Rational, Rational)) is Type(Rect(Rational, Rational)) :: Expression
+  r = Rect(2, 3) :: Rectangle
+  (view :: Rectangular) = r
+  (wrapped :: WrappedRectangle) = r
+  assert view === r
+  inner = match wrapped
+    (rect :: Rectangle) -> rect
+  end
+  assert inner === r
 end
 ```
 
-## Construction and identity
+`view` holds the original Rectangle. The wrapper holds it as a separate
+payload. `Rectangular` sees the `Rect` shape on `r` directly. Use an
+explicit projection to reach the rectangle inside `wrapped`.
 
-Normalization happens when a `concrete` or `abstract` pattern is evaluated, not
-in the kind constructors. `ConcreteType(...)` and `AbstractType(...)` have no
-automatic normalizing behavior for now: a descriptor value may hold its
-alternatives in any order, and direct constructor calls never reorder, merge or
-deduplicate them. The declaration examples produce canonical descriptor data;
-equality compares the resulting values, rather than normalizing them.
+### Facets and field types
+
+`NumericReading` accepts a `Reading` shape with either an `Int` or a
+`Float` field. Below, it matches values of two distinct concrete types
+whose field declarations fix different types.
 
 ```pattern
-todo test "Concrete descriptors are capture-free and structural"
-  type Rectangle concrete Rect(w :: Rational, h :: Rational)
-  x = ConcreteType(Rect(Rational, Rational))
-  y = ConcreteType(Rect(Rational, Rational))
-  assert Rectangle == x
-  assert x == y
-  assert not(x == ConcreteType(Rect(Rational, String)))
-  assert not(x == ConcreteType(Rect(width: Rational, height: Rational)))
-  def keep(t :: Type) t
-  assert keep(x) == Rectangle
-end
+todo test "A facet with a union field admits different concrete field types"
+  type NumericReading pattern Reading(Int | Float)
+  type IntReading struct Reading(value :: Int)
+  type FloatReading struct Reading(value :: Float)
 
-todo test "An independently declared descriptor interops"
-  first = (
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
-    Rectangle
-  )
-  second = (
-    type Shape concrete Rect(width :: Rational, height :: Rational)
-    Shape
-  )
-  assert first == second
-  assert first == ConcreteType(Rect(Rational, Rational))
-  value = (Rect(2, 3) :: first)
-  assert value .matches second
-end
-
-todo test "AbstractType values don't automatically normalize"
-  type Either abstract String | Rational
-  a = AbstractType(Rational | String)
-  b = AbstractType(String | Rational)
-  assert Either == a
-  assert Either != b
-end
-
-todo test "Abstract members remain their concrete types"
-  type Either abstract Rational | String
-  a = AbstractType(Rational | String)
-  assert Either == a
-  assert a .matches Type
-  assert not(a == ConcreteType(Rational | String))
-  assert 3 .matches a
-  assert "hello" .matches a
-end
-
-test "Independent abstract scopes retain the same member domain"
-  left = (
-    type Choice abstract Rational | String
-    Choice
-  )
-  right = (
-    type Other abstract String | Rational
-    Other
-  )
-  assert left == right
-  def pass(t :: Type) t
-  assert pass(left) == right
-end
-
-todo test "A refinement has a base and predicate, and keeps its base space"
-  def nonZero(n :: Rational) n != 0
-  type NonZero refinement Rational .where nonZero
-  t = RefinementType(Rational, nonZero)
-  assert t == NonZero
-  assert t .matches Type
-  assert not(t == Rational)
-  assert not(0 .matches t)
-  assert 2 .matches t
-  def identity(u :: Type) u
-  assert identity(t) == NonZero
-end
-
-todo test "Different refinements are not equated merely by their base"
-  def positive(n :: Rational) n > 0
-  def nonZero(n :: Rational) n != 0
-  a = RefinementType(Rational, positive)
-  b = RefinementType(Rational, nonZero)
-  assert a != b
-  assert a != Rational
+  ints = Reading(5) :: IntReading
+  floats = Reading(5) :: FloatReading
+  assert ints .matches NumericReading
+  assert floats .matches NumericReading
 end
 ```
 
-Predicate value identity follows the portable function decision; no extensional
-equality, environment replay, or public predicate-field extraction is implied.
-
-## A lone primitive is not wrapped
-
-A primitive atom is already a type value, and `type Int` is no longer in the
-grammar. A pattern that is just one primitive adds nothing, so neither the
-constructors nor the declaration and pattern forms wrap one. All of these are
-rejected with `E_TYPE_DESCRIPTION`:
+A single concrete type can also declare its field as `Int | Float`. Each
+instance stores one concrete member of that union. When a match inspects the
+field, the arm `Reading(Int)` selects instances whose field holds an
+`Int`.
 
 ```pattern
-todo test "Lone primitive wrappers are rejected"
-  expect
-    concrete Int
-  fails "E_TYPE_DESCRIPTION"
-  expect
-    abstract Int
-  fails "E_TYPE_DESCRIPTION"
-  expect
-    concrete concrete Int
-  fails "E_TYPE_DESCRIPTION"
-  expect
-    ConcreteType(Int)
-  fails "E_TYPE_DESCRIPTION"
-  expect
-    AbstractType(Int)
-  fails "E_TYPE_DESCRIPTION"
-  expect
-    type X concrete Int
-    X
-  fails "E_TYPE_DESCRIPTION"
-  expect
-    type Y abstract Int
-    Y
-  fails "E_TYPE_DESCRIPTION"
+todo test "A match sees the concrete member stored in an abstract field"
+  type Reading struct Reading(value :: Int | Float)
+
+  def kind(r :: Reading)
+    match r
+      Reading(Int) -> "int"
+      Reading(Float) -> "float"
+    end
+  end
+
+  expect kind(Reading(5 :: Int) :: Reading) is "int"
+  expect kind(Reading(5 :: Float) :: Reading) is "float"
 end
 ```
 
-`concrete concrete Int` is rejected because its operand, `concrete Int`, is
-itself rejected. These forms are rejected rather than normalized to the bare
-primitive.
-
-The rule concerns a lone primitive, not reuse of an existing type. A union of
-two or more primitives is valid (`ConcreteType(Rational | String)`,
-`concrete Int | Float`), and an existing type value can be made concrete: given
-`a = abstract Int | Float`, `b = concrete a` is valid, and so is `concrete` of a
-refinement such as `Int .where ...`. A primitive also remains usable inside a
-larger pattern (`concrete Rect(Int, Int)`, `abstract Float32 | Float64`) and as
-the base of a refinement (`RefinementType(Rational, nonZero)`). Use the
-primitive itself where a type value is wanted: `Int`, `Int :: PrimitiveType`.
-
-## Declaration products, defaults, and application
+`pattern Reading(Int | Float)` and `pattern Reading(Int) | Reading(Float)`
+admit the same readings. Their descriptors compare unequal. The first has a
+union inside one constructor pattern. The second has a union of two
+constructor patterns.
 
 ```pattern
-todo test "A declaration registers its accessors"
-  type Rectangle concrete Rect(w :: Rational, h :: Rational)
-  value = Rect(2, 3) :: Rectangle
-  expect value.w is 2 :: Rational
-  assert Rectangle == ConcreteType(Rect(Rational, Rational))
-end
-
-todo test "A plain descriptor does not install an accessor"
-  t = ConcreteType(Rect(width: Rational, height: Rational))
-  value = Rect(width: 2, height: 3) :: t
-  expect value.width fails "unbound name"
-end
-
-todo test "A type constructor cannot declare captures"
-  expect
-    ConcreteType(Rect(w :: Rational, h :: Rational))
-  fails "ordinary type construction cannot declare captures/accessors"
-end
-
-todo test "A type description cannot carry a default"
-  expect
-    ConcreteType(Rect(Rational, color: String = "black"))
-  fails "defaults are forbidden in type descriptions"
-end
-
-test "Equivalent declarations and accessor collisions still fail"
-  type First concrete Rect(w :: Rational)
-
-  expect
-    type First concrete Rect(w :: Rational)
-    type Second concrete Rect(w :: Rational)
-    Second
-  fails "E_DUPLICATE_TYPE"
-
-  expect
-    def w(x) 99
-    value = Rect(2) :: First
-    value.w
-  fails "E_AMBIGUOUS_CALL"
-
-end
-
-test "Typed overloaded function still works"
-  type First concrete Rect(w :: Rational)
-  def w(x :: Int) 99
-  value = Rect(2) :: First
-  expect value.w is 2
-end
-
-todo test "A stored type flows through ordinary calls and returns"
-  def make(T :: Type) ConcreteType(Box(T))
-  def use(T :: Type)(x :: T) x
-  saved = make(String)
-  assert saved == ConcreteType(Box(String))
-  expect use(saved)(Box("hi") :: saved) is Box("hi") :: saved
-  expect use(saved, Box("hi")) fails "E_NO_METHOD"
-end
-
-todo test "A type value is not a function that constructs its members"
-  t = ConcreteType(Box(String))
-  expect t("hi") fails "E_NOT_CALLABLE"
-  expect Box("hi") :: t is Box("hi") :: t
+todo test "A field union and a union of shapes have distinct descriptors"
+  fieldUnion = pattern Reading(Int | Float)
+  shapeUnion = pattern Reading(Int) | Reading(Float)
+  assert fieldUnion !== shapeUnion
 end
 ```
 
-## No implicit public decoding
+### Pattern forms
+
+A type pattern can be a type reference, a literal, a symbol tag, a
+constructed shape, a union, or a refinement. Packs, repetitions, and
+catch-all fields occur inside constructed shapes. For example,
+`type RectPattern pattern Rect(x :: Int, y :: Int, ...)` is valid. A bare
+argument pack after `pattern`, as in
+`type RectPattern pattern (x :: Int, y :: Int, ...)`, is a syntax error.
+
+`pattern Int` returns the referenced `Int` type. `struct Int` wraps an
+`Int`, and wrapping that type again adds another layer. With a facet such
+as `Rectangular`, `struct Rectangular` uses the facet's shape and is
+equivalent to `struct Rect(Int, Int)`.
+
+A tag facet such as `pattern :None` matches a concrete value whose outer
+alternative is `:None`. For example, it matches `:None :: Int?`. If that
+value is stored inside another struct, the inner tag is visible after an
+explicit projection. An abstract union can combine a type reference and
+a tag facet. `pattern Int | :None` admits `5 :: Int` and `:None :: Int?`.
+A bare `:None` still needs a concrete type. `struct :None` defines a
+concrete singleton.
+
+A refinement restricts the admitted values while preserving their concrete
+identity. A concrete carveout adds its own boundary. Use `T .where p` in
+either pattern. Literal designation and explicit checks establish predicate
+evidence. Bindings and dispatch on bound arguments use the evidence already
+available. The [Predicate enum](refinement-predicates.md) supplies the
+initial refinement predicates. See the [refinement evidence proposal](https://github.com/johnwarden/pattern-language/pull/89).
 
 ```pattern
-todo test "A constructor spelling in Code does not grant it type identity"
-  source = parse(Code)("ConcreteType(Rect(Rational))")
-  assert source .matches Code
-  t = ConcreteType(Rect(Rational))
-  assert t .matches Type
-  assert not(source .matches Type)
-end
+todo test "Abstract refinement and concrete carveout both use named predicates"
+  type NonZeroRational pattern ExactRational .where isNonZero
+  type NonZeroId struct ExactRational .where isNonZero
 
-todo test "Supported type values round trip under the prelude Type"
-  c = ConcreteType(Rect(Rational))
-  a = AbstractType(Rational | String)
-  assert parse(Type)(toString(Type)(c)) == c
-  assert parse(Type)(toString(Type)(a)) == a
-  assert parse(Type)(toString(Type)(Int)) == Int
+  (n :: NonZeroRational) = 2
+  (id :: NonZeroId) = 2
+  expect n is 2 :: ExactRational
+  expect id is 2 :: NonZeroId
 end
 ```
 
-The round trips assert identity, not one printed spelling or a parser from an
-arbitrary expression tree. Refinement round trips await portable predicate values.
+## Descriptor kinds and primitive types
 
-## Migration targets
+`Type` is the prelude union of `Struct | Pattern | PrimitiveType`.
+`Struct` and `Pattern` each have one field containing a type pattern.
+`Struct` and `Pattern` are themselves struct descriptors. `Type` is a
+pattern descriptor. The prelude can define this group recursively.
 
-The legacy `Type(...)` constructor always constructed a concrete type;
-`UnionType(...)` constructed abstract unions. Replace those constructors with
-`ConcreteType(...)` and `AbstractType(...)`, respectively. There is no per-member
-kind classification or additional normalization step. Primitive wrapper cases
-instead use the direct primitive atoms, as specified below.
+A primitive type is self-evaluating. This is a property of the descriptor
+and is independent of whether it describes a concrete or an abstract domain.
+Primitive type values have concrete kind `PrimitiveType`. The proposed
+initial inventory is:
 
-| Existing authored subject | Approved replacement contract |
+| Types | Domain |
 | --- | --- |
-| `Type(Rect(Float, Float))` for a declared concrete rectangle | `ConcreteType(Rect(Float, Float))` equal to the declaration's type value |
-| `Type(:None | Some(Int))` / `Type(:Black | :Red)` | `ConcreteType(:None | Some(Int))` / `ConcreteType(:Black | :Red)` |
-| `Type(Int)` / `type type Int` | Retire the wrapper; assert `Int :: PrimitiveType` and ordinary `Type` membership; `type Int` is no longer in the grammar |
-| `Type(pattern) = t` | Retire the wrapper-specific destructuring; match the ordinary kind constructor instead (`ConcreteType(pattern) = t`) |
-| `Type(t) == Type(Int)` with `t` stored as `Any` | Assert the directly stored primitive is still `Int` and accepted by `Type` |
-| `toString(Type)` / `parse(Type)` | Keep the prelude union as expected type; the text of a descriptor is its ordinary value text (e.g. `ConcreteType(Rect(Rational))`). Legacy `Type(...)` text keeps its current spelling until the legacy form is deprecated, including `Recursive(...)` with `Recur(0)` back-references |
-| `:(Type(...))` equal to a compiled type | Preserve Code/Expression as source data; Code is not implicitly decoded to a type value (see No implicit public decoding) |
-| `UnionType(Type(X(...)), ...)` | `AbstractType(ConcreteType(X(...)) | ...)`; union construction does not install declarations or accessors |
+| `ExactRational`, `String` | Concrete. |
+| `PrimitiveType` | Concrete. It includes itself. |
+| `Any`, `LowerCamelSymbol`, `UpperCamelSymbol`, `LowerSnakeSymbol`, `UpperSnakeSymbol`, `PunctuationSymbol` | Abstract. |
 
-## Implementation handoff and deferred decisions
+The prelude defines `type Bool struct True | False`. The values `True`
+and `False` are self-evaluating. Boolean literals and computed Boolean
+results share that concrete type.
 
-1. Write or revise focused executable contracts for these examples before runtime
-   changes. This record remains approved until those tests capture the decision;
-   runtime completion is tracked by the tests, including their todo markers.
-2. Define the prelude kinds with ordinary patterns using the approved one-argument
-   concrete/abstract and two-argument refinement forms. Exact recursive and nested
-   descriptor cases need focused contracts before support is extended. Keep direct
-   `:Symbol(...)` construction distinct from calling a bound concrete value.
-3. Migrate legacy concrete and abstract constructors according to the table,
-   preserving primitive atoms. This approval does not add an explicit primitive
-   descriptor quote.
-4. Descriptor inspection is ordinary pattern matching on the kind constructors,
-   and descriptor text is their ordinary value text; neither needs a separate
-   mechanism. Two things stay open: the recursive descriptor spelling, which keeps
-   its current `Recursive(...)` / `Recur(0)` form for now and is changed only by a
-   separate decision, and refinement predicate values and their text, which follow
-   the portable function decision; specify them before adding a refinement
-   round-trip test.
+```pattern
+test "Boolean literals and comparison results belong to Bool"
+  assert True .matches Bool
+  assert False .matches Bool
+  computed = 1 == 1
+  expect computed is True :: Bool
+  todo assert Bool .matches Struct
+end
+```
+
+`Symbol` is the prelude union of the ordinary symbol classes, including
+`LowerSnakeSymbol`. These classes admit typed ordinary symbols and exclude
+reserved values such as `True`, `False`, and primitive type names.
+
+```pattern
+test "Ordinary symbol classes reject reserved names"
+  assert not(True .matches UpperCamelSymbol)
+  assert not(False .matches UpperCamelSymbol)
+  assert not(String .matches UpperCamelSymbol)
+  assert not(True .matches Symbol)
+  assert not(String .matches Symbol)
+  assert :Widget .matches UpperCamelSymbol
+  assert :Widget .matches Symbol
+end
+```
+
+```pattern
+todo test "A lower snake symbol belongs to its ordinary symbol class"
+  type SensorName struct LowerSnakeSymbol
+  name = parse(SensorName)("sensor_id")
+  assert name .matches LowerSnakeSymbol
+  assert name .matches Symbol
+end
+```
+
+The [fixed-precision numeric proposal](https://github.com/johnwarden/pattern-language/pull/86)
+defines numeric formats as prelude structs over `ExactRational`, with
+`Int` and `Float` as aliases and `Number` as an abstract union.
+`Code` and `Body` are grammar-defined types. `ReservedSymbol` is internal
+to the bootstrap. Quoting a self-evaluating type name or Boolean literal
+name in executable source raises `E_QUOTED_PRIMITIVE`. The Code reader
+preserves that source spelling.
+
+Exact equality uses the ordinary rule for overlapping static domains. `Int`
+and `Struct(Int)` describe different concrete value spaces. The abstract
+bindings below admit both descriptors, so the comparison returns `False`:
+
+```pattern
+todo test "Int and Struct(Int) compare unequal through Type"
+  (x :: Type) = Int
+  (y :: Type) = Struct(Int)
+  assert not(x === y)
+end
+```
+
+Once fixed formats are prelude definitions, both values in this example have
+descriptor kind `Struct`. Their payloads differ because `y` adds a boundary.
+With `String` in place of `Int`, the two concrete kinds are `PrimitiveType`
+and `Struct`, and the comparison through `Type` still returns `False`.
+The wrapper and its payload are also distinct when comparing member values.
+
+## Constructing and inspecting descriptors
+
+`Struct` and `Pattern` have ordinary constructor forms. In
+`Struct(Rect(Int))`, the field contains the constructor pattern
+`Rect(Int)`. In `Pattern(Int | String)`, the field contains a union.
+`Pattern(T .where p)` and `Struct(T .where p)` put a refinement in that
+same field.
+
+The field's grammar defines which patterns it accepts, including how
+recursive references are scoped. Descriptor patterns reject captures and
+defaults at any depth. Rules that need to inspect the parsed pattern can
+use pure prelude predicates in the grammar; they do not run user code.
+An ordinary match can extract the field and use it to construct another
+descriptor.
+
+```pattern
+todo test "Descriptor inspection binds the typed pattern field"
+  t = Struct(Rect(Int))
+  copy = match t
+    Struct(p) -> Struct(p)
+  end
+  assert copy === t
+  expect t(2) fails "E_NOT_CALLABLE"
+end
+```
+
+Functions can take and return descriptors. For example,
+`def makeBox(T :: Type) struct Box(T)` computes a descriptor from a
+type argument.
+
+`parse(Code)("Struct(Rect(Int))")` reads program syntax.
+`parse(Type)("Struct(Rect(Int))")` reads a `Struct` value. That value
+matches the abstract type `Type`.
+
+Parsing or validating a type descriptor runs no user code. It does not
+call refinement predicates and does not execute arbitrary syntax. At most
+it may consult pure prelude predicates that belong to the descriptor
+grammar. It rejects captures and defaults at any depth. The same rules
+apply to direct `Struct(...)` / `Pattern(...)` construction and to
+`parse(Type)`.
+
+```pattern
+todo test "Reading a descriptor as Type produces a Struct value"
+  code = parse(Code)("Struct(Rect(Int))")
+  descriptor = parse(Type)("Struct(Rect(Int))")
+
+  assert code .matches Code
+  assert not(code .matches Type)
+  assert descriptor .matches Struct
+  assert descriptor .matches Type
+  assert descriptor === Struct(Rect(Int))
+end
+```
+
+```pattern
+todo test "parse(Type) on text with .where p does not call p"
+  calls = 0
+  def p(n :: ExactRational)
+    calls = calls + 1
+    n != 0
+  end
+
+  expect parse(Type)("Pattern(ExactRational .where p)") fails "E_EXPECTED_PREDICATE"
+  assert calls == 0
+end
+```
+
+## Declarations, normalization, and identity
+
+A `type Name struct P` or `type Name pattern P` declaration binds
+a name and can register scoped accessors for captures. Standalone
+`struct` and `pattern` expressions produce descriptors without
+registering accessors. Positional capture names belong to the declaration.
+Field labels, pack structure, and concrete boundaries are part of
+descriptor identity. Defaults belong to binding patterns. Existing
+duplicate declaration and accessor collision rules apply.
+
+The `pattern` and `struct` macros resolve type references, collapse nested
+abstract pattern forms, sort alternatives canonically, and remove repeated
+alternatives that compare exactly equal. They preserve explicit concrete
+boundaries. If quoted and unquoted alternatives denote the same type in
+the current scope, report
+`E_REDUNDANT_QUOTE` during macro normalization. A quote that prevents a
+name from resolving to a different type, such as a call to a type-valued
+factory, remains meaningful. This check is distinct from
+`E_QUOTED_PRIMITIVE`.
+
+`Struct(P)` and `Pattern(P)` preserve the pattern as supplied.
+`Pattern(Int)` is a valid non-normal descriptor whose domain consists of
+Int values.
+`Struct(Int | Int)` preserves both alternatives, and
+`Pattern(Int | String)` and `Pattern(String | Int)` preserve their
+respective orders. Equality compares exact descriptors without normalizing
+the operands or testing extensional equivalence. Compiled matchers,
+accessors, aliases, allocation identities and construction history do not
+participate. A policy requiring normal form can be considered separately.
+
+```pattern
+todo test "Macros normalize alternatives and direct descriptors preserve them"
+  normal = struct Int | Int
+  repeated = Struct(Int | Int)
+  left = Pattern(Int | String)
+  right = Pattern(String | Int)
+
+  assert normal === Struct(Int)
+  assert normal !== repeated
+  assert left !== right
+  assert parse(Type)(toString(Type)(left)) === left
+  assert parse(Type)(toString(Type)(right)) === right
+end
+```
+
+## Designation and matching
+
+Construction interprets a designator in its expected concrete type. A raw
+constructor expression or symbol tag requires a concrete interpretation
+supplied by its context or an explicit ascription. A shape can construct a
+new struct from field designators. An already typed struct cannot be
+reinterpreted as an unrelated struct just because its payload would fit.
+An expected wrapper can store an already typed member when the wrapper's
+pattern admits it. A direct match at the expected concrete boundary wins
+over recursive inward designation. Equally ranked distinct peer paths
+are ambiguous. See [ambiguous value designators](ambiguous-values.md).
+
+For an abstract union, several accepting alternatives that yield the
+same exact typed value count as one interpretation. For example,
+`pattern Any | String` admits `"hi" :: String` once. Ambiguity remains
+when alternatives yield different typed results. Inside a concrete
+descriptor, explicit alternative occurrences remain separate choices.
+For example, designating `3 :: Int` into the direct-constructor
+`Struct(Int | Int)` yields two interpretations, even though the two
+alternatives have the same pattern. Its normalized macro counterpart
+`struct Int | Int` has one. This revises the acceptance-counting rule in
+[ambiguous value designators](ambiguous-values.md).
+
+```pattern
+todo test "Abstract alternatives can agree on a value while repeated concrete alternatives remain ambiguous"
+  either = pattern Any | String
+  (text :: either) = "hi" :: String
+  expect text is "hi" :: String
+
+  repeated = Struct(Int | Int)
+  expect
+    (n :: repeated) = 3 :: Int
+    n
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+```
+
+An explicit match can open one concrete boundary at a time. It can bind a
+wrapper's typed member or inspect the tag and fields at that boundary.
+Selecting a symbol tag needs no raw symbol value. Ordinary bindings and
+parameters cannot implicitly unwrap a value. A single-arm extraction
+requires coverage of its admitted input domain. A match on an abstract
+union tests the stored concrete value. A catch-all spread can collect
+the unmatched arguments into an `ArgPack(T)`, including in an open
+concrete type. See [Spreads and ArgPacks](https://github.com/johnwarden/pattern-language/pull/85).
+
+`P .as T` is a proposed explicit projection pattern of lower
+implementation priority. It checks the outer concrete type `T` and
+applies `P` at that boundary. A second projection can open the stored
+member's boundary. For `Int??`, `:None .as Int??` selects outer
+absence, while `(:None .as Int?) .as Int??` selects stored inner absence.
+
+### Overload domains and projection dispatch
+
+Overloads of one function must have pairwise disjoint parameter domains.
+Adding a definition that shares an admitted argument pack with an existing
+overload raises `E_OVERLAPPING_OVERLOAD` at the definition. The specific
+code for overloads distinguished only by refinements is `E_REFINED_OVERLOAD`. For example, a
+base type and its refinement share the values admitted by the refinement.
+Compare the whole pack after erasing refinement predicates. A distinct tag in
+another argument can establish disjointness. See [disjointness of predicate-refined peers](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
+
+```pattern
+test "Overlapping overload domains are rejected at definition time"
+  todo expect
+    def f(x :: Any) 1
+    def f(x :: Int) 2
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+```
+
+An explicit projection in a parameter may inspect a stored field's
+concrete type. A `Reading` with an `Int` field and a `Reading` with a
+`Float` field satisfy disjoint parameter patterns:
+
+```pattern
+todo test "Projected overloads classify Reading like match"
+  type Reading struct Reading(value :: Int | Float)
+
+  def kindByOverload(Reading(Int) .as Reading) "int"
+  def kindByOverload(Reading(Float) .as Reading) "float"
+
+  def classify(r :: Reading) kindByOverload(r)
+
+  ints = Reading(5 :: Int) :: Reading
+  floats = Reading(5 :: Float) :: Reading
+  expect classify(ints) is "int"
+  expect classify(floats) is "float"
+end
+```
+
+Both definitions may coexist because their projected field patterns are
+disjoint. `classify` gives the same results as the earlier `match`
+example. It takes a `Reading` and dispatches on the field's concrete
+type. Refinement requirements in either overload use existing evidence.
+
+Peer match arms follow the same disjointness rule. A trailing residual
+covers the part of the subject domain outside all preceding arms. Public
+notation for that subtraction is open. See [match arm domains](https://github.com/johnwarden/pattern-language/pull/100).
+
+## Canonical expressions and typed text
+
+Every type has a canonical expression that evaluates to an exactly equal
+descriptor in a fresh environment with the same primitive and prelude
+definitions. Equal descriptors have identical canonical expressions.
+Self-evaluating types print as their names. Constructed descriptors print
+in their direct kind-constructor form. Printing composes over the pattern
+data, including nested type boundaries, alternative order, field labels,
+and repetitions. Parenthesize according to the grammar. The canonical
+form of a non-normal descriptor preserves its supplied structure.
+
+Keep the existing `Recursive(body)` and `Recur(n)` spelling, with
+`Recur(0)` referring to the nearest enclosing binder. In the pattern
+grammar, a binder remains in scope across a nested descriptor, as in
+`Struct(Recursive(:Leaf | Node(Struct(:Empty | Some(Recur(0))))))`.
+The canonical printer uses constructor-head spellings that preserve the
+same pattern when read back.
+
+```pattern
+todo test "Canonical recursive type text preserves a reference across a struct boundary"
+  t = Struct(Recursive(:Leaf | Node(Struct(:Empty | Some(Recur(0))))))
+  assert parse(Type)(toString(Type)(t)) === t
+end
+```
+
+Initially a refinement holds a `Predicate` enum value. The printer emits its
+bare case name, as in `Pattern(ExactRational .where isNonZero)`. The
+predicate grammar interprets the name as an enum tag in nested
+descriptors and in a fresh scope using the same prelude. See [refinement predicates](refinement-predicates.md).
+Portable user-defined predicates are a later extension.
+
+For supported types and values, `parse(Type)(toString(Type)(t))`
+returns the same descriptor, and `parse(T)(toString(T)(v))` returns the
+same exact value. A typed value's text supplies member tags and nested
+ascriptions where the expected grammar needs them. Global printing
+uses no lexical aliases. Where a struct wrapper's immediate member
+needs an ascription, the text preserves it independently of the outer
+ascription. For example, the outer and inner absence cases for
+`String??` must reconstruct different values.
+
+For any global text `s` accepted by `parse(T)`, let
+`c = toString(T)(parse(T)(s))`. Then `toString(T)(parse(T)(c)) == c`.
+Several input spellings may designate one value. For a fixed decoding type
+the first print already produces its canonical spelling. See the distinction
+between reading and choosing a printed spelling in [Rendel and Ostermann,
+*Invertible Syntax Descriptions*, §§2–3](https://www.informatik.uni-marburg.de/~rendel/unparse/).
+
+`toStringLocal` and diagnostics follow the established
+[exact local printing](library-closure-and-local-printing.md#exact-local-printing)
+rule. They can use a visible type name when it denotes the same
+descriptor in that scope. Refinement predicates retain their bare case names.
+They can use sugar such as `T*` or
+`T?` when it resolves to the exact descriptor. A shadowed or approximate
+name is insufficient. An ambiguity diagnostic lists source expressions
+that actually select the indicated surviving interpretations. If it
+cannot write a selectable expression, report the count. Identical
+alternatives in a non-normal concrete descriptor are one such case.
+
+## Migration and remaining work
+
+Migrate the [bootstrap descriptor forms](../TYPE-VALUES-BOOTSTRAP.md)
+using the corresponding `struct` / `Struct` and `pattern` / `Pattern` semantics.
+
+The requirement for concrete interpretation supersedes bare raw
+runtime expression construction in [the raw-expression contract](raw-expression-values.md).
+Preserve typed construction, quotation, and explicit one-boundary matching
+coverage. The new catch-all struct rule supersedes the blanket prohibition
+on concrete open descriptions in the
+[syntax-retirement contract](retire-legacy-type-definition-syntax.md).
+Raw patterns in general type-expression positions, public pattern data
+and the open projection notation question remain open. Portable user-defined
+predicates remain later work.

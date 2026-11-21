@@ -1,10 +1,11 @@
 # Workstream 2: intrinsic String values
 
-Status: implemented in PR #31, awaiting review. Ordinary runtime String
-literals and String-returning natives ascribe the String primitive. Quoted Code
-splices those values as string literals, matching Rational. The PR also carries
-the 9 November primitive-name and symbol-printing rulings (LANGUAGE-DECISIONS
-D19, D20). PrimitiveType and public inspection/decoding remain unchosen.
+Status: **landed** in [#31](https://github.com/johnwarden/pattern-language/pull/31).
+Ordinary runtime String literals and String-returning natives ascribe the String
+primitive. Quoted Code splices those values as string literals, matching
+Rational. The PR also carries the 9 November primitive-name and symbol-printing
+rulings (LANGUAGE-DECISIONS D19, D20). PrimitiveType and public
+inspection/decoding remain unchosen.
 
 ## Accepted behavior
 

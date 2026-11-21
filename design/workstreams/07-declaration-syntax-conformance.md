@@ -1,11 +1,10 @@
 # Concrete and abstract declaration syntax
 
-Status: active implementation, claimed by session `/root/declaration_syntax_48`
-on branch `codex/spec-type-declaration-syntax-2026-11-09`. Latest rebase uses
-master `a885dfa33945b00ba82d6cb65275ed8206a583dd`, including the other agent's #54,
-#55 and #56 migrations verbatim. This work implements contracts
-already executable under `tests/specification/`; the generic, facet and evidence
-extensions remain following slices.
+Status: **landed** in [#48](https://github.com/johnwarden/pattern-language/pull/48).
+Historical note: implemented on `codex/spec-type-declaration-syntax-2026-11-09`.
+Non-generic `concrete` / `abstract` recognition is on master. [#88](https://github.com/johnwarden/pattern-language/pull/88)
+retargets the destination spelling to `struct` / `pattern`. Generic, facet and
+evidence extensions remain following slices.
 
 ## Target the existing tests first
 
@@ -14,13 +13,14 @@ corrections in #46 are integrated: C05 opens a concrete Box through explicit mat
 C12 distinguishes outer/inner None, and C13 covers a plain abstract type expression.
 Do not rewrite the specified syntax to bootstrap spelling to remove its todos.
 
-| First slice                                                                                          | Existing contract                                                                                                                       |
-| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `type Rectangle concrete Rect(w :: Rational, h :: Rational)` and `concrete Rect(Rational, Rational)` | First C05 assertion in `tests/specification/type-values.test`: equal type values; declaration products are separate                     |
-| Two named concrete alternative sets with shared symbol spellings                                     | C06 in the same file: values from distinct concrete spaces report `E_INCOMPARABLE_TYPES`                                                |
-| `abstract Float32 \| Float64`                                                                        | First C13 assertion in `tests/specification/interpretations.test`: ordinary construction agrees with the existing abstract union domain |
-| `type EitherFloat abstract Float32 \| Float64`                                                       | Remaining C13 assertions: retain each member's concrete identity and reconstruct supported typed text                                   |
-| A named concrete declaration versus capture-free plain construction                                  | C16 in `tests/specification/declarations.test`: named accessors work, plain captures reject; integrate #32's implementation             |
+| Landed bootstrap spelling (live checks) | Contract |
+| --- | --- |
+| `type Rectangle concrete Rect(w :: Rational, h :: Rational)` and `concrete Rect(Rational, Rational)` | First C05 assertion in `tests/specification/type-values.test` |
+| Two named concrete alternative sets with shared symbol spellings | C06 in the same file: `E_INCOMPARABLE_TYPES` |
+| `abstract Float32 \| Float64` / `type EitherFloat abstract …` | C13 in `tests/specification/interpretations.test` |
+| Named declaration versus capture-free plain construction | C16 in `tests/specification/declarations.test` |
+
+Destination spelling under #88 uses `struct` / `pattern` for the same semantics.
 
 Before implementation, trials with todo disabled observed E_LANGUAGE for the
 non-generic targets. The generic C05 siblings failed separately at the tight-angle
@@ -54,19 +54,12 @@ The specification queue lives on master rather than an implementation branch.
 
 ## Completion and following obligations
 
-The first C05 assertion, C06, all C13 assertions and both future C16 assertions
-are ordinary checks. Existing C04 construction, C17's factory positive control,
-C19/C20/C21 controls and C23's supported round trip also pass once declaration
-recognition is available; only those exact fulfilled assertions are promoted.
-There are 15 promotions from master, plus retirement of the fulfilled legacy/todo
-setup alternative. New [source regressions](../../tests/specification/declaration-syntax.test)
-cover recursive groups and retained duplicate/collision errors. The
-[host checks](../../test/declaration-syntax.test.ts) cover recognition ambiguity,
-grammar transport, source spelling, declaration tails, aligned ends and inert
-Code. [LSP checks](../../test/lsp-analysis.test.ts) retain complete declaration
-and name ranges through the same grammar. Validation and its exact head are in
-the PR description; a full local `just check` is unavailable because just is not
-installed. Each merge requires Jonathan's authorization.
+The first C05 assertion, C06, C13 and the non-generic C16 checks are ordinary
+under the landed bootstrap spelling. New
+[source regressions](../../tests/specification/declaration-syntax.test) cover
+recursive groups and retained duplicate/collision errors. Host and LSP checks
+cover recognition, transport and ranges. Remaining parameterized and evidence
+obligations stay todo.
 
 Parameterized `type Box<T> ...` / `Box<String>` (remaining C05 and C12/C18),
 refinement declarations/evidence (C07-C10), facets and later projection/coverage

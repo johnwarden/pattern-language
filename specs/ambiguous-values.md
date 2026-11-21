@@ -4,10 +4,11 @@ Approved by Jonathan in the project chat on 10 November 2026; renamed from
 `E_AMBIGUOUS_VALUE` on 17 November. This renames `E_AMBIGUOUS_PATTERN` and
 changes what its message says.
 
-An expression that designates a value, such as the literal `3` or `:None`, is a
-value designator. When more than one member of an expected type can accept the
-designator, it is ambiguous. The error is the same however the expected type
-reaches the designator, and it blames the designator, not the pattern:
+A value designator, such as `3` or `:None`, is ambiguous when designation
+has multiple surviving interpretations. An abstract union counts alternatives
+that yield the same exact typed value as one interpretation. A concrete
+descriptor preserves explicit alternative occurrences. See
+[type designation](type-values.md#designation-and-matching).
 
 ```pattern
 test "An ambiguous numeric literal fails with E_AMBIGUOUS_VALUE_DESIGNATOR"
@@ -28,27 +29,23 @@ test "An ambiguous absence between peer options fails with E_AMBIGUOUS_VALUE_DES
 end
 ```
 
-Each of these fails with `E_AMBIGUOUS_VALUE_DESIGNATOR`. The message lists the
-possible interpretations so the author can choose one, for example "ambiguous
-value designator 3: please specify `3 :: Int` or `3 :: Float`". Each
-interpretation is written as source, `designator :: Type`, for a member that
-accepts it. The exact surrounding wording is not pinned; every candidate
-interpretation must appear in it. When more than two interpretations match, the
-message lists the first two and ends with `...and N others`.
+Each designator above raises `E_AMBIGUOUS_VALUE_DESIGNATOR`. The message
+blames the designator and prints source that selects each surviving
+interpretation, such as `3 :: Int` and `3 :: Float`. When more than two
+interpretations survive, it lists the first two and ends with
+`...and N others`. When source cannot select an interpretation, report
+the count.
 
-A member accepts a designator only if every condition of the member holds,
-including a refinement's predicate. If exactly one member accepts it, the
-designator is not ambiguous and selects that member. With
-`p = Int .where (n -> n > (5 :: Int))`, `u = abstract p | Float` and
-`def f(n :: u) n`, `f(3)` is not ambiguous (only `Float` accepts `3`), while
-`f(7)` is (both do). Choosing `3 :: p` explicitly fails with the failed predicate
-named in the error.
+Literal designation can test a refinement once an expected type is known.
+Given `PositiveInt = pattern Int .where isPositive`, in
+`pattern PositiveInt | Float` the literal `-3` selects `Float` because
+the integer refinement rejects it. A positive
+literal such as `3` is ambiguous. Explicitly designating `-3` as the
+refined integer reports the failed predicate. A bound argument supplies
+its existing evidence. See [refinement predicates](refinement-predicates.md).
 
-`E_AMBIGUOUS_PATTERN` is retired: existing assertions that expect it are renamed
-to `E_AMBIGUOUS_VALUE_DESIGNATOR`, preserving their subjects. A declaration with
-repeated alternatives is not ambiguous: `type :A | :A` normalizes to `type :A`.
-This does not change designation or literal typing: `3` stays ambiguous between
-`Int` and `Float` here because both designate it.
+Type macros remove repeated alternatives. `struct :A | :A` normalizes to
+`struct :A`. Direct descriptors preserve repeats.
 
 ## Contracts
 
@@ -61,5 +58,5 @@ refinement evidence.
 
 [Overlapping union contracts](../tests/specification/overlapping-unions.test)
 cover normalization. Type macros remove repeated alternatives under ordinary type
-equality, including aliases and factory results. Explicit kind constructors
-retain their existing behavior.
+equality, including aliases and factory results. The [type-value spec](type-values.md#declarations-normalization-and-identity)
+covers direct constructors.

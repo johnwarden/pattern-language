@@ -4,8 +4,7 @@ Approved in the project chat on 9 November 2026. Supersedes the earlier restrict
 that a defined function name can only appear in call position.
 
 A named function resolves to a function value. The value can be stored, passed,
-returned and used as a `where` predicate. `.where isSquare` uses ordinary function
-value resolution; it is not a special adapter limited to the `where` operator.
+and returned. Initial refinements use the [Predicate enum](refinement-predicates.md).
 
 The value contains the full implementation and has no free user variables or
 hidden lexical environment. Parameter and local binders are bound variables, not
@@ -26,9 +25,7 @@ name has multiple definitions remain explicit follow-up questions. This does not
 approve a new `OverloadedFunction` representation or choose a specificity policy.
 
 For example, given `def square(n :: Int) n * n`, `f = square`, `apply(square, n)`
-and returning `square` are function-value uses. Given the Rectangle/isSquare
-definitions in the original inbox example, both `.where (r -> isSquare(r))` and
-`.where isSquare` accept a predicate; the latter no longer requires a wrapper.
+and returning `square` are function-value uses.
 
 Partial conversion on master:
 [named-function-values.test](../tests/specification/named-function-values.test)
@@ -42,7 +39,3 @@ with no free variables through an agreed observable boundary; do not invent an
 inspection or serialization API merely to move the file.
 
 Origin: `tests/inbox/2026-11-09-bug-bare-function-name-in-where-clause.test`.
-The two restored draft examples both used a lambda. The author's clarification
-now supplies the intended bare-name distinction; the draft is retired in favor
-of the explicit cases above. The queue record and tests do not implement runtime
-function-value support.

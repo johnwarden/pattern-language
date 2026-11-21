@@ -1,10 +1,8 @@
 # Workstream 1: refresh the conformance baseline
 
-Status: claimed by Cursor Cloud
-https://cursor.com/agents/bc-e21b1feb-3677-5aac-b448-62ad9aa8e228
-on `codex/workstream-conformance-baseline-2026-11-09`. Scope is documentation
-and test classification; this workstream changes no language implementation or
-policy.
+Status: **landed** (historical). Merged via the conformance-baseline work that
+fed master; no longer an active claim. Scope was documentation and test
+classification only.
 
 ## Seed change
 
@@ -37,10 +35,10 @@ Each remaining todo is one of:
 
 | Unmet requirement | Where | Leave to |
 | --- | --- | --- |
-| Intrinsic String identity (`result … :: String`) | C01 `"hello"`; overlapping-union and example `toString` / quotation / local-text pairs | workstream 2 / #31 |
-| Future `type Name concrete` / angle parameters / capture-free construction | C04–C06, C11–C18, C19 Packet rest, C20–C23, setup/alternatives future syntax, symbolic-construction todos in bindings/defaults and examples | workstream 3 / #32 for C05/C16/C18; others stay pending until that spelling exists |
-| Proposed syntax that bootstrap `def … type` success does not fulfill | C16/C17/C18 and C04/C05 subjects that use `type Name concrete` | keep pending |
-| Canonical expected-data spelling | C03 Float64 was this; remaining String/`0f` text belongs to #31 or numeric spelling policy | do not invent spellings |
+| Intrinsic String identity (`result … :: String`) | C01 `"hello"`; overlapping-union and example `toString` / quotation / local-text pairs | landed in #31 |
+| Destination `struct` / `pattern` spelling, angle parameters, remaining capture-free gaps | Remaining C04–C18 todos, Packet rest, spreading/round-trip todos | #32/#48 landed bootstrap `concrete`/`abstract`; #88 retargets to `struct`/`pattern`; angle syntax stays parked (#62) |
+| Proposed syntax that bootstrap `def … type` success does not fulfill | Remaining C16/C17/C18 parameterized subjects | keep pending where still todo |
+| Canonical expected-data spelling | C03 Float64 was this; remaining String/`0f` text | #31 landed String identity; do not invent spellings |
 | Deferred numeric families | C03 `Decimal32`, `Int16` | stay pending |
 | Unresolved PrimitiveType metatype | C01 `Bool :: PrimitiveType` | author's metatype choice; not chosen here |
 | Unresolved public inspection/decoding | LEGACY-ASSERTIONS D03/D02 type-text rows; example inspect/rebuild and descriptor `toString(Type)` subjects | author's examples |
@@ -67,8 +65,7 @@ already landed the corresponding work on master `d8a6fb0`.
 | [#14](https://github.com/johnwarden/pattern-language/pull/14) | Already marked superseded by #25 |
 | [#25](https://github.com/johnwarden/pattern-language/pull/25) | Expected-grammar pack propagation is on master (`tests/specification/expected-grammar.test`) |
 
-Leave #29, #30, #31 and #32 open. Do not merge any of these without Jonathan's
-authorization for that PR.
+#29/#30/#31/#32 and #48 have landed. Do not reopen their ownership claims.
 
 ## Ownership and coordination
 

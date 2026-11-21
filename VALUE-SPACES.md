@@ -1,13 +1,14 @@
 # Value spaces and interpretation
 
-The [executable `.test` contracts](tests/specification/README.md) are the language
-specification. This guide explains their model and rationale. Missing rules need
-tests before implementation; change the tests and their explanations together.
+The [executable contracts](tests/specification/README.md) under `tests/` and
+the [type-value specification](specs/type-values.md) under `specs/` are the
+language specification. This guide explains their model and rationale. Missing
+rules need tests before implementation; change the tests and their explanations
+together.
 
-Updated 7 November 2026. This is the intended semantic contract integrated from
+This is the intended semantic contract integrated from
 [the decision record](design/LANGUAGE-DECISIONS.md). Confirmed rules are distinct
-from explicitly provisional choices. The TypeScript bootstrap has not yet been
-updated to all of them; its compatibility boundary is listed below.
+from explicitly provisional choices.
 
 ## Values, concrete identity and descriptors
 
@@ -20,10 +21,12 @@ concrete boundaries and the set of concrete alternatives remain structural.
 Type equality is ordinary structural value equality, not host identity, a declaration
 ID, or extensional equivalence of arbitrary predicates. Evaluating distinct syntax
 can yield the same value. That does not imply that every inert syntax description
-is automatically the evaluated type/value it describes. Raw runtime Expressions
-are allowed for now; [the contracts](specs/raw-expression-values.md)
-separate them from interpreted concrete values. The public descriptor-decoding
-boundary remains undecided.
+is automatically the evaluated type/value it describes. A constructor expression
+or symbol tag requires a concrete interpretation from its context or an explicit
+ascription. That requirement supersedes bare raw runtime expression construction;
+see [Designation and matching](specs/type-values.md#designation-and-matching) and
+[Migration and remaining work](specs/type-values.md#migration-and-remaining-work).
+The public descriptor-decoding boundary remains undecided.
 
 Values in different known concrete spaces are not made comparable by identical
 payload spelling. `None` in a String option and `None` in a Float32 option can
@@ -38,14 +41,16 @@ the same mathematical set have equal code/descriptors.
 
 | Role | Effect on the value | Typical recipes |
 | --- | --- | --- |
-| Concrete | Establishes a structural concrete space | Tagged structures, concrete alternatives, predicate carveouts |
-| Refinement | Restricts an existing space, preserving identity and base operations | Nonzero, nonempty, exact-fit requirements |
-| Abstract | Preserves each admitted member's concrete identity | General unions, open facets and facet combinations |
+| Concrete (`struct`) | Establishes a structural concrete space | Tagged structures, concrete alternatives, predicate carveouts |
+| Refinement (`.where`) | Restricts an existing space, preserving identity and base operations | Nonzero, nonempty, exact-fit requirements |
+| Abstract (`pattern`) | Preserves each admitted member's concrete identity | General unions, open facets and facet combinations |
 
-The working spellings are `type Name concrete/refinement/abstract ...`. Their exact
-surface sugar is provisional. Concrete structures may contain abstract-typed fields;
-those positions retain member descriptors. Facet combinations require both constraints
-without merging records or inventing a concrete identity. Intersection is the reviewer's
+The working spellings are `type Name struct P` and `type Name pattern P`, with
+refinements written as `T .where p` inside either form. Standalone `struct` /
+`pattern` expressions produce the same descriptors without registering accessors.
+Concrete structures may contain abstract-typed fields; those positions retain
+member descriptors. Facet combinations require both constraints without merging
+records or inventing a concrete identity. Intersection is the reviewer's
 recommended term; the terminology is not a new semantic mechanism.
 
 A written singleton abstract union was proposed for rejection. Collapse of a computed
@@ -81,20 +86,18 @@ peer paths are ambiguous; source order supplies no priority. Every required
 predicate needs evidence. Designation does not insert fields, round numbers or
 erase established concrete boundaries.
 
-```text
-# A library convention, not a built-in optional type:
-type T? concrete T | :None
-(outer :: String??) = :None
-(sameOuter :: String??) = :None :: String??
-(inner :: String??) = :None :: String?
-# outer == sameOuter; outer != inner.
-```
+    # A library convention, not a built-in optional type:
+    type T? struct T | :None
+    (outer :: String??) = :None
+    (sameOuter :: String??) = :None :: String??
+    (inner :: String??) = :None :: String?
+    # outer === sameOuter; outer !== inner.
 
-Present values of this convention are unwrapped (`"Hello" :: String?`). The
+`"Hello" :: String?` stores a `String` directly inside the `String?` value, without a `Some` constructor. The
 annotation on the inner absence identifies the String? member, and survives
 comparison and typed-text round trips. A peer union `String? | Float?` still
 requires an explicit member for `:None`. An independently defined
-`concrete :None | Some(T)` keeps its explicit Some node. No generic optional
+`struct :None | Some(T)` keeps its explicit Some node. No generic optional
 constructor or lifting behavior is built into postfix punctuation; see
 [POSTFIX.md](design/POSTFIX.md).
 
@@ -104,14 +107,12 @@ boundaries requires repeating explicit projections. An unannotated capture prese
 the value it receives. A single-arm extraction requires coverage of the statically
 admitted input domain; otherwise use multiple arms or establish the needed fact.
 
-```text
-type Small concrete Rational .where small
-type Wrapped concrete Small .where smaller
-# Given w :: Wrapped:
-match w (s :: Small)
-match s (r :: Rational)
-# Direct Wrapped -> Rational projection is not allowed.
-```
+    type Small struct ExactRational .where isPositive
+    type Wrapped struct Small .where isPositive
+    # Given w :: Wrapped:
+    match w (s :: Small)
+    match s (r :: ExactRational)
+    # Direct Wrapped -> ExactRational projection is not allowed.
 
 The checking algorithm remains implementation work. The uniqueness, evidence and
 one-boundary rules are settled, not open policy choices. C03, C11 and C12 in the
@@ -124,15 +125,19 @@ Successful explicit checks, assertions, proven facts and specified function guar
 can establish evidence about the exact value and predicate environment. Missing
 evidence is a checking failure, not proof of nonmembership. A refinement preserves
 its base space; it is not a conversion or an automatic normalization operation.
+The [Predicate enum](specs/refinement-predicates.md) supplies named refinement
+predicates; `.where` takes a `Predicate`, not a lambda.
 
 A function accepting only a refinement is legal. What remains excluded is choosing
-between overlapping base/refinement overloads by running their predicates:
+between overlapping base/refinement overloads by running their predicates.
+Overloads of one function must have pairwise disjoint parameter domains.
+Overlap raises `E_OVERLAPPING_OVERLOAD` at definition time. Overloads
+distinguished only by refinements raise `E_REFINED_OVERLOAD`. See
+[Overload domains and projection dispatch](specs/type-values.md#overload-domains-and-projection-dispatch).
 
-```text
-def median(xs :: SortedList<Float32>) ...       # permitted with evidence
-# f(List<Float32>) and f(SortedList<Float32>) overlap if SortedList is a refinement.
-# No implicit predicate test or specificity preference selects one of them.
-```
+    def median(xs :: SortedList<Float32>) ...       # permitted with evidence
+    # f(List<Float32>) and f(SortedList<Float32>) overlap if SortedList is a refinement.
+    # No implicit predicate test or specificity preference selects one of them.
 
 Unrelated concrete domains can coexist. A selected function can require evidence;
 selection must not speculatively evaluate defaults or predicates to manufacture it.
@@ -140,8 +145,9 @@ Explicit conditional checks can establish branch facts. Both possible results of
 conditional must justify a later refinement, not only its true branch.
 
 No unchecked ordinary insist operation or general theorem prover is approved.
-Static proof inference is a planned checker capability; todo assertions attempt future contracts; their expected failures are not
-claims that this checker exists today.
+Static proof inference is a planned checker capability; todo assertions attempt
+future contracts; their expected failures are not claims that this checker exists
+today.
 
 ## Numeric values
 
@@ -154,11 +160,9 @@ Finite fixed-precision types are concrete carveouts of representable Rational
 values. They have their own arithmetic, not inherited Rational arithmetic.
 Exact designation cannot silently round; converters return typed values directly.
 
-```text
-(0.5 :: Float32)       # exact designation
-(0.1 :: Float32)       # rejected: 1/10 is not exactly representable
-float32(0.1)           # explicit rounding, returns Float32
-```
+    (0.5 :: Float32)       # exact designation
+    (0.1 :: Float32)       # rejected: 1/10 is not exactly representable
+    float32(0.1)           # explicit rounding, returns Float32
 
 Constant predicates may be proved; nonconstant designation requires evidence or an
 explicit checked operation. Runtime Rational arithmetic itself is optional. Numeric
@@ -213,10 +217,8 @@ The keyword capture/spread spelling and unknown-shape typing remain provisional.
 
 For each supported T, the intended global contract is:
 
-```text
-parse(T)(toString(T)(v)) == v
-v == w  =>  toString(T)(v) == toString(T)(w)  # for the same T
-```
+    parse(T)(toString(T)(v)) === v
+    v === w  =>  toString(T)(v) === toString(T)(w)  # for the same T
 
 Canonical text is relative to the expected decoding type/grammar. Global text does
 not depend on lexical type names; local variants may reuse valid visible aliases
@@ -239,28 +241,14 @@ Specialization is only a later compiler optimization preserving an independently
 defined abstract-call contract. First-class overload-set values are a separate
 unaccepted proposal. Bare generic-family facets, MemberOf constraints and parameter
 recovery remain proposals; no nominal construction history is inferred from a family
-name. Raw runtime Expressions are currently permitted; automatic descriptor
-decoding remains unsettled.
-
-## Current bootstrap boundary
-
-The current bootstrap has structural descriptors, abstract slots/facets, runtime
-subsets, canonical typed-text support, recursive groups and typed Body inspection.
-Ordinary numeric literals are exact Rationals; Int/Float/Float32 remain concrete
-carveouts of representable Rationals (with JS payloads in this bootstrap). Postfix
-`T?` is unwrapped `T | :None`. It still rejects syntax-overlapping UnionType
-members, admits raw Expression compatibility values, installs accessor products
-under the old type forms, and lacks the revised evidence checker. These are
-implementation facts, not new accepted constraints. Details are in
-[the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md).
+name. Automatic descriptor decoding remains unsettled. Raw patterns in general
+type-expression positions, public pattern data and open projection notation remain
+open; see [Migration and remaining work](specs/type-values.md#migration-and-remaining-work).
 
 [The roadmap](ROADMAP.md) schedules alignment. [The decision record](design/LANGUAGE-DECISIONS.md)
-contains 27 named design cases; [the suite specification](design/TEST-SUITE.md) defines
-how all cases execute. Assertions can be ordinary, legacy (must pass until retired),
-or todo (must fail; a pass demands removal of todo). The todo modifier also
-applies to whole tests, including their setup: the case runs as one expected-failure
-unit, and a fully passing case demands removal of its todo marker. Every value expectation checks the observed
-result type as well as value identity. No assertion grants proof facts to another.
-`just test-language` reports the current suite, including legacy checks and
-expected todo failures. Those outcomes do not implement the revised evidence or projection
-checker. Program CLI output uses the annotated REPL display.
+contains the named design cases; [the suite specification](design/TEST-SUITE.md)
+defines how cases execute. Assertions can be ordinary, legacy (must pass until
+retired), or todo (must fail; a pass demands removal of todo). The todo modifier
+also applies to whole tests, including their setup. Every value expectation checks
+the observed result type as well as value identity. No assertion grants proof facts
+to another.
