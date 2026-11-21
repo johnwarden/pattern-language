@@ -48,10 +48,13 @@ must test composition and state role differences explicitly.
   Explicit match projection crosses one concrete boundary; ordinary bindings and
   dispatch do not unwrap. Predicate evidence and single-arm coverage are required.
   These decisions are settled.
-- All numeric literals denote exact Rationals. 0f selects a Float64-rounded Rational;
-  it is not a Float64-typed value. Exact designation never silently rounds. Explicit
-  converters return fixed-precision values with their own operations.
-  `Number` will later be an abstract union of fixed-width number types.
+- All numeric literals denote exact `NumericValue`s (bootstrap name `Rational`
+  until rename). 0f selects a Float64-rounded magnitude, not a Float64-typed
+  value. Exact designation never silently rounds. Explicit converters return
+  fixed-precision values with their own operations. Destination unions:
+  `Real` (fixed non-complex), `Complex` (fixed complexes), `Number` = `Real | Complex`.
+  See [numeric literals](specs/numeric-literals-and-text.md) and
+  [fixed-precision numbers](specs/fixed-precision-numbers.md).
 - Primitive names such as `Int` are `ReservedSymbol` values. `True` and `False` are
   `Bool` values, the type of computed comparisons: `(1 == 2) == False` is `True`.
 - General abstract unions may have overlapping spellings. A separate unambiguous
@@ -91,10 +94,10 @@ ConstructedBy is tabled entirely until decoding its refinement values is solved.
 No replay/image/provenance model, arbitrary witness format or unchecked insist is
 selected. Ordinary where refinements remain in scope.
 
-IEEE signed zero, NaN identity/payloads and infinities remain deferred. Numeric
-family aliases and fixed-format rounding and overflow remain provisional.
-[Shortest exact Rational text](specs/rational-canonical-text.md) defines
-round-trip spelling for exact numeric values.
+IEEE signed zero, NaN identity/payloads and infinities remain deferred.
+Fixed integer overflow is panic/`E_OVERFLOW` for now; wrap/configurable
+overflow is deferred. [Numeric literals and exact text](specs/numeric-literals-and-text.md)
+defines destination atom spelling and canonical round-trip text.
 
 The concrete/abstract declaration forms already written in
 `tests/specification/` remain current implementation targets. Angle-bracket generic

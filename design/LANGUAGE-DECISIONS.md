@@ -97,13 +97,33 @@ recommendation to require explicit decoding remains a recommendation. There is n
 pending public `NumberLiteral(Float)` A/B redesign. **Sources:** A “Require
 Annotation…,” P “Raw Expressions…,” AR “Expression”; R2; L8; superseding L12.
 
-### D04. All numeric literals denote exact Rational values — confirmed
+### D04. All numeric literals denote exact NumericValue values — confirmed direction; spelling and unions updating
 
-Decimal, hexadecimal and binary spellings denote exact values. `0f` first selects the Float64-rounded value and denotes that value **as an exact Rational**, not as a Float64-typed value. Consequently `0f0.5` equals Rational 1/2 and can be designated into Decimal32. A stored result of `float64(...)`, by contrast, already has Float64 identity.
+Decimal, hexadecimal, binary, fraction and complex spellings denote exact values
+of the primitive `NumericValue` (bootstrap name still `Rational` until migration).
+`0f` first selects the Float64-rounded magnitude and denotes that value **as an
+exact `NumericValue`**, not as a Float64-typed value. Consequently `0f0.5` equals
+1/2 and can be designated into a decimal format when one exists. A stored result
+of `float64(...)`, by contrast, already has Float64 identity.
 
-Explicit converters such as `float32` and `float64` return their fixed-precision typed values. Exact designation must not silently round: `0.1 :: Float32` fails, whereas an explicit converter may round. Finite fixed-precision types are concrete carveouts of representable Rational values with their own operations. Cross-space operations/conversions must be explicit; base arithmetic is not inherited merely because a Rational representation exists.
+Explicit converters such as `float32` and `float64` return their fixed-precision
+typed values. Exact designation must not silently round: `0.1 :: Float32` fails,
+whereas an explicit converter may round. Finite fixed-precision types are
+prelude structs (concrete carveouts) over representable `NumericValue`s with
+their own operations. Mixed fixed-format arithmetic uses the promotion table in
+[fixed-precision numbers](../specs/fixed-precision-numbers.md): project to exact
+payloads, compute, then fit or round once. Cross-space conversion without that
+table remains explicit.
 
-Default short type names, the Number union's exact membership, complete format families and fixed-format rounding and overflow policies remain separate decisions. [Rational literals](../specs/rational-literals-and-text.md) give every exact Rational a source spelling, including `(1/3)` for one third. [Canonical text](../specs/rational-canonical-text.md) selects the shortest exact spelling across the numeric families. Exact Rational literals belong on Expression; there is no pending public `SyntaxNode` `NumberLiteral(Float)` A/B redesign (L8). **Sources:** P, N, K “Refinement Type vs Carveouts,” AR “0f” and “Rationals and IEEE Floats”; L8.
+Paren-free fraction and complex atoms, canonical text (including omitting a zero
+imaginary part), and the `Real` / `Complex` / `Number` unions are specified in
+[numeric literals](../specs/numeric-literals-and-text.md) and
+[fixed-precision numbers](../specs/fixed-precision-numbers.md). Fixed integer
+overflow panics with `E_OVERFLOW`; wrap/configurable overflow is deferred.
+Exact numeric literals belong on Expression; there is no pending public
+`SyntaxNode` `NumberLiteral(Float)` A/B redesign (L8). **Sources:** P, N, K
+“Refinement Type vs Carveouts,” AR “0f” and “Rationals and IEEE Floats”; L8;
+PR #86.
 
 ### D05. Structural descriptor identity remains the rule — confirmed/retained
 

@@ -47,6 +47,6 @@ milestones 5a.2 or 5b.
 - Numeric-width, lifting and public QuotedSymbol cases have their own vocabulary
   dependencies. C26 contains deliberate harness fixtures, not language backlog.
 - [Arithmetic precedence](https://github.com/johnwarden/pattern-language/blob/spec/arithmetic-precedence/specs/arithmetic-precedence.md) is under
-  review. The [Rational literals draft](../../specs/rational-literals-and-text.md)
+  review. The [Rational literals draft](../../specs/numeric-literals-and-text.md)
   covers exact source round trips and fraction spelling.
 - Foundation drafts #43, #44 and #45 remain parked.

@@ -25,7 +25,7 @@ If a spec only has ordinary fenced code, the runner evaluates it as a smoke
 test. Ordinary code after the last named test is checked the same way.
 `.test` files use named test blocks.
 
-Run one spec with `just test-language specs/rational-literals-and-text.md`.
+Run one spec with `just test-language specs/numeric-literals-and-text.md`.
 Failures report the Markdown file and line. IDs use the file path and title
 slug, omitting the `.test` extension for fixture files. Selecting a subset or
 reordering the cases preserves their IDs. The runner rejects duplicate title
