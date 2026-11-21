@@ -63,3 +63,63 @@ refinement evidence.
 cover normalization. Type macros remove repeated alternatives under ordinary type
 equality, including aliases and factory results. Explicit kind constructors
 retain their existing behavior.
+
+## Nested and peer option overloads
+
+With a known expected type `String??`, bare `:None` selects the outer absence.
+Explicit inner absence, `:None :: String?`, produces a different value inside
+`String??`. The
+[existing nested option test](../tests/bindings/nested-option-designation.test)
+covers this distinction for unions.
+
+With both the `String?` and `String??` overloads in scope, bare `:None` first
+selects the inner overload. With peer `String?` and `Int?` overloads, bare
+`:None` is ambiguous. An ascription selects either peer.
+
+Numeric `==` can hold across formats while overloads still distinguish the
+dispatched concrete type. Restored from the retired
+`2026-11-17-number-literals-and-strong-functional-equality-and-ambiguity.md`
+draft (ExactRational → `NumericValue`).
+
+```pattern
+todo test "Numeric equality can hold for values dispatched to different overloads"
+  def kind(n :: Int) "Int"
+  def kind(n :: NumericValue) "NumericValue"
+
+  x = 0 :: Int
+  assert x == 0
+  expect kind(x) is "Int"
+  expect kind(0) is "NumericValue"
+  expect kind(0 :: NumericValue) is "NumericValue"
+end
+
+todo test "A lone outer overload preserves the chosen absence"
+  def outer(v :: String??) v
+  outerNone = :None :: String??
+  innerNone = (:None :: String?) :: String??
+
+  expect outer(:None) is outerNone
+  expect outer(:None :: String?) is innerNone
+  assert outerNone !== innerNone
+end
+
+todo test "Inner overload takes priority for nested option designation"
+  def foo(v :: String??) "Outer"
+  def foo(v :: String?) "Inner"
+
+  expect foo(:None) is "Inner"
+  expect foo(:None :: String?) is "Inner"
+  expect foo(:None :: String??) is "Outer"
+  expect foo((:None :: String?) :: String??) is "Outer"
+end
+
+test "Peer overloads require a type for bare absence"
+  def foo(v :: String?) "String?"
+  def foo(v :: Int?) "Int?"
+
+  expect foo(:None) fails "ambiguous"
+  expect foo(:None :: String?) is "String?"
+  expect foo(:None :: Int?) is "Int?"
+end
+```
+

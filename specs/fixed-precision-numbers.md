@@ -384,6 +384,13 @@ todo test "Mixed ordering accepts the same exact value in every form"
   assert one < n
 end
 
+todo test "An Int refinement can order its input against an exact zero"
+  type PositiveInt pattern Int .where isPositive
+
+  assert (2 :: Int) .matches PositiveInt
+  assert not((0 :: Int) .matches PositiveInt)
+end
+
 todo test "Numeric equality applies to literal and bound NumericValues"
   n = 2 :: Int
   two = 2
@@ -406,3 +413,21 @@ todo test "Numeric ordering compares magnitudes across formats"
   assert i <= (1 :: Float64)
 end
 ```
+
+## Exact equality across Number members
+
+`Number` is `Real | Complex`. Exact equality compares concrete member identity
+inside that union: a `Number` holding `Float64` zero is exactly equal to a
+concrete `Float64` zero and exactly unequal to a `Number` holding `Int` zero.
+
+```pattern
+todo test "Exact equality compares Number with a concrete member"
+  (n :: Number) = 0 :: Float64
+  (i :: Number) = 0 :: Int
+  f = 0 :: Float64
+
+  assert n === f
+  assert i !== f
+end
+```
+
