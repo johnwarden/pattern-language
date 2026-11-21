@@ -11,7 +11,7 @@ Lesser open items remain below. Arm-separator change is deferred (`->` kept).
 Sketches in the background sections are indented (display-only). Executable
 contracts live as `todo` / ordinary fences under
 [specs/type-values.md](../specs/type-values.md#match-arm-domains) on this branch
-(rebased onto #88’s type-value spec).
+(based on `master` after the #88 squash).
 
 ## Decided
 
@@ -52,11 +52,10 @@ below); do not migrate arm syntax in this PR.
 
 ### Reconcile with #88
 
-This branch is **rebased onto** `spec/type-expressions-and-kinds` (#88). The
-disjoint-arm rule lives in [#88’s `specs/type-values.md`](../specs/type-values.md#match-arm-domains),
-replacing the former ordered first-match / arm-subtraction paragraph under
-Overload domains. Do not push to #88’s branch from this PR; once #88 merges to
-`master`, rebase this branch onto `master`.
+#88 is squash-merged on `master` (`e8ae940`). This branch is rebased onto that
+tip. The disjoint-arm rule lives in
+[`specs/type-values.md`](../specs/type-values.md#match-arm-domains), replacing
+the former ordered first-match / Peer-match stub under Overload domains.
 
 ## Migration inventory (existing overlapping / ordered-priority uses)
 
