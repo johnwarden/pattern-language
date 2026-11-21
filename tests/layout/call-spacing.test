@@ -1,7 +1,7 @@
 test "Tight application is a call"
   def f(x) x
 
-  expect f(1) is 1 :: Rational
+  expect f(1) is 1 :: NumericValue
 end
 
 test "A space before a call parenthesis is a syntax error"
@@ -13,7 +13,7 @@ test "Tight successive packs remain calls"
     x + y
   end
 
-  expect f(1)(2) is 3 :: Rational
+  expect f(1)(2) is 3 :: NumericValue
   expect parse(Code)("f(1) (2)") fails "a term cannot be followed by a spaced '('"
 end
 
@@ -23,7 +23,7 @@ end
 
 test "A keyword operand may begin with a grouping if it continues"
   assert (1 + 2) == 3
-  expect 1 + 2 is (3) :: Rational
+  expect 1 + 2 is (3) :: NumericValue
 end
 
 test "A wholly parenthesized keyword operand is a syntax error"
@@ -41,7 +41,7 @@ test "type form versus type call"
 end
 
 test "Infix operator then grouped operand stays valid"
-  expect 5 - (2) is 3 :: Rational
+  expect 5 - (2) is 3 :: NumericValue
   assert 1 == (1)
 end
 
@@ -58,9 +58,9 @@ test "Pack after assignment, arrow, colon, or comma stays valid"
   (c, d) = f(5)
   (e, nested) = (1, (2))
 
-  expect a + b is 3 :: Rational
-  expect c + d is 10 :: Rational
-  expect e + nested is 3 :: Rational
+  expect a + b is 3 :: NumericValue
+  expect c + d is 10 :: NumericValue
+  expect e + nested is 3 :: NumericValue
 end
 
 test "Quoted spaced application is a syntax error"
@@ -77,7 +77,7 @@ test "A pack body after a micro signature is indented, not spaced"
   end
   (a, b) = pair()
 
-  expect a + b is 3 :: Rational
+  expect a + b is 3 :: NumericValue
   expect parse(Code)("def pair() (1, 2)") fails "a term cannot be followed by a spaced '('"
 end
 
@@ -85,7 +85,7 @@ test "Same-indent following parenthesis is another row"
   a = 1
   (2)
 
-  expect a is 1 :: Rational
+  expect a is 1 :: NumericValue
 end
 
 test "Infix .matches then grouped type stays valid"
@@ -96,7 +96,7 @@ end
 
 test "A grouped expected result may be indented after result"
   expect 1 + 2 is
-    (3) :: Rational
+    (3) :: NumericValue
   end
 end
 
@@ -119,6 +119,6 @@ end
 test "Removing the space from a spaced call is a different tree, not a second valid parse"
   def f(x) x
 
-  expect f(1) is 1 :: Rational
+  expect f(1) is 1 :: NumericValue
   expect parse(Code)("f (1)") fails "a term cannot be followed by a spaced '('"
 end

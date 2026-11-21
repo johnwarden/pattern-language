@@ -75,7 +75,7 @@ grep -q '/custom$' <<<"$grammar_out" &&
 list_out="$(just test-language --list)"
 grep -q 'bindings/defaults' <<<"$list_out" ||
 	fail "just test-language --list did not list cases"
-grep -q 'specs/numeric-literals-and-text.md#fraction-literals-denote-exact-reduced-rationals' <<<"$list_out" ||
+grep -q 'specs/numeric-literals-and-text.md#fraction-literals-denote-exact-reduced-numericvalues' <<<"$list_out" ||
 	fail "just test-language --list did not discover specification tests"
 grep -q 'unknown option --' <<<"$list_out" &&
 	fail "just test-language --list forwarded an extra --"
@@ -95,7 +95,7 @@ grep -q '0 tests failed' <<<"$source_file_out" ||
 	fail "just test source file reported failures: $source_file_out"
 
 spec_out="$(just test specs/numeric-literals-and-text.md)"
-grep -q 'PASS specs/numeric-literals-and-text.md#fraction-literals-denote-exact-reduced-rationals' <<<"$spec_out" ||
+grep -q 'PASS specs/numeric-literals-and-text.md#fraction-literals-denote-exact-reduced-numericvalues' <<<"$spec_out" ||
 	fail "just test did not run a Markdown specification"
 
 source_dir_out="$(just test tests/examples)"
@@ -125,7 +125,7 @@ host_test_out="$(just test test/indent-prefix.test.ts)"
 grep -q 'fail 0' <<<"$host_test_out" ||
 	fail "just test no longer runs a host TypeScript test: $host_test_out"
 
-printf 'test "Failing"\n  expect 1 is 2 :: Rational\nend\n' >"$tmp/failing.test"
+printf 'test "Failing"\n  expect 1 is 2 :: NumericValue\nend\n' >"$tmp/failing.test"
 if just test "$tmp/failing.test" >"$tmp/failing.out" 2>&1; then
 	fail "just test must fail when a source assertion fails"
 fi
@@ -141,7 +141,7 @@ repl_out="$(printf ':Widget\n\n:quit\n' | just repl)"
 grep -q 'Widget :: UpperCamelSymbol' <<<"$repl_out" ||
 	fail "just repl unexpected output: $repl_out"
 ready_out="$(printf '1\n:quit\n' | just repl)"
-grep -q '1 :: Rational' <<<"$ready_out" ||
+grep -q '1 :: NumericValue' <<<"$ready_out" ||
 	fail "just repl did not submit a finished form on its last line: $ready_out"
 
 command -v timeout >/dev/null || fail "timeout is required for watch smoke tests"

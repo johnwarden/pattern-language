@@ -74,8 +74,8 @@ features or todo assertions. Expected values remain explicit data.
 
 | Former host observations | Source home | Retained host boundary |
 | --- | --- | --- |
-| Prefix negation, parenthesized negation, subtraction and a negated right operand | tests/numeric/minus.test | Four exact parser/normal-form assertions remain in test/minus.test.ts |
-| Prefix/infix minus Code text round trips | tests/numeric/minus.test | All six direct Interpreter.evaluateCode checks remain; source tests do not substitute reading stored Code for executing it |
+| Prefix negation, parenthesized negation, subtraction and a negated right operand | specs/numeric-literals-and-text.md#signed-values-and-prefix-negation | Four exact parser/normal-form assertions remain in test/minus.test.ts |
+| Prefix/infix minus Code text round trips | specs/numeric-literals-and-text.md#signed-values-and-prefix-negation | All six direct Interpreter.evaluateCode checks remain; source tests do not substitute reading stored Code for executing it |
 | Type-valued captures in factories, bindings, labeled parameters and match arms | tests/bindings/type-captures.test | Invalid-capture diagnostics and bare UpperCamel reference rules remain in test/titlecase-captures.test.ts |
 | Type-valued accessors and structural type equality | tests/bindings/type-captures.test | Macro hygiene and capture-validation diagnostics remain in test/titlecase-captures.test.ts |
 
@@ -297,16 +297,16 @@ Those two host files are gone. Exact diagnostic codes live in the source cases. 
 The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) marked
 `test/rational-primitives.test.ts` as mixed numeric. Float32 membership already
 lived in `tests/specification/primitives.test` C03. Unique remaining evaluations
-now run there and in `tests/numeric/exact-values.test`. Expected results are
+now run there and in [the numeric literal spec](../specs/numeric-literals-and-text.md#exact-magnitudes-and-code-identity). Expected results are
 authored data. IEEE/family/edge policy and D07 integer designation were not
 chosen by this migration.
 
 | Former host block | Current source case(s) | Coverage retained |
 | --- | --- | --- |
-| Float32 membership is exact representability, not finite-after-fround | specification/primitives#c03-exact-designation-differs-from-rounding already covered `0.5` / `0.1` `.matches Float32` | — |
-| Float membership and `0.5 :: Float` designation | specification/primitives#c03-exact-designation-differs-from-rounding | Unique `Float` lines; host display of the same programs removed |
+| Float32 membership is exact representability, not finite-after-fround | specs/fixed-precision-numbers.md#bootstrap-format-conversion-contracts already covered `0.5` / `0.1` `.matches Float32` | — |
+| Float membership and `0.5 :: Float` designation | specs/fixed-precision-numbers.md#bootstrap-format-conversion-contracts | Unique `Float` lines; host display of the same programs removed |
 | Rational-to-binary64 conversion keeps the smallest subnormal and small normals | — | Direct `float64ToRational` / `rationalToNumber` helpers stay |
-| Numeric syntax encoding keeps the exact Float64-rounded Rational | numeric/exact-values#exact-and-rounded-literals-remain-distinct-through-code-text covers value/Code distinctions | The host test checks the exact `syntaxTree(0f0.1)` payload. |
+| Numeric syntax encoding keeps the exact Float64-rounded Rational | specs/numeric-literals-and-text.md#exact-magnitudes-and-code-identity covers value/Code distinctions | The host test checks the exact `syntaxTree(0f0.1)` payload. |
 | Non-dyadic Rationals stay exact and round-trip | [Rational literals spec](../specs/numeric-literals-and-text.md#typed-text) | Host construction and destructuring preserve the exact `NumberLiteral` payload. |
 | `0.5 :: Int` remains a generic mismatch until D07 integer designation | — | Exact `E_PATTERN_MISMATCH` stays until D07 |
 
@@ -317,7 +317,7 @@ now check printing and reading an exact fraction.
 ## Numeric destination-contract correction
 
 The audited `tests/numeric/syntax-tree.test` is replaced by
-[exact-values.test](../tests/numeric/exact-values.test). Native schema/node
+[numeric literal contracts](../specs/numeric-literals-and-text.md#exact-magnitudes-and-code-identity). Native schema/node
 adapters are tested on host, alongside the existing syntax-inspection suite.
 This batch changes no runtime behavior, todo or legacy markers and chooses no
 new numeric spelling.
@@ -467,7 +467,7 @@ Host remainder in `test/type-atoms.test.ts` is `inspect` REPL abbreviation, `par
 | examples/suite/verticalBody.pattern | examples/grammars#vertical-spreading-inspect-a-nested-body |
 | examples/suite/verticalMatrix.pattern | examples/grammars#vertical-spreading-two-dimensional-lists |
 | examples/suite/verticalTodo.pattern | examples/grammars#vertical-spreading-todolist |
-| test/cases/arithmetic.pattern | conformance/expressions#arithmetic |
+| test/cases/arithmetic.pattern | specs/fixed-precision-numbers.md#bootstrap-int-addition-preserves-its-operand-format |
 | test/cases/dotIsFunctionCall.pattern | conformance/expressions#dot-is-function-call |
 | test/cases/emptyCall.pattern | conformance/expressions#empty-call |
 | test/cases/explicitNamedFunctionParameter.pattern | conformance/expressions#explicit-named-function-parameter |

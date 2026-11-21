@@ -1,11 +1,8 @@
 import type { Pattern } from "./pattern.ts";
 import type { Value, TypeValue } from "./values.ts";
-import { unwrap, equal, asRational } from "./values.ts";
+import { unwrap, equal, asRational, asNumeric } from "./values.ts";
 import { LanguageError } from "./syntax.ts";
-import {
-  primitiveNames,
-  ordinarySymbolCategory,
-} from "./primitive-names.ts";
+import { primitiveNames, ordinarySymbolCategory } from "./primitive-names.ts";
 
 type P = Pattern<Value>;
 type Answer = "yes" | "no" | "unknown";
@@ -32,7 +29,7 @@ const numeric = new Set([
   "Float32",
   "Float64",
   "Num",
-  "Rational",
+  "NumericValue",
 ]);
 const symbols = new Set([
   "Symbol",
@@ -56,6 +53,8 @@ export function patternOverlap(left: P, right: P): Answer {
   function primitiveAccept(name: string, raw: Value): boolean | undefined {
     const value = unwrap(raw);
     if (name === "Any" || name === "Expression" || name === "Body") return true;
+    if (name === "NumericValue" || name === "rational")
+      return !!asNumeric(value);
     if (numeric.has(name)) {
       const r = asRational(value);
       if (!r) return false;
@@ -75,7 +74,8 @@ export function patternOverlap(left: P, right: P): Answer {
       return value.kind === "symbol" && primitiveNames.has(value.name);
     if (name === "Symbol")
       return (
-        value.kind === "symbol" && ordinarySymbolCategory(value.name) !== undefined
+        value.kind === "symbol" &&
+        ordinarySymbolCategory(value.name) !== undefined
       );
     if (name.endsWith("Symbol"))
       return (

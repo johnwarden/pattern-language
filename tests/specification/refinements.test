@@ -1,7 +1,7 @@
 test "C07 refinement evidence preserves the base value"
   todo assert
     nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
+    type NonZero refinement NumericValue .where nonZero
     def keep(x :: NonZero) x
     x = 0.5
     (nonZero(x))
@@ -9,7 +9,7 @@ test "C07 refinement evidence preserves the base value"
 
   todo assert
     nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
+    type NonZero refinement NumericValue .where nonZero
     def keep(x :: NonZero) x
     x = 0.5
     assert nonZero(x)
@@ -19,7 +19,7 @@ test "C07 refinement evidence preserves the base value"
 
   todo expect
     nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
+    type NonZero refinement NumericValue .where nonZero
     def keep(x :: NonZero) x
     x = 0.5
     assert nonZero(x)
@@ -31,7 +31,7 @@ test "C07 refinement evidence preserves the base value"
       0.5
     ) :: (
       nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
+      type NonZero refinement NumericValue .where nonZero
       def keep(x :: NonZero) x
       x = 0.5
       assert nonZero(x)
@@ -45,9 +45,9 @@ end
 test "C08 todo assert supplies no refinement evidence"
   todo expect
     nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
+    type NonZero refinement NumericValue .where nonZero
     def keep(x :: NonZero) x
-    def unchecked(x :: Rational)
+    def unchecked(x :: NumericValue)
       keep(x)
     end
     unchecked(1)
@@ -57,8 +57,8 @@ end
 test "C09 base and refinement overloads overlap"
   todo expect
     nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
-    def choose(x :: Rational) "base"
+    type NonZero refinement NumericValue .where nonZero
+    def choose(x :: NumericValue) "base"
     def choose(x :: NonZero) "refined"
     choose(1)
   fails "overlapping base and refinement overload domains"
@@ -67,10 +67,10 @@ end
 test "C10 unrelated domains can coexist"
   todo expect
     nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
+    type NonZero refinement NumericValue .where nonZero
     def choose(x :: NonZero) "number"
     def choose(x :: String) "string"
-    def checked(x :: Rational)
+    def checked(x :: NumericValue)
       if nonZero(x) choose(x) else "zero"
     end
     checked(1)
@@ -79,10 +79,10 @@ test "C10 unrelated domains can coexist"
       "number"
     ) :: (
       nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
+      type NonZero refinement NumericValue .where nonZero
       def choose(x :: NonZero) "number"
       def choose(x :: String) "string"
-      def checked(x :: Rational)
+      def checked(x :: NumericValue)
         if nonZero(x) choose(x) else "zero"
       end
       String
@@ -91,10 +91,10 @@ test "C10 unrelated domains can coexist"
 
   todo expect
     nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
+    type NonZero refinement NumericValue .where nonZero
     def choose(x :: NonZero) "number"
     def choose(x :: String) "string"
-    def checked(x :: Rational)
+    def checked(x :: NumericValue)
       if nonZero(x) choose(x) else "zero"
     end
     checked(0)
@@ -103,10 +103,10 @@ test "C10 unrelated domains can coexist"
       "zero"
     ) :: (
       nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
+      type NonZero refinement NumericValue .where nonZero
       def choose(x :: NonZero) "number"
       def choose(x :: String) "string"
-      def checked(x :: Rational)
+      def checked(x :: NumericValue)
         if nonZero(x) choose(x) else "zero"
       end
       String
@@ -115,10 +115,10 @@ test "C10 unrelated domains can coexist"
 
   todo expect
     nonZero = n -> (n != 0)
-    type NonZero refinement Rational .where nonZero
+    type NonZero refinement NumericValue .where nonZero
     def choose(x :: NonZero) "number"
     def choose(x :: String) "string"
-    def checked(x :: Rational)
+    def checked(x :: NumericValue)
       if nonZero(x) choose(x) else "zero"
     end
     choose("hello")
@@ -127,10 +127,10 @@ test "C10 unrelated domains can coexist"
       "string"
     ) :: (
       nonZero = n -> (n != 0)
-      type NonZero refinement Rational .where nonZero
+      type NonZero refinement NumericValue .where nonZero
       def choose(x :: NonZero) "number"
       def choose(x :: String) "string"
-      def checked(x :: Rational)
+      def checked(x :: NumericValue)
         if nonZero(x) choose(x) else "zero"
       end
       String

@@ -2,7 +2,7 @@
 # test/expect-predicates.test.ts runs this file and checks every report.
 
 test "Equality expectation uses is"
-  expect 1 is 1 :: Rational
+  expect 1 is 1 :: NumericValue
 end
 
 test "Equality expectation without a type uses the subject type"

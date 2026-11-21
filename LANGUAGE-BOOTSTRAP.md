@@ -9,8 +9,8 @@ self-hosted or move expansion ahead of runtime execution; those are later milest
 This file describes the unchanged bootstrap protocols and executable schemas.
 The revised language contract is in [the type-value spec](specs/type-values.md) and
 [VALUE-SPACES.md](VALUE-SPACES.md); it does not require this transport taxonomy to
-become permanent user-facing syntax. Exact Rational primitives, declaration-only
-accessors, general unions and evidence-based checking are planned alignment work.
+become permanent user-facing syntax. The bootstrap reads exact `NumericValue` literals. Declaration-only
+accessors and evidence-based checking are planned alignment work.
 
 The next small milestone is [the Test DSL conformance suite](design/TEST-SUITE.md):
 revised checks, pending forms, C01–C27 and cogent migrations from TypeScript. It uses
@@ -71,7 +71,7 @@ items and capture maps. Transport makes these distinctions explicit:
 | AST variant | Data form |
 | --- | --- |
 | Symbol | `Name(text,quoted)` |
-| Literal | `NumberLiteral(Rational)` or `StringLiteral(text)` |
+| Literal | `NumberLiteral(NumericValue)` or `StringLiteral(text)` |
 | Application | `Apply(head,[Field(label,value),...])` |
 | Pack | `Pack([Field(label,value),...])` |
 | Quote | `Quote(tree)` |

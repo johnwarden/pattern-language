@@ -56,7 +56,7 @@ Every-type coverage, portable predicates and closed callable representations rem
 
 ## Small semantic boundaries
 
-Exact Rational literals identify numeric values. Fixed-precision carveouts have their
+Literals denote exact `NumericValue` values. Fixed-precision carveouts have their
 own operations; exact designation cannot silently round. Explicit converters return
 typed values. IEEE special identities remain deferred.
 

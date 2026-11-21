@@ -19,7 +19,7 @@ Boolean-assertion cleanup remain.
 
 ## Numeric correction: #66
 
-[Exact numeric values and Code text](../tests/numeric/exact-values.test) now
+[Exact numeric values and Code text](../specs/numeric-literals-and-text.md#exact-magnitudes-and-code-identity) now
 replace source tests of bootstrap `syntaxTree` and `NumberLiteral` encodings.
 Host checks in `test/rational-primitives.test.ts` retain native helpers and
 display goldens. Quoted- and value-tree print→parse transport lives in

@@ -41,7 +41,7 @@ test("CLI recursively finds .test files and reports multiple cases and expected 
     for (const group of ["a", "b"]) mkdirSync(join(dir, group));
     writeFileSync(
       join(dir, "a", "same.test"),
-      'test "Value"\n todo assert missing()\n expect 4 is 4 :: Rational\nend\ntest "Future"\n todo assert missing()\nend',
+      'test "Value"\n todo assert missing()\n expect 4 is 4 :: NumericValue\nend\ntest "Future"\n todo assert missing()\nend',
     );
     writeFileSync(
       join(dir, "b", "same.test"),
@@ -69,9 +69,9 @@ test("CLI recursively finds .test files and reports multiple cases and expected 
 test("CLI success and failure exit codes reflect active outcomes", () =>
   temporary((dir) => {
     const file = join(dir, "case.test");
-    writeFileSync(file, 'test "Value"\n expect 4 is 4 :: Rational\nend');
+    writeFileSync(file, 'test "Value"\n expect 4 is 4 :: NumericValue\nend');
     assert.equal(invoke(file).status, 0);
-    writeFileSync(file, 'test "Value"\n expect 4 is 5 :: Rational\nend');
+    writeFileSync(file, 'test "Value"\n expect 4 is 5 :: NumericValue\nend');
     const failure = invoke(file);
     assert.equal(failure.status, 1);
     assert.match(failure.stdout, /comparison: expected 5/);
@@ -101,7 +101,7 @@ test("CLI discovers nested tests and reports malformed files alongside valid cas
     writeFileSync(join(inbox, "broken.test"), 'test "Broken"\n  (\nend');
     writeFileSync(
       join(dir, "valid.test"),
-      'test "Valid"\n  expect 4 is 4 :: Rational\nend',
+      'test "Valid"\n  expect 4 is 4 :: NumericValue\nend',
     );
     assert.deepEqual(Object.keys(collectTestFiles([dir])), [
       "inbox/broken.test",
@@ -352,7 +352,7 @@ test("CLI runs and lists a file containing a single todo test", () =>
     const file = join(dir, "future.test");
     writeFileSync(
       file,
-      'todo test "Future"\n  assert True\n  expect missing() is 1 :: Rational\nend',
+      'todo test "Future"\n  assert True\n  expect missing() is 1 :: NumericValue\nend',
     );
     const listed = invoke("--list", file);
     assert.equal(listed.status, 0, listed.stderr);

@@ -10,10 +10,11 @@ import {
   isRational,
   reduceRational,
   float64ToRational,
-  formatRational,
-  compareRationals,
+  formatNumeric,
+  isNumeric,
+  compareNumeric,
 } from "./rational.ts";
-import type { Rational } from "./rational.ts";
+import type { ExactNumeric, Rational } from "./rational.ts";
 export type { Rational } from "./rational.ts";
 export {
   isRational,
@@ -25,9 +26,12 @@ export {
   isExactFloat64,
   compareRationals,
   parseNumericSpelling,
-  rationalFromSyntax,
+  numericFromSyntax,
   formatRational,
+  formatNumeric,
+  isNumeric,
   syntaxNumber,
+  compareNumeric,
   syntaxFromNumeric,
   addRationals,
   subRationals,
@@ -121,7 +125,7 @@ export type Value =
   | { kind: "code"; type: TypeValue; tree: Syntax; portable: boolean }
   | { kind: "slot"; type: TypeValue; value: Value }
   | { kind: "symbol"; name: string }
-  | { kind: "literal"; value: number | string | Rational }
+  | { kind: "literal"; value: number | string | ExactNumeric }
   | { kind: "term"; head: Value; body: Field<Value>[] }
   | { kind: "postfix"; operator: Value; operand: Value }
   | { kind: "overload"; name: string; candidates: Candidate[] }
@@ -143,12 +147,16 @@ export const valRational = (n: bigint, d = 1n): Value => ({
   kind: "literal",
   value: reduceRational(n, d),
 });
-export function asRational(value: Value): Rational | undefined {
+export function asNumeric(value: Value): ExactNumeric | undefined {
   value = unwrap(value);
   if (value.kind !== "literal") return;
-  if (isRational(value.value)) return value.value;
+  if (isNumeric(value.value)) return value.value;
   if (typeof value.value === "number" && Number.isFinite(value.value))
     return float64ToRational(value.value);
+}
+export function asRational(value: Value): Rational | undefined {
+  const numeric = asNumeric(value);
+  return numeric && isRational(numeric) ? numeric : undefined;
 }
 export function integerValue(value: Value): number | undefined {
   const r = asRational(value);
@@ -205,7 +213,7 @@ export class Scope {
   }
 }
 export const valSymbol = (name: string): Value => ({ kind: "symbol", name });
-export const valLiteral = (value: string | number | Rational): Value => ({
+export const valLiteral = (value: string | number | ExactNumeric): Value => ({
   kind: "literal",
   value,
 });
@@ -235,8 +243,8 @@ export function display(v: Value): string {
     case "literal":
       return typeof v.value === "string"
         ? displayString(v.value)
-        : isRational(v.value)
-          ? formatRational(v.value)
+        : isNumeric(v.value)
+          ? formatNumeric(v.value)
           : String(v.value);
     case "symbol":
       return v.name;
@@ -416,15 +424,15 @@ export function compare(a: Value, b: Value): number {
   };
   const rank = (v: Value) =>
     v.kind === "literal"
-      ? typeof v.value === "number" || isRational(v.value)
+      ? typeof v.value === "number" || isNumeric(v.value)
         ? 1
         : 2
       : ranks[v.kind];
   if (rank(a) !== rank(b)) return rank(a) < rank(b) ? -1 : 1;
   if (a.kind === "literal" && b.kind === "literal") {
-    const ra = asRational(a),
-      rb = asRational(b);
-    if (ra && rb) return compareRationals(ra, rb);
+    const ra = asNumeric(a),
+      rb = asNumeric(b);
+    if (ra && rb) return compareNumeric(ra, rb);
     return a.value === b.value ? 0 : a.value < b.value ? -1 : 1;
   }
   if (a.kind === "symbol" && b.kind === "symbol")

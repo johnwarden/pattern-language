@@ -38,7 +38,7 @@ end
 test "Named result capture"
   (x, foo: String) = (1, foo: "bar")
 
-  expect x is 1 :: Rational
+  expect x is 1 :: NumericValue
   expect foo is "bar" :: String
   (x, foo)
 end

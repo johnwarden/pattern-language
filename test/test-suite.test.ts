@@ -75,7 +75,7 @@ end`,
 });
 test("expected values are data rather than expressions to evaluate", () => {
   assert.equal(
-    runTest(sample("x = 3\nx + 1", "is 4 :: Rational")).passed,
+    runTest(sample("x = 3\nx + 1", "is 4 :: NumericValue")).passed,
     true,
   );
   assert.equal(
@@ -91,7 +91,7 @@ test("expected values are data rather than expressions to evaluate", () => {
 test("nested annotation payloads remain data in the test DSL", () => {
   const [value] = loadTests({
     "inner.test": `test "Inner"
-  type Box concrete :Box(Rational)
+  type Box concrete :Box(NumericValue)
   type Outer concrete Box | :None
   (x :: Outer) = Box(2) :: Box
   expect x is (Box(1 + 1) :: Box) :: Outer
@@ -127,8 +127,8 @@ test("each is expectation requires the stated type and canonical data spelling",
 });
 test("one result is required; multiple and labeled returns must be destructured", () => {
   for (const [body, clause] of [
-    ["()", "is 1 :: Rational"],
-    ["(1, 2)", "is 1 :: Rational"],
+    ["()", "is 1 :: NumericValue"],
+    ["(1, 2)", "is 1 :: NumericValue"],
     ["(color: :Red)", "is Red :: UpperCamelSymbol"],
   ])
     assert.match(
@@ -137,7 +137,7 @@ test("one result is required; multiple and labeled returns must be destructured"
     );
   const result = run(`test "Separate fields"
     (n, color: c) = (1, color: :Red)
-    expect n is 1 :: Rational
+    expect n is 1 :: NumericValue
     expect c is Red :: UpperCamelSymbol
 end`);
   assert.equal(result.passed, true, result.message);
@@ -221,20 +221,20 @@ test("fixture types are visible but subject-local declarations do not escape", (
 });
 test("source extraction retains comments, blank lines and nested end markers", () => {
   const body = "# comment\ndef f(x)\n  x + 1\nend\n\nf(2)";
-  const value = sample(body, "is 3 :: Rational");
+  const value = sample(body, "is 3 :: NumericValue");
   assert.equal(value.source, body);
   const withSetup = loadTests({
     "comments.test":
-      'test "Setup comments"\n  # kept in the editor\n  def f(x) x + 1\n  expect f(2) is 3 :: Rational\nend',
+      'test "Setup comments"\n  # kept in the editor\n  def f(x) x + 1\n  expect f(2) is 3 :: NumericValue\nend',
   })[0];
   assert.equal(withSetup.source, "# kept in the editor\ndef f(x) x + 1\nf(2)");
   assert.equal(runTest(value).passed, true);
 });
 test("repeated execution has fresh fixture and assertion scopes", () => {
-  const value = sample("x = x + 1\nx", "is 2 :: Rational");
+  const value = sample("x = x + 1\nx", "is 2 :: NumericValue");
   assert.equal(runTest(value, "x = 1").passed, true);
   assert.equal(runTest(value, "x = 1").passed, true);
-  assert.equal(runTest(sample("x", "is 1 :: Rational")).passed, false);
+  assert.equal(runTest(sample("x", "is 1 :: NumericValue")).passed, false);
 });
 test("sidefix fields preserve deferred expected names inside typed quotes", () => {
   const i = new Interpreter();
@@ -333,7 +333,7 @@ test("a fulfilled todo fails and asks for removal, including expected-error asse
 test("legacy assertions must pass and never suppress failures", () => {
   assert.equal(
     run(
-      'test "Legacy"\n legacy expect 1 is 1 :: Rational\n legacy assert True\nend',
+      'test "Legacy"\n legacy expect 1 is 1 :: NumericValue\n legacy assert True\nend',
     ).passed,
     true,
   );
@@ -357,7 +357,7 @@ end`);
 
 test("todo operands resolve and execute without leaking bindings or definitions", () => {
   const r = run(
-    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  end\n  todo expect\n    def local() 99\n    macro :future e :: Expression Code$` $(e)\n    missing()\n  is 0 :: Expression\n  expect local() fails "E_UNBOUND_NAME"\n  expect x is 3 :: Rational\nend',
+    'test "Isolated"\n  x = 3\n  todo assert\n    x = 9\n    False\n  end\n  todo expect\n    def local() 99\n    macro :future e :: Expression Code$` $(e)\n    missing()\n  is 0 :: Expression\n  expect local() fails "E_UNBOUND_NAME"\n  expect x is 3 :: NumericValue\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.equal(
@@ -410,8 +410,8 @@ test("setup is shared only within its case, while individual subjects remain iso
     assert.equal(r.passed, true, r.message);
   }
 });
-test("0f source denotes a Float64-rounded Rational", () => {
-  const r = runTest(sample("0x1.999999999999Ap-4", "is 0f0.1 :: Rational"));
+test("0f source denotes a Float64-rounded NumericValue", () => {
+  const r = runTest(sample("0x1.999999999999Ap-4", "is 0f0.1 :: NumericValue"));
   assert.equal(r.passed, true, r.message);
 });
 test("assertions require a positional Bool result and preserve ordinary operator lexing", () => {
@@ -437,23 +437,23 @@ test("assert checks the Bool value space rather than a same-spelled constructor"
 });
 test("each expectation has its own actual and expected output", () => {
   const r = run(
-    'test "Outputs"\n expect 1 is 1 :: Rational\n expect :Widget is Widget :: UpperCamelSymbol\nend',
+    'test "Outputs"\n expect 1 is 1 :: NumericValue\n expect :Widget is Widget :: UpperCamelSymbol\nend',
   );
   assert.equal(r.passed, true, r.message);
   assert.deepEqual(
     r.checks.map((c) => c.actual),
-    ["1 :: Rational", "Widget :: UpperCamelSymbol"],
+    ["1 :: NumericValue", "Widget :: UpperCamelSymbol"],
   );
   assert.deepEqual(
     r.checks.map((c) => c.expected),
-    ["1 :: Rational", "Widget :: UpperCamelSymbol"],
+    ["1 :: NumericValue", "Widget :: UpperCamelSymbol"],
   );
 });
 
 test("nested annotation payloads remain data in the test DSL", () => {
   const [value] = loadTests({
     "inner.test": `test "Inner"
-  type Box concrete :Box(Rational)
+  type Box concrete :Box(NumericValue)
   type Outer concrete Box | :None
   (x :: Outer) = Box(2) :: Box
   expect x is (Box(1 + 1) :: Box) :: Outer

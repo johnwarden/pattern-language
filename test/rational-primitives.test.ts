@@ -5,7 +5,7 @@ import { float64ToRational, rationalToNumber } from "../src/rational.ts";
 
 const run = (s: string) => displayResults(new Interpreter().run(s));
 
-test("Rational-to-binary64 conversion keeps the smallest subnormal and small normals", () => {
+test("NumericValue-to-binary64 conversion keeps the smallest subnormal and small normals", () => {
   const minSub = Number.MIN_VALUE;
   const smallNormal = 2 ** -1022;
   assert.equal(rationalToNumber(float64ToRational(minSub)), minSub);
@@ -13,7 +13,7 @@ test("Rational-to-binary64 conversion keeps the smallest subnormal and small nor
   assert.equal(rationalToNumber(float64ToRational(0.1)), 0.1);
 });
 
-test("numeric syntax encoding keeps the exact Float64-rounded Rational", () => {
+test("numeric syntax encoding keeps the exact Float64-rounded NumericValue", () => {
   const setup = "NumberLiteral(n) = syntaxTree(0f0.1)\n";
   assert.equal(run(setup + "n == 0x1.999999999999Ap-4"), "True");
   assert.equal(run(setup + "n != 0.1"), "True");
@@ -38,6 +38,13 @@ test("numeric syntax payloads preserve large integers and unary-minus structure"
 test("nonterminating Rationals retain their exact numeric syntax payload", () => {
   assert.equal(
     run("NumberLiteral(n) = NumberLiteral((1 / 3) * 1)\n(n * 3) == 1"),
+    "True",
+  );
+});
+
+test("a complex NumberLiteral transports both exact coefficients", () => {
+  assert.equal(
+    run('NumberLiteral(n) = syntaxTree(:(-1.25+0.5i))\n(n == (-1.25+0.5i))'),
     "True",
   );
 });

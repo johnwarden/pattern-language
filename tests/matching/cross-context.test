@@ -107,5 +107,5 @@ test "Quoted root heads agree in a macro signature"
 
   expect
     take 1 | 2
-  is 1 :: Rational
+  is 1 :: NumericValue
 end

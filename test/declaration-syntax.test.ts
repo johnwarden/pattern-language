@@ -47,7 +47,7 @@ test("type declarations share Definition elaboration while retaining source spel
   for (const kind of ["concrete", "abstract"]) {
     const source =
       kind === "concrete"
-        ? "type Rectangle concrete Rect(w :: Rational, h :: Rational)\nRectangle"
+        ? "type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)\nRectangle"
         : "type Either abstract Float32 | Float64\nEither";
     const tree = grammar.parse(source, "program", "declarations.pattern");
     assert.equal(tree.kind, "block");
@@ -74,7 +74,7 @@ test("type declarations share Definition elaboration while retaining source spel
 
 test("named type declarations retain the required final-result rule", () => {
   for (const source of [
-    "type Rectangle concrete Rect(Rational, Rational)",
+    "type Rectangle concrete Rect(NumericValue, NumericValue)",
     "type Either abstract Float32 | Float64",
   ]) {
     assert.throws(
@@ -89,14 +89,14 @@ test("named type declarations retain the required final-result rule", () => {
 
 test("indented concrete declarations require and preserve their aligned end", () => {
   const source =
-    "type Rectangle concrete\n  Rect(w :: Rational, h :: Rational)\nend\nRectangle";
+    "type Rectangle concrete\n  Rect(w :: NumericValue, h :: NumericValue)\nend\nRectangle";
   const interpreter = new Interpreter();
   const expected = interpreter.inspect(interpreter.run(source));
   assert.equal(
     expected,
     new Interpreter().inspect(
       new Interpreter().run(
-        "def Rectangle type Rect(w :: Rational, h :: Rational)\nRectangle",
+        "def Rectangle type Rect(w :: NumericValue, h :: NumericValue)\nRectangle",
       ),
     ),
   );
@@ -113,7 +113,7 @@ test("indented concrete declarations require and preserve their aligned end", ()
   assert.throws(
     () =>
       new Interpreter().run(
-        "type Rectangle concrete\n  Rect(w :: Rational, h :: Rational)\nRectangle",
+        "type Rectangle concrete\n  Rect(w :: NumericValue, h :: NumericValue)\nRectangle",
       ),
     (error: unknown) =>
       error instanceof LanguageError && error.diagnostic.code === "E_BLOCK_END",
@@ -124,7 +124,7 @@ test("unimplemented declaration signatures are rejected rather than becoming fun
   assert.throws(
     () =>
       new Interpreter().run(
-        "type rectangle concrete Rect(Rational, Rational)\nrectangle",
+        "type rectangle concrete Rect(NumericValue, NumericValue)\nrectangle",
       ),
     /type declaration requires a bare UpperCamel name/,
   );
@@ -156,7 +156,7 @@ test("the published default grammar supports the same declaration forms", () => 
   assert.equal(
     interpreter.inspect(
       interpreter.run(
-        "type Rectangle concrete Rect(w :: Rational, h :: Rational)\nRectangle == (concrete Rect(Rational, Rational))",
+        "type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)\nRectangle == (concrete Rect(NumericValue, NumericValue))",
       ),
     ),
     "True :: Bool",

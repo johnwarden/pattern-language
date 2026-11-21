@@ -48,15 +48,15 @@ end
 test "Failed dispatch candidates do not evaluate defaults"
   def f(A(y: Int = 1 / 0), x: Int) 1
   def f(A(), x: String) 2
-  expect f(A(), x: "hello") is 2 :: Rational
+  expect f(A(), x: "hello") is 2 :: NumericValue
 
   def g(A(x: Int = 1 / 0)) 1
   def g(B()) 2
-  expect g(B()) is 2 :: Rational
+  expect g(B()) is 2 :: NumericValue
 
   def h(x: Int, y: Int = 1 / 0) 1
   def h(x: String) 2
-  expect h(x: "hello") is 2 :: Rational
+  expect h(x: "hello") is 2 :: NumericValue
 end
 
 test "Unordered union types compare equal"

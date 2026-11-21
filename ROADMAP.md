@@ -53,13 +53,14 @@ must test composition and state role differences explicitly.
   Explicit match projection crosses one concrete boundary; ordinary bindings and
   dispatch do not unwrap. Predicate evidence and single-arm coverage are required.
   These decisions are settled.
-- All numeric literals denote exact `NumericValue`s (bootstrap name `Rational`
-  until rename). 0f selects a Float64-rounded magnitude, not a Float64-typed
-  value. Exact designation never silently rounds. Explicit converters return
+- All numeric literals have type `NumericValue`. `0f` selects an exact
+  magnitude by Float64 rounding. Exact designation never silently rounds. Explicit converters return
   fixed-precision values with their own operations. Destination unions:
   `Real` (fixed non-complex), `Complex` (fixed complexes), `Number` = `Real | Complex`.
   See [numeric literals](specs/numeric-literals-and-text.md) and
   [fixed-precision numbers](specs/fixed-precision-numbers.md).
+  Fixed-width arithmetic, including exact integer division into ratios, follows
+  refinement predicates, evidence, and refined signatures.
 - Primitive names such as `Int` are `ReservedSymbol` values. `True` and `False` are
   `Bool` values, the type of computed comparisons: `(1 == 2) == False` is `True`.
 - General abstract unions may have overlapping spellings. A separate unambiguous
@@ -134,7 +135,7 @@ figures into this document.
 
 | Implemented foundation | Boundary |
 | --- | --- |
-| Exact Rational values and public numeric syntax payloads | Finite Float32/Float64 conversion; IEEE special-value policy remains deferred |
+| Exact NumericValue literals and public numeric syntax payloads | Finite Float32/Float64 conversion; IEEE special-value policy remains deferred |
 | Generic postfix values, patterns and portable descriptions | Optional `?` is defined in the source prelude; lifting remains future work |
 | Shared pattern compiler/matcher; exact/open fields; captures/rest/defaults | Revised declaration-only accessor and proof rules need alignment |
 | Structural Type data/schema, recursion, abstract slots, facets, typed text | Public type/predicate/function coverage remains bounded |
@@ -145,7 +146,7 @@ figures into this document.
 
 ### Bootstrap behaviors superseded by the intended design
 
-- Legacy safe-range Int and Float-as-binary64 names; exact Rational literals and
+- Legacy safe-range Int and Float-as-binary64 names; exact NumericValue literals and
   finite Float32/Float64 conversion are implemented.
 - Explicit syntax-disjointness certification remains future work; general
   overlapping UnionType members are supported.
@@ -180,8 +181,8 @@ The current declaration syntax includes these targets:
 
 | Target form | Existing specification and next work |
 | --- | --- |
-| `type Rectangle struct Rect(w :: Rational, h :: Rational)` | C05/C06/C16: declare one concrete space and its local products |
-| `struct Rect(Rational, Rational)` | C05/C16: construct an equal capture-free type value without declaration/accessor effects |
+| `type Rectangle struct Rect(w :: NumericValue, h :: NumericValue)` | C05/C06/C16: declare one concrete space and its local products |
+| `struct Rect(NumericValue, NumericValue)` | C05/C16: construct an equal capture-free type value without declaration/accessor effects |
 | `type EitherFloat pattern Float32 \| Float64` | C13: retain overlapping members and their concrete identities; no first-match branch priority |
 | `pattern Float32 \| Float64` | C13: construct the same abstract member domain as an ordinary value without a named declaration |
 | `type Rectangular pattern {width: Float32, height: Float32, **}` | C15: identity-preserving abstract views and facet composition |

@@ -67,7 +67,7 @@ test "A completing inline clause does not invent a trailing end"
     if True
       1
     else 2
-  is 1 :: Rational
+  is 1 :: NumericValue
 end
 
 test "Indentation around a completing clause does not change membership"

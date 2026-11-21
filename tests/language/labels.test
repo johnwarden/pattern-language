@@ -88,7 +88,7 @@ test "Named matching ignores declaration and argument order"
   end
   (x, a, z) = f(9, a: 1, z: 2)
 
-  expect x is 9 :: Rational
+  expect x is 9 :: NumericValue
   expect a is 1 :: Int
   expect z is 2 :: Int
 end
@@ -99,7 +99,7 @@ test "Named matching ignores swapped declaration order"
   end
   (x, a, z) = f(9, z: 2, a: 1)
 
-  expect x is 9 :: Rational
+  expect x is 9 :: NumericValue
   expect a is 1 :: Int
   expect z is 2 :: Int
 end
@@ -110,7 +110,7 @@ test "Named matching ignores swapped argument order"
   end
   (x, a, z) = f(9, z: 2, a: 1)
 
-  expect x is 9 :: Rational
+  expect x is 9 :: NumericValue
   expect a is 1 :: Int
   expect z is 2 :: Int
 end
@@ -121,7 +121,7 @@ test "Named matching ignores swapped declaration with aligned arguments"
   end
   (x, a, z) = f(9, a: 1, z: 2)
 
-  expect x is 9 :: Rational
+  expect x is 9 :: NumericValue
   expect a is 1 :: Int
   expect z is 2 :: Int
 end
@@ -262,7 +262,7 @@ end
 test "Labeled defaults bind an explicit capture from an empty pack"
   (size: s = 3) = ()
 
-  expect s is 3 :: Rational
+  expect s is 3 :: NumericValue
 end
 
 test "Supplied labeled values skip a failing default"

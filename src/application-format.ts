@@ -9,6 +9,12 @@ export interface ApplicationNotation<T> {
   needsGrouping?: (node: T) => boolean;
   /** Wrap a right infix child when printing it next to its parent would be rejected. */
   rejectedAdjacent?: (parent: string, child: string) => boolean;
+  atomNeedsGrouping?: (
+    node: T,
+    text: string,
+    operator: string,
+    left: boolean,
+  ) => boolean;
 }
 
 function binaryParts<T>(node: T, notation: ApplicationNotation<T>) {
@@ -54,9 +60,9 @@ export function infixApplication<T>(
       !left &&
       !!child &&
       !!notation.rejectedAdjacent?.(parts.operator, child.operator);
-    return (left &&
-      (child || notation.punctuation(value))) ||
+    return (left && (child || notation.punctuation(value))) ||
       rejectedRight ||
+      notation.atomNeedsGrouping?.(value, text, parts.operator, left) ||
       notation.needsGrouping?.(value)
       ? "(" + text + ")"
       : text;

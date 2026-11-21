@@ -182,7 +182,7 @@ test("REPL inspection distinguishes runtime concrete types from uninterpreted sy
     "3 :: Int",
   );
   assert.equal(inspectResults(interpreter.run("3 :: Int")), "3 :: Int");
-  assert.equal(inspectResults(interpreter.run("3")), "3 :: Rational");
+  assert.equal(inspectResults(interpreter.run("3")), "3 :: NumericValue");
   assert.equal(inspectResults(interpreter.run("type Int")), "Int :: Type");
 });
 

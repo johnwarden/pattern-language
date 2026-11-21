@@ -2,14 +2,14 @@ test "Hygiene preserves quoted literal patterns"
   macro :make Args() Code` :foo -> 1
   f = (make Args())
 
-  expect f(:foo) is 1 :: Rational
+  expect f(:foo) is 1 :: NumericValue
 end
 
 test "Hygiene preserves literal constructor heads"
   macro :make Args() Code` (tag, tag(value)) -> value
   f = (make Args())
 
-  expect f(1, Expression$` tag($(3))) is 3 :: Rational
+  expect f(1, Expression$` tag($(3))) is 3 :: NumericValue
 end
 
 test "Default expressions use the surrounding scope before binding captures"
@@ -25,15 +25,15 @@ test "Hygiene renames all alternative sites together"
   f = (make Args())
   (some, other) = (f(Some(3)), f(Other(4)))
 
-  expect some is 3 :: Rational
-  expect other is 4 :: Rational
+  expect some is 3 :: NumericValue
+  expect other is 4 :: NumericValue
 end
 
 test "Inserted patterns stay in their caller scope"
   macro :make Args(p) Code$` $(p) -> 42
   f = (make Args(:foo))
 
-  expect f(:foo) is 42 :: Rational
+  expect f(:foo) is 42 :: NumericValue
 end
 
 test "Alpha-renaming cannot hide duplicate captures in separate parameter packs"

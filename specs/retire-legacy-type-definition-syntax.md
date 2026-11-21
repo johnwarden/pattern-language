@@ -46,7 +46,7 @@ ordinary function body:
 ```pattern
 test "Ordinary functions may take and return Type values"
   def keep(t :: Type) t
-  type Rectangle concrete Rect(w :: Rational, h :: Rational)
+  type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)
   assert keep(Rectangle) == Rectangle
 end
 

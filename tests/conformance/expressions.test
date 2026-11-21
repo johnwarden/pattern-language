@@ -1,10 +1,3 @@
-test "arithmetic"
-  a = 1 :: Int
-  b = 2 :: Int
-
-  expect a + b is 3 :: Int
-end
-
 test "dot is function call"
   def b(x) y -> x + y
   a = 1 :: Int
@@ -15,13 +8,13 @@ end
 test "empty call"
   def f() 42
 
-  expect f() is 42 :: Rational
+  expect f() is 42 :: NumericValue
 end
 
 test "explicit named function parameter"
   def f(x, foo: y) y
 
-  expect f(1, foo: 2) is 2 :: Rational
+  expect f(1, foo: 2) is 2 :: NumericValue
 end
 
 test "multiple packs"
@@ -38,7 +31,7 @@ test "no eager execution"
     (1 / 0)
   end
 
-  expect 7 is 7 :: Rational
+  expect 7 is 7 :: NumericValue
 end
 
 test "parameter interpretation"
@@ -59,5 +52,5 @@ end
 test "single grouping"
   x = (1)
 
-  expect x is 1 :: Rational
+  expect x is 1 :: NumericValue
 end

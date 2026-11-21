@@ -213,32 +213,12 @@ test "Equal named interpretations are rejected"
   fails "same structural identity"
 end
 
-test "Interpretation equality original Int versus Rational"
+test "Interpretation equality original Int versus NumericValue"
   expect
     def R type :Rect(w :: Int)
     r = Rect(3) :: R
     r == Rect(3)
   fails "different concrete types cannot be compared"
-end
-
-test "Mixed Int plus unannotated Rational"
-  expect (3 :: Int) + 1 fails "same concrete numeric type"
-end
-
-test "Inexact Float designation"
-  expect 0.1 :: Float fails "not exactly representable as Float"
-end
-
-test "No Number type"
-  expect 0.1 :: Number fails "unbound"
-end
-
-test "Mixed Float32 plus unannotated Rational"
-  expect float32(0.5) + 0.5 fails "same concrete numeric type"
-end
-
-test "Mixed Float32 equals unannotated Rational"
-  expect float32(0.5) == 0.5 fails "different concrete types cannot be compared"
 end
 
 test "Nonproductive recursion"

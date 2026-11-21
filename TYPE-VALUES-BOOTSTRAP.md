@@ -4,7 +4,7 @@
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
 > [the type-value spec](specs/type-values.md) and [GRAMMAR.md](GRAMMAR.md).
-> Exact Rational literals, overlapping abstract unions and the current Test DSL
+> Exact `NumericValue` literals, overlapping abstract unions and the current Test DSL
 > are implemented. Declaration-only accessors and proof-based checking remain work.
 
 The interpreter represents types as ordinary immutable expression values. Compiled
@@ -13,7 +13,7 @@ describes the implemented model; the drafts under design/ are not specifications
 
 ## Ordinary names and ordinary application
 
-Primitive type atoms are self-evaluating language values: Rational, Int, Float, Float32, Float64, Bool,
+Primitive type atoms are self-evaluating language values: NumericValue, Int, Float, Float32, Float64, Bool,
 String, ReservedSymbol, Expression, Body, Any, and Type. `Symbol` is a prelude
 union of the intrinsic symbol classes, not a reserved primitive. The prelude also
 defines `not : Bool -> Bool` as `def not(x :: Bool) x == False`. There is no Number type yet. Int currently uses JavaScript-safe integers,

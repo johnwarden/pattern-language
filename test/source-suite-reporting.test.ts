@@ -33,7 +33,7 @@ function report(files: Record<string, string>) {
 test("a malformed inbox file reports its path and location while other files run", () => {
   const result = report({
     "inbox/broken.test": 'test "Broken"\n  (\nend',
-    "inbox/valid.test": 'test "Valid"\n  expect 4 is 4 :: Rational\nend',
+    "inbox/valid.test": 'test "Valid"\n  expect 4 is 4 :: NumericValue\nend',
   });
   assert.equal(result.status, 1, result.stdout + result.stderr);
   assert.match(result.stdout, /not ok \d+ - source file: inbox\/broken\.test/);
@@ -48,7 +48,7 @@ test("a malformed inbox file reports its path and location while other files run
 
 test("an ordinary failing inbox case remains a failure with its source file", () => {
   const result = report({
-    "inbox/wrong.test": 'test "Wrong"\n  expect 4 is 5 :: Rational\nend',
+    "inbox/wrong.test": 'test "Wrong"\n  expect 4 is 5 :: NumericValue\nend',
   });
   assert.equal(result.status, 1, result.stdout + result.stderr);
   assert.match(

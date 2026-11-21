@@ -31,7 +31,7 @@ test "Typed quote blocks expand macro templates with explicit interpolation"
 
   expect
     (addOne Args(4))
-  is 5 :: Rational
+  is 5 :: NumericValue
 end
 
 test "Reader blocks preserve raw punctuation and indented end content"

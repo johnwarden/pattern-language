@@ -4,7 +4,7 @@ test "A generated sidefix definition recognizes the following source line"
 
   expect
     answer 7
-  is 7 :: Rational
+  is 7 :: NumericValue
 end
 
 test "Generated grammar is reusable on separate function invocations"
@@ -15,8 +15,8 @@ test "Generated grammar is reusable on separate function invocations"
   end
   (a, b) = (f(8), f(9))
 
-  expect a is 8 :: Rational
-  expect b is 9 :: Rational
+  expect a is 8 :: NumericValue
+  expect b is 9 :: NumericValue
 end
 
 test "Generated grammar does not escape a function body"
@@ -37,7 +37,7 @@ test "Generated function parameters cannot capture inserted caller expressions"
   x = 10
   (install Args(x))
 
-  expect add(2) is 12 :: Rational
+  expect add(2) is 12 :: NumericValue
 end
 
 test "A generated macro retains its own interpolation stage and parameter scope"
@@ -46,7 +46,7 @@ test "A generated macro retains its own interpolation stage and parameter scope"
 
   expect
     (twice Args(6))
-  is 12 :: Rational
+  is 12 :: NumericValue
 end
 
 test "Ordinary functions retain their definition-time grammar"
@@ -55,7 +55,7 @@ test "Ordinary functions retain their definition-time grammar"
   end
   macro :if x :: Expression y :: Expression :else z :: Expression Code` 99
 
-  expect f() is 1 :: Rational
+  expect f() is 1 :: NumericValue
 end
 
 test "A generated final definition is still invalid as a program result"
@@ -72,5 +72,5 @@ test "A generated structural type participates in subsequent sidefix patterns"
 
   expect
     use Point(1)
-  is 7 :: Rational
+  is 7 :: NumericValue
 end

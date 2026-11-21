@@ -131,10 +131,9 @@ implicit normalization is part of these forms.
 
 ## Literals and source normalization
 
-Numeric literals denote exact Rational values. `0f0.1` selects the Float64-rounded
-Rational; it does not create a Float64-typed variable. Explicit converters return
-typed values. `(1/3)` and `(-1/3)e2` are numeric atoms. `(1 / 3)` is grouped
-division. A touching minus on a decimal or radix literal belongs to the atom,
+Numeric literals have type `NumericValue`. `0f0.1` is the exact magnitude
+selected by Float64 rounding. Explicit converters return fixed-format values.
+`1/3`, `-1e2/3` and `0.5i` are numeric atoms. `(1 / 3)` is grouped division. A touching minus on a decimal or radix literal belongs to the atom,
 as in `-0.5`. `-(0.5)` is a prefix application. See
 [Numeric literals and exact text](specs/numeric-literals-and-text.md) for the
 full spelling and canonical-text rules.
@@ -202,7 +201,7 @@ assertion rows. It is distinct from ordinary value-returning Code bodies:
 test "Current and future primitives"
   expect :Widget is Widget :: UpperCamelSymbol
   legacy expect 5 is 5 :: Expression
-  todo expect 5 is 5 :: Rational
+  todo expect 5 is 5 :: NumericValue
 end
 ```
 

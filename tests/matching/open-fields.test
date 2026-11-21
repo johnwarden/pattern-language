@@ -30,7 +30,7 @@ test "Label order and explicit label openness in a macro parameter"
   macro :take Args(Box(n :: Int, color: c :: String, **)) Code$` ($n, $c)
   (n, c) = (take Args(Box(3, extra: 7, color: "red")))
 
-  expect n is 3 :: Rational
+  expect n is 3 :: NumericValue
   expect c is "red" :: String
 end
 
@@ -66,7 +66,7 @@ test "Defaults only bind omitted captures in a macro parameter"
   macro :take Args(Box(n :: Int, color: c :: String = "red")) Code$` ($n, $c)
   (n, c) = (take Args(Box(3)))
 
-  expect n is 3 :: Rational
+  expect n is 3 :: NumericValue
   expect c is "red" :: String
 end
 

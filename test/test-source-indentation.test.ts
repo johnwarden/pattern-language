@@ -14,7 +14,7 @@ for (const prefix of ["\t", " \t", "\t  "]) {
     })[0];
 
   test(`source setup and assertion blocks remove the exact ${JSON.stringify(prefix)} prefix`, () => {
-    const value = read(`def add(x :: Rational)
+    const value = read(`def add(x :: NumericValue)
 \tx + 1
 end
 initial = 3
@@ -22,8 +22,8 @@ initial = 3
 expect
 \tanswer = add(initial)
 \tanswer
-is 4 :: Rational`);
-    assert.equal(value.steps[0].source, "def add(x :: Rational)\n\tx + 1\nend");
+is 4 :: NumericValue`);
+    assert.equal(value.steps[0].source, "def add(x :: NumericValue)\n\tx + 1\nend");
     assert.equal(value.steps[1].source, "initial = 3\n");
     assert.equal(value.steps[2].source, "answer = add(initial)\nanswer");
     const report = runTest(value);
@@ -48,7 +48,7 @@ expect text == "first\\n  second\\n  " is True :: Bool`);
   test(`todo/legacy setup replay uses the exact ${JSON.stringify(prefix)} prefix`, () => {
     const value = read(`legacy initial = 3
 todo initial = missing
-expect initial is 3 :: Rational`);
+expect initial is 3 :: NumericValue`);
     const report = runTest(value);
     assert.equal(report.passed, true, report.message);
     assert.deepEqual(

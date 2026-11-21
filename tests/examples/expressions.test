@@ -79,7 +79,7 @@ end
 test "Ignore named results"
   x = (1, foo: "bar")
 
-  expect x is 1 :: Rational
+  expect x is 1 :: NumericValue
 end
 
 test "Narrow an abstract slot"
@@ -169,7 +169,7 @@ end
 test "Extra named arguments"
   def f(x) x
 
-  expect f(1, foo: "bar") is 1 :: Rational
+  expect f(1, foo: "bar") is 1 :: NumericValue
 end
 
 test "Open structural facet"
@@ -232,7 +232,7 @@ test "User-defined if"
 
   expect
     if True 42 else 1 / 0
-  is 42 :: Rational
+  is 42 :: NumericValue
 end
 
 test "Vector"

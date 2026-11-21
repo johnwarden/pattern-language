@@ -39,9 +39,9 @@ test("is and fails fixtures are executable checks", () => {
 
 test("the replaced result and error delimiters are not expectation syntax", () => {
   for (const old of [
-    "expect 1 result 1 :: Rational",
+    "expect 1 result 1 :: NumericValue",
     'expect 1(1) error "E_NOT_CALLABLE"',
-    "legacy expect 1 result 1 :: Rational",
+    "legacy expect 1 result 1 :: NumericValue",
     'todo expect 1(1) error "E_NOT_CALLABLE"',
   ])
     assert.throws(

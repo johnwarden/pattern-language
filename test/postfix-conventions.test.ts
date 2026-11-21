@@ -9,11 +9,11 @@ import {
 
 test("postfix question mark has no optional meaning without a source definition", () => {
   const bare = new Interpreter(undefined, false, "");
-  assert.equal(displayResults(bare.run("1? :: (type Rational?)")), "1?");
+  assert.equal(displayResults(bare.run("1? :: (type NumericValue?)")), "1?");
   const custom = new Interpreter(
     undefined,
     false,
-    "def (n :: Rational)? n + 1\n",
+    "def (n :: NumericValue)? n + 1\n",
   );
   assert.equal(displayResults(custom.run("2?")), "3");
 });

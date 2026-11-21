@@ -3,12 +3,12 @@ test "Inserted caller references stay separate from template lambda binders"
   temp = 7
   expect
     (withTemp Args(temp))
-  is 7 :: Rational
+  is 7 :: NumericValue
 
   macro :twice Args(x) Code$` (temp -> temp + temp)($(x))
   expect
     (twice Args(5))
-  is 10 :: Rational
+  is 10 :: NumericValue
 end
 
 test "Template free functions resolve in the macro definition scope"
@@ -19,7 +19,7 @@ test "Template free functions resolve in the macro definition scope"
     (wrap Args(x))
   end
 
-  expect f(4) is 5 :: Rational
+  expect f(4) is 5 :: NumericValue
 end
 
 test "Template block bindings preserve caller references"
@@ -33,7 +33,7 @@ test "Template block bindings preserve caller references"
 
   expect
     (withTemp Args(temp))
-  is 106 :: Rational
+  is 106 :: NumericValue
 end
 
 test "Template lambda labels retain defaulted captures"
@@ -50,7 +50,7 @@ test "Macro templates retain locally declared sidefix grammars"
     (wrap Args(7))
   end
 
-  expect f() is 7 :: Rational
+  expect f() is 7 :: NumericValue
 end
 
 test "Macro expansion supports definitions in a generated local block"
@@ -61,7 +61,7 @@ test "Macro expansion supports definitions in a generated local block"
 
   expect
     (make Args())
-  is 1 :: Rational
+  is 1 :: NumericValue
 end
 
 test "Registered ordinary builders retain hygienic helper references"
@@ -75,5 +75,5 @@ test "Registered ordinary builders retain hygienic helper references"
     (wrapped Args(x))
   end
 
-  expect f(4) is 5 :: Rational
+  expect f(4) is 5 :: NumericValue
 end

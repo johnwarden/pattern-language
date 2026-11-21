@@ -5,7 +5,7 @@ import { single, unwrap } from "../src/values.ts";
 
 test("stored Code with a non-callable head fails during evaluation, not reading", () => {
   const interpreter = new Interpreter();
-  interpreter.run("def Tagged type :Tag(Rational)", "repl");
+  interpreter.run("def Tagged type :Tag(NumericValue)", "repl");
   interpreter.run("head = True", "repl");
   interpreter.run("def truth() 1 == 1", "repl");
   interpreter.run("value = Tag(1) :: Tagged", "repl");

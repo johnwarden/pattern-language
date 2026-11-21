@@ -16,7 +16,7 @@ import {
   equal,
   observedType,
   parseNumericSpelling,
-  formatRational,
+  formatNumeric,
 } from "./values.ts";
 import type { Value, TypeValue } from "./values.ts";
 import { primitiveNames } from "./primitive-names.ts";
@@ -746,7 +746,7 @@ function expectedData(
   );
   const numeric = parseNumericSpelling(canonical);
   const printed = numeric
-    ? formatRational(numeric)
+    ? formatNumeric(numeric)
     : normal(
         one(
           parseSurface(canonical, "program", {

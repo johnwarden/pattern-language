@@ -7,7 +7,7 @@ const read = (body: string) =>
   loadTests({ "inbox/future.test": `todo test "Future"\n${body}\nend` })[0];
 
 test("a file containing one whole-test todo is discoverable without execution", () => {
-  const value = read("  x = missing()\n  expect x is 1 :: Rational");
+  const value = read("  x = missing()\n  expect x is 1 :: NumericValue");
   assert.equal(value.id, "inbox/future#future");
   assert.equal(value.name, "Future");
   assert.equal(value.mode, "todo");
@@ -50,7 +50,7 @@ test("test and todo test blocks coexist with stable IDs and shared duplicate che
 
 test("a whole-test todo tolerates partial progress and executes remaining assertions", () => {
   const result = runTest(
-    read("  assert True\n  expect 1 is 2 :: Rational\n  assert True"),
+    read("  assert True\n  expect 1 is 2 :: NumericValue\n  assert True"),
   );
   assert.equal(result.status, "expected-failure");
   assert.equal(result.passed, true);

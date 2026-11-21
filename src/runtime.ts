@@ -93,7 +93,6 @@ import {
   singleton,
   valSymbol,
   valLiteral,
-  valRational,
   display,
   displayResults,
   equal,
@@ -103,22 +102,18 @@ import {
   inspectResults,
   syntaxOrigins,
   textValue,
+  asNumeric,
   asRational,
   integerValue,
   isExactFloat32,
   isExactFloat64,
   parseNumericSpelling,
-  rationalFromSyntax,
+  numericFromSyntax,
   rationalToNumber,
-  isRational,
+  isNumeric,
   syntaxNumber,
-  addRationals,
-  subRationals,
-  mulRationals,
-  divRationals,
-  remRationals,
-  powRationals,
 } from "./values.ts";
+import { exactArithmetic, isRational, negateNumeric } from "./rational.ts";
 import type {
   Value,
   TypeValue,
@@ -351,10 +346,8 @@ export class Interpreter {
     outer?: Syntax;
   };
   private deferredUnions: TypeValue[] = [];
-  private deferredPatternUnions: Extract<
-    Pattern<Value>,
-    { kind: "union" }
-  >[] = [];
+  private deferredPatternUnions: Extract<Pattern<Value>, { kind: "union" }>[] =
+    [];
   private aliasTargets = new WeakMap<TypeValue, TypeValue>();
   constructor(
     grammar = DEFAULT_GRAMMAR,
@@ -696,7 +689,7 @@ export class Interpreter {
   private builtins(schemaBootstrap = false): Scope {
     const scope = new Scope();
     for (const [name, predicate] of Object.entries({
-      Rational: (v: Value): boolean => !!asRational(v),
+      NumericValue: (v: Value): boolean => !!asNumeric(v),
       Num: (v: Value): boolean => {
         const r = asRational(v);
         return !!r && isExactFloat64(r);
@@ -770,7 +763,7 @@ export class Interpreter {
           ? "int64"
           : name === "Float32"
             ? "float32"
-            : name === "Rational"
+            : name === "NumericValue"
               ? "rational"
               : undefined;
       scope.bindings.set(name, {
@@ -889,20 +882,6 @@ export class Interpreter {
       if (!Number.isFinite(n)) throw new LanguageError("expected a number");
       return n;
     };
-    const exactOps: Record<
-      string,
-      (
-        a: NonNullable<ReturnType<typeof asRational>>,
-        b: NonNullable<ReturnType<typeof asRational>>,
-      ) => NonNullable<ReturnType<typeof asRational>>
-    > = {
-      "+": addRationals,
-      "-": subRationals,
-      "*": mulRationals,
-      "/": divRationals,
-      "%": remRationals,
-      "^": powRationals,
-    };
     const checked = (n: number) => {
       if (
         !Number.isFinite(n) ||
@@ -952,14 +931,13 @@ export class Interpreter {
               return this.ascribeString(valLiteral(a.value + b.value));
             }
             if (!space || space.numeric === "rational") {
-              const left = asRational(a),
-                right = asRational(b);
+              const left = asNumeric(a),
+                right = asNumeric(b);
               if (!left || !right) throw new LanguageError("expected a number");
-              const result = exactOps[name](left, right);
-              const value = valRational(result.n, result.d);
+              const value = valLiteral(exactArithmetic(name, left, right));
               return space
                 ? this.check(space, value)
-                : single(this.ascribeRational(value));
+                : single(this.ascribeNumeric(value));
             }
             let result = op(numeric(a), numeric(b));
             if (space?.numeric === "int64" && name === "/")
@@ -975,6 +953,16 @@ export class Interpreter {
       scope.bindings.set(
         name,
         this.native(name, [1, 1], ([a, b]) => {
+          if (name !== "==" && name !== "!=") {
+            const left = asNumeric(a),
+              right = asNumeric(b);
+            if ((left && !isRational(left)) || (right && !isRational(right)))
+              throw new LanguageError(
+                "ordering requires real operands",
+                undefined,
+                { code: "E_INCOMPARABLE_TYPES" },
+              );
+          }
           const c =
             name === "==" || name === "!=" ? equal(a, b) : compare(a, b);
           const yes =
@@ -1492,7 +1480,7 @@ export class Interpreter {
                 };
               if (!space || space.numeric === "rational")
                 return negative ||
-                  (raw.kind === "literal" && isRational(raw.value))
+                  (raw.kind === "literal" && isNumeric(raw.value))
                   ? {
                       kind: "code" as const,
                       type: syntaxType,
@@ -1646,10 +1634,10 @@ export class Interpreter {
     if (n.kind === "literal") {
       if (typeof n.value === "string")
         return this.ascribeString(valLiteral(n.value));
-      const r = rationalFromSyntax(n);
+      const r = numericFromSyntax(n);
       if (!r)
         throw new LanguageError("malformed numeric source literal", n.span);
-      return this.ascribeRational(valRational(r.n, r.d));
+      return this.ascribeNumeric(valLiteral(r));
     }
     if (n.kind === "symbol") {
       if (n.quoted) {
@@ -1934,7 +1922,7 @@ export class Interpreter {
         const r = parseNumericSpelling(spelling.value);
         if (!r)
           throw new LanguageError("malformed numeric source literal", n.span);
-        return this.ascribeRational(valRational(r.n, r.d));
+        return this.ascribeNumeric(valLiteral(r));
       }
     }
     const lookup = lexicalScopes.get(n.head) ?? env;
@@ -4028,8 +4016,8 @@ export class Interpreter {
       ),
     );
   }
-  private ascribeRational(value: Value): Field<Value>[] {
-    return this.check(this.primitives.get("Rational")!, value);
+  private ascribeNumeric(value: Value): Field<Value>[] {
+    return this.check(this.primitives.get("NumericValue")!, value);
   }
   private ascribeString(value: Value): Field<Value>[] {
     return this.check(this.primitives.get("String")!, value);
@@ -4041,10 +4029,10 @@ export class Interpreter {
   private negateValue(v: Value): Field<Value>[] {
     const space = concreteSpace(v);
     if (!space || space.numeric === "rational") {
-      const r = asRational(v);
+      const r = asNumeric(v);
       if (!r) throw new LanguageError("expected a number");
-      const value = valRational(-r.n, r.d);
-      return space ? this.check(space, value) : this.ascribeRational(value);
+      const value = valLiteral(negateNumeric(r));
+      return space ? this.check(space, value) : this.ascribeNumeric(value);
     }
     const r = asRational(v);
     if (!r) throw new LanguageError("expected a number");
@@ -4096,8 +4084,9 @@ export class Interpreter {
       return valLiteral(rationalToNumber(r));
     }
     if (type.numeric === "rational") {
-      if (!r) throw new LanguageError("expected a number");
-      return valRational(r.n, r.d);
+      const numeric = asNumeric(value);
+      if (!numeric) throw new LanguageError("expected a number");
+      return valLiteral(numeric);
     }
     return unwrap(value);
   }

@@ -4,7 +4,7 @@
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
 > [the type-value spec](specs/type-values.md) and [GRAMMAR.md](GRAMMAR.md).
-> Exact Rational literals, overlapping abstract unions and the current Test DSL
+> Exact `NumericValue` literals, overlapping abstract unions and the current Test DSL
 > are implemented. Declaration-only accessors and proof-based checking remain work.
 
 > Implemented: exact constructed-field patterns, independent `...`/`**` ignore

@@ -3,13 +3,38 @@ import type { Syntax } from "./syntax.ts";
 
 /** Exact ratio in lowest terms, with a positive denominator. */
 export type Rational = { n: bigint; d: bigint };
+export type ExactNumeric = Rational | { real: Rational; imaginary: Rational };
 export const isRational = (
-  value: string | number | Rational,
+  value: string | number | ExactNumeric,
 ): value is Rational =>
-  typeof value === "object" &&
-  value !== null &&
-  typeof value.n === "bigint" &&
-  typeof value.d === "bigint";
+  typeof value === "object" && value !== null && "n" in value;
+
+export const isNumeric = (
+  value: string | number | ExactNumeric,
+): value is ExactNumeric => typeof value === "object" && value !== null;
+
+const zero: Rational = { n: 0n, d: 1n };
+const realPart = (value: ExactNumeric) =>
+  isRational(value) ? value : value.real;
+const imaginaryPart = (value: ExactNumeric) =>
+  isRational(value) ? zero : value.imaginary;
+function complex(real: Rational, imaginary: Rational): ExactNumeric {
+  return imaginary.n === 0n ? real : { real, imaginary };
+}
+
+export function compareNumeric(a: ExactNumeric, b: ExactNumeric): number {
+  return (
+    compareRationals(realPart(a), realPart(b)) ||
+    compareRationals(imaginaryPart(a), imaginaryPart(b))
+  );
+}
+
+export function numericKey(value: ExactNumeric): string[] {
+  const key = (r: Rational) => [r.n.toString(), r.d.toString()];
+  return isRational(value)
+    ? key(value)
+    : [...key(value.real), ...key(value.imaginary)];
+}
 const gcd = (a: bigint, b: bigint): bigint => {
   a = a < 0n ? -a : a;
   b = b < 0n ? -b : b;
@@ -125,27 +150,33 @@ export function compareRationals(a: Rational, b: Rational): number {
 }
 const stripNumericUnderscores = (text: string): string =>
   text.replace(/_/g, "");
-const digits = (digit: string) => `${digit}(?:_?${digit})*`;
-const decimalDigits = digits("[0-9]");
-const decimalInteger = "(?:[1-9](?:_?[0-9])*|0)";
+const decimalDigits = "(?:[0-9]{1,3}(?:_[0-9]{3})+|[0-9]+)";
+const decimalInteger = "(?:[1-9][0-9]{0,2}(?:_[0-9]{3})+|[1-9][0-9]*|0)";
 const decimalExponent = `[eE]([+-]?${decimalInteger})`;
 const decimal = `(${decimalInteger})(?:\\.(${decimalDigits}))?(?:${decimalExponent})?`;
-const fraction = `\\((-?${decimalInteger})/(${decimalInteger})\\)(?:${decimalExponent})?`;
-const significand = (digit: string) => {
-  const run = digits(digit);
-  return `${run}(?:\\.${run})?`;
+const byteDigits = (digit: string, width: number) => {
+  const bytes = `(?:${digit}{${width}})+`;
+  return `(?:${bytes}(?:_${bytes})+|${digit}+)`;
 };
 // Binary `p` exponents share decimal-integer digit rules with `e` (no leading zeros).
 const binaryExponent = `[+-]?${decimalInteger}`;
-const binary = significand("[01]");
-const hex = significand("[0-9a-fA-F]");
+const binDigits = byteDigits("[01]", 8);
+const hexDigits = byteDigits("[0-9a-fA-F]", 2);
+const binary = `${binDigits}(?:\\.${binDigits})?`;
+const hex = `${hexDigits}(?:\\.${hexDigits})?`;
 const decimalSpelling = new RegExp(`^${decimal}$`);
-const fractionSpelling = new RegExp(`^${fraction}$`);
 const hexSpelling = new RegExp(`^${hex}$`);
 const bitSpelling = new RegExp(`^${binary}$`);
 const exponentSpelling = new RegExp(`^${binaryExponent}$`);
+const pExponent = `(?:[pP]${binaryExponent})?`;
+const eExponent = `(?:[eE][+-]?${decimalInteger})?`;
+const integer = `(?:0[xX]${hexDigits}|0[bB]${binDigits}|${decimalInteger})`;
+const scaled = `(?:0[xX]${hexDigits}${pExponent}|0[bB]${binDigits}${pExponent}|${decimalInteger}${eExponent})`;
+const scalar = `(?:0[fF]${decimal}|0[xX]${hex}${pExponent}|0[bB]${binary}${pExponent}|${decimal})`;
+const real = `(?:${scaled}/${integer}|${scalar})`;
+const imaginary = `(?:${scaled}i/${integer}|${scalar}i)`;
 const numericPrefix = new RegExp(
-  `${fraction}|0[fF]${decimal}|0[xX]${hex}(?:[pP]${binaryExponent})?|0[bB]${binary}(?:[pP]${binaryExponent})?|${decimal}`,
+  `(?:(?<mixedReal>${real})(?<sign>[+-])(?<mixedImag>${imaginary})|(?<imag>${imaginary})|(?<real>${real}))`,
   "y",
 );
 
@@ -160,10 +191,7 @@ export const MAX_NUMERIC_EXPONENT = 10000;
 function checkWrittenExponent(raw: string): void {
   const digitsOnly = stripNumericUnderscores(raw).replace(/^[+-]/, "");
   // Digit-length gate rejects 1e999999999 without building a bigint power.
-  if (
-    digitsOnly.length > 5 ||
-    Number(digitsOnly) > MAX_NUMERIC_EXPONENT
-  ) {
+  if (digitsOnly.length > 5 || Number(digitsOnly) > MAX_NUMERIC_EXPONENT) {
     throw new LanguageError(
       `numeric exponent exceeds ${MAX_NUMERIC_EXPONENT}`,
       undefined,
@@ -178,6 +206,28 @@ export function matchNumericSource(
 ): string | undefined {
   numericPrefix.lastIndex = start;
   return numericPrefix.exec(source)?.[0];
+}
+
+/** Operators exposed by an ungrouped atom, in source order. */
+export function numericInfixes(
+  source: string,
+): { text: string; offset: number }[] {
+  const start = Number(source.startsWith("-"));
+  numericPrefix.lastIndex = start;
+  const match = numericPrefix.exec(source);
+  if (!match?.groups || match[0].length + start !== source.length) return [];
+  const { mixedReal, sign, mixedImag } = match.groups;
+  const slash = (part: string, base: number) => {
+    const offset = part.indexOf("/");
+    return offset < 0 ? [] : [{ text: "/", offset: base + offset }];
+  };
+  if (!mixedReal) return slash(match[0], start);
+  const offset = start + mixedReal.length;
+  return [
+    ...slash(mixedReal, start),
+    { text: sign, offset },
+    ...slash(mixedImag, offset + 1),
+  ];
 }
 function parseDecimalExact(spelling: string): Rational | undefined {
   const match = decimalSpelling.exec(spelling);
@@ -210,27 +260,33 @@ function parseBinaryPower(
     ? reduceRational(combined * 2n ** power, 1n)
     : reduceRational(combined, 2n ** -power);
 }
-/** Source spelling of an exact Rational, including 0f as Float64 rounding. */
-export function parseNumericSpelling(text: string): Rational | undefined {
+/** Source spelling of an exact number, including 0f as Float64 rounding. */
+export function parseNumericSpelling(text: string): ExactNumeric | undefined {
   const spelling = text.trim();
-  const parts = fractionSpelling.exec(spelling);
-  if (parts) {
-    const n = BigInt(stripNumericUnderscores(parts[1]));
-    const d = BigInt(stripNumericUnderscores(parts[2]));
-    if (d === 0n) return;
-    if (parts[3] !== undefined) checkWrittenExponent(parts[3]);
-    const power = BigInt(stripNumericUnderscores(parts[3] ?? "0"));
-    return power >= 0n
-      ? reduceRational(n * 10n ** power, d)
-      : reduceRational(n, d * 10n ** -power);
+  const start = Number(spelling.startsWith("-"));
+  numericPrefix.lastIndex = start;
+  const match = numericPrefix.exec(spelling);
+  if (!match?.groups || match[0].length + start !== spelling.length) return;
+  const { mixedReal, sign, mixedImag, real, imag } = match.groups;
+  if (real) return parsePart(real, !!start);
+  if (imag) {
+    const imaginary = parsePart(imag, !!start);
+    return imaginary && complex(zero, imaginary);
   }
-  const negative = spelling.startsWith("-");
-  const magnitude = parseUnsignedNumeric(
-    negative ? spelling.slice(1) : spelling,
-  );
-  return negative && magnitude
-    ? { n: -magnitude.n, d: magnitude.d }
-    : magnitude;
+  const re = parsePart(mixedReal, !!start);
+  const im = parsePart(mixedImag, sign === "-");
+  if (re && im) return complex(re, im);
+}
+
+function parsePart(part: string, negative: boolean): Rational | undefined {
+  const [numerator, denominator] = part.split("/");
+  const n = parseUnsignedNumeric(numerator.replace(/i$/, ""));
+  if (!n) return;
+  const signed = negative ? { n: -n.n, d: n.d } : n;
+  if (!denominator) return signed;
+  const d = parseUnsignedNumeric(denominator);
+  if (!d || d.n === 0n) return;
+  return divRationals(signed, d);
 }
 
 function parseUnsignedNumeric(t: string): Rational | undefined {
@@ -257,11 +313,11 @@ function parseUnsignedNumeric(t: string): Rational | undefined {
   }
   return parseDecimalExact(t);
 }
-export function rationalFromSyntax(
+export function numericFromSyntax(
   n: Extract<Syntax, { kind: "literal" }>,
-): Rational | undefined {
+): ExactNumeric | undefined {
   if (typeof n.value === "string") return;
-  if (isRational(n.value)) return n.value;
+  if (isNumeric(n.value)) return n.value;
   if (n.spelling) {
     const parsed = parseNumericSpelling(n.spelling);
     if (parsed) return parsed;
@@ -349,9 +405,7 @@ function positionalSpelling(
         marker,
       ).length;
     const expandedLength =
-      count +
-      Math.ceil(Math.abs(power) / step) +
-      (power < 0 ? 2 : 0);
+      count + Math.ceil(Math.abs(power) / step) + (power < 0 ? 2 : 0);
     available = Math.min(
       limit - family.length,
       Math.max(cappedLength, expandedLength),
@@ -472,7 +526,7 @@ export function formatRational({ n, d }: Rational): string {
     offer({ text: n.toString(), family: "", exponent: false });
   } else {
     offer({
-      text: `(${n}/${d})`,
+      text: `${n}/${d}`,
       family: "fraction",
       exponent: false,
     });
@@ -513,82 +567,95 @@ export function formatRational({ n, d }: Rational): string {
   if (!decimalFirst) offerDecimal();
   if (dyadic && limit() >= 5) roundedSpellings({ n, d }, offer, limit);
 
-  const coreLogLowerBound =
-    significantDigits + denominator.core.toString().length - 2;
-  const fractionAt = (power: number) => {
-    if (Math.abs(power) > MAX_NUMERIC_EXPONENT) return;
-    const a = twos - power,
-      b = fives - power;
-    const exponent = exponentText(power, "e");
-    // Estimate only to discard candidates certainly longer than the winner.
-    const lengthLowerBound =
-      coreLogLowerBound +
-      Math.abs(a) * logTwo +
-      Math.abs(b) * logFive +
-      3 +
-      exponent.length;
-    if (lengthLowerBound - 1 > limit()) return;
-    // Skip bigint work when the scaled denominator would stay 1 (not a fraction).
-    if (
-      denominator.core === 1n &&
-      Math.max(0, -a) === 0 &&
-      Math.max(0, -b) === 0
-    )
-      return;
-    const num =
-      power === 0
-        ? n
-        : (numerator.core << BigInt(Math.max(0, a))) *
-          5n ** BigInt(Math.max(0, b));
-    const den =
-      power === 0
-        ? d
-        : (denominator.core << BigInt(Math.max(0, -a))) *
-          5n ** BigInt(Math.max(0, -b));
-    if (den > 1n)
-      offer({
-        text: `(${num}/${den})${exponent}`,
-        family: "fraction",
-        exponent: !!exponent,
-      });
+  const shortestInteger = (value: bigint) => {
+    const decimal = value.toString();
+    const hex = "0x" + value.toString(16).toUpperCase();
+    return hex.length < decimal.length ||
+      (hex.length === decimal.length && hex < decimal)
+      ? hex
+      : decimal;
   };
-  fractionAt(fives);
-  if (fives !== 0) fractionAt(0);
-  // The product of the reduced coefficient's numerator and denominator is
-  // smallest at power=fives. Every step away grows it by at least 5/2.
-  // Bound distance so |power| stays near the reader exponent cap; limit() is
-  // finite after the seed above, but keep an explicit ceiling as backstop.
-  const minimum = coreLogLowerBound + Math.abs(twos - fives) * logTwo + 3;
-  const maxDistance =
-    Math.abs(fives) + MAX_NUMERIC_EXPONENT + 1;
-  for (
-    let distance = 1;
-    distance <= maxDistance &&
-    minimum + distance * (logFive - logTwo) - 1 <= limit();
-    distance++
-  ) {
-    if (fives - distance !== 0) fractionAt(fives - distance);
-    if (fives + distance !== 0) fractionAt(fives + distance);
-  }
+  // The digit bound uses base 16, the most compact allowed radix. The bound
+  // grows monotonically away from the scale that minimizes numerator × denominator.
+  const coreBound =
+    (bitLength(numerator.core) + bitLength(denominator.core) - 2) / 4;
+  const searchFractions = (marker: "e" | "p", ideal: number) => {
+    const center = Math.max(
+      -MAX_NUMERIC_EXPONENT,
+      Math.min(MAX_NUMERIC_EXPONENT, ideal),
+    );
+    const visit = (power: number): boolean => {
+      if (Math.abs(power) > MAX_NUMERIC_EXPONENT) return false;
+      const a = twos - power;
+      const b = fives - (marker === "e" ? power : 0);
+      const bound =
+        coreBound + (Math.abs(a) + Math.abs(b) * Math.log2(5)) / 4 + 1;
+      if (bound - 1 > limit()) return false;
+      const exponent = exponentText(power, marker);
+      if (bound + exponent.length - 1 > limit()) return true;
+      if (denominator.core === 1n && a >= 0 && b >= 0) return true;
+      const num =
+        (numerator.core << BigInt(Math.max(0, a))) *
+        5n ** BigInt(Math.max(0, b));
+      const den =
+        (denominator.core << BigInt(Math.max(0, -a))) *
+        5n ** BigInt(Math.max(0, -b));
+      const head =
+        power === 0
+          ? shortestInteger(num)
+          : marker === "e"
+            ? num.toString()
+            : num === 1n
+              ? "0b1"
+              : "0x" + num.toString(16).toUpperCase();
+      offer({
+        text: head + exponent + "/" + shortestInteger(den),
+        family: "fraction",
+        exponent: power !== 0,
+      });
+      return true;
+    };
+    if (!visit(center)) return;
+    for (let power = center - 1; visit(power); power--) {
+      /* advance away from the optimum */
+    }
+    for (let power = center + 1; visit(power); power++) {
+      /* advance away from the optimum */
+    }
+  };
+  searchFractions("e", fives);
+  searchFractions("p", twos);
   if (!selection.best) throw new Error("Rational has no valid spelling");
-  const { text, family } = selection.best;
-  if (!negative) return text;
-  return family === "fraction" ? "(-" + text.slice(1) : "-" + text;
+  return (negative ? "-" : "") + selection.best.text;
 }
 
-/** Syntax number literal whose payload is the exact Rational. */
+export function formatNumeric(value: ExactNumeric): string {
+  if (isRational(value)) return formatRational(value);
+  const negative = value.imaginary.n < 0n;
+  const imag = formatRational({
+    n: negative ? -value.imaginary.n : value.imaginary.n,
+    d: value.imaginary.d,
+  });
+  const slash = imag.indexOf("/");
+  const coefficient =
+    slash < 0 ? imag + "i" : imag.slice(0, slash) + "i" + imag.slice(slash);
+  if (value.real.n === 0n) return (negative ? "-" : "") + coefficient;
+  return formatRational(value.real) + (negative ? "-" : "+") + coefficient;
+}
+
+/** Syntax number literal whose payload is an exact numeric value. */
 export function syntaxNumber(
-  r: Rational,
+  value: ExactNumeric,
   spelling?: string,
 ): Extract<Syntax, { kind: "literal" }> {
   return {
     kind: "literal",
-    value: r,
-    spelling: spelling ?? formatRational(r),
+    value,
+    spelling: spelling ?? formatNumeric(value),
   };
 }
 export function syntaxFromNumeric(
-  value: number | Rational,
+  value: number | ExactNumeric,
   spelling?: string,
 ): Extract<Syntax, { kind: "literal" }> {
   return syntaxNumber(
@@ -604,6 +671,69 @@ export function subRationals(a: Rational, b: Rational): Rational {
 }
 export function mulRationals(a: Rational, b: Rational): Rational {
   return reduceRational(a.n * b.n, a.d * b.d);
+}
+
+export function negateNumeric(value: ExactNumeric): ExactNumeric {
+  const neg = (part: Rational) => ({ n: -part.n, d: part.d });
+  return isRational(value)
+    ? neg(value)
+    : complex(neg(value.real), neg(value.imaginary));
+}
+
+export function exactArithmetic(
+  op: string,
+  a: ExactNumeric,
+  b: ExactNumeric,
+): ExactNumeric {
+  if (isRational(a) && isRational(b)) {
+    switch (op) {
+      case "+":
+        return addRationals(a, b);
+      case "-":
+        return subRationals(a, b);
+      case "*":
+        return mulRationals(a, b);
+      case "/":
+        return divRationals(a, b);
+      case "%":
+        return remRationals(a, b);
+      case "^":
+        return powRationals(a, b);
+    }
+  }
+  const re = realPart(a),
+    im = imaginaryPart(a);
+  const rhsReal = realPart(b),
+    rhsImag = imaginaryPart(b);
+  switch (op) {
+    case "+":
+      return complex(addRationals(re, rhsReal), addRationals(im, rhsImag));
+    case "-":
+      return complex(subRationals(re, rhsReal), subRationals(im, rhsImag));
+    case "*":
+      return complex(
+        subRationals(mulRationals(re, rhsReal), mulRationals(im, rhsImag)),
+        addRationals(mulRationals(re, rhsImag), mulRationals(im, rhsReal)),
+      );
+    case "/": {
+      const norm = addRationals(
+        mulRationals(rhsReal, rhsReal),
+        mulRationals(rhsImag, rhsImag),
+      );
+      return complex(
+        divRationals(
+          addRationals(mulRationals(re, rhsReal), mulRationals(im, rhsImag)),
+          norm,
+        ),
+        divRationals(
+          subRationals(mulRationals(im, rhsReal), mulRationals(re, rhsImag)),
+          norm,
+        ),
+      );
+    }
+    default:
+      throw new LanguageError("expected real operands for " + op);
+  }
 }
 export function divRationals(a: Rational, b: Rational): Rational {
   if (b.n === 0n) throw new LanguageError("result exceeds safe numeric range");

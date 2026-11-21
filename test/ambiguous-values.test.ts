@@ -86,7 +86,7 @@ test("a predicate in an unselected overload does not run", () => {
   const { interpreter, state } = probe();
   const result = displayResults(interpreter.run(
     refinementUnion +
-      "def f(n :: u, s :: String) 1\ndef f(n :: Rational, s :: Symbol) 2\nf(3, :x)",
+      "def f(n :: u, s :: String) 1\ndef f(n :: NumericValue, s :: Symbol) 2\nf(3, :x)",
   ));
   assert.equal(result, "2");
   assert.equal(state.calls, 0);

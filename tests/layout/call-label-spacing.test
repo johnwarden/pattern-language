@@ -15,8 +15,8 @@ test "Tight f(x) is application; empty f() is empty apply"
     end
   end
 
-  expect f(3) is 3 :: Rational
-  expect g() is 7 :: Rational
+  expect f(3) is 3 :: NumericValue
+  expect g() is 7 :: NumericValue
   expect toString(Code)(:(f(x))) is "f(x)" :: String
   expect toString(Code)(:(f())) is "f()" :: String
   expect oneArgument(:(f(x))) is True :: Bool
@@ -27,7 +27,7 @@ test "Tight f(x) is application; empty f() is empty apply"
   expect emptyCall(:(f)) is False :: Bool
   assert Code(:(f())) != Code(:(f))
   assert Code(:(f())) != Code(:(f(x)))
-  expect id(3) is 3 :: Rational
+  expect id(3) is 3 :: NumericValue
   expect parse(Code)("f (x)") fails "a term cannot be followed by a spaced '('"
   expect parse(Code)("f ()") fails "a term cannot be followed by a spaced '('"
   expect parse(Code)("id (3)") fails "a term cannot be followed by a spaced '('"

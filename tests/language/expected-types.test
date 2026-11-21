@@ -4,7 +4,7 @@ test "Expected data uses the subject type"
   expect "hello" is "hello"
   expect :Ready is Ready
 
-  type Rectangle concrete Rect(width :: Rational, height :: Rational)
+  type Rectangle concrete Rect(width :: NumericValue, height :: NumericValue)
   rectangle = Rect(2, 3) :: Rectangle
   expect rectangle is Rect(2, 3)
   expect rectangle is Rect(2, 3) :: Rectangle
@@ -12,12 +12,12 @@ end
 
 test "An explicit expected type still asserts the exact type"
   expect 3 :: Int is 3 :: Int
-  expect 1 is 1 :: Rational
+  expect 1 is 1 :: NumericValue
   expect "hello" is "hello" :: String
 end
 
 test "Expected data keeps the subject type in an indented form"
-  type Rectangle concrete Rect(width :: Rational, height :: Rational)
+  type Rectangle concrete Rect(width :: NumericValue, height :: NumericValue)
   rectangle = Rect(2, 3) :: Rectangle
   expect rectangle is
     Rect(2, 3)

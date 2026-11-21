@@ -5,7 +5,7 @@ test "Macro-generated local grammar"
     answer 42
   end
 
-  expect demo() is 42 :: Rational
+  expect demo() is 42 :: NumericValue
 end
 
 test "Sidefix macro: choose"
@@ -13,7 +13,7 @@ test "Sidefix macro: choose"
 
   expect
     choose True 42 1 / 0
-  is 42 :: Rational
+  is 42 :: NumericValue
 end
 
 test "Code function versus registered macro"
@@ -27,7 +27,7 @@ test "Code function versus registered macro"
   end
   expect
     twice 2 + 3
-  is 10 :: Rational
+  is 10 :: NumericValue
   (twiceCode(2 + 3), (twice 2 + 3))
 end
 

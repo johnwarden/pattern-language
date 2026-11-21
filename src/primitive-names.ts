@@ -2,7 +2,7 @@ import { symbolCategory } from "./lexical.ts";
 
 /** The language's self-evaluating atoms, independent of surface syntax. */
 export const primitiveNames = new Map([
-  ["Rational", "Rational"],
+  ["NumericValue", "NumericValue"],
   ["Float", "Float"],
   ["Float64", "Float64"],
   ["Float32", "Float32"],

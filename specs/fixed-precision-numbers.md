@@ -155,29 +155,41 @@ subtraction and division.
 
 | Operands | Result of `+`, `-`, `*` | Result of `/` |
 | --- | --- | --- |
-| Two fixed integers | Smallest supported integer format containing both operand ranges | `Float64` |
+| Two fixed integers | Smallest supported integer format containing both operand ranges | Ratio with twice the wider operand's width |
 | Two fixed binary floats | Wider of the two formats | Wider of the two formats |
 | One fixed integer and one fixed binary float | `Float64` | `Float64` |
-| One fixed integer `I` and one refined `NumericValue` | `I`. The exact operand must satisfy the fit refinement for `I`. | `Float64`, with the same operand refinement |
-| One fixed binary float `F` and one `NumericValue` | `F`, after checking that the exact operand fits `F` | `F`, with the same operand fit check |
+| One fixed integer `I` and one refined `NumericValue` | `I`, with the fit refinement for `I` on the exact operand | Ratio with twice the width of `I`, with the same fit refinement |
+| One fixed binary float `F` and one `NumericValue` | `F`, with the fit refinement for `F` on the exact operand | `F`, with the same fit refinement |
+| Two fixed ratios | Wider of the two ratios | Wider of the two ratios |
+| One fixed ratio `RatioW` and one fixed integer of width `V` | Wider of `RatioW` and the ratio with width `2V` | Same format as the other operations |
+| One fixed ratio and one fixed binary float | `Float64` | `Float64` |
+| One fixed ratio `RatioW` and one refined `NumericValue` | `RatioW`, with the fit refinement for `RatioW` on the exact operand | `RatioW`, with the same fit refinement |
 | Two `NumericValue`s | `NumericValue` | `NumericValue` |
 
-An equal-format integer pair keeps its format. For example, `Int32 + Int64`
-returns `Int64`. No initial integer format contains both `Int64`'s and
-`UInt64`'s ranges; that pair needs explicit conversion for integer-valued
-arithmetic. Its `/` result is still `Float64`. Ratio and complex promotion can
-be specified when those formats are introduced.
+An equal-format integer pair keeps its format for `+`, `-` and `*`. For
+example, `Int32 + Int64` returns `Int64`. No initial integer format contains
+both `Int64`'s and `UInt64`'s ranges, so that pair needs an explicit
+conversion for integer-valued arithmetic. Its division has an exact
+`Ratio128` result when the reduced quotient fits. Complex promotion is
+deferred.
 
-For each supported pair, project fixed operands to their exact `NumericValue`
-payloads. Compute the
-exact operation on the two payloads in source order. Check the integer result
-for overflow or round once to the selected float format. Never round integer
-operands to float before computing the result. A failed fit check for a float
-operand or a failed literal fit for an integer operand is
-`E_NOT_EXACTLY_REPRESENTABLE`. A fixed integer result outside its range is
+Project fixed operands to their exact `NumericValue` payloads and perform
+the operation in source order. For a ratio result, reduce the exact fraction
+and make its denominator positive before checking both limbs. For an
+integer result, check its range. For a float result, round once after the
+exact operation. In particular, an integer or ratio operand can take part
+in a floating operation even when it has no exact representation as a float.
+An exact result outside its selected integer or ratio format fails with
 `E_OVERFLOW`.
 
-### Mixed integer signatures
+The fit cases for mixed ratio signatures are `fitsRatio64`, `fitsRatio128`,
+and their counterparts for any additional supported widths. A real
+`NumericValue` fits when its reduced numerator and positive denominator
+fit the two signed limbs. Mixed float signatures use the corresponding
+float fit refinement. The rules below for literal fit and stored evidence
+apply to mixed integer, ratio and float signatures.
+
+### Mixed signatures and fit evidence
 
 Each fixed integer format has a fit predicate that requires a real integral
 value within that format's range. Use it on the exact operand in either order.
@@ -186,18 +198,19 @@ For example, the signatures for `Int64` addition are:
     def +(left :: Int64)(right :: (NumericValue .where fitsInt64)) :: Int64
     def +(left :: (NumericValue .where fitsInt64))(right :: Int64) :: Int64
 
-Use the same pair of operand patterns for `-`, `*`, `/`, `.div`, `.flDiv`,
-and `%`, with each operator's own result format. For `Int32` use `fitsInt32`.
-For `UInt64` use `fitsUInt64`. The refined operand still has concrete type
-`NumericValue`. Numeric equality and ordering compare magnitudes across type
-boundaries regardless of fit.
+Use the same pair of base operand patterns for `-`, `*`, `/`, `.div`,
+`.flDiv`, and `%`, with each operator's own result format. Division and
+remainder also require the divisor's nonzero refinement. For `Int32` use
+`fitsInt32`. For `UInt64` use `fitsUInt64`. The refined operand still has
+concrete type `NumericValue`. Numeric equality and ordering compare
+magnitudes across type boundaries regardless of fit.
 
-The concrete integer operand determines which fit refinement the exact
-operand needs. Compare complete operand packs to establish overload
+The concrete operand determines which fit refinement the exact operand
+needs. Compare complete operand packs to establish overload
 disjointness. Several definitions can continue after the same first pack when
 their complete domains are disjoint. When both operands directly belong to
 `NumericValue`, use the exact operation. Once the concrete operand selects a
-mixed integer signature, a literal can establish the required predicate by
+mixed signature, a literal can establish the required predicate by
 designation. A failed literal fit reports `E_NOT_EXACTLY_REPRESENTABLE`. A
 bound operand that lacks the required evidence reports `E_NO_METHOD`. An
 explicit `.matches` check or an explicit conversion can establish fit before
@@ -306,11 +319,46 @@ operation. Round to nearest, ties to even. A successful floating division with
 a nonzero numerator returns a nonzero float. A zero numerator and nonzero
 divisor give zero.
 
+## Division and remainder signatures
+
+Every `/`, `.div`, `.flDiv` and `%` signature requires `isNonZero` on its
+right operand in addition to the operand's type and any fit refinement.
+For complex values, the predicate is true when either coefficient is
+nonzero. For example:
+
+    type NonZeroInt32 pattern Int32 .where isNonZero
+    type FitsInt32 pattern NumericValue .where fitsInt32
+    type NonZeroInt32Literal pattern FitsInt32 .where isNonZero
+
+    def /(left :: Int32)(right :: NonZeroInt32) :: Ratio64
+    def /(left :: Int32)(right :: NonZeroInt32Literal) :: Ratio64
+    def /(left :: FitsInt32)(right :: NonZeroInt32) :: Ratio64
+
+A divisor rejected specifically because it is zero reports
+`E_DIVISION_BY_ZERO`. A zero literal can be diagnosed during designation
+against the selected signature. A bound divisor without nonzero evidence
+follows the ordinary missing-evidence rule. Dispatch uses established
+evidence and performs no predicate check to select an overload. The
+nonzero condition applies to calls, including successive packs and saved
+partials. A fraction atom with a zero denominator still fails during
+reading with `E_SYNTAX`.
+
+Fixed-width arithmetic depends on the implementation of refinement
+predicates, evidence, and refined signatures. Its executable contracts
+remain todo until those facilities are available.
+
 ## Integer division and remainder
 
-`/` on two fixed integers computes their exact quotient and rounds once to
-`Float64`. A zero divisor fails with `E_DIVISION_BY_ZERO`. Two `NumericValue`
-operands still give an exact quotient.
+`/` on two fixed integers returns an exact reduced ratio. Two `Int32`s
+return `Ratio64`. A pair involving `Int64` or `UInt64` returns
+`Ratio128`. With a fixed integer and an exact operand satisfying that
+integer's fit refinement, use the ratio corresponding to the fixed
+integer's width. The result format depends on the operand formats, so a
+whole-number quotient also retains its ratio type. Reduce and normalize the
+quotient before checking the limbs. This lets large operands cancel while
+still detecting an unrepresentable result, for example a positive
+denominator of `2147483648` in `Ratio64`. Two `NumericValue` operands
+give an exact `NumericValue` quotient.
 
 | Operator | Definition |
 | --- | --- |
@@ -318,9 +366,8 @@ operands still give an exact quotient.
 | `.flDiv` | Integer quotient rounded toward negative infinity |
 | `%` | Truncated remainder `a - q * b`, with `q` the mathematical quotient truncated toward zero as an unbounded integer |
 
-All three require integers and fail on an admitted zero divisor with
-`E_DIVISION_BY_ZERO`. With two fixed integers, use the same result format
-as `+`. `Int32` with `Int64` yields `Int64`. If no initial format contains
+All three require integers and use the nonzero divisor refinement.
+With two fixed integers, use the same result format as `+`. `Int32` with `Int64` yields `Int64`. If no initial format contains
 both ranges, as with `UInt64` and `Int64`, the call requires an explicit
 conversion. With one fixed integer and one `NumericValue`, use the fixed
 integer's result format and require its fit refinement on the exact operand.
@@ -349,11 +396,46 @@ todo test "Checked integers reject unrepresentable results"
   expect minInt .div (-1) fails "E_OVERFLOW"
 end
 
-todo test "Integer division returns a rounded Float64 quotient"
-  a = 1 :: Int32
-  b = 10 :: Int32
-  expect a / b is 0f0.1 :: Float64
-  expect a / 0 fails "E_DIVISION_BY_ZERO"
+todo test "Integer division returns an exact ratio selected by operand width"
+  type NonZeroInt32 pattern Int32 .where isNonZero
+  n = 1 :: Int32
+  (ten :: NonZeroInt32) = 10
+  wide = 1 :: Int64
+  unsigned = 18446744073709551615 :: UInt64
+
+  expect n / ten is 1/10 :: Ratio64
+  expect wide / ten is 1/10 :: Ratio128
+  expect n / (-2) is (-1/2) :: Ratio64
+  expect 20 / ten is 2 :: Ratio64
+  expect unsigned / (18446744073709551615 :: UInt64) is 1 :: Ratio128
+  expect unsigned / (1 :: UInt64) fails "E_OVERFLOW"
+  expect n / (-2147483648) fails "E_OVERFLOW"
+  expect (2 :: Int32) / (-2147483648) is (-1/1073741824) :: Ratio64
+end
+
+todo test "Division and remainder reject a zero divisor"
+  n = 1 :: Int32
+  expect n / 0 fails "E_DIVISION_BY_ZERO"
+  expect n / (0 :: Int32) fails "E_DIVISION_BY_ZERO"
+  expect n .div 0 fails "E_DIVISION_BY_ZERO"
+  expect n .flDiv 0 fails "E_DIVISION_BY_ZERO"
+  expect n % 0 fails "E_DIVISION_BY_ZERO"
+  expect (1/3 :: Ratio64) / (0 :: Ratio64) fails "E_DIVISION_BY_ZERO"
+  expect 1i / 0i fails "E_DIVISION_BY_ZERO"
+end
+
+todo test "A bound divisor needs nonzero evidence in the call scope"
+  type NonZeroInt32 pattern Int32 .where isNonZero
+  n = 1 :: Int32
+  d = 3 :: Int32
+  expect n / d fails "E_NO_METHOD"
+  expect
+    if d .matches NonZeroInt32
+      n / d
+    else
+      0 :: Ratio64
+    end
+  is 1/3 :: Ratio64
 end
 
 todo test "Truncated and floored quotients differ for a negative dividend"
@@ -363,22 +445,23 @@ todo test "Truncated and floored quotients differ for a negative dividend"
   assert (1 .div 2) == 0
   assert (negFive .flDiv 2) == (0 - 3)
   expect (-5 :: Float) .div 2 fails "E_NOT_INTEGER_OPERAND"
-  expect minInt32 .div (0 - 1) fails "E_OVERFLOW"
-  expect minInt32 .flDiv (0 - 1) fails "E_OVERFLOW"
+  expect minInt32 .div (-1) fails "E_OVERFLOW"
+  expect minInt32 .flDiv (-1) fails "E_OVERFLOW"
 end
 
 todo test "Truncated remainder checks only the returned result"
   minInt32 = -2147483648 :: Int32
   negFive = 0 - 5
   assert (negFive % 2) == (0 - 1)
-  expect minInt32 % (0 - 1) is 0 :: Int32
+  expect minInt32 % (-1) is 0 :: Int32
   expect minInt32 % 0 fails "E_DIVISION_BY_ZERO"
   expect (-5 :: Float) % 2 fails "E_NOT_INTEGER_OPERAND"
 end
 
 todo test "Integer quotient and remainder use the supported result format"
   a = 7 :: Int32
-  b = 2 :: Int64
+  type NonZeroInt64 pattern Int64 .where isNonZero
+  (b :: NonZeroInt64) = 2
   u = 7 :: UInt64
   expect a .div b is 3 :: Int64
   expect a .flDiv 2 is 3 :: Int32
@@ -390,7 +473,7 @@ end
 todo test "Floating division checks zero and underflow"
   zero = 0 :: Float64
   smallest = 0x1p-1074 :: Float64
-  expect zero / (0 - 2) is 0 :: Float64
+  expect zero / (-2) is 0 :: Float64
   expect smallest / 1 is 0x1p-1074 :: Float64
   expect smallest / 2 fails "E_UNDERFLOW"
   expect smallest / 0 fails "E_DIVISION_BY_ZERO"
@@ -399,15 +482,8 @@ end
 
 ## Fixed ratios and complexes from literals
 
-A single `NumericValue` literal can designate a fixed ratio or complex format
+One `NumericValue` literal can designate a fixed ratio or complex format
 when it fits.
-
-Destination sketches (executable once paren-free complex atoms land):
-
-    x = 1/3 :: Ratio64
-    expect x * 2 is 2/3 :: Ratio64
-    y = 1+1i :: Complex(Ratio64)
-    expect pow(y, 2) is 2i :: Complex(Ratio64)
 
 ```pattern
 todo test "Ratio and complex formats designate from NumericValue literals"
@@ -416,13 +492,41 @@ todo test "Ratio and complex formats designate from NumericValue literals"
   y = parse(Complex(Ratio64))("1+1i")
   assert pow(y, 2) === parse(Complex(Ratio64))("2i")
 end
+
+todo test "Mixed ratio arithmetic selects a format and keeps the exact quotient"
+  narrow = 1/3 :: Ratio64
+  wide = 1/6 :: Ratio128
+  integer = 2 :: Int64
+  binary = 0.5 :: Float32
+  expect narrow + wide is 0.5 :: Ratio128
+  expect narrow - integer is (-5/3) :: Ratio128
+  expect integer - narrow is 5/3 :: Ratio128
+  expect narrow + binary is 0f0.8333333333333334 :: Float64
+  expect (1/5) + narrow is 8/15 :: Ratio64
+  expect narrow / (2/5) is 5/6 :: Ratio64
+  expect narrow / (2 :: Int64) is 1/6 :: Ratio128
+  expect (2 :: Int32) / (1/3 :: Ratio64) is 6 :: Ratio64
+end
+
+todo test "Ratio arithmetic needs fit evidence and checks the reduced result"
+  type FitsRatio64 pattern NumericValue .where fitsRatio64
+  narrow = 1/3 :: Ratio64
+  raw = 1/5
+  (checked :: FitsRatio64) = 1/5
+  large = 2147483647 :: Ratio64
+  expect narrow + raw fails "E_NO_METHOD"
+  expect narrow + checked is 8/15 :: Ratio64
+  expect narrow + (1/2147483648) fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect large * 2 fails "E_OVERFLOW"
+  expect large * (1/2147483647) is 1 :: Ratio64
+end
 ```
 
 ## Operations that can produce non-real or irrational results
 
 Operations such as `sqrt`, `exp`, `log` and trigonometric functions can leave
 the exact real domain. Define them on fixed floating and complex formats.
-Prelude signatures that require refinements such as `nonNegative` or `nonZero`
+Prelude signatures that require refinements such as `nonNegative` or `isNonZero`
 follow [#89](https://github.com/johnwarden/pattern-language/pull/89); this spec
 does not decide missing-evidence diagnostics.
 
@@ -500,3 +604,122 @@ todo test "Exact equality compares Number with a concrete member"
 end
 ```
 
+
+## Bootstrap arithmetic and conversion contracts
+
+```pattern
+test "Bootstrap Int addition preserves its operand format"
+  a = 1 :: Int
+  b = 2 :: Int
+
+  expect a + b is 3 :: Int
+end
+
+test "Bootstrap Int addition requires a matching operand format"
+  expect (3 :: Int) + 1 fails "same concrete numeric type"
+end
+
+test "Inexact Float designation"
+  expect 0.1 :: Float fails "not exactly representable as Float"
+end
+
+test "Bootstrap keeps Number unbound"
+  expect 0.1 :: Number fails "unbound"
+end
+
+test "Bootstrap Float32 addition requires a matching operand format"
+  expect float32(0.5) + 0.5 fails "same concrete numeric type"
+end
+
+test "Bootstrap Float32 equality requires a matching operand format"
+  expect float32(0.5) == 0.5 fails "different concrete types cannot be compared"
+end
+
+test "Bootstrap Float64 is a distinct primitive and float64 converts"
+  expect float64(0.5) is 0.5 :: Float64
+  expect float32(0.5) is 0.5 :: Float32
+  observed = type Float64
+  expect observed is Float64 :: Type
+  expect
+    type Num
+  fails "E_UNBOUND_TYPE"
+  expect
+    type Int64
+  fails "E_UNBOUND_TYPE"
+
+  expect
+    float32(0.5) == float64(0.5)
+  fails "E_INCOMPARABLE_TYPES"
+end
+
+test "C03 exact designation differs from rounding"
+  expect 0.5 :: Float32 is 0.5 :: Float32
+  expect float32(0.5) is 0.5 :: Float32
+  todo expect 0f0.5 :: Decimal32 is 0.5 :: Decimal32
+  expect 0f0.1 :: Float64 is 0f0.1 :: Float64
+  assert (0f0.1 :: Float64) == (0x1.999999999999Ap-4 :: Float64)
+  expect 0.1 :: Float64 fails "not exactly representable as Float64"
+  expect
+    (0.1 :: Float32)
+  fails "not exactly representable as Float32"
+  assert 0.5 .matches Float32
+  assert not(0.1 .matches Float32)
+  assert 0.5 .matches Float
+  assert not(0.1 .matches Float)
+  assert 0f0.1 .matches Float
+  expect 0.5 :: Float is 0.5 :: Float
+
+  todo expect
+    (0.5 :: Int16)
+  fails "not an integer"
+end
+
+test "smallest subnormal round-trips through Float and text"
+  minSub = 0f5e-324
+  assert minSub .matches Float
+  assert toFloat(minSub) == (minSub :: Float)
+  assert parse(Float)(toString(Float)(minSub :: Float)) == (minSub :: Float)
+  assert minSub == 0x1p-1074
+  expect 0x1p-1074 is 0f3e-324 :: NumericValue
+end
+
+test "very-small normal round-trips through Float and text"
+  smallNormal = 0x1p-1022
+  assert smallNormal .matches Float
+  assert toFloat(smallNormal) == (smallNormal :: Float)
+  assert parse(Float)(toString(Float)(smallNormal :: Float)) == (smallNormal :: Float)
+  expect 0x1p-1022 is 0x1p-1022 :: NumericValue
+end
+
+test "Prefix minus preserves concrete numeric types and finite float ranges"
+  integer = -(1 :: Int)
+  singlePrecision = -(1 :: Float32)
+  doublePrecision = -(1 :: Float64)
+
+  expect integer is
+    -1 :: Int
+  end
+  expect singlePrecision is
+    -1 :: Float32
+  end
+  expect doublePrecision is
+    -1 :: Float64
+  end
+
+  large64 = 0x1p1023 :: Float64
+  negative64 = -large64
+  assert negative64 < (0 :: Float64)
+  assert (-negative64) == large64
+  assert parse(Float64)(toString(Float64)(negative64)) == negative64
+
+  large32 = 0x1p100 :: Float32
+  negative32 = -large32
+  assert negative32 < (0 :: Float32)
+  assert (-negative32) == large32
+
+  subnormal = 0x1p-1074 :: Float64
+  negativeSubnormal = -subnormal
+  assert negativeSubnormal < (0 :: Float64)
+  assert (-negativeSubnormal) == subnormal
+end
+```

@@ -178,7 +178,7 @@ test "Ambiguity suggestions come from complete matches"
   b = abstract Int | Float
   c = abstract String? | Float?
   expect
-    (Pair(x :: b, y :: Int) | Pair(x :: Rational, y) | Pair(x :: Rational, y :: String)) = Pair(3, "a")
+    (Pair(x :: b, y :: Int) | Pair(x :: NumericValue, y) | Pair(x :: NumericValue, y :: String)) = Pair(3, "a")
     x
   fails "2 interpretations match"
   expect
@@ -241,10 +241,10 @@ end
 
 # With more than two interpretations the message lists the first two, then counts the rest.
 test "Interpretations beyond the second are counted"
-  b = abstract Int | Float | Rational
+  b = abstract Int | Float | NumericValue
   expect 3 .matches b fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect 3 .matches b fails "...and 1 other"
-  c = abstract Int | Float | Rational | Float64 | Float32
+  c = abstract Int | Float | NumericValue | Float64 | Float32
   expect 3 .matches c fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect 3 .matches c fails "...and 3 others"
 end
@@ -369,7 +369,7 @@ test "Overload selection does not use refinement predicate failures"
   p = Int .where (n -> big(n))
   u = abstract p | Float
   def f(n :: u) "union"
-  def f(n :: Rational) "rational"
+  def f(n :: NumericValue) "rational"
   expect f(3) fails "E_AMBIGUOUS_CALL"
 end
 

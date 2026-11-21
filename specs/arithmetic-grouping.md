@@ -294,8 +294,8 @@ test "Binding follows ordinary right association"
 end
 
 test "Choosing a grouping changes the subtraction result"
-  expect (10 - 3) - 2 is 5 :: Rational
-  expect 10 - (3 - 2) is 9 :: Rational
+  expect (10 - 3) - 2 is 5 :: NumericValue
+  expect 10 - (3 - 2) is 9 :: NumericValue
 end
 
 test "Independent fields and free binding and arrow rights stay accepted"
@@ -394,7 +394,7 @@ spaced operator without parentheses. Report `E_INFIX_GROUPING` with the same
 Write suggestions as for the spaced form.
 
 ```pattern
-todo test "Tight numeric atoms still require grouping beside spaced operators"
+test "Tight numeric atoms still require grouping beside spaced operators"
   expect parse(Code)("1/3 / 3") fails "E_INFIX_GROUPING"
   expect parse(Code)("1 / 3/3") fails "E_INFIX_GROUPING"
   expect parse(Code)("1i/3 + 3") fails "E_INFIX_GROUPING"

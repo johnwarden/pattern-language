@@ -25,8 +25,8 @@ test "Source optional convention has unwrapped present values"
 end
 
 test "Ordinary definitions give postfix operators meaning"
-  def (n :: Rational)@ n + 1
-  expect 2@ is 3 :: Rational
+  def (n :: NumericValue)@ n + 1
+  expect 2@ is 3 :: NumericValue
   prefix = @(2)
   expect prefix is
     @(2) :: Expression

@@ -1,5 +1,6 @@
 import { primitiveNames as primitiveAtoms } from "./primitive-names.ts";
-import { compare, isRational, integerValue } from "./values.ts";
+import { compare, isNumeric, integerValue } from "./values.ts";
+import { numericKey } from "./rational.ts";
 import { LanguageError, canonicalFields } from "./syntax.ts";
 import type { Pattern } from "./pattern.ts";
 import type { TypeValue, Value } from "./values.ts";
@@ -19,8 +20,8 @@ export const term = (name: string, ...values: Value[]): Value => ({
 const bare = (v: Value): Value =>
   v.kind === "view" ? bare(v.base) : v.kind === "slot" ? bare(v.value) : v;
 const primitiveNames: Record<string, string> = {
-  rational: "Rational",
-  Rational: "Rational",
+  rational: "NumericValue",
+  NumericValue: "NumericValue",
   float64: "Float",
   Float: "Float",
   Float64: "Float64",
@@ -224,7 +225,7 @@ export function typeDescription(
             body.body.length === 1 &&
             body.body[0].value.kind === "literal" &&
             (typeof body.body[0].value.value === "number" ||
-              isRational(body.body[0].value.value));
+              isNumeric(body.body[0].value.value));
           if (
             literalHead &&
             headValue.kind === "symbol" &&
@@ -323,8 +324,8 @@ export function descriptionKey(v: Value): string {
     v = bare(v);
     if (v.kind === "symbol") return ["symbol", v.name];
     if (v.kind === "literal")
-      return isRational(v.value)
-        ? ["literal", "rational", v.value.n.toString(), v.value.d.toString()]
+      return isNumeric(v.value)
+        ? ["literal", "rational", ...numericKey(v.value)]
         : ["literal", v.value];
     if (v.kind === "type") return key(typeData(v));
     if (v.kind === "postfix")

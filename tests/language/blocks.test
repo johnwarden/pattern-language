@@ -4,7 +4,7 @@ test "Block result pack"
     (y, y)
   end
 
-  expect a + b is 2 :: Rational
+  expect a + b is 2 :: NumericValue
 end
 
 test "Block def"
@@ -13,7 +13,7 @@ test "Block def"
     y + 1
   end
 
-  expect f(3) is 10 :: Rational
+  expect f(3) is 10 :: NumericValue
 end
 
 test "Nested definition"
@@ -22,7 +22,7 @@ test "Nested definition"
     inner(2)
   end
 
-  expect outer(3) is 5 :: Rational
+  expect outer(3) is 5 :: NumericValue
 end
 
 test "Anonymous block"
@@ -31,7 +31,7 @@ test "Anonymous block"
     y + 1
   end
 
-  expect f(3) is 10 :: Rational
+  expect f(3) is 10 :: NumericValue
 end
 
 test "If clauses"
@@ -42,7 +42,7 @@ test "If clauses"
     else
       3
     end
-  is 2 :: Rational
+  is 2 :: NumericValue
 end
 
 test "Match"
@@ -51,14 +51,14 @@ test "Match"
       :Some(v) -> v
       :None -> 0
     end
-  is 2 :: Rational
+  is 2 :: NumericValue
 end
 
 test "Equals binds only in a block interpretation"
   x = 5
   y = 1
 
-  expect x + y is 6 :: Rational
+  expect x + y is 6 :: NumericValue
 end
 
 test "Equals does not bind inside a pack"
