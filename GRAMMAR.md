@@ -89,7 +89,7 @@ lookup. Keyword-rest record capture/spread is prefix `**rest` / `**(x)` and rema
 Working target notation:
 
     type Rectangle struct Rect(w :: Float32, h :: Float32)
-    type NonZero pattern ExactRational .where isNonZero
+    type NonZero pattern NumericValue .where isNonZero
     type Number pattern Float32 | Float64
     type Binding unambiguous pattern Definition | DestructuringBinding
 
@@ -128,8 +128,8 @@ Rational; it does not create a Float64-typed variable. Explicit converters retur
 typed values. `(1/3)` and `(-1/3)e2` are numeric atoms. `(1 / 3)` is grouped
 division. A touching minus on a decimal or radix literal belongs to the atom,
 as in `-0.5`. `-(0.5)` is a prefix application. See
-[Rational literals](specs/rational-literals-and-text.md) and
-[canonical text](specs/rational-canonical-text.md) for the full spelling rules.
+[Numeric literals and exact text](specs/numeric-literals-and-text.md) for the
+full spelling and canonical-text rules.
 The specification reader stores decorated numeric spellings as inert
 NumericSource data until an operand is reparsed.
 

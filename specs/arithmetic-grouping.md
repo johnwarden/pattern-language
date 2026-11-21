@@ -383,3 +383,21 @@ diagnostics, and printer parentheses are implemented.
 [Language suite](../tests/language/infix-grouping.test) ·
 [C25 case](../tests/specification/language.test) ·
 [Same-precedence conformance case](../tests/conformance/expressions.test)
+
+## Tight numeric atoms
+
+[Numeric literals](numeric-literals-and-text.md) make paren-free fraction and
+complex spellings such as `1/3` and `3+4i` single atoms. Spaced `/`, `+`, and
+`-` remain infix operators. If a spaced chain would be rejected by the surface
+rule above, the same operator pair is rejected when a tight atom sits beside a
+spaced operator without parentheses. Report `E_INFIX_GROUPING` with the same
+Write suggestions as for the spaced form.
+
+```pattern
+todo test "Tight numeric atoms still require grouping beside spaced operators"
+  expect parse(Code)("1/3 / 3") fails "E_INFIX_GROUPING"
+  expect parse(Code)("1 / 3/3") fails "E_INFIX_GROUPING"
+  expect parse(Code)("1i/3 + 3") fails "E_INFIX_GROUPING"
+  expect parse(Code)("3+4i / 3") fails "E_INFIX_GROUPING"
+end
+```

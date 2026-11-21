@@ -307,11 +307,11 @@ chosen by this migration.
 | Float membership and `0.5 :: Float` designation | specification/primitives#c03-exact-designation-differs-from-rounding | Unique `Float` lines; host display of the same programs removed |
 | Rational-to-binary64 conversion keeps the smallest subnormal and small normals | — | Direct `float64ToRational` / `rationalToNumber` helpers stay |
 | Numeric syntax encoding keeps the exact Float64-rounded Rational | numeric/exact-values#exact-and-rounded-literals-remain-distinct-through-code-text covers value/Code distinctions | The host test checks the exact `syntaxTree(0f0.1)` payload. |
-| Non-dyadic Rationals stay exact and round-trip | [Rational literals spec](../specs/rational-literals-and-text.md#typed-text) | Host construction and destructuring preserve the exact `NumberLiteral` payload. |
+| Non-dyadic Rationals stay exact and round-trip | [Rational literals spec](../specs/numeric-literals-and-text.md#typed-text) | Host construction and destructuring preserve the exact `NumberLiteral` payload. |
 | `0.5 :: Int` remains a generic mismatch until D07 integer designation | — | Exact `E_PATTERN_MISMATCH` stays until D07 |
 
 The original migration left the bootstrap's serialization failure in place.
-The [fraction contracts](../specs/rational-literals-and-text.md#typed-text)
+The [fraction contracts](../specs/numeric-literals-and-text.md#typed-text)
 now check printing and reading an exact fraction.
 
 ## Numeric destination-contract correction
