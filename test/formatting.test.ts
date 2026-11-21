@@ -14,7 +14,7 @@ test("binary punctuation has one infix normal form and preserves syntax trees", 
   const cases = [
     ["->(n)(<(n)(5))", "n -> n < 5"],
     ["*(+(a)(b))(c)", "(a + b) * c"],
-    ["+(a)(*(b)(c))", "a + b * c"],
+    ["+(a)(*(b)(c))", "a + (b * c)"],
     ["<=(a)(b)", "a <= b"],
     ["=>(A)(B)", "A => B"],
     ["::(a)(T)", "a :: T"],
@@ -53,7 +53,7 @@ test("quoted expression values use the same punctuation notation and round trip 
   for (const [source, expected] of [
     ["n -> n < 5", "n -> n < 5"],
     ["(a + b) * c", "(a + b) * c"],
-    ["a + b * c", "a + b * c"],
+    ["a + (b * c)", "a + (b * c)"],
     ["(a, b) + (c, d)", "(a, b) + (c, d)"],
     ["(a, z: 3, b: 2) + (y: 4)", "(a, b: 2, z: 3) + (y: 4)"],
     ["x -> ()", "x -> ()"],

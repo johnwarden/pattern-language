@@ -63,7 +63,7 @@ field, the arm `Reading(Int)` selects instances whose field holds an
 
 ```pattern
 todo test "A match sees the concrete member stored in an abstract field"
-  type Reading struct Reading(value :: Int | Float)
+  type Reading struct Reading(value :: (Int | Float))
 
   def kind(r :: Reading)
     match r
@@ -404,7 +404,7 @@ concrete type. A `Reading` with an `Int` field and a `Reading` with a
 
 ```pattern
 todo test "Projected overloads classify Reading like match"
-  type Reading struct Reading(value :: Int | Float)
+  type Reading struct Reading(value :: (Int | Float))
 
   def kindByOverload(Reading(Int) .as Reading) "int"
   def kindByOverload(Reading(Float) .as Reading) "float"

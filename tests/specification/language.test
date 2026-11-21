@@ -39,7 +39,7 @@ test "C24 applications preserve complete successive packs"
 end
 
 test "C25 infix operators retain equal precedence"
-  expect (2 :: Float64) * (3 :: Float64) + (4 :: Float64) is 14 :: Float64
+  expect (2 :: Float64) * ((3 :: Float64) + (4 :: Float64)) is 14 :: Float64
   def select(a)(b) b
   expect 1 .select 2 is 2 :: Rational
 end

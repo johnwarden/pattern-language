@@ -10,6 +10,7 @@ import {
   isName,
   postfix,
   POSTFIX_SUFFIX,
+  normal,
 } from "./syntax.ts";
 import {
   matchNumericSource,
@@ -73,6 +74,7 @@ function formComplete(seen: string[], chains: string[][] | undefined): boolean {
   );
 }
 type SurfaceOptions = ParseSurfaceOptions;
+type SurfaceParseContext = SurfaceOptions & { source?: string };
 function quotedLayoutNames(n: Syntax): string[] {
   switch (n.kind) {
     case "symbol":
@@ -486,10 +488,12 @@ function scan(source: string, options: SurfaceOptions = {}): Token[] {
 class Reader {
   tokens: Token[];
   pos = 0;
-  private options: SurfaceOptions;
-  constructor(tokens: Token[], options: SurfaceOptions = {}) {
+  private options: SurfaceParseContext;
+  private source: string;
+  constructor(tokens: Token[], options: SurfaceParseContext = {}) {
     this.tokens = tokens;
     this.options = options;
+    this.source = options.source ?? "";
   }
   peek(offset = 0): Token | undefined {
     return this.tokens[this.pos + offset];
@@ -589,12 +593,10 @@ class Reader {
         );
       this.take();
       let name = t;
-      let display = t.text;
       if (t.kind === ".") {
         name = this.take();
         if (name.kind !== "name" || name.start !== t.end)
           throw new LanguageError("expected .name", name);
-        display = "." + name.text;
       }
       const rhs = this.peek();
       if (!rhs)
@@ -609,7 +611,7 @@ class Reader {
         );
       operators.push({
         text: name.text,
-        display,
+        display: this.source.slice(t.start, name.end),
         quoted: !!name.quoted,
         span: {
           line: name.line,
@@ -635,12 +637,17 @@ class Reader {
     for (let i = 0; i < operators.length - 1; i++) {
       const first = operators[i]!;
       const second = operators[i + 1]!;
-      if (requiresParentheses(first.text, second.text))
-        throw new LanguageError(
-          parenthesesRequiredMessage(first.display, second.display),
-          second.span,
-          { code: INFIX_GROUPING_CODE, phase: "parse" },
-        );
+      if (!requiresParentheses(first.text, second.text)) continue;
+      const texts = operands.map((operand) => ({
+        start: operand.span?.start,
+        end: operand.span?.end,
+        printed: normal(operand),
+      }));
+      throw new LanguageError(
+        parenthesesRequiredMessage(this.source, texts, operators, i),
+        second.span,
+        { code: INFIX_GROUPING_CODE, phase: "parse" },
+      );
     }
     let result = operands[operands.length - 1]!;
     for (let i = operators.length - 1; i >= 0; i--) {
@@ -914,7 +921,7 @@ class Reader {
 function layout(
   tokens: Token[],
   topLevel = true,
-  options: SurfaceOptions = {},
+  options: SurfaceParseContext = {},
 ): Syntax {
   const lines: { indent: string; tokens: Token[] }[] = [];
   let current: Token[] = [];
@@ -1209,8 +1216,9 @@ function readSurface(
 ): Syntax {
   source = normalizeSource(source);
   const document = { name: sourceName, text: source };
+  const context: SurfaceParseContext = { ...options, source };
   try {
-    const root = layout(groups(scan(source, options), options), true, options);
+    const root = layout(groups(scan(source, options), options), true, context);
     const visit = (n: Syntax) => {
       if (n.span) attachSource(n.span, document);
       if (n.kind === "apply") visit(n.head);
@@ -1253,8 +1261,9 @@ export function parseExpression(source: string, sidefix = false): Syntax {
   return expressionFromNormalized(normalizeSource(source), sidefix);
 }
 function expressionFromNormalized(source: string, sidefix = false): Syntax {
+  const context: SurfaceParseContext = { source };
   if (sidefix) {
-    const root = layout(groups(scan(source)), true);
+    const root = layout(groups(scan(source)), true, context);
     if (root.kind !== "block" || !root.lines.length)
       throw new LanguageError("expected one expression");
     const items = root.lines.flatMap((n) =>
@@ -1267,6 +1276,7 @@ function expressionFromNormalized(source: string, sidefix = false): Syntax {
   }
   const seq = new Reader(
     groups(scan(source)).filter((t) => t.kind !== "newline"),
+    context,
   ).sequence();
   if (seq.kind !== "sequence" || !seq.items.length || seq.items.length !== 1)
     throw new LanguageError("expected one expression");

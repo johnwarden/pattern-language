@@ -52,7 +52,7 @@ test("a syntax grammar is selected by its type value, not the name Code", () => 
 test("typed Code interpolation inserts trees without Code constructors", () => {
   assert.equal(
     run("a = Code` x + 1\nb = Code$` $a * 2\nc = Code$` 2 * $a\n(b,c)"),
-    "((x + 1) * 2, 2 * x + 1)",
+    "((x + 1) * 2, 2 * (x + 1))",
   );
   assert.equal(
     evaluate(

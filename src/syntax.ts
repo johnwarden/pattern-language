@@ -152,8 +152,7 @@ export function quoteHole(
     ? { value: n.body[0].value, protection: n.head.name.length - 1 }
     : undefined;
 }
-/** Equal-precedence infix keeps `c :: T = d` as `::(c)(=(T)(d))`.
- * Interpret the default at the field-pattern boundary, without changing precedence. */
+/** Normalize typed field defaults from either explicit grouping. */
 export function fieldPattern(n: Syntax): {
   pattern: Syntax;
   fallback?: Syntax;

@@ -1,306 +1,296 @@
 # Explicit grouping for infix operators
 
-Pattern reads infix chains with equal precedence and right association.
-This proposal requires explicit grouping for specific pairs of operators.
-Every accepted expression keeps its current tree.
+Pattern reads accepted infix chains with equal precedence and right
+association. Among the grouping-sensitive operators, a chain may omit
+parentheses only when it
+repeats one associative operator. Every other adjacent pair of those
+operators requires explicit grouping. Operators outside that set keep their
+previous unconstrained reading.
 [Surface grammar](../GRAMMAR.md#one-surface-tree)
 
 ## Why this rule
 
-The earlier proposal gave multiplication, addition, ordering, equality
-and bindings familiar relative precedence. The discussion also considered
-separate tiers for `&&` and `||`. Each decision addressed a specific
-case and added a rule. `.div` shares the default tier and `/` binds
-tighter. Mixing `+` and `.and` needs a diagnostic because they share a tier
-with different associativity. `->` binds loosely so `f = x -> x + 1` stays
-readable. The printer has to preserve each of those distinctions.
-[PR #87](https://github.com/johnwarden/pattern-language/pull/87)
-
-Familiar arithmetic can silently produce a different result from what
-readers expect. For example, `2 * 3 + 4` currently means `2 * (3 + 4)`.
-Pony requires parentheses whenever different infix operators are mixed.
-This proposal uses a smaller set of grouping rules for arithmetic,
-comparisons, and logical operators.
+Readers should never need a precedence or associativity table for the
+operators that silently change arithmetic, comparison, and logical meaning.
+Only repetition of one associative operator among that set may omit
+parentheses: `a + b + c`, `a * b * c`, `a && b && c`, `a || b || c`, and
+`A | B | C`. Accepted chains still have one defined reading — right
+association — so `a + b + c` means `a + (b + c)`. For Rationals that reading
+matches left association; for fixed-precision floats such as Float64
+([#86](https://github.com/johnwarden/pattern-language/pull/86)) it is the
+defined evaluation order, not merely a convention. Subtraction, division,
+remainder, exponentiation, comparisons, mixed operators in the set, and
+comparison chains like `a < b < c` do not share that property, so they need
+parentheses.
+[PR #91](https://github.com/johnwarden/pattern-language/pull/91) ·
 [Pony's infix operators](https://tutorial.ponylang.io/expressions/ops.html)
+
+Rhombus also requests explicit grouping when adjacent operators lack a declared
+precedence relationship. Its relations attach to lexical bindings. Pattern checks
+grouping on surface spellings so the same rule works inside quoted code. See
+[Flatt et al., *Rhombus*, §2.1](https://users.cs.utah.edu/plt/publications/oopsla23-faadffggkkmppst.pdf).
 
 ## Surface rule
 
-Additive operators are `+` and `-`. Multiplicative operators are `*`, `/`,
-and `%`. Together these are the arithmetic operators. The comparison
-operators are `<`, `<=`, `>`, `>=`, `==`, `!=`, `===`, and `!==`. Logical
-operators are `&&` and `||`.
+The grouping-sensitive operators are:
 
-At each expression level, check adjacent infix operators in source order.
-Require parentheses if any of the following hold.
+- arithmetic: `+`, `-`, `*`, `/`, `%`, and `^`
+- comparison: `<`, `<=`, `>`, `>=`, `==`, `!=`, `===`, `!==`
+- logical: `&&`, `||`, and the word forms `and`, `or`
+- union: `|`
+- ascription: `::`
 
-1. One operator is additive and the other is multiplicative.
-2. The first operator is `-`, `/`, or `%`. This makes an infix right
-   operand of one of those operators explicit, including repetitions
-   such as `a - b - c`.
-3. One operator is arithmetic and the other is a comparison.
-4. One operator is logical and the other is arithmetic, a comparison,
-   or a different logical operator.
-5. The first operator is arithmetic, a comparison, or logical, and the
-   second is `=`. Binding stays free on the right, so `n = x + 1` and
-   `ok = a && b` need no extra parentheses. An ungrouped arithmetic,
-   comparison, or logical operator directly left of `=` is rejected, so
-   write `(a + b) = c` or `a + (b = c)` instead of `a + b = c`.
+The associative operators in that set are `+`, `*`, `&&` / `and`, `||` / `or`,
+and `|`. `^` and `::` are grouping-sensitive and non-associative. At each
+expression level, check adjacent infix operators in source order. When both
+operators are grouping-sensitive, require parentheses unless they are the same
+associative operator. In particular, a grouping-sensitive operator directly
+adjacent to `::` needs parentheses.
+
+Operators outside that set — including arrow `->` and dotted word operators
+such as `.plus`, `.div`, `.times`, and `.where` — keep their previous master
+reading. A dotted word chain such as `a .plus b .times c` needs no extra
+parentheses. Mixing a grouping-sensitive operator with an outside operator also
+keeps the previous reading, so `a .div b * c` is `a .div (b * c)`.
+
+The ordinary right-association rule also applies to `=`. For example,
+`n = x + 1` reads as `n = (x + 1)`, and `a + b = c` reads as `a + (b = c)`.
+Write `(x :: Int) = 5` to bind a typed name.
 
 Check each parenthesized expression and each argument field independently.
-Parentheses around a single operand in a chain, as in `a - (b) - c`, leave
-both operators at the same level. Prefix signs, postfix operators, and
-tight dots are part of their operands.
-
-Accepted chains associate right. These rules apply wherever the surface
-reader builds an expression tree, including quoted Code and
-domain-specific expressions.
+Parentheses around a single operand in a chain, as in `a - (b) - c`, leave both
+operators at the same level. Prefix signs, postfix operators, and tight dots
+are part of their operands. Accepted chains associate right. These rules apply
+wherever the surface reader builds an expression tree, including quoted Code
+and domain-specific expressions.
 
 | Source | Reading |
 | --- | --- |
+| `a + b + c` | `a + (b + c)`. |
+| `a * b * c` | `a * (b * c)`. |
+| `a && b && c` | `a && (b && c)`. |
 | `a + b * c` | Syntax error. Write `(a + b) * c` or `a + (b * c)`. Mixing + and * requires parentheses. |
-| `a * b + c` | Syntax error. Write `(a * b) + c` or `a * (b + c)`. Mixing * and + requires parentheses. |
-| `a - b + c` | Syntax error. Write `(a - b) + c` or `a - (b + c)`. Mixing - and + requires parentheses. |
-| `10 - 3 - 2` | Syntax error. Write `(10 - 3) - 2` or `10 - (3 - 2)`. Repeating - requires parentheses. |
-| `12 / 3 * 2` | Syntax error. Write `(12 / 3) * 2` or `12 / (3 * 2)`. Mixing / and * requires parentheses. |
+| `a - b - c` | Syntax error. Write `(a - b) - c` or `a - (b - c)`. Repeating - requires parentheses. |
+| `a + b - c` | Syntax error. Write `(a + b) - c` or `a + (b - c)`. Mixing + and - requires parentheses. |
+| `a < b < c` | Syntax error. Write `(a < b) < c` or `a < (b < c)`. Repeating < requires parentheses. |
+| `a == b == c` | Syntax error. Write `(a == b) == c` or `a == (b == c)`. Repeating == requires parentheses. |
+| `a .and b .or c` | Syntax error. Write `(a .and b) .or c` or `a .and (b .or c)`. Mixing .and and .or requires parentheses. |
+| `a .plus b .times c` | `a .plus (b .times c)`. Dotted word operators stay outside the rule. |
 | `a .div b * c` | `a .div (b * c)`. |
-| `a - b .div c` | Syntax error. Write `(a - b) .div c` or `a - (b .div c)`. Mixing - and .div requires parentheses. |
-| `a * b == c + d` | Syntax error. Write `(a * b) == c` or `a * (b == c)`. Mixing * and == requires parentheses. |
-| `a == b + c` | Syntax error. Write `(a == b) + c` or `a == (b + c)`. Mixing == and + requires parentheses. |
+| `a * b ^ c` | Syntax error. Write `(a * b) ^ c` or `a * (b ^ c)`. Mixing * and ^ requires parentheses. |
+| `2 ^ 3 + 1` | Syntax error. Write `(2 ^ 3) + 1` or `2 ^ (3 + 1)`. Mixing ^ and + requires parentheses. |
+| `a ^ b ^ c` | Syntax error. Write `(a ^ b) ^ c` or `a ^ (b ^ c)`. Repeating ^ requires parentheses. |
+| `x - y :: Int` | Syntax error. Write `(x - y) :: Int` or `x - (y :: Int)`. Mixing - and :: requires parentheses. |
+| `x + y :: Int` | Syntax error. Write `(x + y) :: Int` or `x + (y :: Int)`. Mixing + and :: requires parentheses. |
+| `x :: Int` | `::(x)(Int)`. |
 | `n = x + 1` | `n = (x + 1)`. |
-| `a + b = c` | Syntax error. Write `(a + b) = c` or `a + (b = c)`. Mixing + and = requires parentheses. |
-| `a == b = c` | Syntax error. Write `(a == b) = c` or `a == (b = c)`. Mixing == and = requires parentheses. |
-| `a && b = c` | Syntax error. Write `(a && b) = c` or `a && (b = c)`. Mixing && and = requires parentheses. |
-| `(a + b) = c` | `=(+(a)(b))(c)`. |
-| `a + (b = c)` | `+(a)(=(b)(c))`. |
-| `q = a .div b` | `q = (a .div b)`. |
 | `f = x -> x + 1` | `f = (x -> (x + 1))`. |
-| `ok = a && b` | `ok = (a && b)`. |
-| `a == b && c == d` | Syntax error. Write `(a == b) && c` or `a == (b && c)`. Mixing == and && requires parentheses. |
-| `a && b \|\| c` | Syntax error. Write `(a && b) \|\| c` or `a && (b \|\| c)`. Mixing && and || requires parentheses. |
-| `a .and b .or c` | `a .and (b .or c)`. Both operators are words. |
-| `a * b ^ c` | `a * (b ^ c)`. `^` is a symbol operator outside the arithmetic and comparison sets. |
-| `a + b - c` | `a + (b - c)`. The `-` has a single operand on its right. |
+| `f = x -> x .plus 1` | `f = (x -> (x .plus 1))`. |
+| `x -> y = z` | `x -> (y = z)`. |
+| `x -> (y = z)` | `->(x)(=(y)(z))`. |
+| `x :: Int = 5` | `x :: (Int = 5)`. |
+| `x :: Int -> 5` | `x :: (Int -> 5)`. |
+| `a + b = c` | `a + (b = c)`. |
+| `a ^ b = c` | `a ^ (b = c)`. |
 | `f(a * b, c + d)` | Each argument field is checked independently. |
-
-Chains of `&&` alone or `||` alone associate right. These operators use
-ordinary infix evaluation, which evaluates both operands.
 
 ## Grouping diagnostics
 
-Report `E_INFIX_GROUPING` at the second operator of the first rejected
-pair in source order. At this stage the reader knows the operator spellings
-and operand boundaries. Present the two groupings as equal choices. Show
-the left grouping first and the right grouping second, using the operands
-and operator spellings from the source. Keep calls, tight dots, prefix
-signs, and existing parentheses intact. Lead every grouping error with
-`Syntax error.` and the Write suggestion on the first line, with each option
-in backticks. Give the rule on the next line after the Write suggestion.
-
-For `price + tax * count`, the message reads
+Report `E_INFIX_GROUPING` at the second operator of the first rejected pair in
+source order. Present the two groupings as equal choices. Show the left
+grouping first and the right grouping second, using the operands and operator
+spellings from the source. Keep calls, tight dots, prefix signs, and existing
+parentheses intact inside those operands. Lead every grouping error with
+`Syntax error.` and the Write suggestion on the first line, with each option in
+backticks. Give the rule on the next line after the Write suggestion.
 
 ```text
-Syntax error. Write `(price + tax) * count` or `price + (tax * count)`.
+Syntax error. Write `(a + b) * c` or `a + (b * c)`.
 Mixing + and * requires parentheses.
 ```
 
-For a repeated operator, use its source spelling. For example, `10 - 3 - 2`
-produces
+For a repeated non-associative operator, use its source spelling:
 
 ```text
 Syntax error. Write `(10 - 3) - 2` or `10 - (3 - 2)`.
 Repeating - requires parentheses.
 ```
 
-When both alternatives resolve the grouping errors in the expression,
-keep the surrounding source in each option, including any call or other
-argument fields. If a conflict remains in
-at least one alternative, show just the three operands around the first
-rejected pair. For `a * b == c + d`, the message reads
-
-```text
-Syntax error. Write `(a * b) == c` or `a * (b == c)`.
-Mixing * and == requires parentheses.
-```
+Write suggestions cover only the offending infix expression, starting at the
+left operand of the first rejected pair. They never reprint a surrounding call,
+binding target, earlier chain prefix, statement, or buffer. Prefer source
+slices of each operand; if an operand has no span, use its printed form.
+Quoted operators keep their source spelling in both options and in the rule
+line, so `x :- y :* z` suggests `(x :- y) :* z` or `x :- (y :* z)`.
 
 ## Ascriptions in infix chains
 
-In an accepted chain starting with `x :: T`, right association puts any
-following unparenthesized operator inside the type operand. Group the
-whole ascription to use it as the left operand of `=` or `->`.
+`::` is grouping-sensitive and non-associative, so a sensitive operator next to
+`::` needs parentheses. Group the ascription when it is the left operand of `=` or `->`.
 
-| Source | Right-associated reading | Spelling with a typed left operand |
-| --- | --- | --- |
-| `x :: Int = 5` | `x :: (Int = 5)` | `(x :: Int) = 5` |
-| `x :: Int -> 5` | `x :: (Int -> 5)` | `(x :: Int) -> 5` |
-| `f :: Int => Int = x -> x ^ 2` | `f :: (Int => (Int = (x -> (x ^ 2))))` | `(f :: Int => Int) = x -> x ^ 2` |
-
-The last example assumes a future grammar interprets `Int => Int` as
-a function type. Inside `(f :: Int => Int)`, right association already
-groups `Int => Int` as the type operand. The binding's right operand
-already groups as `x -> (x ^ 2)`.
-
-With arithmetic, `x + y :: Int` ascribes `y`, and `(x + y) :: Int`
-ascribes the sum. In `x - y :: Int`, the `-` rule requires a choice
-between `x - (y :: Int)` and `(x - y) :: Int`.
+| Source | Reading |
+| --- | --- |
+| `x :: Int = 5` | `x :: (Int = 5)`. |
+| `(x :: Int) = 5` | `=(::(x)(Int))(5)`. |
+| `x :: Int -> 5` | `x :: (Int -> 5)`. |
+| `(x :: Int) -> 5` | `->(::(x)(Int))(5)`. |
+| `x + y :: Int` | Syntax error. Mixing + and :: requires parentheses. |
+| `x - y :: Int` | Syntax error. Mixing - and :: requires parentheses. |
+| `x - (y :: Int)` | `-(x)(::(y)(Int))`. |
+| `(x - y) :: Int` | `::(-(x)(y))(Int)`. |
 
 ## Printing
 
-Keep parentheses around left infix children when printing infix syntax.
-Wrap a right infix child if printing its operator next to its parent's
-would make a rejected pair. Also wrap a right arithmetic child of an
-arithmetic operator when their spellings differ, as in `a + (b - c)`.
-Use the spellings the printer emits. Call notation such as `div(a)(b * c)`
-already delimits its arguments.
+Keep parentheses around left infix children when printing infix syntax. Wrap a
+right infix child if printing its operator next to its parent's would make a
+rejected pair under the rule above. Use the spellings the printer emits. Call
+notation such as `div(a)(b * c)` already delimits its arguments.
 
-For example, print `+(a)(*(b)(c))` as `a + (b * c)`, `*(+(a)(b))(c)`
-as `(a + b) * c`, and `-(a)(+(b)(c))` as `a - (b + c)`. Print
-`==(a)(+(b)(c))` as `a == (b + c)`, and `+(a)(=(b)(c))` as
-`a + (b = c)`. Each form reads back to its original application tree.
+For example, print `+(a)(*(b)(c))` as `a + (b * c)`, `*(+(a)(b))(c)` as
+`(a + b) * c`, `+(a)(=(b)(c))` as `a + b = c`, and `=(+(a)(b))(c)` as
+`(a + b) = c`. Each form reads back to its original application tree.
 
 ## Test cases
 
 ```pattern
-test "Mixed arithmetic shows both groupings in source order"
-  todo expect parse(Code)("a + b * c") fails "
+test "Associative repetition needs no parentheses"
+  assert parse(Code)("a + b + c") == parse(Code)("a + (b + c)")
+  assert parse(Code)("a * b * c") == parse(Code)("a * (b * c)")
+  assert parse(Code)("a && b && c") == parse(Code)("a && (b && c)")
+  assert parse(Code)("a || b || c") == parse(Code)("a || (b || c)")
+  assert parse(Code)("a .and b .and c") == parse(Code)("a .and (b .and c)")
+  assert parse(Code)("a .or b .or c") == parse(Code)("a .or (b .or c)")
+  assert parse(Code)("A | B | C") == parse(Code)("A | (B | C)")
+end
+
+test "Mixed operators show both groupings"
+  expect parse(Code)("a + b * c") fails "
     Syntax error. Write `(a + b) * c` or `a + (b * c)`.
     Mixing + and * requires parentheses.
   end
-  todo expect parse(Code)("price + tax * count") fails "
+  expect parse(Code)("price + tax * count") fails "
     Syntax error. Write `(price + tax) * count` or `price + (tax * count)`.
     Mixing + and * requires parentheses.
   end
-  todo expect parse(Code)("a * b + c") fails "
+  expect parse(Code)("a * b + c") fails "
     Syntax error. Write `(a * b) + c` or `a * (b + c)`.
     Mixing * and + requires parentheses.
   end
-  todo expect parse(Code)("a .div b * c + d") fails "
-    Syntax error. Write `a .div (b * c) + d` or `a .div b * (c + d)`.
+  expect parse(Code)("a + b - c") fails "
+    Syntax error. Write `(a + b) - c` or `a + (b - c)`.
+    Mixing + and - requires parentheses.
+  end
+  expect parse(Code)("a .and b .or c") fails "
+    Syntax error. Write `(a .and b) .or c` or `a .and (b .or c)`.
+    Mixing .and and .or requires parentheses.
+  end
+  expect parse(Code)("a * b ^ c") fails "
+    Syntax error. Write `(a * b) ^ c` or `a * (b ^ c)`.
+    Mixing * and ^ requires parentheses.
+  end
+  expect parse(Code)("2 ^ 3 + 1") fails "
+    Syntax error. Write `(2 ^ 3) + 1` or `2 ^ (3 + 1)`.
+    Mixing ^ and + requires parentheses.
+  end
+  expect parse(Code)("f(a * b + c, d)") fails "
+    Syntax error. Write `(a * b) + c` or `a * (b + c)`.
     Mixing * and + requires parentheses.
   end
-  todo expect parse(Code)("f(a * b + c, d)") fails "
-    Syntax error. Write `f((a * b) + c, d)` or `f(a * (b + c), d)`.
-    Mixing * and + requires parentheses.
+  src = "
+    x = 1
+    y = a + b * c
+  end
+  expect parse(Code)(src) fails "
+    Syntax error. Write `(a + b) * c` or `a + (b * c)`.
+    Mixing + and * requires parentheses.
   end
 end
 
-test "An infix right operand of subtraction, division or remainder needs grouping"
-  todo expect parse(Code)("a - b .div c") fails "
-    Syntax error. Write `(a - b) .div c` or `a - (b .div c)`.
-    Mixing - and .div requires parentheses.
-  end
-  todo expect parse(Code)("a - b + c") fails "
-    Syntax error. Write `(a - b) + c` or `a - (b + c)`.
-    Mixing - and + requires parentheses.
-  end
-  todo expect parse(Code)("10 - 3 - 2") fails "
+test "Non-associative repetition needs grouping"
+  expect parse(Code)("10 - 3 - 2") fails "
     Syntax error. Write `(10 - 3) - 2` or `10 - (3 - 2)`.
     Repeating - requires parentheses.
   end
-  todo expect parse(Code)("a - (b) - c") fails "
+  expect parse(Code)("a - (b) - c") fails "
     Syntax error. Write `(a - (b)) - c` or `a - ((b) - c)`.
     Repeating - requires parentheses.
   end
-  todo expect parse(Code)("12 / 3 * 2") fails "
-    Syntax error. Write `(12 / 3) * 2` or `12 / (3 * 2)`.
-    Mixing / and * requires parentheses.
-  end
-  todo expect parse(Code)("a / b / c") fails "
+  expect parse(Code)("a / b / c") fails "
     Syntax error. Write `(a / b) / c` or `a / (b / c)`.
     Repeating / requires parentheses.
   end
-  todo expect parse(Code)("a % b % c") fails "
+  expect parse(Code)("a % b % c") fails "
     Syntax error. Write `(a % b) % c` or `a % (b % c)`.
     Repeating % requires parentheses.
   end
-  todo expect parse(Code)("-x - y.z ^ f(a)") fails "
-    Syntax error. Write `(-x - y.z) ^ f(a)` or `-x - (y.z ^ f(a))`.
-    Mixing - and ^ requires parentheses.
+  expect parse(Code)("a < b < c") fails "
+    Syntax error. Write `(a < b) < c` or `a < (b < c)`.
+    Repeating < requires parentheses.
   end
-  todo expect parse(Code)("x - (y) .div z") fails "
-    Syntax error. Write `(x - (y)) .div z` or `x - ((y) .div z)`.
-    Mixing - and .div requires parentheses.
+  expect parse(Code)("a == b == c") fails "
+    Syntax error. Write `(a == b) == c` or `a == (b == c)`.
+    Repeating == requires parentheses.
   end
-  todo expect parse(Code)("x - y :: Int") fails "
-    Syntax error. Write `(x - y) :: Int` or `x - (y :: Int)`.
-    Mixing - and :: requires parentheses.
+  expect parse(Code)("a ^ b ^ c") fails "
+    Syntax error. Write `(a ^ b) ^ c` or `a ^ (b ^ c)`.
+    Repeating ^ requires parentheses.
   end
 end
 
-test "Arithmetic and comparison conflicts identify the operands to group"
-  todo expect parse(Code)("a * b == c") fails "
+test "Arithmetic, comparison and logical mixes identify the operands to group"
+  expect parse(Code)("a * b == c") fails "
     Syntax error. Write `(a * b) == c` or `a * (b == c)`.
     Mixing * and == requires parentheses.
   end
-  todo expect parse(Code)("a == b + c") fails "
+  expect parse(Code)("a == b + c") fails "
     Syntax error. Write `(a == b) + c` or `a == (b + c)`.
     Mixing == and + requires parentheses.
   end
-  todo expect parse(Code)("a + b >= c") fails "
-    Syntax error. Write `(a + b) >= c` or `a + (b >= c)`.
-    Mixing + and >= requires parentheses.
+  expect parse(Code)("a && b || c") fails "
+    Syntax error. Write `(a && b) || c` or `a && (b || c)`.
+    Mixing && and || requires parentheses.
   end
-  todo expect parse(Code)("a !== b * c") fails "
-    Syntax error. Write `(a !== b) * c` or `a !== (b * c)`.
-    Mixing !== and * requires parentheses.
+  expect parse(Code)("a == b && c == d") fails "
+    Syntax error. Write `(a == b) && c` or `a == (b && c)`.
+    Mixing == and && requires parentheses.
   end
-  todo expect parse(Code)("a * b == c + d") fails "
+  expect parse(Code)("a * b == c + d") fails "
     Syntax error. Write `(a * b) == c` or `a * (b == c)`.
     Mixing * and == requires parentheses.
   end
 end
 
-test "Logical conflicts show the first missing pair of parentheses"
-  todo expect parse(Code)("a && b || c") fails "
-    Syntax error. Write `(a && b) || c` or `a && (b || c)`.
-    Mixing && and || requires parentheses.
-  end
-  todo expect parse(Code)("a == b && c == d") fails "
-    Syntax error. Write `(a == b) && c` or `a == (b && c)`.
-    Mixing == and && requires parentheses.
-  end
-  todo expect parse(Code)("(a == b) && c == d") fails "
-    Syntax error. Write `((a == b) && c) == d` or `(a == b) && (c == d)`.
-    Mixing && and == requires parentheses.
-  end
-  todo expect parse(Code)("a == b && (c == d)") fails "
-    Syntax error. Write `(a == b) && (c == d)` or `a == (b && (c == d))`.
-    Mixing == and && requires parentheses.
-  end
-  todo expect parse(Code)("a || b < c") fails "
-    Syntax error. Write `(a || b) < c` or `a || (b < c)`.
-    Mixing || and < requires parentheses.
-  end
-  todo expect parse(Code)("a + b || c") fails "
-    Syntax error. Write `(a + b) || c` or `a + (b || c)`.
-    Mixing + and || requires parentheses.
-  end
-  todo expect parse(Code)("a && b * c") fails "
-    Syntax error. Write `(a && b) * c` or `a && (b * c)`.
-    Mixing && and * requires parentheses.
-  end
-  todo expect parse(Code)("p && q || r") fails "
-    Syntax error. Write `(p && q) || r` or `p && (q || r)`.
-    Mixing && and || requires parentheses.
-  end
-  todo expect parse(Code)("p || q && r") fails "
-    Syntax error. Write `(p || q) && r` or `p || (q && r)`.
-    Mixing || and && requires parentheses.
-  end
+test "Operators outside the rule keep their previous reading"
+  assert parse(Code)("a .div b * c") == parse(Code)("a .div (b * c)")
+  assert parse(Code)("a - b .div c") == parse(Code)("a - (b .div c)")
+  assert parse(Code)("a .plus b .times c") == parse(Code)("a .plus (b .times c)")
 end
 
-test "A binding after arithmetic, comparison or logic shows both groupings"
-  todo expect parse(Code)("a + b = c") fails "
-    Syntax error. Write `(a + b) = c` or `a + (b = c)`.
-    Mixing + and = requires parentheses.
+test "Ascription next to a sensitive operator needs grouping"
+  expect parse(Code)("x - y :: Int") fails "
+    Syntax error. Write `(x - y) :: Int` or `x - (y :: Int)`.
+    Mixing - and :: requires parentheses.
   end
-  todo expect parse(Code)("a == b = c") fails "
-    Syntax error. Write `(a == b) = c` or `a == (b = c)`.
-    Mixing == and = requires parentheses.
+  expect parse(Code)("x + y :: Int") fails "
+    Syntax error. Write `(x + y) :: Int` or `x + (y :: Int)`.
+    Mixing + and :: requires parentheses.
   end
-  todo expect parse(Code)("a && b = c") fails "
-    Syntax error. Write `(a && b) = c` or `a && (b = c)`.
-    Mixing && and = requires parentheses.
-  end
+  assert parse(Code)("x - (y :: Int)") == parse(Code)("-(x)(::(y)(Int))")
+  assert parse(Code)("(x - y) :: Int") == parse(Code)("::(-(x)(y))(Int)")
+  assert parse(Code)("x :: Int") == parse(Code)("::(x)(Int)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("::(x)(=(Int)(5))")
+  assert parse(Code)("x :: Int -> 5") == parse(Code)("x :: (Int -> 5)")
+end
+
+test "Binding follows ordinary right association"
+  assert parse(Code)("a + b = c") == parse(Code)("+(a)(=(b)(c))")
+  assert parse(Code)("a ^ b = c") == parse(Code)("^(a)(=(b)(c))")
+  assert parse(Code)("n = a ^ b") == parse(Code)("=(n)(^(a)(b))")
+  assert parse(Code)("a = b = c") == parse(Code)("=(a)(=(b)(c))")
+  expect
+    (x :: Int) = 5
+    x
+  is 5 :: Int
 end
 
 test "Choosing a grouping changes the subtraction result"
@@ -308,20 +298,24 @@ test "Choosing a grouping changes the subtraction result"
   expect 10 - (3 - 2) is 9 :: Rational
 end
 
-test "Operators outside the rejected pairs still compose without parentheses"
+test "Independent fields and free binding and arrow rights stay accepted"
   assert parse(Code)("f(a * b, c + d)") == parse(Code)("f((a * b), (c + d))")
-  assert parse(Code)("a + b - c") == parse(Code)("a + (b - c)")
-  assert parse(Code)("a .div b * c") == parse(Code)("a .div (b * c)")
-  assert parse(Code)("a && b && c") == parse(Code)("a && (b && c)")
-  assert parse(Code)("x :: Int = 5") == parse(Code)("x :: (Int = 5)")
-  assert parse(Code)("x :: Int -> 5") == parse(Code)("x :: (Int -> 5)")
-  assert parse(Code)("f :: Int => Int = x -> x ^ 2") == parse(Code)("f :: (Int => (Int = (x -> (x ^ 2))))")
+  assert parse(Code)("n = x + 1") == parse(Code)("=(n)(+(x)(1))")
+  assert parse(Code)("ok = a && b") == parse(Code)("=(ok)(&&(a)(b))")
+  assert parse(Code)("q = a .div b") == parse(Code)("=(q)(div(a)(b))")
+  assert parse(Code)("f = x -> x + 1") == parse(Code)("f = (x -> (x + 1))")
+  assert parse(Code)("f = x -> x .plus 1") == parse(Code)("f = (x -> (x .plus 1))")
+  assert parse(Code)("x -> y = z") == parse(Code)("->(x)(=(y)(z))")
+  assert parse(Code)("x -> (y = z)") == parse(Code)("->(x)(=(y)(z))")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("::(x)(=(Int)(5))")
 end
 
 test "A typed left operand retains its ascription"
   assert parse(Code)("(x :: Int) = 5") == parse(Code)("=(::(x)(Int))(5)")
+  assert parse(Code)("x :: Int = 5") == parse(Code)("::(x)(=(Int)(5))")
   assert parse(Code)("(x :: Int) -> 5") == parse(Code)("->(::(x)(Int))(5)")
-  assert parse(Code)("(f :: Int => Int) = x -> x ^ 2") == parse(Code)("((f :: (Int => Int)) = (x -> (x ^ 2)))")
+  assert parse(Code)("x :: Int -> 5") == parse(Code)("x :: (Int -> 5)")
+  assert parse(Code)("(f :: (Int => Int)) = x -> x ^ 2") == parse(Code)("=(::(f)(Int => Int))(->(x)(^(x)(2)))")
 end
 
 test "Printed infix Code shows grouping and reads back to the same tree"
@@ -330,25 +324,31 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   sameGroup = parse(Code)("-(a)(+(b)(c))")
   repeatedDivision = parse(Code)("/(a)(/(b)(c))")
   comparison = parse(Code)("==(a)(+(b)(c))")
-  wordOperator = parse(Code)("a .div b * c")
+  wordOperator = parse(Code)("div(a)(*(b)(c))")
   typedBinding = parse(Code)("=(::(x)(Int))(5)")
   ascribedSubtrahend = parse(Code)("-(x)(::(y)(Int))")
   arithmeticBinding = parse(Code)("=(n)(+(x)(1))")
   logical = parse(Code)("&&(a)(||(b)(c))")
   compared = parse(Code)("&&(==(a)(b))(==(c)(d))")
-  todo expect toString(Code)(right) is "a + (b * c)"
+  expect toString(Code)(right) is "a + (b * c)"
   expect toString(Code)(left) is "(a + b) * c"
-  todo expect toString(Code)(sameGroup) is "a - (b + c)"
-  todo expect toString(Code)(repeatedDivision) is "a / (b / c)"
-  todo expect toString(Code)(comparison) is "a == (b + c)"
+  expect toString(Code)(sameGroup) is "a - (b + c)"
+  expect toString(Code)(repeatedDivision) is "a / (b / c)"
+  expect toString(Code)(comparison) is "a == (b + c)"
   expect toString(Code)(wordOperator) is "div(a)(b * c)"
   expect toString(Code)(typedBinding) is "(x :: Int) = 5"
-  todo expect toString(Code)(ascribedSubtrahend) is "x - (y :: Int)"
+  expect toString(Code)(ascribedSubtrahend) is "x - (y :: Int)"
   expect toString(Code)(arithmeticBinding) is "n = x + 1"
-  todo expect toString(Code)(logical) is "a && (b || c)"
-  todo expect toString(Code)(compared) is "(a == b) && (c == d)"
+  expect toString(Code)(logical) is "a && (b || c)"
+  expect toString(Code)(compared) is "(a == b) && (c == d)"
+  powerUnderMul = parse(Code)("*(a)(^(b)(c))")
+  repeatedPower = parse(Code)("^(a)(^(b)(c))")
+  expect toString(Code)(powerUnderMul) is "a * (b ^ c)"
+  expect toString(Code)(repeatedPower) is "a ^ (b ^ c)"
   bindingUnderAdd = parse(Code)("+(a)(=(b)(c))")
-  expect toString(Code)(bindingUnderAdd) is "a + (b = c)"
+  addUnderBinding = parse(Code)("=(+(a)(b))(c)")
+  expect toString(Code)(bindingUnderAdd) is "a + b = c"
+  expect toString(Code)(addUnderBinding) is "(a + b) = c"
   assert parse(Code)(toString(Code)(right)) == right
   assert parse(Code)(toString(Code)(left)) == left
   assert parse(Code)(toString(Code)(sameGroup)) == sameGroup
@@ -360,16 +360,26 @@ test "Printed infix Code shows grouping and reads back to the same tree"
   assert parse(Code)(toString(Code)(arithmeticBinding)) == arithmeticBinding
   assert parse(Code)(toString(Code)(logical)) == logical
   assert parse(Code)(toString(Code)(compared)) == compared
+  assert parse(Code)(toString(Code)(powerUnderMul)) == powerUnderMul
+  assert parse(Code)(toString(Code)(repeatedPower)) == repeatedPower
   assert parse(Code)(toString(Code)(bindingUnderAdd)) == bindingUnderAdd
+  assert parse(Code)(toString(Code)(addUnderBinding)) == addUnderBinding
+end
+
+test "Quoted operators keep their source spelling in Write suggestions"
+  expect parse(Code)("x :- y :* z") fails "
+    Syntax error. Write `(x :- y) :* z` or `x :- (y :* z)`.
+    Mixing :- and :* requires parentheses.
+  end
+  expect parse(Code)("x .:and y :|| z") fails "
+    Syntax error. Write `(x .:and y) :|| z` or `x .:and (y :|| z)`.
+    Mixing .:and and :|| requires parentheses.
+  end
 end
 ```
 
-The binding-left rule is implemented and covered by the language suite.
-The `todo` assertions record the proposed diagnostics and the formatter
-changes still needed.
-When implementing the remaining pairs, give existing cases explicit
-grouping to keep their intended trees. Update the reader and formatter
-together so printed Code reads back to the same tree.
-[Binding-left grouping](../tests/language/infix-grouping.test) ·
+The associative-repetition rule over the grouping-sensitive set, rewrite
+diagnostics, and printer parentheses are implemented.
+[Language suite](../tests/language/infix-grouping.test) ·
 [C25 case](../tests/specification/language.test) ·
 [Same-precedence conformance case](../tests/conformance/expressions.test)

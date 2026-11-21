@@ -20,7 +20,7 @@ function binaryParts<T>(node: T, notation: ApplicationNotation<T>) {
     : undefined;
 }
 
-/** An infix value needs grouping when another right-associative operator follows. */
+/** True when the node is a binary infix application under the shared notation. */
 export function isInfixApplication<T>(
   node: T,
   notation: ApplicationNotation<T>,

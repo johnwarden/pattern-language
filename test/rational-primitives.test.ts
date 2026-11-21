@@ -27,7 +27,7 @@ test("numeric syntax payloads preserve large integers and unary-minus structure"
     'Apply(Name("-", False), [Field("_1", NumberLiteral(magnitude))]) = syntaxTree(:(-(0.1)))\n';
   assert.equal(run(setup + "n == 9007199254740993"), "True");
   assert.equal(run(setup + "large != syntaxTree(9007199254740992)"), "True");
-  assert.equal(run(setup + "negative == 0 - 0.1"), "True");
+  assert.equal(run(setup + "negative == (0 - 0.1)"), "True");
   assert.equal(run(setup + "magnitude == 0.1"), "True");
   assert.equal(
     run("syntaxTree(9007199254740993)"),

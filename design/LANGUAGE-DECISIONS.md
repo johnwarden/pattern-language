@@ -51,7 +51,7 @@ Examples do not ratify those lexical details by repetition.
 
 ### D01. Preserve the structural application model — retained
 
-An application has one head and one argument pack. `f(a)(b)` differs from `f(a,b)`; bare `f` differs from `f()`. Empty and multiple results are packs, not implicit unit/tuple values. Ordinary partial application consumes complete packs. Infix operators retain equal precedence and right associativity; parentheses preserve intended grouping. Type-parameter notation must not flatten runtime packs. Reason: these are the common structural rules; none of the new proposals withdraws them. **Sources:** O, A, S.
+An application has one head and one argument pack. `f(a)(b)` differs from `f(a,b)`; bare `f` differs from `f()`. Empty and multiple results are packs, not implicit unit/tuple values. Ordinary partial application consumes complete packs. Accepted infix chains retain equal precedence and right associativity. Among grouping-sensitive operators (`+ - * / % ^`, comparisons, `&&`/`||`/`and`/`or`, `|`, `::`) parentheses may be omitted only for repeated associative operators (`+`, `*`, `|`, `&&`/`and`, `||`/`or`), while `=`, `->`, and dotted word operators stay outside the rule ([arithmetic-grouping](../specs/arithmetic-grouping.md)). Type-parameter notation must not flatten runtime packs. Reason: these are the common structural rules; none of the new proposals withdraws them. **Sources:** O, A, S.
 
 Formatting and whitespace mistakes must produce syntax errors rather than logic
 errors within a form fixed by the applied grammar. They must not silently select
@@ -439,9 +439,13 @@ positional results. Empty `()` remains an empty pack.
 
 ### C25 — equal precedence and right associativity are preserved
 
-Todo. `(2 :: Float64) * (3 :: Float64) + (4 :: Float64)` denotes `2 * (3 + 4)`
-and is `14 :: Float64`. `("left" .select "right")` is `"right"`. Each ascription
-is grouped explicitly so the example does not accidentally change its tree.
+**Implemented with associative-repetition grouping.**  
+`(2 :: Float64) * ((3 :: Float64) + (4 :: Float64))` denotes `2 * (3 + 4)`
+and is `14 :: Float64`. `("left" .select "right")` is `"right"`. `a + b = c` groups as
+`a + (b = c)`. Among grouping-sensitive operators
+(including non-associative `^` and `::`), only repeated `+`, `*`, `|`,
+`&&`/`and`, or `||`/`or` may omit parentheses; dotted word operators stay
+outside the rule.
 
 ### C26 — todo assertions execute without leaking local state
 

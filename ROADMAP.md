@@ -28,9 +28,14 @@ must test composition and state role differences explicitly.
 ### Core contracts
 
 - One application has an expression head and one complete pack. f(a)(b), f(a,b), f()
-  and f are distinct. Dot/infix/outfix are sugar; infix has equal precedence and
-  right associativity. Labels are lowercase, unique and canonically sorted after
-  positional fields. () is an empty pack, not an implicit unit value.
+  and f are distinct. Dot/infix/outfix are sugar; accepted infix chains have equal
+  precedence and right associativity, and among grouping-sensitive operators
+  (`+ - * / % ^`, comparisons, `&&`/`||`/`and`/`or`, `|`, `::`) parentheses may
+  be omitted only for repeated associative operators (`+`, `*`, `|`, `&&`/`and`,
+  `||`/`or`); `->` and dotted word operators stay outside
+  ([arithmetic-grouping](specs/arithmetic-grouping.md)). Labels are lowercase,
+  unique and canonically sorted after positional fields. () is an empty pack, not
+  an implicit unit value.
 - Callability is checked when Code is evaluated, not by restricting application
   syntax. See [application-head contracts](tests/specification/application-heads.test)
   and their [phase explanation](tests/specification/application-heads.md).
