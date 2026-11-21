@@ -365,14 +365,14 @@ test "A zero denominator fails during literal reading"
   expect parse(Code)("(1/0)e20") fails "E_SYNTAX"
   assert parse(Code)("(1 / 0)") == Code` /(1)(0)
   legacy expect 1 / 0 fails "result exceeds safe numeric range"
-  todo expect 1 / 0 fails "E_DIVISION_BY_ZERO"
+  todo expect 1 / 0 fails "isNonZero"
 end
 
-test "Reading division by zero in a default leaves it unevaluated"
-  def choose(value: NumericValue = (1 / 0)) value
-  expect choose(value: 8) is 8 :: NumericValue
+test "An overflowing conversion in a default runs only when selected"
+  def choose(value: Float64 = float64(1e309)) value
+  expect choose(value: 8) is 8 :: Float64
   legacy expect choose() fails "result exceeds safe numeric range"
-  todo expect choose() fails "E_DIVISION_BY_ZERO"
+  todo expect choose() fails "E_OVERFLOW"
 end
 ```
 

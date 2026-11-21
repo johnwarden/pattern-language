@@ -334,13 +334,13 @@ nonzero. For example:
     def /(left :: Int32)(right :: NonZeroInt32Literal) :: Ratio64
     def /(left :: FitsInt32)(right :: NonZeroInt32) :: Ratio64
 
-A divisor rejected specifically because it is zero reports
-`E_DIVISION_BY_ZERO`. A zero literal can be diagnosed during designation
-against the selected signature. A bound divisor without nonzero evidence
-follows the ordinary missing-evidence rule. Dispatch uses established
-evidence and performs no predicate check to select an overload. The
-nonzero condition applies to calls, including successive packs and saved
-partials. A fraction atom with a zero denominator still fails during
+Every valid call has evidence that its divisor is nonzero under
+[the refinement evidence rules](https://github.com/johnwarden/pattern-language/pull/89).
+Designation rejects a zero literal with a diagnostic naming `isNonZero`.
+A bound divisor without that evidence fails with `E_NO_METHOD`. An explicit
+`.matches` check can supply the evidence in its true branch. These rules
+apply before evaluation, including calls through successive packs or
+saved partials. A fraction atom with a zero denominator fails during
 reading with `E_SYNTAX`.
 
 Fixed-width arithmetic depends on the implementation of refinement
@@ -413,22 +413,24 @@ todo test "Integer division returns an exact ratio selected by operand width"
   expect (2 :: Int32) / (-2147483648) is (-1/1073741824) :: Ratio64
 end
 
-todo test "Division and remainder reject a zero divisor"
+todo test "Division and remainder reject literal zero during designation"
   n = 1 :: Int32
-  expect n / 0 fails "E_DIVISION_BY_ZERO"
-  expect n / (0 :: Int32) fails "E_DIVISION_BY_ZERO"
-  expect n .div 0 fails "E_DIVISION_BY_ZERO"
-  expect n .flDiv 0 fails "E_DIVISION_BY_ZERO"
-  expect n % 0 fails "E_DIVISION_BY_ZERO"
-  expect (1/3 :: Ratio64) / (0 :: Ratio64) fails "E_DIVISION_BY_ZERO"
-  expect 1i / 0i fails "E_DIVISION_BY_ZERO"
+  expect n / 0 fails "isNonZero"
+  expect n / (0 :: Int32) fails "isNonZero"
+  expect n .div 0 fails "isNonZero"
+  expect n .flDiv 0 fails "isNonZero"
+  expect n % 0 fails "isNonZero"
+  expect (1/3 :: Ratio64) / (0 :: Ratio64) fails "isNonZero"
+  expect 1i / 0i fails "isNonZero"
 end
 
 todo test "A bound divisor needs nonzero evidence in the call scope"
   type NonZeroInt32 pattern Int32 .where isNonZero
   n = 1 :: Int32
   d = 3 :: Int32
+  z = 0 :: Int32
   expect n / d fails "E_NO_METHOD"
+  expect n / z fails "E_NO_METHOD"
   expect
     if d .matches NonZeroInt32
       n / d
@@ -454,7 +456,7 @@ todo test "Truncated remainder checks only the returned result"
   negFive = 0 - 5
   assert (negFive % 2) == (0 - 1)
   expect minInt32 % (-1) is 0 :: Int32
-  expect minInt32 % 0 fails "E_DIVISION_BY_ZERO"
+  expect minInt32 % 0 fails "isNonZero"
   expect (-5 :: Float) % 2 fails "E_NOT_INTEGER_OPERAND"
 end
 
@@ -476,7 +478,7 @@ todo test "Floating division checks zero and underflow"
   expect zero / (-2) is 0 :: Float64
   expect smallest / 1 is 0x1p-1074 :: Float64
   expect smallest / 2 fails "E_UNDERFLOW"
-  expect smallest / 0 fails "E_DIVISION_BY_ZERO"
+  expect smallest / 0 fails "isNonZero"
 end
 ```
 
