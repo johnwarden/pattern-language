@@ -121,12 +121,12 @@ initial refinement predicates. See the [refinement evidence proposal](https://gi
 
 ```pattern
 todo test "Abstract refinement and concrete carveout both use named predicates"
-  type NonZeroRational pattern ExactRational .where isNonZero
-  type NonZeroId struct ExactRational .where isNonZero
+  type NonZeroRational pattern NumericValue .where isNonZero
+  type NonZeroId struct NumericValue .where isNonZero
 
   (n :: NonZeroRational) = 2
   (id :: NonZeroId) = 2
-  expect n is 2 :: ExactRational
+  expect n is 2 :: NumericValue
   expect id is 2 :: NonZeroId
 end
 ```
@@ -145,7 +145,7 @@ initial inventory is:
 
 | Types | Domain |
 | --- | --- |
-| `ExactRational`, `String` | Concrete. |
+| `NumericValue`, `String` | Concrete. |
 | `PrimitiveType` | Concrete. It includes itself. |
 | `Any`, `LowerCamelSymbol`, `UpperCamelSymbol`, `LowerSnakeSymbol`, `UpperSnakeSymbol`, `PunctuationSymbol` | Abstract. |
 
@@ -189,28 +189,28 @@ end
 ```
 
 The [fixed-precision numeric proposal](https://github.com/johnwarden/pattern-language/pull/86)
-defines numeric formats as prelude structs over `ExactRational`, with
+defines numeric formats as prelude structs over `NumericValue`, with
 `Int` and `Float` as aliases and `Number` as an abstract union.
 `Code` and `Body` are grammar-defined types. `ReservedSymbol` is internal
 to the bootstrap. Quoting a self-evaluating type name or Boolean literal
 name in executable source raises `E_QUOTED_PRIMITIVE`. The Code reader
 preserves that source spelling.
 
-Exact equality uses the ordinary rule for overlapping static domains. `Int`
-and `Struct(Int)` describe different concrete value spaces. The abstract
+Exact equality uses the ordinary rule for overlapping static domains. `Int64`
+and `Struct(Int64)` describe different concrete value spaces. The abstract
 bindings below admit both descriptors, so the comparison returns `False`:
 
 ```pattern
-todo test "Int and Struct(Int) compare unequal through Type"
-  (x :: Type) = Int
-  (y :: Type) = Struct(Int)
+todo test "Int64 and Struct(Int64) compare unequal through Type"
+  (x :: Type) = Int64
+  (y :: Type) = Struct(Int64)
   assert not(x === y)
 end
 ```
 
 Once fixed formats are prelude definitions, both values in this example have
 descriptor kind `Struct`. Their payloads differ because `y` adds a boundary.
-With `String` in place of `Int`, the two concrete kinds are `PrimitiveType`
+With `String` in place of `Int64`, the two concrete kinds are `PrimitiveType`
 and `Struct`, and the comparison through `Type` still returns `False`.
 The wrapper and its payload are also distinct when comparing member values.
 
@@ -271,12 +271,12 @@ end
 ```pattern
 todo test "parse(Type) on text with .where p does not call p"
   calls = 0
-  def p(n :: ExactRational)
+  def p(n :: NumericValue)
     calls = calls + 1
     n != 0
   end
 
-  expect parse(Type)("Pattern(ExactRational .where p)") fails "E_EXPECTED_PREDICATE"
+  expect parse(Type)("Pattern(NumericValue .where p)") fails "E_EXPECTED_PREDICATE"
   assert calls == 0
 end
 ```
@@ -453,7 +453,7 @@ end
 ```
 
 Initially a refinement holds a `Predicate` enum value. The printer emits its
-bare case name, as in `Pattern(ExactRational .where isNonZero)`. The
+bare case name, as in `Pattern(NumericValue .where isNonZero)`. The
 predicate grammar interprets the name as an enum tag in nested
 descriptors and in a fresh scope using the same prelude. See [refinement predicates](refinement-predicates.md).
 Portable user-defined predicates are a later extension.

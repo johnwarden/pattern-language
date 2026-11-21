@@ -107,12 +107,12 @@ boundaries requires repeating explicit projections. An unannotated capture prese
 the value it receives. A single-arm extraction requires coverage of the statically
 admitted input domain; otherwise use multiple arms or establish the needed fact.
 
-    type Small struct ExactRational .where isPositive
+    type Small struct NumericValue .where isPositive
     type Wrapped struct Small .where isPositive
     # Given w :: Wrapped:
     match w (s :: Small)
-    match s (r :: ExactRational)
-    # Direct Wrapped -> ExactRational projection is not allowed.
+    match s (r :: NumericValue)
+    # Direct Wrapped -> NumericValue projection is not allowed.
 
 The checking algorithm remains implementation work. The uniqueness, evidence and
 one-boundary rules are settled, not open policy choices. C03, C11 and C12 in the

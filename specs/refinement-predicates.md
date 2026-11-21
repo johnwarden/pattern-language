@@ -50,7 +50,7 @@ The prelude supplies its Boolean test.
 ## Printing
 
 Print the case name without the colon in a refinement, for example
-`ExactRational .where isNonZero` or `Rectangular .where isSquare`. The
+`NumericValue .where isNonZero` or `Rectangular .where isSquare`. The
 reader expects a `Predicate` after `.where`, so it recovers the enum
 member under the same prelude. When an expression needs to identify the
 enum value on its own, use `:isNonZero :: Predicate` or
@@ -58,12 +58,12 @@ enum value on its own, use `:isNonZero :: Predicate` or
 
 ```pattern
 todo test "Refinement descriptors print bare predicate case names"
-  p = Pattern(ExactRational .where isNonZero)
-  t = Struct(ExactRational .where isNonZero)
-  nested = Struct(Box(Pattern(ExactRational .where isNonZero)))
+  p = Pattern(NumericValue .where isNonZero)
+  t = Struct(NumericValue .where isNonZero)
+  nested = Struct(Box(Pattern(NumericValue .where isNonZero)))
 
-  expect toString(Type)(p) is "Pattern(ExactRational .where isNonZero)"
-  expect toString(Type)(t) is "Struct(ExactRational .where isNonZero)"
+  expect toString(Type)(p) is "Pattern(NumericValue .where isNonZero)"
+  expect toString(Type)(t) is "Struct(NumericValue .where isNonZero)"
   assert parse(Type)(toString(Type)(p)) === p
   assert parse(Type)(toString(Type)(t)) === t
   assert parse(Type)(toString(Type)(nested)) === nested

@@ -53,7 +53,7 @@ Patterns can be:
 - single-type: `Int`
 - expression trees: `Rect(Int, Int)`
 - alternatives: `Int | Float`
-- refinements: `ExactRational .where isNonZero`
+- refinements: `NumericValue .where isNonZero`
 
 Any of these patterns can be wrapped in `struct`. Packs and repetitions
 belong to the fields of a constructed shape. The normative inventory is in
@@ -480,8 +480,8 @@ end
 
 ```pattern
 todo test "A concrete carveout has its own operations"
-  t = struct ExactRational .where isPositive
-  expect t is Struct(ExactRational .where isPositive)
+  t = struct NumericValue .where isPositive
+  expect t is Struct(NumericValue .where isPositive)
 
   (x :: t) = 5
   expect x * 2 fails "E_NO_METHOD"
@@ -702,7 +702,7 @@ A concrete carveout can be used as a field type.
 
 ```pattern
 todo test "A carveout can be a struct field type"
-  type PositiveInt pattern ExactRational .where isPositive
+  type PositiveInt pattern NumericValue .where isPositive
   type Id struct PositiveInt
   type User struct {name: String, id: Id}
   u = {name: "John", id: 5} :: User
