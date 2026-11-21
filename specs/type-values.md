@@ -482,9 +482,15 @@ todo test "Outer wrapper and projected Inner arms overlap on one Outer value"
   fails "E_OVERLAPPING_MATCH_ARMS"
 end
 
+# Refinement-arm overlap depends on prelude Predicate enum refinements
+# (specs/refinement-predicates.md). Each todo starts with an independent
+# Int-scrutinee setup control so a bootstrap failure at `.where` is not the
+# only observation.
+
 todo test "A refinement arm overlapping its base raises E_OVERLAPPING_MATCH_ARMS"
-  type Positive pattern Int .where isPositive
   n = 3 :: Int
+  assert n .matches Int
+  type Positive pattern Int .where isPositive
   assert n .matches Positive
   expect
     match n
@@ -495,9 +501,10 @@ todo test "A refinement arm overlapping its base raises E_OVERLAPPING_MATCH_ARMS
 end
 
 todo test "Two different refinements of Int cannot select peer match arms"
+  n = -2 :: Int
+  assert n .matches Int
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
-  n = -2 :: Int
   assert n .matches NonZero
   expect
     match n
@@ -544,14 +551,9 @@ test "Disjoint match arms are allowed"
   is "int"
 end
 
-test "Raw Box(3) is a designation ambiguity across Int and Float field arms"
+test "Box(3) :: NumBox is an ambiguous designator on its own"
   type NumBox concrete Box(Int | Float)
-  expect
-    match Box(3) :: NumBox
-      Box(n :: Int) -> "int"
-      Box(n :: Float) -> "float"
-    end
-  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect Box(3) :: NumBox fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "Explicitly typed Box field selects one arm"
@@ -565,6 +567,17 @@ test "Explicitly typed Box field selects one arm"
   is "int"
 end
 
+# Destination: bare Box(3) is ambiguous because the arms supply competing
+# Int/Float field interpretations. Bootstrap currently picks the first arm.
+todo test "Bare Box(3) is ambiguous when Int and Float field arms both compete"
+  expect
+    match Box(3)
+      Box(n :: Int) -> "int"
+      Box(n :: Float) -> "float"
+    end
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+
 todo test "An else arm is rejected unless it is last"
   expect
     match 1 :: Int
@@ -575,9 +588,11 @@ todo test "An else arm is rejected unless it is last"
 end
 
 todo test "else covers a remaining multi-value pack"
-  pack = (1, 2)
+  def pair()
+    (1, 2)
+  end
   expect
-    match pack
+    match pair()
       (a :: String, b :: String) -> "strings"
       else -> "other"
     end
@@ -585,10 +600,12 @@ todo test "else covers a remaining multi-value pack"
 end
 
 todo test "else covers a remaining labeled pack"
-  pack = (x = 1, y = 2)
+  def labeled()
+    (x: 1, y: 2)
+  end
   expect
-    match pack
-      (x = a :: String, y = b :: String) -> "strings"
+    match labeled()
+      (x: a :: String, y: b :: String) -> "strings"
       else -> "other"
     end
   is "other"
@@ -603,7 +620,7 @@ Trailing `else` sketch (indented display-only):
       else -> fallback
     end
 
-Whether an unreachable `else` after total cover is allowed remains open in
+A provably unreachable `else` after total cover is an error — see
 [MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md).
 
 ## Canonical expressions and typed text

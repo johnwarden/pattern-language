@@ -1,7 +1,8 @@
 # Should `match` arms be disjoint?
 
 **Status:** decisions recorded (PR discussion); runtime still ordered first-match.
-Lesser open items remain below. Arm-separator change is deferred (`->` kept).
+Arm-separator change is deferred (`->` kept). Open items below are decided
+in outline (Jonathan review); enforcement waits on implementation.
 **Related:** [type-values § Match arm domains](../specs/type-values.md#match-arm-domains),
 [GRAMMAR](../GRAMMAR.md) (shared patterns),
 [VALUE-SPACES](../VALUE-SPACES.md#refinement-evidence-and-functions),
@@ -174,9 +175,11 @@ separator change is a wide mechanical edit plus printer/grammar/`Arms` work.
 
 ---
 
-## Other open items
+## Checking, exhaustiveness, and `Remaining` (decided)
 
-Precise questions (also posted on the PR); each line is the recommended answer:
+Jonathan (PR review): check overlap at elaboration, require exhaustiveness once
+static checking can enforce it, reject a provably empty `else`, and defer
+public subtraction syntax.
 
 1. **When is arm overlap checked?** At elaboration of the `match` (same
    definition-time phase as overload-domain overlap), not on first evaluation.
@@ -192,4 +195,5 @@ Precise questions (also posted on the PR); each line is the recommended answer:
    until a separate notation PR.
 
 No runtime implementation in this PR. Spec todos record the decided
-diagnostics; remove them when an implementation PR makes them pass.
+diagnostics; remove them when an implementation PR makes them pass. Keep the
+PR in draft until those todos describe runnable destination behavior.
