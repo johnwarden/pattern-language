@@ -21,7 +21,7 @@ does not redefine them.
 | Fixed non-complex union | draft tip `Rational`; earlier draft `Number` of ints/floats | `Real` |
 | Fixed complex union | (none) | `Complex` |
 | All fixed-width numbers | `Number` (L9: removed for now) | `Number` = `Real \| Complex` |
-| Fixed fraction format | `FractionM` / `RatioM` / `RationalM` | `RatioW` (see open question) |
+| Fixed fraction format | `FractionM` / `RatioM` / `RationalM` | `RatioW` (total width; see below) |
 
 ## Types and representation
 
@@ -49,7 +49,7 @@ abstract policy.
 | --- | --- | --- |
 | Signed and unsigned integers | `IntW` holds integers from −2^(W−1) through 2^(W−1)−1. `UIntW` holds integers from 0 through 2^W−1. | Initial formats: `Int32`, `Int64`, `UInt64`. |
 | Binary floats | `Float32` and `Float64` hold the exact real `NumericValue`s representable by their finite binary formats, including subnormals and zero. | Reuse exact-fit predicates and explicit conversions. |
-| Fixed-size ratios | A reduced real fraction whose numerator and denominator fit the chosen limb limits. | See open question on `Ratio64` width. |
+| Fixed-size ratios | A reduced real fraction whose numerator and denominator are signed limbs that together use `W` bits. | `Ratio64`, `Ratio128`, … |
 | Complex | `Complex(T)` for a fixed real format `T` holds a complex `NumericValue` whose real and imaginary parts fit `T`. | Designated by a single numeric literal when both parts fit. |
 
 All floats are finite and zero has one exact value. Operations and conversions
@@ -57,17 +57,19 @@ return that same zero for an exact zero result of either sign. IEEE specials
 remain deferred (**D17**). Decimal float formats remain deferred; when added
 they join the `Real` union.
 
-### Open question
+### Ratio width naming
 
-- **Name and limb width for fixed ratios.** Recommendation: call the format
-  `Ratio64` and store two signed 64-bit limbs (numerator and denominator) in
-  reduced form with positive denominator. Reason: avoids overloading `Rational`
-  / `NumericValue`, and makes the bit budget explicit.
+The width suffix on `RatioW` is the **total** encoded width, matching `Int64`
+and `Float64`. Each ratio stores two equal signed limbs (numerator and
+denominator) in reduced form with a positive denominator:
+
+- `Ratio64` — two `Int32` halves
+- `Ratio128` — two `Int64` halves
 
 ## Real, Complex and Number
 
-    type Real pattern Int32 | Int64 | UInt64 | Float32 | Float64 | Ratio64 | ...
-    type Complex pattern Complex(Float32) | Complex(Float64) | Complex(Ratio64) | ...
+    type Real pattern Int32 | Int64 | UInt64 | Float32 | Float64 | Ratio64 | Ratio128 | ...
+    type Complex pattern Complex(Float32) | Complex(Float64) | Complex(Ratio64) | Complex(Ratio128) | ...
     type Number pattern Real | Complex
 
 `NumericValue` is outside these unions: a bare literal has type `NumericValue`

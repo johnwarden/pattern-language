@@ -20,7 +20,7 @@ Fixed-width formats, promotion and arithmetic policy live in
 | Abstract union of fixed-width non-complex formats | draft `Number` of ints/floats only; draft tip used `Rational` for this union | `Real` |
 | Abstract union of fixed-width complex formats | (none) | `Complex` |
 | Abstract union of all fixed-width numbers | `Number` (removed for now under L9) | `Number` = `Real \| Complex` |
-| Fixed reduced fraction format | draft `Fraction64` / Ratio / RationalM | `Ratio64` (see open question) |
+| Fixed reduced fraction format | draft `Fraction64` / Ratio / RationalM | `RatioW` (total width; `Ratio64` = two `Int32` limbs) |
 
 Bootstrap tests below still say `Rational` and use parenthesized fraction
 atoms; that is the implemented spelling. Destination contracts use
@@ -62,14 +62,16 @@ radix constants such as `0xf/0x11` are allowed.
 
 A touching `-` begins a numeric literal, as in `-0.5`, `-1i`, or `-0x1p-20`.
 
-### Open questions
+### Decisions
 
-- **Decimal point in a fraction numerator** (for example `1.1/3`).
-  Recommendation: reject with `E_SYNTAX`; require an integer numerator
-  textually when a denominator is present.
-- **`0f` combined with a fraction** (for example `0f1/3`).
-  Recommendation: reject with `E_SYNTAX`; `0f` selects a Float64-rounded
-  magnitude and does not mix with an exact fraction slash in one atom.
+- A fraction numerator is integer text only. Forms such as `1.1/3` fail with
+  `E_SYNTAX`.
+- `0f` does not combine with a fraction slash in one atom. Forms such as
+  `0f1/3` fail with `E_SYNTAX`.
+- An exponent cannot follow a parenthesized fraction. `(1/3)e20` is
+  `E_SYNTAX`. Put `e` only on the numerator: `1e20/3`.
+- Parentheses are ordinary grouping: `(1/3)` relates to `1/3` exactly as
+  `("a")` relates to `"a"`.
 
 Destination examples (not executable until the reader accepts the atoms):
 
@@ -99,6 +101,12 @@ todo test "Paren-free and complex NumericValue atoms round-trip through Code tex
   assert parse(NumericValue)("1i/3") == parse(NumericValue)("1i") / 3
   assert parse(NumericValue)("1+3i") == 1 + parse(NumericValue)("3i")
   assert parse(NumericValue)("0xap2i/3") == parse(NumericValue)("0xai/3") * 4
+end
+
+todo test "Parentheses group a fraction atom like any other atom"
+  assert parse(Code)("1/3") == parse(Code)("(1/3)")
+  assert parse(Code)("(1/3)") == parse(Code)("( 1/3 )")
+  assert parse(NumericValue)("(1/3)") == parse(NumericValue)("1/3")
 end
 
 test "Invalid NumericValue atoms use E_SYNTAX"
@@ -184,15 +192,21 @@ belongs: between groups that leave the leftmost group with one to three
 digits and every other group with exactly three digits. `1_000` is valid;
 `10_00` is not.
 
-### Open question
-
-- **`_` in binary or hexadecimal?** Recommendation: allow `_` only between
-  complete bytes (`0xff_aa_bb`), not arbitrary digit groups.
+In binary and hexadecimal digit runs, `_` may appear only between complete
+bytes (`0xff_aa_bb`, `0b10101010_11110000`). Arbitrary mid-byte groups are
+`E_SYNTAX`.
 
 ```pattern
 todo test "Decimal underscores use thousands grouping"
   assert 1000 == 1_000
   expect parse(Code)("10_00") fails "E_SYNTAX"
+end
+
+todo test "Hex and binary underscores sit only between bytes"
+  assert parse(NumericValue)("0xff_aa") == 0xffaa
+  assert parse(NumericValue)("0b10101010_11110000") == 0xaaf0
+  expect parse(Code)("0xfff_aaa") fails "E_SYNTAX"
+  expect parse(Code)("0b101_010") fails "E_SYNTAX"
 end
 ```
 
@@ -246,17 +260,16 @@ test "Fraction literals denote exact reduced Rationals"
   expect addOne((1/2)) is 1.5 :: Rational
 end
 
-test "A decimal exponent scales the entire fraction exactly"
-  assert (1/3)e20 == (100000000000000000000 / 3)
-  expect (1/3)e-2 is (1/300) :: Rational
-  expect (3/4)e2 is 75 :: Rational
-  expect (1/3)e0 is (1/3) :: Rational
-  expect (1/3)e+2 is (100/3) :: Rational
+todo test "A numerator-side decimal exponent scales the fraction exactly"
+  assert parse(NumericValue)("1e20/3") == 100000000000000000000 / 3
+  assert parse(NumericValue)("1e-2/3") == 1 / 300
+  assert parse(NumericValue)("3e2/4") == 75
+  assert parse(NumericValue)("1e0/3") == 1 / 3
+  assert parse(NumericValue)("1e+2/3") == 100 / 3
 end
 
 test "The minus in a negative literal belongs to the numeric atom"
   assert (-1/2) == (-0.5)
-  assert (-1/3)e2 == (-100 / 3)
   assert parse(Code)("(-1/2)") == parse(Code)("-0.5")
   assert parse(Code)("-(1/2)") != parse(Code)("(-1/2)")
   assert parse(Code)("-(0.5)") != parse(Code)("-0.5")
@@ -304,9 +317,11 @@ test "Equivalent numeric spellings give equal Code atoms"
   assert parse(Code)("(2/6)") == parse(Code)("(1/3)")
   assert parse(Code)("(2/4)") == Code` 0.5
   assert parse(Code)("(3/1)") == Code` 3
+end
 
-  assert parse(Code)("(1/3)e20") == parse(Code)("(100000000000000000000/3)")
-  assert parse(Code)("(3/4)e2") == Code` 75
+todo test "Numerator-side exponents equal the expanded fraction atom"
+  assert parse(Code)("1e20/3") == parse(Code)("100000000000000000000/3")
+  assert parse(Code)("3e2/4") == parse(Code)("75")
 end
 
 test "A zero denominator fails during literal reading"
@@ -326,15 +341,23 @@ end
 ## Literal grammar edge cases
 
 Signs, interior whitespace, digit separators, mixed radices, and exponent
-bounds for destination atoms. Parentheses are optional grouping around a
-complete atom; they are not part of the atom grammar. Cases the prototype
-cannot read yet are `todo`.
+bounds. Parentheses are ordinary grouping around a complete atom. Cases the
+prototype cannot read yet are `todo`.
 
 ```pattern
 todo test "Paren-free fraction atoms are NumericValue literals"
   assert parse(NumericValue)("1/3") == 1 / 3
   assert parse(NumericValue)("1e20/3") == (1 / 3) * 1e20
-  assert parse(NumericValue)("(1/3)") == parse(NumericValue)("1/3")
+end
+
+todo test "Trailing e after a parenthesized fraction is E_SYNTAX"
+  expect parse(Code)("(1/3)e20") fails "E_SYNTAX"
+  expect parse(Code)("(1/3)e0") fails "E_SYNTAX"
+  expect parse(Code)("(-1/3)e2") fails "E_SYNTAX"
+  expect parse(Code)("(1_0/5)e2") fails "E_SYNTAX"
+  expect parse(Rational)("(1/3)e20") fails "E_SYNTAX"
+  expect parse(Rational)("(1/3)e10000") fails "E_SYNTAX"
+  expect parse(Rational)("(1/3)e-10000") fails "E_SYNTAX"
 end
 
 test "Interior whitespace inside a numeric atom is E_SYNTAX"
@@ -355,11 +378,26 @@ todo test "Mixed-radix fraction atoms are allowed"
   assert parse(NumericValue)("0xf/0x11") == 15 / 17
 end
 
+test "Parenthesized fraction components keep digit rules today"
+  expect parse(Code)("(01/3)") fails "E_SYNTAX"
+  expect parse(Code)("(1/03)") fails "E_SYNTAX"
+  expect parse(Code)("(+1/3)") fails "E_SYNTAX"
+  expect parse(Code)("(1.0/3)") fails "E_SYNTAX"
+  expect parse(Code)("(1_/3)") fails "E_SYNTAX"
+  expect parse(Code)("(1/3_)") fails "E_SYNTAX"
+  expect parse(Code)("(1__0/3)") fails "E_SYNTAX"
+  expect parse(Rational)("(1/3) e10") fails "E_DATA_PARSE"
+  expect parse(Code)("(1/3)e01") fails "E_SYNTAX"
+  expect parse(Code)("(1/3)e0xA") fails "E_SYNTAX"
+  expect parse(Code)("(1/3)e05") fails "E_SYNTAX"
+end
+
 todo test "Fraction components and exponents keep digit and sign rules"
   assert parse(NumericValue)("1_0e2/5") == 200
+  # Signed denominator text reduces like other fractions (Jonathan #106).
+  assert parse(NumericValue)("1/-3") == -1 / 3
   expect parse(Code)("01/3") fails "E_SYNTAX"
   expect parse(Code)("1/03") fails "E_SYNTAX"
-  expect parse(Code)("1/-3") fails "E_SYNTAX"
   expect parse(Code)("+1/3") fails "E_SYNTAX"
   expect parse(Code)("1.0/3") fails "E_SYNTAX"
   expect parse(Code)("1_/3") fails "E_SYNTAX"
@@ -387,13 +425,14 @@ test "Binary p exponents reject leading zeros like decimal e"
   expect parse(Code)("0x1p05") fails "E_SYNTAX"
   expect parse(Code)("0x1p-05") fails "E_SYNTAX"
   expect parse(Code)("0b1p05") fails "E_SYNTAX"
-  expect parse(Code)("(1/3)e05") fails "E_SYNTAX"
 end
 
 test "Decimal coefficients reject a binary p exponent"
   # Hex `e` is a digit (`0x1e2` is 482), so hex/binary exponents use `p` only.
+  # Use plain decimals here; `0f…p…` can fail for unrelated 0f reasons.
   expect parse(Code)("10p2") fails "E_SYNTAX"
-  expect parse(Code)("0f1p2") fails "E_SYNTAX"
+  expect parse(Code)("1.5p2") fails "E_SYNTAX"
+  expect parse(Code)("100p2") fails "E_SYNTAX"
 end
 
 test "Written e and p exponents accept the magnitude cap and reject past it"
@@ -401,8 +440,6 @@ test "Written e and p exponents accept the magnitude cap and reject past it"
   assert parse(Rational)("1e-10000") == 1e-10000
   assert parse(Rational)("0x1p10000") == 0x1p10000
   assert parse(Rational)("0x1p-10000") == 0x1p-10000
-  assert parse(Rational)("(1/3)e10000") == (1/3)e10000
-  assert parse(Rational)("(1/3)e-10000") == (1/3)e-10000
   assert parse(Code)(toString(Code)(parse(Code)("1e10000"))) == parse(Code)("1e10000")
   assert parse(Code)(toString(Code)(parse(Code)("0x1p10000"))) == parse(Code)("0x1p10000")
 
@@ -410,11 +447,17 @@ test "Written e and p exponents accept the magnitude cap and reject past it"
   expect parse(Code)("1e-10001") fails "E_SYNTAX"
   expect parse(Code)("0x1p10001") fails "E_SYNTAX"
   expect parse(Code)("0x1p-10001") fails "E_SYNTAX"
-  expect parse(Code)("(1/3)e10001") fails "E_SYNTAX"
   expect parse(Rational)("1e10001") fails "E_SYNTAX"
   expect parse(Code)("1e999999999") fails "E_SYNTAX"
-  expect parse(Code)("(1/3)e999999999") fails "E_SYNTAX"
   expect parse(Code)("0x1p999999999") fails "E_SYNTAX"
+  expect parse(Code)("(1/3)e10001") fails "E_SYNTAX"
+  expect parse(Code)("(1/3)e999999999") fails "E_SYNTAX"
+end
+
+todo test "Numerator-side exponents respect the same magnitude cap"
+  assert parse(NumericValue)("1e10000/3") == parse(NumericValue)("1e10000") / 3
+  assert parse(NumericValue)("1e-10000/3") == parse(NumericValue)("1e-10000") / 3
+  expect parse(Code)("1e10001/3") fails "E_SYNTAX"
 end
 ```
 
@@ -422,19 +465,18 @@ end
 
 A tight numeric atom such as `1/3` is one argument. Spaced division inside a
 pack is still an application. Code text preserves pack boundaries, labels, and
-grouping. Destination packs no longer require an extra pair of parentheses
-around the fraction atom.
+grouping. Parentheses remain ordinary grouping around the atom.
 
 ```pattern
-todo test "A paren-free fraction atom is one pack argument"
-  # Spaced division is a different Code tree; optional grouping around the atom
-  # need not print identically.
-  assert parse(Code)("f(1/3)") != parse(Code)("f(1 / 3)")
-  assert parse(Code)("f(1e20/3)") == parse(Code)("f(100000000000000000000/3)")
-  assert parse(Code)("f(2/4)(scale: 3/4)") == parse(Code)("f(0.5)(scale: 0.75)")
+test "Grouped fraction atoms work inside argument packs today"
+  atom = Code` f((1/3))
+  assert parse(Code)("f((1/3))") == atom
+  assert parse(Code)("f((1 / 3))") == Code` f(1 / 3)
+  assert parse(Code)("f((1/3))") != parse(Code)("f(1 / 3)")
+  assert parse(Code)("f((2/4))(scale: (3/4))") == Code` f(0.5)(scale: 0.75)
 end
 
-todo test "Numeric Code text preserves successive packs, labels and grouping"
+test "Numeric Code text preserves successive packs and prefix negation today"
   division = Code` (1 / 3)(2)
   expect toString(Code)(division) is "(1 / 3)(2)" :: String
   assert parse(Code)(toString(Code)(division)) == division
@@ -444,10 +486,29 @@ todo test "Numeric Code text preserves successive packs, labels and grouping"
     parse(Code)(toString(Code)(code)) == code
   end
 
-  assert roundTrips("f(1/3)(scale: 3/4)")
-  assert roundTrips("f(-1/3)(scale: 3/4)")
+  assert roundTrips("f((1/3))(scale: (3/4))")
+  assert roundTrips("f((-1/3))(scale: (3/4))")
   assert roundTrips("-(1/3)")
   assert roundTrips("-(0.5)")
+  assert roundTrips("def third() (1/3)")
+  expect toString(Code)(parse(Code)("(-1/3)")) is "(-1/3)" :: String
+end
+
+todo test "A paren-free fraction atom is one pack argument"
+  assert parse(Code)("f(1/3)") != parse(Code)("f(1 / 3)")
+  assert parse(Code)("f(1/3)") == parse(Code)("f((1/3))")
+  assert parse(Code)("f(1e20/3)") == parse(Code)("f(100000000000000000000/3)")
+  assert parse(Code)("f(2/4)(scale: 3/4)") == parse(Code)("f(0.5)(scale: 0.75)")
+end
+
+todo test "Paren-free packs round-trip through Code text"
+  def roundTrips(source :: String)
+    code = parse(Code)(source)
+    parse(Code)(toString(Code)(code)) == code
+  end
+
+  assert roundTrips("f(1/3)(scale: 3/4)")
+  assert roundTrips("f(-1/3)(scale: 3/4)")
   assert roundTrips("def third() 1/3")
   expect toString(Code)(parse(Code)("-1/3")) is "-1/3" :: String
 end
@@ -480,13 +541,13 @@ test "Typed reading reduces fractions without losing precision"
   assert parse(Rational)("(-1/2)") == (-0.5)
 end
 
-test "A touching decimal exponent scales the whole fraction in typed text"
-  assert parse(Rational)("(1/3)e20") == (100000000000000000000 / 3)
-  assert parse(Rational)("(1/3)e-2") == (1 / 300)
-  expect parse(Rational)("(3/4)e2") is 75 :: Rational
-  assert parse(Rational)("(1/3)e0") == (1 / 3)
-  assert parse(Rational)("(-1/3)E+2") == (-100 / 3)
-  assert parse(Rational)("(1/3)e-1_0") == (1 / 30000000000)
+todo test "Typed NumericValue text scales with a numerator-side exponent"
+  assert parse(NumericValue)("1e20/3") == 100000000000000000000 / 3
+  assert parse(NumericValue)("1e-2/3") == 1 / 300
+  assert parse(NumericValue)("3e2/4") == 75
+  assert parse(NumericValue)("1e0/3") == 1 / 3
+  assert parse(NumericValue)("-1e+2/3") == -100 / 3
+  assert parse(NumericValue)("1e-1_0/3") == 1 / 30000000000
 end
 
 test "Typed Rational text reconstructs the same exact value"
@@ -496,9 +557,8 @@ test "Typed Rational text reconstructs the same exact value"
   assert parse(Rational)("-0.5") == (-1/2)
   assert parse(Rational)(toString(Rational)((9007199254740993/1))) == 9007199254740993
 
-  scaled = (1/3)e20
   expanded = (100000000000000000000/3)
-  assert toString(Rational)(scaled) == toString(Rational)(expanded)
+  assert parse(Rational)(toString(Rational)(expanded)) == expanded
 end
 
 test "A computed Rational round-trips as a reduced fraction"
@@ -549,12 +609,15 @@ test "Equal-length spellings use the canonical tie-breaks"
   expect toString(Rational)(0.01) is "0.01" :: String
 end
 
-test "Reduced fraction text competes with exponent forms"
+test "Reduced fraction text competes with other families today"
   expect toString(Rational)((1/3)) is "(1/3)" :: String
   expect toString(Rational)((-2/6)) is "(-1/3)" :: String
   expect toString(Rational)((1/300)) is "(1/300)" :: String
-  expect toString(Rational)((1/3)e20) is "(1/3)e20" :: String
-  expect toString(Rational)((-1/3)e20) is "(-1/3)e20" :: String
+end
+
+todo test "Canonical scaled fractions use a numerator-side exponent"
+  expect toString(NumericValue)(100000000000000000000 / 3) is "1e20/3" :: String
+  expect toString(NumericValue)((-100000000000000000000) / 3) is "-1e20/3" :: String
 end
 
 test "Canonical Rational text depends only on the exact value"
