@@ -97,11 +97,11 @@ boundary. See
 [Migration and remaining work](../specs/type-values.md#migration-and-remaining-work)
 and the deprecated [raw-expression note](../specs/raw-expression-values.md).
 
-UpperCamel application heads are constructors and lowerCamel heads are function
-calls (L23). That is existing runtime behavior
-([`src/runtime.ts`](../src/runtime.ts) apply evaluation), documented as a
-normative convention so authors and the checker can tell designators such as
-`Box(3)` from calls such as `box(3)`.
+Ordinary UpperCamel application heads are constructor designators when the head
+has no callable binding; lowerCamel heads are function calls (L23). That is
+existing runtime behavior ([`src/runtime.ts`](../src/runtime.ts) apply
+evaluation), documented as a normative convention so authors and the checker
+can tell designators such as `Box(3)` from calls such as `box(3)`.
 
 The parser destination is Expression. Number literals in that domain are exact Rationals (D04). The bootstrap currently has three trees: host `Syntax` (parser product, including quote/sequence/block/form), runtime `Value` (`term` ≈ `apply`, plus packs/literals/symbols), and public `SyntaxNode` transport (`NumberLiteral(Rational) | Apply | Postfix | …`, via `syntaxTree` / `syntaxExpression` / `parseSyntax`). Exact numeric syntax transport is implemented. Those Syntax layers are adapters to remove after staged consumer migration with behavior preserved. The migration is not implemented yet and is not a prerequisite for distinct postfix application.
 

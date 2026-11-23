@@ -24,18 +24,8 @@ test "C04 raw expressions are allowed and explicit types establish an interpreta
   fails "E_UNTYPED_CONSTRUCTOR"
 end
 
-test "UpperCamel heads construct; lowerCamel heads call"
-  def box(n) n
-  expect box(3) is 3 :: NumericValue
-  expect Box(3) :: Expression is Box(3) :: Expression
-  type IntBox concrete Box(NumericValue)
-  expect Box(3) :: IntBox is Box(3) :: IntBox
-end
-
-test "A TitleCase definition is a type factory, not an ordinary function call"
-  def Box(x) x
-  expect Box(3) fails "E_EXPECTED_TYPE"
-end
+# UpperCamel vs lowerCamel head contracts live once under
+# specs/type-values.md § Constructor heads versus function calls.
 
 test "C05 types are structural values"
   assert

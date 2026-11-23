@@ -13,6 +13,6 @@ This document previously recorded an interim ruling that allowed unbound
 `Expression` values such as `e = Rect(2, 2)` pending typed interpretation.
 That interim rule is withdrawn. Preserve typed construction, quotation, and
 explicit one-boundary matching coverage under the type-value contracts.
-UpperCamel constructor heads versus lowerCamel calls remain the existing
-evaluation rule documented under
+Ordinary UpperCamel constructor heads (no callable binding) versus lowerCamel
+calls remain the existing evaluation rule documented under
 [Constructor heads versus function calls](type-values.md#constructor-heads-versus-function-calls).

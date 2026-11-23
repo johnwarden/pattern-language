@@ -27,17 +27,17 @@ An application has an arbitrary expression head and one argument pack. Successiv
 packs are separate applications: f(a)(b) is not f(a,b). Bare f differs from f().
 
 **Constructor heads are UpperCamel; function calls are lowerCamel.** This is
-existing evaluation behavior, not a new rule: an application whose head is an
-UpperCamel symbol (for example `Box(3)`, `Rect(2, 2)`, or `Some(Int)`) is a
-constructor designator and is never evaluated as a function call; lowerCamel
-heads such as `box(3)` are ordinary calls. The bootstrap implements that split in
-[`src/runtime.ts`](src/runtime.ts) (apply evaluation: when a bare symbol head has
-no callable binding, an UpperCamel or punctuation head builds a term instead of
-invoking a function). TitleCase `def` names are type definitions, not ordinary
-functions, so they cannot collide with that constructor path. The casing
-convention is how authors and the checker distinguish constructor designators
-from calls, including a function that returns a constructed value that must be
-bound before `match` (see
+existing evaluation behavior, not a new rule. An ordinary UpperCamel (or
+punctuation) application head such as `Box(3)`, `Rect(2, 2)`, or `Some(Int)` is
+a constructor designator: when that bare symbol head has no callable binding,
+evaluation builds a term instead of invoking a function. LowerCamel heads such
+as `box(3)` are ordinary calls. The bootstrap implements that split in
+[`src/runtime.ts`](src/runtime.ts) apply evaluation. TitleCase user `def` names
+are type definitions / type factories, not ordinary functions. A few prelude
+UpperCamel names remain callable (for example `String(...)`). The casing
+convention is how authors and the checker distinguish ordinary constructor
+designators from calls, including a function that returns a constructed value
+that must be bound before `match` (see
 [#109](https://github.com/johnwarden/pattern-language/pull/109)).
 
 The [application-head tests](tests/specification/application-heads.test) separate
@@ -176,12 +176,12 @@ NumericSource data until an operand is reparsed.
 
 Input removes one leading BOM and normalizes CRLF to LF in one pass. Word symbols
 are ASCII LowerCamelSymbol, UpperCamelSymbol or UpperSnakeSymbol. In executable
-Code, UpperCamelSymbol application heads are constructors and LowerCamelSymbol
-heads are function calls (see [One surface tree](#one-surface-tree)). One- and
-two-letter upper-snake words end in _: PORT is upper snake; A_ and AB_
-distinguish the short cases. Unicode identifier casing and digit-boundary
-conversion rules remain deferred; string contents remain Unicode and are not
-Unicode-normalized.
+Code, ordinary UpperCamelSymbol application heads are constructor designators
+and LowerCamelSymbol heads are function calls (see
+[One surface tree](#one-surface-tree)). One- and two-letter upper-snake words
+end in _: PORT is upper snake; A_ and AB_ distinguish the short cases. Unicode
+identifier casing and digit-boundary conversion rules remain deferred; string
+contents remain Unicode and are not Unicode-normalized.
 
 Ordinary symbolic literals have intrinsic symbol interpretations. The proposed reserved
 PrimitiveType vocabulary and the decision whether Code rejects redundant primitive

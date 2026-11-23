@@ -411,14 +411,16 @@ end
 
 ### Constructor heads versus function calls
 
-An UpperCamel application head is a constructor designator; a lowerCamel head
-is a function call. `Box(3)`, `Rect(2, 2)`, and `Some(Int)` construct; `box(3)`
-calls. The bootstrap already enforces that split when evaluating applications
+An ordinary UpperCamel application head is a constructor designator; a
+lowerCamel head is a function call. `Box(3)`, `Rect(2, 2)`, and `Some(Int)`
+construct when the head has no callable binding; `box(3)` calls. The bootstrap
+already enforces that split when evaluating applications
 ([`src/runtime.ts`](../src/runtime.ts): a bare UpperCamel or punctuation symbol
-head with no callable binding builds a term and never invokes a function).
-TitleCase `def` names are type definitions, so they are not ordinary callables.
-That casing rule is how the language distinguishes constructor designators from
-calls such as a function returning a Box that must be bound before `match`
+head with no callable binding builds a term). TitleCase user `def` names are
+type factories, not ordinary callables. A few prelude UpperCamel names remain
+callable (for example `String(...)`). That casing rule is how the language
+distinguishes ordinary constructor designators from calls such as a function
+returning a Box that must be bound before `match`
 ([#109](https://github.com/johnwarden/pattern-language/pull/109)).
 
 ```pattern
