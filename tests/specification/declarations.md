@@ -15,7 +15,11 @@ The C05 extraction control uses explicit match, so it does not endorse opening a
 concrete value through an ordinary constructor binding. The latter rejection is
 tracked in [raw-expressions.test](raw-expressions.test). The C18 control exchanges
 equal values across independent lexical declarations without importing accessor
-bundles. Existing equivalent-declaration/accessor collisions remain errors.
+bundles. Existing equivalent-declaration/accessor collisions remain errors
+near term; the [proposed D21 collision policy](../../design/LANGUAGE-DECISIONS.md#d21-name-collision-and-equivalent-redeclaration-policy--proposed)
+and its executable fences in [type-values](../../specs/type-values.md#name-collisions-and-aliases)
+and [named-function-values](../../specs/named-function-values.md#name-collisions-and-overloads)
+are the destination contracts.
 
 The source grammar now recognizes concrete/abstract declarations and their
 ordinary type-producing expressions. The non-generic C05 and C06 checks in

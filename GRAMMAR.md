@@ -141,6 +141,17 @@ calls. Separately, `Struct` is a reserved **descriptor head** (with `Type`, `Fac
 `Struct(...)` is not an ordinary constructor value. Bootstrap `Type(...)` still
 constructs and parses, and prints as `Struct(...)`.
 
+Same-scope name collisions follow the
+[proposed D21 policy](design/LANGUAGE-DECISIONS.md#d21-name-collision-and-equivalent-redeclaration-policy--proposed):
+identical type/function redeclarations become no-ops once the runtime applies
+content keys with matching capture/accessor names (or alpha-equivalent function
+clauses; #84/#101 specs already on master); accessor and `def` share one
+disjoint overload group; a second name for an equal type descriptor is an
+ordinary value alias (`Second = First`, e.g. `Int = Int64` — not
+`type Second = First`; aliases have no preferred display name); import/local
+clashes are always `E_NAME_BOUND`, resolved by renaming with `as`. Near term the
+bootstrap retains today's rejection guards.
+
 A constructor expression or bare symbol-tag designator requires a concrete
 interpretation from its context or an explicit ascription. A bare form such as
 `Rect(2, 2)` or `:None` used as an expression without that type raises

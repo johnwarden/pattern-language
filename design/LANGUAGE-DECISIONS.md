@@ -172,7 +172,7 @@ A DSL can separately require an **unambiguous** grammar with no concrete-type re
 
 The proposed `type Name ...` declaration binds the type and registers its local accessor/printing metadata. Ordinary type-valued expressions must be capture-free; `t = struct Rect(w :: Float32, h :: Float32)` must not quietly install methods. Capture-free type values remain ordinary values and can be passed, stored and compared. Parameterized declarations can supply compact local names for instantiated type descriptions without changing identity.
 
-The author accepted that functional equality alone does not justify a permanent ban on all duplicate declaration names for equal descriptors. **On 9 November the author deferred the replacement policy and explicitly retained equivalent-declaration and accessor-collision errors for now.** Preserve that guard while separating declaration effects from ordinary type construction. No final alias/import/preferred-name policy is selected. **Sources:** A “Local Accessors,” AR acknowledgment; R1/R2; subsequent author clarification.
+The author accepted that functional equality alone does not justify a permanent ban on all duplicate declaration names for equal descriptors. **On 9 November the author deferred the replacement policy and explicitly retained equivalent-declaration and accessor-collision errors for now.** Preserve that near-term guard while separating declaration effects from ordinary type construction. The recommended replacement is the **proposed** collision policy in D21 (identical same-scope redeclarations become no-ops once the runtime applies content keys **and** matching capture/accessor names; a second name for an equal descriptor is an ordinary value alias `Second = First` with no preferred display name; import/local clashes stay hard errors). **Sources:** A “Local Accessors,” AR acknowledgment; R1/R2; subsequent author clarification; D21 proposal; author alias-spelling decision 2026-11-27.
 
 ### D09. Designation and projection are settled, different operations — confirmed
 
@@ -232,7 +232,7 @@ print identically. See the
 
 ### D14. Interoperability follows structural descriptors — confirmed intent
 
-Independently scoped declarations with equivalent capture-free descriptions exchange equal values without a shared nominal declaration or importing accessor names. Consumers may destructure their known shapes. This does not yet specify source modules, simultaneous imports or duplicate local accessor policy. **Sources:** I; A structural identity; O.
+Independently scoped declarations with equivalent capture-free descriptions exchange equal values without a shared nominal declaration or importing accessor names. Consumers may destructure their known shapes. Source-module import clashes and same-scope duplicate-name policy are covered by the **proposed** D21 rules (no silent shadowing/replacement; equal descriptors under a second local name use an ordinary value alias). **Sources:** I; A structural identity; O; D21 proposal.
 
 ### D15. Repetition dimensions are consistent; broader rest features remain proposals
 
@@ -565,6 +565,47 @@ Once the Code grammar defines `QuotedSymbol` (Symbols only),
 rejected. These are todo checks today. `Number` is removed for now.
 **Sources:** L9, L10.
 
+### D21. Name collision and equivalent-redeclaration policy — proposed
+
+Recommended replacement for the deferred D08/D14 alias/import collision row.
+Near term, today's runtime guards stay
+(`E_DUPLICATE_TYPE`, `E_AMBIGUOUS_CALL`, `E_REFINED_OVERLOAD`,
+`E_MACRO_FUNCTION_CONFLICT`, and the bind error now coded `E_NAME_BOUND`).
+The equality and content-key specs are already on master
+([#84](https://github.com/johnwarden/pattern-language/pull/84) /
+[#101](https://github.com/johnwarden/pattern-language/pull/101)); equivalent
+same-scope redeclarations flip from fail to pass only after the **runtime**
+implements those checks.
+
+1. **Identical same-scope redeclaration is a no-op.** A second `type Name …`
+   is a no-op only when it has the **same content key and the same
+   capture/accessor names** as the existing binding (content keys erase
+   capture names, so equal keys alone are not enough: otherwise
+   `type Box … Box(value :: …)` then `type Box … Box(item :: …)` would
+   silently keep `value` and never install `item`). A second `def` whose
+   closed body is alpha-equivalent to an existing clause (capture binders
+   normalized only, including rest binders; call-visible labels and accessor
+   names kept) installs nothing new. A different definition under the same
+   name remains `E_DUPLICATE_TYPE` for types, or the ordinary overload codes
+   for functions (`E_OVERLAPPING_OVERLOAD` / `E_REFINED_OVERLOAD` /
+   `E_AMBIGUOUS_CALL` as specified).
+2. **Accessor and `def` share one static overload group** when their domains
+   are disjoint under the #84 finish/continue pack rule. Domain overlap is
+   rejected at declaration (`E_OVERLAPPING_OVERLOAD`), not deferred to call
+   time.
+3. **A second local name for the same type is an ordinary value alias.**
+   Spelling is `Second = First` (for example `Int = Int64`), not
+   `type Second = First`. Aliases have no preferred display name. A second
+   `type Second …` with a descriptor equal to an already-bound type stays
+   `E_DUPLICATE_TYPE`.
+4. **Import/local name clash is always an error**, resolved by renaming with
+   `as`. No silent shadowing or replacement of an in-scope binding. The
+   uncoded “name already bound” bind failure is `E_NAME_BOUND`.
+
+Executable contracts live in [type-values](../specs/type-values.md#name-collisions-and-aliases)
+and [named-function-values](../specs/named-function-values.md#name-collisions-and-overloads).
+**Status: proposed.** **Sources:** author direction for this PR; D08/D14 deferral; #84/#101; author alias-spelling decision 2026-11-27 (`Second = First`; no preferred display name).
+
 ## Remaining and deferred items
 
 | Item | Precise status |
@@ -573,7 +614,7 @@ rejected. These are todo checks today. `Number` is removed for now.
 | IEEE NaN/infinities, signed zero and special equality | **Deferred.** AR's union recipe is a possibility, not a chosen representation. |
 | Designation/projection | **Settled.** Only faithful wording/checking and eventual tests remain; no renewed policy debate is requested. |
 | Bare generic-family facets, MemberOf and parameter recovery | **Proposed.** Constraint vocabulary, structural matching and non-injective cases remain unresolved. |
-| Duplicate local type names, accessor bundles/imports and preferred display names | **Deferred policy; current errors retained.** Equivalent declarations and accessor collisions remain errors for now. No final alias/import policy is selected. |
+| Duplicate local type names, accessor bundles/imports and preferred display names | **Proposed (D21).** Near-term guards retained. Identical same-scope redeclarations become no-ops once the runtime applies content keys **and** matching capture/accessor names (#84/#101 specs already on master); accessor/`def` form one disjoint overload group; second type name is an ordinary value alias (`Second = First`; no preferred display name); import/local clash is always `E_NAME_BOUND`, renamed with `as`. |
 | Singleton abstract unions and qualifiers narrowed to one member | **Unresolved.** Author proposed rejecting explicit singleton unions; normalization is only a reviewer recommendation. |
 | Runtime Expression *value* computation and descriptor/value comparison | **Concrete interpretation required (D03 / type-values); L12 interim bare-raw permission superseded.** Descriptor decoding/equality is separate and remains unsettled. Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
 | Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |
@@ -600,13 +641,14 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D05 structural identity | C05, C06, C18, C23 |
 | D06 struct / `.where` / pattern kinds | C06, C07, C13, C15; singleton policy deliberately unassigned |
 | D07 general unions versus unambiguous grammars | C13, C14; qualifier spelling remains provisional |
-| D08 declaration-only accessors | C05, C16; duplicate-name/import outcomes deliberately unassigned |
+| D08 declaration-only accessors | C05, C16; duplicate-name/import outcomes proposed in D21 |
 | D09 recursive designation / one-boundary projection | C03, C11, C12, C17 |
 | D10 evidence and refinement-qualified functions | C07–C10; C08 depends on the future static evidence checker |
 | D11 factories and binding-only defaults | C17 |
 | D12 type-valued generics / proposed family views | C05, C12, C18; no case pretends family recovery or MemberOf is settled |
 | D13 specialization and named function values | [Function value contracts](../specs/named-function-values.md) cover storage, static groups, designation, dispatch and typed text. C09/C10/C12 stay independent of specialization. |
-| D14 structural interoperability | C18, with transport law in C23 |
+| D14 structural interoperability | C18, with transport law in C23; same-scope alias/import collisions proposed in D21 |
+| D21 name collision / equivalent redeclaration | type-values and named-function-values collision fences; declaration-syntax retains near-term guards |
 | D15 captures/spreading/keyword remainders | C19–C22; new spread/rest surface mechanics explicitly proposed |
 | D16 constructedBy deferral | No active or pending expected-result case selects a semantics |
 | D17 IEEE deferral | No expected result selects NaN/signed-zero/special-value policies |

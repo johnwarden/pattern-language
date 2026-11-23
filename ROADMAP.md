@@ -118,11 +118,17 @@ current milestones. Preserve the angle-syntax todos, but do not treat them as
 blockers for 5a.2 or 5b while this work is parked. Unspecified extensions to
 generic constraints, MemberOf, bare-family facets, parameter recovery and
 singleton abstract policy remain provisional/unresolved. Equivalent local
-declarations and accessor collisions remain errors for now; their replacement
-alias/import policy is deferred by the author. Specialization is a deferred
-optimization of already defined abstract-call semantics. It preserves visible
-overloads. Requiring concrete interpretation does not settle public descriptor
-decoding or require the parser's Expression migration to be completed first.
+declarations and accessor collisions remain errors for now; the recommended
+replacement is the **proposed** collision policy in
+[D21](design/LANGUAGE-DECISIONS.md#d21-name-collision-and-equivalent-redeclaration-policy--proposed)
+(identical same-scope redeclarations as no-ops once the runtime applies content
+keys plus matching capture/accessor names; accessor/`def` as one disjoint
+overload group; ordinary value aliases (`Second = First`, no preferred display
+name); import/local `E_NAME_BOUND` with `as`).
+Specialization is a deferred optimization of already defined abstract-call
+semantics. It preserves visible overloads. Requiring concrete interpretation
+does not settle public descriptor decoding or require the parser's Expression
+migration to be completed first.
 
 ## What is implemented now
 
