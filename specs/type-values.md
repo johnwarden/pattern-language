@@ -409,15 +409,63 @@ end
 
 ## Designation and matching
 
+### Constructor heads versus function calls
+
+An UpperCamel application head is a constructor designator; a lowerCamel head
+is a function call. `Box(3)`, `Rect(2, 2)`, and `Some(Int)` construct; `box(3)`
+calls. The bootstrap already enforces that split when evaluating applications
+([`src/runtime.ts`](../src/runtime.ts): a bare UpperCamel or punctuation symbol
+head with no callable binding builds a term and never invokes a function).
+TitleCase `def` names are type definitions, so they are not ordinary callables.
+That casing rule is how the language distinguishes constructor designators from
+calls such as a function returning a Box that must be bound before `match`
+([#109](https://github.com/johnwarden/pattern-language/pull/109)).
+
+```pattern
+test "UpperCamel heads construct; lowerCamel heads call"
+  def box(n) n
+  expect box(3) is 3 :: NumericValue
+  expect Box(3) :: Expression is Box(3) :: Expression
+  type IntBox concrete Box(NumericValue)
+  expect Box(3) :: IntBox is Box(3) :: IntBox
+end
+
+test "A TitleCase definition is a type factory, not an ordinary function call"
+  def Box(x) x
+  expect Box(3) fails "E_EXPECTED_TYPE"
+end
+```
+
+### Concrete interpretation
+
 Construction interprets a designator in its expected concrete type. A raw
 constructor expression or symbol tag requires a concrete interpretation
-supplied by its context or an explicit ascription. A shape can construct a
-new struct from field designators. An already typed struct cannot be
+supplied by its context or an explicit ascription. Without that type, a bare
+UpperCamel constructor application or bare symbol-tag designator used as an
+expression raises `E_UNTYPED_CONSTRUCTOR` (distinct from `E_PATTERN_MISMATCH`,
+which remains a failed match against an expected pattern). A shape can construct
+a new struct from field designators. An already typed struct cannot be
 reinterpreted as an unrelated struct just because its payload would fit.
 An expected wrapper can store an already typed member when the wrapper's
 pattern admits it. A direct match at the expected concrete boundary wins
 over recursive inward designation. Equally ranked distinct peer paths
 are ambiguous. See [ambiguous value designators](ambiguous-values.md).
+
+```pattern
+todo test "A bare constructor expression without a type raises E_UNTYPED_CONSTRUCTOR"
+  expect
+    x = Rect(2, 2)
+    x
+  fails "E_UNTYPED_CONSTRUCTOR"
+end
+
+todo test "A bare symbol tag without a type raises E_UNTYPED_CONSTRUCTOR"
+  expect
+    x = :None
+    x
+  fails "E_UNTYPED_CONSTRUCTOR"
+end
+```
 
 For an abstract union, several accepting alternatives that yield the
 same exact typed value count as one interpretation. For example,

@@ -26,6 +26,20 @@ exceptions and the bootstrap boundaries that still need review.
 An application has an arbitrary expression head and one argument pack. Successive
 packs are separate applications: f(a)(b) is not f(a,b). Bare f differs from f().
 
+**Constructor heads are UpperCamel; function calls are lowerCamel.** This is
+existing evaluation behavior, not a new rule: an application whose head is an
+UpperCamel symbol (for example `Box(3)`, `Rect(2, 2)`, or `Some(Int)`) is a
+constructor designator and is never evaluated as a function call; lowerCamel
+heads such as `box(3)` are ordinary calls. The bootstrap implements that split in
+[`src/runtime.ts`](src/runtime.ts) (apply evaluation: when a bare symbol head has
+no callable binding, an UpperCamel or punctuation head builds a term instead of
+invoking a function). TitleCase `def` names are type definitions, not ordinary
+functions, so they cannot collide with that constructor path. The casing
+convention is how authors and the checker distinguish constructor designators
+from calls, including a function that returns a constructed value that must be
+bound before `match` (see
+[#109](https://github.com/johnwarden/pattern-language/pull/109)).
+
 The [application-head tests](tests/specification/application-heads.test) separate
 syntax from evaluation: Code may contain `True(1)` or `1(1)`. A head's callability
 is checked when that Code is evaluated, not by the grammar. See the
@@ -126,11 +140,15 @@ calls. Separately, `Struct` is a reserved **descriptor head** (with `Type`, `Fac
 `Struct(...)` is not an ordinary constructor value. Bootstrap `Type(...)` still
 constructs and parses, and prints as `Struct(...)`.
 
-Raw structured expressions are allowed at runtime for now. An annotation, typed
-quote or sufficient expected context can give that expression a concrete
-interpretation. [C04 and the raw-expression contracts](specs/raw-expression-values.md)
-record the distinction. Parsed Code and evaluated raw values are separate roles;
-automatic descriptor decoding and the public inspection API remain unsettled.
+A constructor expression or bare symbol-tag designator requires a concrete
+interpretation from its context or an explicit ascription. A bare form such as
+`Rect(2, 2)` or `:None` used as an expression without that type raises
+`E_UNTYPED_CONSTRUCTOR`. That requirement supersedes bare raw runtime expression
+construction; see
+[Designation and matching](specs/type-values.md#designation-and-matching) and the
+deprecated [raw-expression note](specs/raw-expression-values.md). Parsed Code and
+evaluated Expression values remain separate roles; automatic descriptor decoding
+and the public inspection API remain unsettled.
 
 ## Designation, projection and evidence
 
@@ -157,10 +175,13 @@ The specification reader stores decorated numeric spellings as inert
 NumericSource data until an operand is reparsed.
 
 Input removes one leading BOM and normalizes CRLF to LF in one pass. Word symbols
-are ASCII LowerCamelSymbol, UpperCamelSymbol or UpperSnakeSymbol. One- and two-letter
-upper-snake words end in _: PORT is upper snake; A_ and AB_ distinguish the short cases. Unicode
-identifier casing and digit-boundary conversion rules remain deferred; string
-contents remain Unicode and are not Unicode-normalized.
+are ASCII LowerCamelSymbol, UpperCamelSymbol or UpperSnakeSymbol. In executable
+Code, UpperCamelSymbol application heads are constructors and LowerCamelSymbol
+heads are function calls (see [One surface tree](#one-surface-tree)). One- and
+two-letter upper-snake words end in _: PORT is upper snake; A_ and AB_
+distinguish the short cases. Unicode identifier casing and digit-boundary
+conversion rules remain deferred; string contents remain Unicode and are not
+Unicode-normalized.
 
 Ordinary symbolic literals have intrinsic symbol interpretations. The proposed reserved
 PrimitiveType vocabulary and the decision whether Code rejects redundant primitive

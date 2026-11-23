@@ -41,6 +41,7 @@ with adjacent explanations where needed. See [the lifecycle](../specs/README.md)
 | L10 | Author ruling on 9 November 2026 (15:02 Madrid): master's Boolean behavior is correct. Literal `True`/`False` are `Bool` values, the same type as computed comparison results, not `ReservedSymbol` values. Refined 15:11: match arms use bare `True`/`False`; a quoted primitive in any pattern stays `E_QUOTED_PRIMITIVE`. |
 | L11 | Author's subsequent clarification on 9 November: `True(1)`, `1(1)` and similar applications remain valid parsed Code. A head must be a Symbol constructor head or evaluate to a function; invalid head values fail during evaluation, not grammar recognition. The executable contract is application-heads.test and its adjacent note. The grammar-rejection proposal in #49 is superseded. |
 | L12 | Author's subsequent clarification on 9 November: a named function resolves to a function value containing the full implementation, with no free user variables; primitive and possibly prelude/standard-library names form the remaining callable vocabulary. An interim permission for bare raw runtime Expressions is superseded by D03 / [type-values](../specs/type-values.md). `toString(T)` follows its already documented type-directed contract. See the linked approved/implemented records below. |
+| L23 | Author rulings on 23 November 2026: (1) document the existing UpperCamel-constructor / lowerCamel-call head convention as normative surface/evaluation behavior (already implemented in `src/runtime.ts`); (2) bare untyped constructor or symbol-tag expressions fail with `E_UNTYPED_CONSTRUCTOR`, not generic `E_PATTERN_MISMATCH`. Relevant to distinguishing designators from calls before `match` ([#109](https://github.com/johnwarden/pattern-language/pull/109)). |
 
 The working spellings are `type Name struct P` and `type Name pattern P`, with
 refinements written as `T .where p` inside either form. Angle-parameter sugar and
@@ -89,11 +90,18 @@ L12's interim permission for bare raw runtime Expressions is superseded by the
 requirement for concrete interpretation in
 [type-values](../specs/type-values.md#designation-and-matching). A constructor
 expression or symbol tag such as `Rect(2, 2)` or `:None` requires a concrete
-interpretation from its context or an explicit ascription. Interpreted fields
-follow the concrete type. Ordinary binding does not implicitly unwrap that
-concrete boundary. See
+interpretation from its context or an explicit ascription. Without that type,
+the expression raises `E_UNTYPED_CONSTRUCTOR` (L23). Interpreted fields follow
+the concrete type. Ordinary binding does not implicitly unwrap that concrete
+boundary. See
 [Migration and remaining work](../specs/type-values.md#migration-and-remaining-work)
 and the deprecated [raw-expression note](../specs/raw-expression-values.md).
+
+UpperCamel application heads are constructors and lowerCamel heads are function
+calls (L23). That is existing runtime behavior
+([`src/runtime.ts`](../src/runtime.ts) apply evaluation), documented as a
+normative convention so authors and the checker can tell designators such as
+`Box(3)` from calls such as `box(3)`.
 
 The parser destination is Expression. Number literals in that domain are exact Rationals (D04). The bootstrap currently has three trees: host `Syntax` (parser product, including quote/sequence/block/form), runtime `Value` (`term` ≈ `apply`, plus packs/literals/symbols), and public `SyntaxNode` transport (`NumberLiteral(Rational) | Apply | Postfix | …`, via `syntaxTree` / `syntaxExpression` / `parseSyntax`). Exact numeric syntax transport is implemented. Those Syntax layers are adapters to remove after staged consumer migration with behavior preserved. The migration is not implemented yet and is not a prerequisite for distinct postfix application.
 
@@ -102,7 +110,7 @@ equal the type it describes or choose the public descriptor-decoding API. R2's
 recommendation to require explicit decoding remains a recommendation. There is no
 pending public `NumberLiteral(Float)` A/B redesign. **Sources:** A “Require
 Annotation…,” P “Raw Expressions…,” AR “Expression”; R2; L8; L12 interim
-permission superseded by type-values.
+permission superseded by type-values; L23.
 
 ### D04. All numeric literals denote exact NumericValue values — confirmed direction; spelling and unions updating
 
@@ -296,11 +304,14 @@ for `0.1`. Todo: `0f0.5 :: Decimal32`, `0f0.1 :: Float64`, and `0.5 :: Int16`.
 
 A constructor expression or symbol tag needs a concrete interpretation from its
 context or an explicit ascription; bare raw runtime construction is superseded.
-The explicit `type Rectangle struct ...` spelling remains todo. Bootstrap
-declaration syntax already supplies the concrete designation and explicit-match
-controls in
+A bare form without that type fails with `E_UNTYPED_CONSTRUCTOR` (todo until
+implemented; do not reuse `E_PATTERN_MISMATCH` for this case). The explicit
+`type Rectangle struct ...` spelling remains todo. Bootstrap declaration syntax
+already supplies the concrete designation and explicit-match controls in
 [raw-expressions.test](../tests/specification/raw-expressions.test); ordinary
-constructor binding through the concrete boundary remains a todo rejection.
+constructor binding through the concrete boundary remains a todo rejection that
+keeps `E_PATTERN_MISMATCH`. UpperCamel constructor heads versus lowerCamel calls
+are live documented behavior (L23).
 
 ### C05 — ordinary capture-free type values and a type factory
 
@@ -585,7 +596,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D02 primitives and quotation | C01; C27 is an **unaccepted lexical candidate**, not confirmed behavior |
 | D19 symbol value text vs code quotation | C01 `Widget`; `None` in the postfix, nested-option and concrete-union specs |
 | D20 ReservedSymbol and quoted primitive names | C01; quoted primitive names in Code, including QuotedSymbol todos; symbol-class disjointness |
-| D03 concrete interpretation / parse into Expression | C04 and raw-expressions.test; bare raw construction superseded; explicit concrete boundaries remain; SyntaxNode numeric A/B superseded |
+| D03 concrete interpretation / parse into Expression | C04 and raw-expressions.test; bare raw construction superseded (`E_UNTYPED_CONSTRUCTOR`); UpperCamel constructor heads live; explicit concrete boundaries remain; SyntaxNode numeric A/B superseded |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |
 | D06 struct / `.where` / pattern kinds | C06, C07, C13, C15; singleton policy deliberately unassigned |
