@@ -228,6 +228,85 @@ A public Unison-style codebase-as-database is out of scope. Source remains
 editable text; keys stay evaluator-internal unless a later decision publishes
 them.
 
+## Name collisions and overloads
+
+Proposed under
+[D21](../design/LANGUAGE-DECISIONS.md#d21-name-collision-and-equivalent-redeclaration-policy--proposed).
+Near term, today's overload and accessor guards stay. The equality and
+[internal content-key](#internal-content-keys) specs are already on master
+([#84](https://github.com/johnwarden/pattern-language/pull/84) /
+[#101](https://github.com/johnwarden/pattern-language/pull/101)); flipping the
+equivalent-redeclaration no-op todos waits on **runtime implementation** of
+those checks, not on further spec work.
+
+### Identical function redeclaration
+
+A second `def` under the same name whose closed clause is **alpha-equivalent**
+to an existing clause is a **no-op**. Alpha-equivalence follows the equality
+rule above: capture binders (including rest binders) normalize; call-visible
+labels and accessor names stay verbatim. A prior `saved = f` /
+`PolymorphicValue` snapshot is unchanged: the no-op does not grow the stored
+group. A different clause under the same name joins the static overload group
+and is subject to the ordinary overlap codes (`E_OVERLAPPING_OVERLOAD`,
+`E_REFINED_OVERLOAD`, or call-time `E_AMBIGUOUS_CALL` where overlap is not yet
+rejected at declaration).
+
+```pattern
+todo test "Alpha-equivalent same-scope function redeclaration is a no-op"
+  def identity(n :: NumericValue) n
+  def identity(k :: NumericValue) k
+  expect identity(3) is 3 :: NumericValue
+end
+```
+
+```pattern
+test "Different labels are distinct clauses, not alpha-equivalent redeclarations"
+  def scale(width: NumericValue) width
+  def scale(height: NumericValue) height
+  expect scale(width: 2) is 2 :: NumericValue
+  expect scale(height: 3) is 3 :: NumericValue
+end
+```
+
+```pattern
+todo test "Alpha-equivalent labeled functions with the same labels are a no-op"
+  def scale(width: w :: NumericValue) w
+  def scale(width: v :: NumericValue) v
+  expect scale(width: 2) is 2 :: NumericValue
+end
+```
+
+### Accessors and defs share one overload group
+
+A type accessor and a `def` that share a name form **one** static overload
+group. When their domains are disjoint under the
+[finish/continue pack rule](#overlapping-packs-that-would-finish-and-continue),
+both remain callable (already true for typed disjoint domains on the
+bootstrap). Overlap is rejected at declaration with `E_OVERLAPPING_OVERLOAD`
+(not deferred to `E_AMBIGUOUS_CALL` at the use site). Justification: accessors
+are ordinary callables over their concrete receiver domain; an untyped or
+overlapping `def` must not compete silently at call time.
+
+```pattern
+test "Disjoint accessor and def share one overload group"
+  type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)
+  def w(s :: String) 99
+  r = Rect(2, 3) :: Rectangle
+  assert r.w == 2
+  assert w("hi") == 99
+end
+```
+
+```pattern
+todo test "Overlapping accessor and def are rejected at declaration"
+  expect
+    type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)
+    def w(r :: Rectangle) 99
+    "defined"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+```
+
 ## Overload representation and open decisions
 
 Fenced tests mark behavior pending implementation with `todo`.

@@ -110,6 +110,16 @@ Their exact keywords, qualifier order and angle-parameter sugar remain provision
 Do not implement an ad-hoc parser exception for a semantic requirement: grammar forms
 must remain ordinary tree patterns or an explicitly documented bootstrap seed.
 
+Same-scope name collisions follow the
+[proposed D21 policy](design/LANGUAGE-DECISIONS.md#d21-name-collision-and-equivalent-redeclaration-policy--proposed):
+identical type/function redeclarations become no-ops once the runtime applies
+content keys with matching capture/accessor names (or alpha-equivalent function
+clauses; #84/#101 specs already on master); accessor and `def` share one
+disjoint overload group; a second name for an equal type descriptor needs an
+explicit alias form (spelling open); import/local clashes are always
+`E_NAME_BOUND`, resolved by renaming with `as`. Near term the bootstrap retains
+today's rejection guards.
+
 Raw structured expressions are allowed at runtime for now. An annotation, typed
 quote or sufficient expected context can give that expression a concrete
 interpretation. [C04 and the raw-expression contracts](specs/raw-expression-values.md)

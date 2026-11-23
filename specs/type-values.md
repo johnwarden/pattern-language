@@ -288,8 +288,119 @@ a name and can register scoped accessors for captures. Standalone
 `struct` and `pattern` expressions produce descriptors without
 registering accessors. Positional capture names belong to the declaration.
 Field labels, pack structure, and concrete boundaries are part of
-descriptor identity. Defaults belong to binding patterns. Existing
-duplicate declaration and accessor collision rules apply.
+descriptor identity. Defaults belong to binding patterns. Name collisions
+follow the [proposed D21 policy](../design/LANGUAGE-DECISIONS.md#d21-name-collision-and-equivalent-redeclaration-policy--proposed)
+below; near-term bootstrap guards still reject equivalent redeclarations.
+
+### Name collisions and aliases
+
+Justification: structural content keys already identify equal descriptors
+(D05 / D14). Repeating an identical same-scope declaration should not invent
+a second binding, while a second spelling for the same descriptor must be
+opt-in so preferred display names stay explicit. Import clashes must stay
+visible errors so modules cannot silently replace a local binding.
+
+#### Same-scope type redeclaration
+
+A second `type Name …` in the same scope is a **no-op** only when it has the
+**same content key and the same capture/accessor names** as the existing
+binding. Content keys erase capture names, so equal keys alone must not
+count as identical: otherwise
+`type Box concrete Box(value :: NumericValue)` followed by
+`type Box concrete Box(item :: NumericValue)` would keep `value` and never
+install `item`. A second declaration under the same name whose descriptor
+differs, or whose capture/accessor names differ, remains `E_DUPLICATE_TYPE`.
+
+Near term, the bootstrap still rejects these with today's bind /
+`E_DUPLICATE_TYPE` guards. Content-key specs are already on master
+([#101](https://github.com/johnwarden/pattern-language/pull/101)); the
+identical-redeclaration no-op becomes an ordinary check only after the
+**runtime** implements that gate. Same-key / different-capture-name is
+already rejected today (`E_NAME_BOUND`); destination spelling remains
+`E_DUPLICATE_TYPE` (open question).
+
+```pattern
+todo test "Identical same-scope type redeclaration is a no-op"
+  type Box concrete Box(value :: NumericValue)
+  type Box concrete Box(value :: NumericValue)
+  b = Box(3) :: Box
+  assert b.value == 3
+end
+```
+
+```pattern
+test "Same content key with different capture names is rejected"
+  expect
+    type Box concrete Box(value :: NumericValue)
+    type Box concrete Box(item :: NumericValue)
+    Box
+  fails "E_NAME_BOUND"
+end
+```
+
+```pattern
+todo test "Same-scope type redeclaration with a different descriptor stays E_DUPLICATE_TYPE"
+  expect
+    type Box concrete Box(value :: NumericValue)
+    type Box concrete Box(item :: String)
+    Box
+  fails "E_DUPLICATE_TYPE"
+end
+```
+
+#### Second name for an equal descriptor
+
+Independently scoped equal descriptors still interoperate (C18). Inside one
+scope, a second name for a descriptor that already has a content-key match
+requires an **explicit alias form**. Until that form exists,
+`type Second …` with an equal descriptor stays `E_DUPLICATE_TYPE`. The alias
+surface spelling is an open question (for example `type Second = First`
+versus an `alias` keyword).
+
+```pattern
+test "A second local name for an equal descriptor stays E_DUPLICATE_TYPE"
+  expect
+    type First concrete Box(value :: NumericValue)
+    type Second concrete Box(item :: NumericValue)
+    Second
+  fails "E_DUPLICATE_TYPE"
+end
+```
+
+#### Import and local binding clashes
+
+An import that would bind a name already bound in the receiving scope is
+always an error. Resolve it by renaming with `as`. There is no silent
+shadowing or replacement of locals by imports (or of imports by later
+locals). Ordinary same-scope rebinding of a value name uses the same code:
+
+```pattern
+test "Same-scope value rebinding reports E_NAME_BOUND"
+  expect
+    x = 1
+    x = 2
+    x
+  fails "E_NAME_BOUND"
+end
+```
+
+Import syntax itself remains provisional. Sketch of the intended clash:
+
+    import Geometry
+    type Rectangle struct Rect(w :: NumericValue, h :: NumericValue)
+    # if Geometry also exports Rectangle:
+    #   import Geometry  →  E_NAME_BOUND
+    #   import Geometry as Geo  →  ok; use Geo.Rectangle
+
+```pattern
+todo test "Import that collides with a local name reports E_NAME_BOUND"
+  expect
+    type Box concrete Box(value :: NumericValue)
+    import Box
+    Box
+  fails "E_NAME_BOUND"
+end
+```
 
 The `pattern` and `struct` macros resolve type references, collapse nested
 abstract pattern forms, sort alternatives canonically, and remove repeated
