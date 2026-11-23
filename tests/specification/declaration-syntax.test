@@ -7,6 +7,9 @@ test "Concrete declarations retain recursive declaration groups"
   end
 end
 
+# Near-term D08 guards. Destination no-op / disjoint-group rules are proposed
+# in D21 and covered in the type-values / named-function-values fences.
+
 test "Equivalent concrete declarations keep the duplicate-type guard"
   expect
     type First concrete Box(value :: NumericValue)

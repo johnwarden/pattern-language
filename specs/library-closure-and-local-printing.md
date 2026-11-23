@@ -36,6 +36,13 @@ same value in a fresh environment. Local text requires its naming scope and must
 reconstruct the same value there. Printing preserves the selected definition
 group, dispatch behavior and identity.
 
+A second local **type** name for an equal descriptor is not introduced by
+printing or by repeating `type Second …`; it needs the explicit alias form in
+the [proposed collision policy](../design/LANGUAGE-DECISIONS.md#d21-name-collision-and-equivalent-redeclaration-policy--proposed).
+Import/local name clashes are always `E_NAME_BOUND` and are resolved by
+renaming with `as`, never by silent shadowing that would make an exact-alias
+print ambiguous.
+
 ## Contracts
 
 Executable contracts for named function values, including closure and identity

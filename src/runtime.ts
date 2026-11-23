@@ -1229,7 +1229,11 @@ export class Interpreter {
         { code: "E_RESERVED_PRIMITIVE", phase: "declaration" },
       );
     if (env.bindings.has(name))
-      throw new LanguageError("name already bound in this scope: " + name);
+      throw new LanguageError(
+        "name already bound in this scope: " + name,
+        undefined,
+        { code: "E_NAME_BOUND", phase: "declaration" },
+      );
     if (
       "kind" in value &&
       ["closure", "native", "overload", "accessor"].includes(
