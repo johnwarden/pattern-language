@@ -168,11 +168,23 @@ portable closed dependencies remain later work.
 ## Rows and repetition
 
 A standalone ... pattern row repeats its preceding row. Each repeated dimension
-adds one list layer to the complete capture annotation:
+adds one list layer to the complete capture annotation.
+
+Current bootstrap spelling (accepted today):
 
 ```text
 type Matrix concrete [
   cells... :: Float32**
+  ...
+]
+```
+
+Target spelling from [Spreads and ArgPacks](specs/spreads-and-argpacks.md)
+(annotation left of `...`; bootstrap rejects it today):
+
+```text
+type Matrix struct [
+  (cells :: Float32**)...
   ...
 ]
 ```
@@ -182,11 +194,10 @@ capture followed by ... has T*. Labels sort per pack, while positional and row o
 remain significant. Rows are not flattened into commas or promoted to tuple values.
 Zero rows, one explicit () row, and flat [] remain distinct. The bootstrap preserves
 rows after an opening newline, except comma continuation of the same pack.
-For a repetition without a capture name, see the bare annotated ellipsis
-[source cases](tests/specification/anonymous-spreads.test).
-
-Single-template mirrored vertical spreading is covered by
-[source contracts](tests/spreading/vertical-values.test). Broader row templates
+Anonymous repetition, mirrored vertical spreading, residual `ArgPack` capture
+and open concrete types are specified in
+[Spreads and ArgPacks](specs/spreads-and-argpacks.md), which keeps bootstrap
+spelling fences next to target `todo`s until phase 2. Broader row templates
 and typed keyword remainders remain planned extensions. General arbitrary
 sidefix repetition/alternation remains outside the
 bounded grammar. [BODY-GRAMMAR.md](design/BODY-GRAMMAR.md) retains the working Body

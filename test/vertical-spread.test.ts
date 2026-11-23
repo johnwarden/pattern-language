@@ -8,6 +8,8 @@ import { single } from "../src/values.ts";
 import { parseExpression } from "../src/parser.ts";
 import { normal, syntaxKey, LanguageError } from "../src/syntax.ts";
 
+// Host probes keep bootstrap rest spelling (cells... :: T**) until the runtime
+// accepts specs/spreads-and-argpacks.md's (cells :: T**)... form.
 const bodyGrammar = readFileSync(
   new URL("../examples/body-grammar.pattern", import.meta.url),
   "utf8",

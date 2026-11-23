@@ -219,7 +219,8 @@ Independently scoped declarations with equivalent capture-free descriptions exch
 
 The horizontal/vertical capture contract is retained: one repeated dimension contributes one list layer to the aggregate capture. A horizontal rest alone has `T*`; horizontal rest repeated over rows has `T**`. The author corrected the specialization Matrix example's `N*` to the two-dimensional rule. Zero rows, one empty row and a flat empty pack remain distinct.
 
-The single-template mirrored row-spreading slice is exercised by [vertical-values.test](../tests/spreading/vertical-values.test), alongside C20. Broader row templates and R's keyword remainder represented by an actual typed record remain **intended proposals, not implemented guarantees**. Postfix `...` is preferred; prefix keyword-rest/spread `**rest` / `**(x)` / `**rest: {**}`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
+The single-template mirrored row-spreading slice and C19–C22 live in
+[Spreads and ArgPacks](../specs/spreads-and-argpacks.md). Broader row templates and R's keyword remainder represented by an actual typed record remain **intended proposals, not implemented guarantees**. Postfix `...` is preferred; prefix keyword-rest/spread `**rest` / `**(x)` / `**rest: {**}`, its exact grammar, dynamic typing policy and keyword spreading details remain provisional. Specialization may optimize a known remainder shape but is not its semantic justification. **Sources:** O dimension contract; R; AR Matrix correction; R1.
 
 ### D16. constructedBy is tabled entirely — deferred by latest decision
 
@@ -424,18 +425,16 @@ capture. Independent `...`/`**` openness retains the original pack/constructed d
 ### C20 — horizontal plus vertical capture/spread has two dimensions
 
 Capture dimensions and single-template mirrored reconstruction are covered by
-[focused source cases](../tests/spreading/vertical-values.test). C20's first
-reconstruction assertion is ordinary coverage; its three larger scenario todos
-also require evaluated-Code assert, which remains unsupported in this slice.
-`cells... :: Float32**` over repeated rows is `[[0.5, 1], [2, 4]]`, not
-`Float32*`. Spreading those rows rebuilds the same Matrix. Zero rows `[]` differ
-from one empty row `[()]`. The annotation describes the aggregate capture. Row
-widths need not be equal without a separate constraint.
+[Spreads and ArgPacks](../specs/spreads-and-argpacks.md). Destination spelling is
+`(cells :: Float32**)...` over repeated rows; the capture is `[[0.5, 1], [2, 4]]`,
+not `Float32*`. Spreading those rows rebuilds the same Matrix. Zero rows `[]`
+differ from one empty row `[()]`. The annotation describes the aggregate
+capture. Row widths need not be equal without a separate constraint.
 
 ### C21 — vertical repetition alone adds one list layer
 
-Todo. A vertically repeated `todos :: String*` field is `["first", "second"] :: String*`,
-one list layer, not a nested matrix.
+Todo. A vertically repeated `(todos :: String*)...` field is
+`["first", "second"] :: String*`, one list layer, not a nested matrix.
 
 ### C22 — keyword remainder is a typed record
 

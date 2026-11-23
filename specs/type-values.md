@@ -369,7 +369,8 @@ Selecting a symbol tag needs no raw symbol value. Ordinary bindings and
 parameters cannot implicitly unwrap a value. A single-arm extraction
 requires coverage of its admitted input domain. A match on an abstract
 union tests the stored concrete value. A catch-all spread can collect
-unmatched fields within an open constructed value into an `ArgPack(T)`. See [Spreads and ArgPacks](https://github.com/johnwarden/pattern-language/pull/85).
+the unmatched arguments into an `ArgPack`, including in an open
+concrete type. See [Spreads and ArgPacks](spreads-and-argpacks.md).
 
 `P .as T` is a proposed explicit projection pattern of lower
 implementation priority. It checks the outer concrete type `T` and
