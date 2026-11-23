@@ -725,7 +725,6 @@ class Reader {
     }
   }
   postfix(stops: Set<string>): Syntax {
-    const from = this.pos;
     const first = this.peek()!;
     let n = this.atom(stops);
     const suffix = this.peek();
@@ -735,8 +734,7 @@ class Reader {
       this.tokens[this.pos - 1]!.end === suffix.start &&
       /^[eEpP][+-]?\d/.test(
         this.source.slice(suffix.start, suffix.start + 3),
-      ) &&
-      this.isGroupedNumericAtom(from, this.pos - 1)
+      )
     ) {
       throw new LanguageError(
         "a numeric exponent belongs inside the atom",
@@ -794,24 +792,6 @@ class Reader {
         endColumn: end.endColumn ?? end.column + end.text.length,
       };
     return n;
-  }
-  private isGroupedNumericAtom(from: number, to: number): boolean {
-    while (this.tokens[from]?.kind === "(" && this.tokens[to]?.kind === ")") {
-      from++;
-      to--;
-      if (this.tokens[to]?.kind === ",") to--;
-    }
-    const sign = this.tokens[from];
-    const number = this.tokens[to];
-    return (
-      (number?.kind === "number" || number?.kind === "numberSource") &&
-      (from === to ||
-        (from + 1 === to &&
-          sign?.kind === "op" &&
-          !sign.quoted &&
-          sign.text === "-" &&
-          sign.end === number.start))
-    );
   }
   suffixBoundary(): boolean {
     const t = this.peek()!,

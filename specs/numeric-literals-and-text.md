@@ -75,9 +75,10 @@ A touching `-` begins a numeric literal, as in `-0.5`, `-1i`, or `-0x1p-20`.
   `0f1/3` fail with `E_SYNTAX`.
 - A denominator has no sign. `1/-3` fails with `E_SYNTAX`. Write `-1/3` to
   put the sign on the fraction, or `1 / -3` for an explicit division.
-- An exponent belongs inside the numeric atom. An exponent attached after a
-  parenthesized atom fails with `E_SYNTAX`, including nested groups such as
-  `((1/3))e20`. For a fraction, put it on the numerator, as in `1e20/3`.
+- An exponent belongs inside the numeric atom. An exponent attached after any
+  parenthesized expression fails with `E_SYNTAX`, including nested groups
+  such as `((1/3))e20` and non-numeric groups such as `(x)e20`. For a
+  fraction, put it on the numerator, as in `1e20/3`.
 - Parentheses are ordinary grouping: `(1/3)` relates to `1/3` exactly as
   `("a")` relates to `"a"`.
 
@@ -388,18 +389,23 @@ test "Paren-free fraction atoms are NumericValue literals"
   assert parse(NumericValue)("1e20/3") == ((1 / 3) * 1e20)
 end
 
-test "An exponent attached after a grouped numeric atom is E_SYNTAX"
+test "An exponent attached after a parenthesized expression is E_SYNTAX"
   expect parse(Code)("(1/3)e20") fails "E_SYNTAX"
   expect parse(Code)("((1/3))e20") fails "E_SYNTAX"
+  expect parse(Code)("(((1/3)))e20") fails "E_SYNTAX"
   expect parse(Code)("(( -1/3 ))E+2") fails "E_SYNTAX"
   expect parse(Code)("((0x1/3))p-3") fails "E_SYNTAX"
   expect parse(Code)("((0.5i))e2") fails "E_SYNTAX"
   expect parse(Code)("(1.5)e-2") fails "E_SYNTAX"
+  expect parse(Code)("(x)e20") fails "E_SYNTAX"
+  expect parse(Code)("((x))e20") fails "E_SYNTAX"
+  expect parse(Code)("((x))p2") fails "E_SYNTAX"
   assert parse(Code)("(1/3) e20") == parse(Code)("1/3 e20")
   expect parse(Code)("(1/3)e0") fails "E_SYNTAX"
   expect parse(Code)("(-1/3)e2") fails "E_SYNTAX"
   expect parse(Code)("(1_0/5)e2") fails "E_SYNTAX"
   expect parse(NumericValue)("(1/3)e20") fails "E_SYNTAX"
+  expect parse(NumericValue)("((1/3))e20") fails "E_SYNTAX"
   expect parse(NumericValue)("(1/3)e10000") fails "E_SYNTAX"
   expect parse(NumericValue)("(1/3)e-10000") fails "E_SYNTAX"
 end
