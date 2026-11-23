@@ -418,10 +418,11 @@ already enforces that split when evaluating applications
 ([`src/runtime.ts`](../src/runtime.ts): a bare UpperCamel or punctuation symbol
 head with no callable binding builds a term). TitleCase user `def` names are
 type factories, not ordinary callables. A few prelude UpperCamel names remain
-callable (for example `String(...)`). That casing rule is how the language
-distinguishes ordinary constructor designators from calls such as a function
-returning a Box that must be bound before `match`
-([#109](https://github.com/johnwarden/pattern-language/pull/109)).
+callable (for example `String(...)`). That casing rule is how the language distinguishes ordinary constructor
+designators from calls — for example an inline `Box(3)` match subject versus a
+multi-valued call result that must be bound before `match`
+([#109](https://github.com/johnwarden/pattern-language/pull/109); single-result
+calls may be matched directly).
 
 ```pattern
 test "UpperCamel heads construct; lowerCamel heads call"

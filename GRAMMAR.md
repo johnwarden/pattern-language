@@ -36,9 +36,10 @@ as `box(3)` are ordinary calls. The bootstrap implements that split in
 are type definitions / type factories, not ordinary functions. A few prelude
 UpperCamel names remain callable (for example `String(...)`). The casing
 convention is how authors and the checker distinguish ordinary constructor
-designators from calls, including a function that returns a constructed value
-that must be bound before `match` (see
-[#109](https://github.com/johnwarden/pattern-language/pull/109)).
+designators from calls — for example an inline `Box(3)` match subject versus a
+multi-valued call result that must be bound before `match`
+([#109](https://github.com/johnwarden/pattern-language/pull/109); single-result
+calls may be matched directly).
 
 The [application-head tests](tests/specification/application-heads.test) separate
 syntax from evaluation: Code may contain `True(1)` or `1(1)`. A head's callability
