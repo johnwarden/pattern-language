@@ -436,8 +436,12 @@ ordered first-match. Overlap raises `E_OVERLAPPING_MATCH_ARMS`. See
 
 The admitted scrutinee domain is the set of values the scrutinee's static
 type permits at that match. Compare the arms on that same set of original
-inputs, counting the one-boundary projection allowed by `match`. For example,
-an `Outer` whose immediate member is `Inner` can reach an `Outer` arm as a
+inputs, counting the one-boundary projection allowed by `match`. Overlap
+outside that input domain is irrelevant. For an `Int | String` scrutinee,
+the arms annotated with `Int | Bool` and `String | Bool` cover separate
+alternatives because the input domain excludes `Bool`.
+
+An `Outer` whose immediate member is `Inner` can reach an `Outer` arm as a
 whole or an `Inner` arm through projection. Both arms accept the same input.
 A second concrete boundary requires another projection.
 
@@ -460,12 +464,13 @@ missing evidence or fall through to `else`. For ordered predicate checks, put
 `if` / `.matches` inside one base-type arm. See
 [refinement evidence](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
 
-For an abstract union, require one explicit peer arm covering each whole union
-alternative. An alternative may itself be concrete or abstract. Check coverage
-against the declared alternatives even if the current value would enter an arm
-that is present. The peer domains must also satisfy the disjointness rule.
-For example, the alternatives of `Any | Int` cannot each have a peer arm,
-since both would accept the same Int values.
+When the scrutinee's static type is an abstract union, require one explicit
+peer arm covering each whole alternative within that type. An alternative may
+itself be concrete or abstract. A parameter with static type `Int | String`
+requires both arms. A scrutinee with static type `Int` is covered by an
+`Int` arm. The peer domains must also satisfy the disjointness rule. For
+example, the alternatives of `Any | Int` cannot each have a peer arm, since
+both would accept the same Int values.
 
 At most one `else` may appear, and only as the last arm. On a scrutinee outside
 the abstract-union rule, it takes any value left by the peer arms. A provably
@@ -616,6 +621,20 @@ test "An abstract-union match covers each declared alternative"
       (i :: Int) -> "int"
     end
   fails "non-exhaustive match"
+end
+
+test "Overlap outside the scrutinee type does not make two arms overlap"
+  type Input abstract Int | String
+  type Left abstract Int | Bool
+  type Right abstract String | Bool
+  def classify(v :: Input)
+    match v
+      (i :: Left) -> "int"
+      (s :: Right) -> "string"
+    end
+  end
+  expect classify(3 :: Int) is "int"
+  expect classify("hello") is "string"
 end
 
 todo test "An abstract union can have an abstract alternative with its own arm"
