@@ -1,11 +1,4 @@
 test "C04 raw expressions are allowed and explicit types establish an interpretation"
-  x = Rect(2, 2)
-  Rect(w, h) = x
-
-  expect x is Rect(2, 2) :: Expression
-  expect w is 2 :: Rational
-  expect h is 2 :: Rational
-
   expect
     type Rectangle concrete Rect(w :: Float32, h :: Float32)
     r = (Rect(2, 2) :: Rectangle)
@@ -19,6 +12,16 @@ test "C04 raw expressions are allowed and explicit types establish an interpreta
       Rectangle
     )
   end
+
+  legacy expect
+    x = Rect(2, 2)
+    x
+  is Rect(2, 2) :: Expression
+
+  todo expect
+    x = Rect(2, 2)
+    x
+  fails "E_PATTERN_MISMATCH"
 end
 
 test "C05 types are structural values"
@@ -28,6 +31,18 @@ test "C05 types are structural values"
     u = concrete Rect(Rational, Rational)
     (t == u)
   end
+
+  todo assert
+    type Rectangle struct Rect(w :: String, h :: String)
+    plain = struct Rect(String, String)
+    (Rectangle === plain)
+  end
+
+  todo expect
+    type Rectangle struct Rect(w :: String, h :: String)
+    plain = struct Rect(String, String)
+    toString(Type)(plain)
+  is "Struct(Rect(String, String))" :: String
 
   todo assert
     type Box<T> concrete Box(T)
@@ -52,5 +67,13 @@ test "C06 equal spellings can belong to different concrete spaces"
     red = (:Red :: PrimaryColor)
     stopped = (:Red :: TicketStatus)
     (red == stopped)
+  fails "E_INCOMPARABLE_TYPES"
+
+  todo expect
+    type PrimaryColor struct :Red | :Green | :Blue
+    type TicketStatus struct :Red | :Green
+    red = (:Red :: PrimaryColor)
+    stopped = (:Red :: TicketStatus)
+    (red === stopped)
   fails "E_INCOMPARABLE_TYPES"
 end

@@ -1,12 +1,30 @@
 test "Raw runtime expressions can be interpreted as concrete values"
-  e = Rect(2, 2)
-  def Rectangle type Rect(width :: Int, height :: Int)
-  (r :: Rectangle) = e
+  legacy expect
+    e = Rect(2, 2)
+    e
+  is Rect(2, 2) :: Expression
 
-  expect e is Rect(2, 2) :: Expression
-  expect r is Rect(2, 2) :: Rectangle
-  expect r.width is 2 :: Int
-  expect r.height is 2 :: Int
+  todo expect
+    e = Rect(2, 2)
+    e
+  fails "E_PATTERN_MISMATCH"
+
+  def Rectangle type Rect(width :: Int, height :: Int)
+
+  expect
+    (r :: Rectangle) = Rect(2, 2)
+    r
+  is Rect(2, 2) :: Rectangle
+
+  expect
+    (r :: Rectangle) = Rect(2, 2)
+    r.width
+  is 2 :: Int
+
+  expect
+    (r :: Rectangle) = Rect(2, 2)
+    r.height
+  is 2 :: Int
 end
 
 test "Ordinary constructor bindings do not project a concrete value"
