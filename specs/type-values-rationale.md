@@ -691,9 +691,9 @@ scrutinee) has the same behavior as a call to one local overloaded function:
     f(x)
 
 A trailing `else` corresponds to one `Remaining` overload for values of `T`
-outside the peer arms. Match takes one value. Bind a function result pack to
-locals before matching an individual result. An abstract-union match lists
-one arm for each whole alternative. Peer arms keep `->`. See
+outside the peer arms. Bind a function result before matching it. If the call
+returns several values, match one of the bound locals. An abstract-union
+match lists exactly the declared alternatives, one per arm. Peer arms keep `->`. See
 [MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) and
 [Match arm domains](type-values.md#match-arm-domains). The
 [Reading example](type-values.md#overload-domains-and-projection-dispatch)
