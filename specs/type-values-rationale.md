@@ -690,9 +690,10 @@ scrutinee) has the same behavior as a call to one local overloaded function:
     def f(P2 .as T) V2
     f(x)
 
-A trailing `else` corresponds to one `Remaining` overload for `T` outside prior
-arms: an ordinary catch-all expression covering any remaining pack. Peer arms
-keep `->` for now — see
+A trailing `else` corresponds to one `Remaining` overload for values of `T`
+outside the peer arms. Match takes one value. Bind a function result pack to
+locals before matching an individual result. An abstract-union match lists
+one arm for each whole alternative. Peer arms keep `->`. See
 [MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) and
 [Match arm domains](type-values.md#match-arm-domains). The
 [Reading example](type-values.md#overload-domains-and-projection-dispatch)

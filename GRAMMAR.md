@@ -75,18 +75,18 @@ parameters, arms, macros and grammar interpretation. Context policies are explic
   unless open. Bare ... ignores extra positions; bare ** ignores extra labels.
 - Positional rests collect positions only; required labels must exist unless a
   binding default supplies a capture. Defaults never complete a type/value.
-- Match arms pair patterns with expressions and are not first-class functions.
-  Runtime matching is still ordered first-match. Decided (not yet enforced):
-  peer arms must be pairwise disjoint under the same domain rule as overloads,
-  compared on the admitted scrutinee domain including permitted projection;
-  at most one trailing `else` as the last arm (ordinary catch-all expression
-  covering any remaining pack); overlap is `E_OVERLAPPING_MATCH_ARMS`. Peer
-  arms keep `->` for now (`when`/newline layout deferred). See
-  [MATCH-DISJOINTNESS](design/MATCH-DISJOINTNESS.md).
+- A match takes one unlabeled value. Bind a result pack to locals before
+  matching one of its values. Peer arms pair patterns with expressions using
+  `->`. At elaboration, check that their domains are disjoint over the
+  scrutinee’s static type, including permitted projection. Overlap is
+  `E_OVERLAPPING_MATCH_ARMS`. A match on an abstract union has an explicit arm
+  for each complete alternative, concrete or abstract. At most one trailing
+  `else` covers the residual values. The bootstrap still uses ordered matching.
+  See [MATCH-DISJOINTNESS](design/MATCH-DISJOINTNESS.md).
 - Union binding patterns are disallowed in function signatures and match arms.
   Separate arms or definitions may share a capture name. Union types remain valid
-  in annotations. Disjointness of peer domains must hold with predicates erased;
-  reject when disjointness cannot be proved.
+  in annotations. Check peer disjointness with predicates erased. A selected
+  arm's refinements still require static evidence.
 - Concrete pattern alternatives must have unique interpretations; general abstract
   unions need not have disjoint spellings.
 

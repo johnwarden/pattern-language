@@ -22,28 +22,28 @@ Jonathan (seed, with later clarification: *“one trailing error”* was a typo 
 1. **Match arms are pairwise disjoint**, under the same domain rule as
    overloads. Overlap is rejected; there is no ordered first-match priority
    among peer arms.
-2. **One construct:** a single `match`.
-3. **At most one trailing `else`**, and only as the **last** arm. `else` is an
-   ordinary catch-all arm whose body is an ordinary expression. It covers
-   **any remaining pack** (multiple positionals and labels), not merely one
-   positional `_`. There is no special error-arm concept.
+2. **One scrutinee value:** a single `match` takes one unlabeled value.
+   Bind positional or labeled function results to locals before matching
+   one of them.
+3. **At most one trailing `else`**, and only last. Its body is an ordinary
+   expression. Its domain is the values the peer arms leave uncovered.
+   See the coverage rule for abstract unions below.
 4. **Overlap diagnostic:** `E_OVERLAPPING_MATCH_ARMS` (not `E_AMBIGUOUS_CALL`,
    not `E_AMBIGUOUS_VALUE_DESIGNATOR`).
-5. **Refinement predicates cannot distinguish peers.** Erase predicate tests
-   and require structurally disjoint domains. When disjointness cannot be
-   proved, **reject conservatively** as `E_OVERLAPPING_MATCH_ARMS` and report
-   that disjointness could not be proved (same code; distinct message). Put
-   ordered predicate checks inside one base-type arm with `if` / `.matches`.
-   Spec fixtures use prelude `Predicate` tags (`isPositive`, `isNonZero`), not
-   lambda `.where` operands (`E_EXPECTED_PREDICATE`).
+5. **Compare peers with refinement predicates erased.** Require structurally
+   disjoint domains. When disjointness cannot be proved, raise
+   `E_OVERLAPPING_MATCH_ARMS` and explain why. The checker still requires
+   evidence for any refined binding in the selected arm. An explicit prior
+   check can supply it. Use `if` / `.matches` inside one base-type arm for
+   ordered predicate tests.
 6. **Union binding patterns are disallowed** in match arms and function
    signatures. Use separate arms or definitions. Union type annotations remain.
-7. **Domain comparison is relative to the scrutinee.** Check overlap over the
-   admitted scrutinee domain **including the permitted one-boundary
-   projection**. An `Outer` wrapper arm and a projected `Inner` arm that both
-   admit the same `Outer` value overlap. Separately, a raw designator that can
-   enter two otherwise-disjoint arms (e.g. `Box(3)` into `Box(Int)` vs
-   `Box(Float)`) stays `E_AMBIGUOUS_VALUE_DESIGNATOR`, not arm overlap.
+7. **Compare arms on possible values of the scrutinee's static type.**
+   Count one-boundary projection as part of matching the same input.
+   An `Outer` arm can bind the wrapper and an `Inner` arm can bind its
+   immediate member. The arms overlap because one `Outer` input permits both.
+   A raw `Box(3)` given different concrete interpretations by otherwise
+   disjoint arms raises `E_AMBIGUOUS_VALUE_DESIGNATOR`.
 8. **Peer arms keep `->` for now.** `.then` is rejected; a future `when` /
    `else` newline-bounded layout may be revisited (see Deferred).
 
@@ -76,7 +76,7 @@ Most live multi-arm matches are already pairwise disjoint or use a trailing
 
 | Location | Why |
 | --- | --- |
-| type-values — raw `Box(3) :: NumBox` across Int/Float field arms | `E_AMBIGUOUS_VALUE_DESIGNATOR`; typed `Box(3 :: Int)` counterpart passes |
+| type-values — bare `Box(3)` across Int/Float field arms | `E_AMBIGUOUS_VALUE_DESIGNATOR` in either order. The explicit `:: NumBox` ambiguity is a separate control. |
 | [open-fields.test](../tests/matching/open-fields.test) — within-arm `(Box(Int) \| Box(Float))` | Same designation class |
 
 ### C. Trailing `_` after a more specific arm
@@ -177,22 +177,19 @@ separator change is a wide mechanical edit plus printer/grammar/`Arms` work.
 
 ## Checking, exhaustiveness, and `Remaining` (decided)
 
-Jonathan (PR review): check overlap at elaboration, require exhaustiveness once
-static checking can enforce it, reject a provably empty `else`, and defer
-public subtraction syntax.
-
-1. **When is arm overlap checked?** At elaboration of the `match` (same
-   definition-time phase as overload-domain overlap), not on first evaluation.
-   A later static-checker milestone may be the first enforcer if bootstrap
-   elaboration still skips it.
-2. **Unreachable trailing `else`?** Reject as an error (empty `Remaining`),
-   not a warning and not allowed.
-3. **Non-exhaustive `match` with no `else`?** Static error once domain coverage
-   can be proved; until then, keep today’s runtime miss (`E_NO_MATCH`-style) as
-   bootstrap behavior only.
-4. **Public `P \ Q` / `Remaining` in types?** Defer user-written subtraction /
-   `Remaining` types; treat `Remaining` as the implicit domain of `else` only
-   until a separate notation PR.
+1. **Overlap checking.** Resolve the scrutinee's static type and the arm
+   patterns when checking the enclosing expression or function. Check their
+   domains before evaluating the match. An unused function can still contain
+   an overlap error.
+2. **Abstract-union coverage.** Require one explicit arm covering each whole
+   alternative of the scrutinee's abstract union, including an abstract
+   alternative. Check the declared alternatives even if the current value
+   selects one of the arms already present.
+3. **Residual coverage.** A trailing `else` covers values outside the peer
+   arms. Reject `else` when the residual is provably empty. An abstract union
+   with all required alternatives handled has empty residual coverage.
+4. **Public subtraction.** `Remaining` describes the residual domain in the
+   design. User-written `P \ Q` and `Remaining` types are deferred.
 
 No runtime implementation in this PR. Spec todos record the decided
 diagnostics; remove them when an implementation PR makes them pass. Keep the
