@@ -75,8 +75,9 @@ A touching `-` begins a numeric literal, as in `-0.5`, `-1i`, or `-0x1p-20`.
   `0f1/3` fail with `E_SYNTAX`.
 - A denominator has no sign. `1/-3` fails with `E_SYNTAX`. Write `-1/3` to
   put the sign on the fraction, or `1 / -3` for an explicit division.
-- An exponent cannot follow a parenthesized fraction. `(1/3)e20` is
-  `E_SYNTAX`. Put `e` only on the numerator: `1e20/3`.
+- An exponent belongs inside the numeric atom. An exponent attached after a
+  parenthesized atom fails with `E_SYNTAX`, including nested groups such as
+  `((1/3))e20`. For a fraction, put it on the numerator, as in `1e20/3`.
 - Parentheses are ordinary grouping: `(1/3)` relates to `1/3` exactly as
   `("a")` relates to `"a"`.
 
@@ -387,8 +388,14 @@ test "Paren-free fraction atoms are NumericValue literals"
   assert parse(NumericValue)("1e20/3") == ((1 / 3) * 1e20)
 end
 
-test "Trailing e after a parenthesized fraction is E_SYNTAX"
+test "An exponent attached after a grouped numeric atom is E_SYNTAX"
   expect parse(Code)("(1/3)e20") fails "E_SYNTAX"
+  expect parse(Code)("((1/3))e20") fails "E_SYNTAX"
+  expect parse(Code)("(( -1/3 ))E+2") fails "E_SYNTAX"
+  expect parse(Code)("((0x1/3))p-3") fails "E_SYNTAX"
+  expect parse(Code)("((0.5i))e2") fails "E_SYNTAX"
+  expect parse(Code)("(1.5)e-2") fails "E_SYNTAX"
+  assert parse(Code)("(1/3) e20") == parse(Code)("1/3 e20")
   expect parse(Code)("(1/3)e0") fails "E_SYNTAX"
   expect parse(Code)("(-1/3)e2") fails "E_SYNTAX"
   expect parse(Code)("(1_0/5)e2") fails "E_SYNTAX"
@@ -415,7 +422,7 @@ test "Mixed-radix fraction atoms are allowed"
   assert parse(NumericValue)("0xf/0x11") == (15 / 17)
 end
 
-test "Parenthesized fraction components keep digit rules "
+test "Parenthesized fraction components keep digit rules"
   expect parse(Code)("(01/3)") fails "E_SYNTAX"
   expect parse(Code)("(1/03)") fails "E_SYNTAX"
   expect parse(Code)("(+1/3)") fails "E_SYNTAX"
@@ -506,7 +513,7 @@ pack is still an application. Code text preserves pack boundaries, labels, and
 grouping. Parentheses remain ordinary grouping around the atom.
 
 ```pattern
-test "Grouped fraction atoms work inside argument packs "
+test "Grouped fraction atoms work inside argument packs"
   atom = Code` f((1/3))
   assert parse(Code)("f((1/3))") == atom
   assert parse(Code)("f((1 / 3))") == Code` f(1 / 3)
@@ -514,7 +521,7 @@ test "Grouped fraction atoms work inside argument packs "
   assert parse(Code)("f((2/4))(scale: (3/4))") == Code` f(0.5)(scale: 0.75)
 end
 
-test "Numeric Code text preserves successive packs and prefix negation "
+test "Numeric Code text preserves successive packs and prefix negation"
   division = Code` (1 / 3)(2)
   expect toString(Code)(division) is "(1 / 3)(2)" :: String
   assert parse(Code)(toString(Code)(division)) == division

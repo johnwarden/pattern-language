@@ -617,27 +617,32 @@ test "Bootstrap Int addition preserves its operand format"
   expect a + b is 3 :: Int
 end
 
-test "Bootstrap Int addition requires a matching operand format"
-  expect (3 :: Int) + 1 fails "same concrete numeric type"
+test "An exact literal can be added to Int"
+  legacy expect (3 :: Int) + 1 fails "same concrete numeric type"
+  todo expect (3 :: Int) + 1 is 4 :: Int64
 end
 
 test "Inexact Float designation"
-  expect 0.1 :: Float fails "not exactly representable as Float"
+  legacy expect 0.1 :: Float fails "not exactly representable as Float"
+  todo expect 0.1 :: Float fails "E_NOT_EXACTLY_REPRESENTABLE"
 end
 
-test "Bootstrap keeps Number unbound"
-  expect 0.1 :: Number fails "unbound"
+test "A literal with several fixed formats is ambiguous in Number"
+  legacy expect 0.1 :: Number fails "unbound"
+  todo expect 0.1 :: Number fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
-test "Bootstrap Float32 addition requires a matching operand format"
-  expect float32(0.5) + 0.5 fails "same concrete numeric type"
+test "An exact literal can be added to Float32"
+  legacy expect float32(0.5) + 0.5 fails "same concrete numeric type"
+  todo expect float32(0.5) + 0.5 is 1 :: Float32
 end
 
-test "Bootstrap Float32 equality requires a matching operand format"
-  expect float32(0.5) == 0.5 fails "different concrete types cannot be compared"
+test "Float32 equality compares magnitudes with an exact literal"
+  legacy expect float32(0.5) == 0.5 fails "different concrete types cannot be compared"
+  todo expect float32(0.5) == 0.5 is True :: Bool
 end
 
-test "Bootstrap Float64 is a distinct primitive and float64 converts"
+test "Numeric conversions preserve format and equality compares magnitudes"
   expect float64(0.5) is 0.5 :: Float64
   expect float32(0.5) is 0.5 :: Float32
   observed = type Float64
@@ -645,13 +650,15 @@ test "Bootstrap Float64 is a distinct primitive and float64 converts"
   expect
     type Num
   fails "E_UNBOUND_TYPE"
-  expect
+  legacy expect
     type Int64
   fails "E_UNBOUND_TYPE"
+  todo expect
+    type Int64
+  is Int64 :: Type
 
-  expect
-    float32(0.5) == float64(0.5)
-  fails "E_INCOMPARABLE_TYPES"
+  legacy expect float32(0.5) == float64(0.5) fails "E_INCOMPARABLE_TYPES"
+  todo expect float32(0.5) == float64(0.5) is True :: Bool
 end
 
 test "C03 exact designation differs from rounding"
@@ -660,10 +667,10 @@ test "C03 exact designation differs from rounding"
   todo expect 0f0.5 :: Decimal32 is 0.5 :: Decimal32
   expect 0f0.1 :: Float64 is 0f0.1 :: Float64
   assert (0f0.1 :: Float64) == (0x1.999999999999Ap-4 :: Float64)
-  expect 0.1 :: Float64 fails "not exactly representable as Float64"
-  expect
-    (0.1 :: Float32)
-  fails "not exactly representable as Float32"
+  legacy expect 0.1 :: Float64 fails "not exactly representable as Float64"
+  todo expect 0.1 :: Float64 fails "E_NOT_EXACTLY_REPRESENTABLE"
+  legacy expect 0.1 :: Float32 fails "not exactly representable as Float32"
+  todo expect 0.1 :: Float32 fails "E_NOT_EXACTLY_REPRESENTABLE"
   assert 0.5 .matches Float32
   assert not(0.1 .matches Float32)
   assert 0.5 .matches Float

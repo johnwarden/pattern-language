@@ -4,14 +4,22 @@ import type { Syntax } from "./syntax.ts";
 /** Exact ratio in lowest terms, with a positive denominator. */
 export type Rational = { n: bigint; d: bigint };
 export type ExactNumeric = Rational | { real: Rational; imaginary: Rational };
-export const isRational = (
-  value: string | number | ExactNumeric,
-): value is Rational =>
-  typeof value === "object" && value !== null && "n" in value;
+export const isRational = (value: unknown): value is Rational =>
+  typeof value === "object" &&
+  value !== null &&
+  "n" in value &&
+  "d" in value &&
+  typeof value.n === "bigint" &&
+  typeof value.d === "bigint";
 
-export const isNumeric = (
-  value: string | number | ExactNumeric,
-): value is ExactNumeric => typeof value === "object" && value !== null;
+export const isNumeric = (value: unknown): value is ExactNumeric =>
+  isRational(value) ||
+  (typeof value === "object" &&
+    value !== null &&
+    "real" in value &&
+    "imaginary" in value &&
+    isRational(value.real) &&
+    isRational(value.imaginary));
 
 const zero: Rational = { n: 0n, d: 1n };
 const realPart = (value: ExactNumeric) =>

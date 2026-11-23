@@ -1,9 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Interpreter, displayResults, LanguageError } from "../src/index.ts";
-import { float64ToRational, rationalToNumber } from "../src/rational.ts";
+import {
+  float64ToRational,
+  isNumeric,
+  isRational,
+  rationalToNumber,
+} from "../src/rational.ts";
 
 const run = (s: string) => displayResults(new Interpreter().run(s));
+
+test("exact numeric guards require bigint rational coefficients", () => {
+  const real = { n: 1n, d: 2n };
+  const imaginary = { n: 2n, d: 3n };
+  const complex = { real, imaginary };
+
+  assert.equal(isRational(real), true);
+  assert.equal(isRational(complex), false);
+  assert.equal(isNumeric(real), true);
+  assert.equal(isNumeric(complex), true);
+  assert.equal(isNumeric([]), false);
+  assert.equal(isNumeric({ n: 1n }), false);
+  assert.equal(isRational({ n: 1, d: 2 }), false);
+  assert.equal(isNumeric({ real, imaginary: { n: 2n, d: "3" } }), false);
+  assert.equal(isNumeric({ real: null, imaginary }), false);
+});
 
 test("NumericValue-to-binary64 conversion keeps the smallest subnormal and small normals", () => {
   const minSub = Number.MIN_VALUE;
@@ -44,7 +65,7 @@ test("nonterminating Rationals retain their exact numeric syntax payload", () =>
 
 test("a complex NumberLiteral transports both exact coefficients", () => {
   assert.equal(
-    run('NumberLiteral(n) = syntaxTree(:(-1.25+0.5i))\n(n == (-1.25+0.5i))'),
+    run("NumberLiteral(n) = syntaxTree(:(-1.25+0.5i))\n(n == (-1.25+0.5i))"),
     "True",
   );
 });

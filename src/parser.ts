@@ -725,8 +725,24 @@ class Reader {
     }
   }
   postfix(stops: Set<string>): Syntax {
+    const from = this.pos;
     const first = this.peek()!;
     let n = this.atom(stops);
+    const suffix = this.peek();
+    if (
+      first.kind === "(" &&
+      suffix?.kind === "name" &&
+      this.tokens[this.pos - 1]!.end === suffix.start &&
+      /^[eEpP][+-]?\d/.test(
+        this.source.slice(suffix.start, suffix.start + 3),
+      ) &&
+      this.isGroupedNumericAtom(from, this.pos - 1)
+    ) {
+      throw new LanguageError(
+        "a numeric exponent belongs inside the atom",
+        suffix,
+      );
+    }
     while (!this.stop(stops)) {
       const t = this.peek()!,
         tight = this.tokens[this.pos - 1].end === t.start;
@@ -744,18 +760,6 @@ class Reader {
       } else if (t.kind === "(") {
         this.take();
         n = { ...apply(n, this.arguments(")")), span: n.span };
-      } else if (
-        first.kind === "(" &&
-        t.kind === "name" &&
-        /^[eEpP]\d/.test(t.text) &&
-        numericInfixes(
-          this.source.slice(first.end, this.tokens[this.pos - 1]!.start),
-        ).length
-      ) {
-        throw new LanguageError(
-          "a numeric exponent belongs inside the atom",
-          t,
-        );
       } else if (t.kind === ".") {
         this.take();
         const name = this.take();
@@ -790,6 +794,24 @@ class Reader {
         endColumn: end.endColumn ?? end.column + end.text.length,
       };
     return n;
+  }
+  private isGroupedNumericAtom(from: number, to: number): boolean {
+    while (this.tokens[from]?.kind === "(" && this.tokens[to]?.kind === ")") {
+      from++;
+      to--;
+      if (this.tokens[to]?.kind === ",") to--;
+    }
+    const sign = this.tokens[from];
+    const number = this.tokens[to];
+    return (
+      (number?.kind === "number" || number?.kind === "numberSource") &&
+      (from === to ||
+        (from + 1 === to &&
+          sign?.kind === "op" &&
+          !sign.quoted &&
+          sign.text === "-" &&
+          sign.end === number.start))
+    );
   }
   suffixBoundary(): boolean {
     const t = this.peek()!,
