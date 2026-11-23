@@ -172,6 +172,62 @@ parameter patterns and Body in this same normalized form. Source capture-binder
 spelling is not recovered from inspection; call-visible labels and accessor names
 remain as in the closed value.
 
+## Internal content keys
+
+Implementations may replace embedded free-variable definitions inside closed
+function values and types with evaluator-internal content keys (hashes), and
+keep a cache that recovers the definition from the key. Keys are computed from
+the same normalized closed structure that equality uses, so they line up with
+alpha-equivalence. Treat key comparison as a one-way filter: different keys
+mean unequal; equal keys still confirm with a structural comparison, covering
+hash collisions. Recursive and mutually recursive groups share keys without
+infinite expansion. Overload groups keep name/scope identity and positional
+`PolymorphicValue` equality; keys apply to closed clause bodies and captured
+dependencies, not as a substitute for the group snapshot from `saved = f`.
+
+This matches the type definition cache idea:
+`typeIdentity` / `descriptionKey` and `Interpreter.types` in the TypeScript
+bootstrap (`src/type-descriptor.ts`, `src/type-data.ts`, `src/runtime.ts`).
+Type keys already erase declaration and capture names; function keys normalize
+capture binders the same way for equality and caching.
+
+When printing, if a visible local name denotes a binding whose content key
+equals the dependency's key, use that name under the exact-alias rule. Hashes
+never appear in public text.
+
+### Decided: normalize capture binders before hashing
+
+**Decided** (with the equality and printing rules above). Before hashing,
+normalize capture binders to positional forms `arg1`, `arg2`, … outer to inner
+by binder position, including rest captures and nested lambdas. Call-visible
+labels stay verbatim. Alpha-equivalent functions therefore share a key, matching
+public equality and expanded printing. (An earlier draft left argN renaming as a
+decision against observable binder spelling; that choice is settled here as
+capture-binder alpha-equivalence.)
+
+### Future directions (Unison-inspired caching)
+
+[Unison's content-addressed codebase](https://www.unison-lang.org/docs/the-big-idea/)
+motivates stronger caching once definitions have stable content keys:
+
+> Thus, we can parse and typecheck definitions once, and then store the results
+> in a cache which is never invalidated.
+
+> This idea also applies to caching test results for pure computations
+> (deterministic tests that don't use I/O). There's no need to rerun a
+> deterministic test if none of its dependencies have changed!
+
+Those are future directions for the evaluator and test runner, not current
+requirements. Content addressing could also pin imported libraries: a future
+package manager might write lockfiles of hashes, still needing release or
+revision numbers, or a local cache that holds the actual content. See
+[library-closure-and-local-printing.md](library-closure-and-local-printing.md)
+for exact external referents and closed portable text.
+
+A public Unison-style codebase-as-database is out of scope. Source remains
+editable text; keys stay evaluator-internal unless a later decision publishes
+them.
+
 ## Overload representation and open decisions
 
 Fenced tests mark behavior pending implementation with `todo`.

@@ -44,8 +44,9 @@ alpha-equivalent values print identically; local abbreviation still requires an
 exact alias. Inspectable parameter patterns and Body Code expose this same
 normalized form, so source capture-binder spelling is not observable through
 equality, printing or typed-code inspection. The typed constructor reader uses
-the declared types of the parameter packs and body. See the equality and printing
-rules in the [function value spec](../specs/named-function-values.md).
+the declared types of the parameter packs and body. See the equality, content-key
+and printing rules in the
+[function value spec](../specs/named-function-values.md).
 
 ## Roadmap connection
 
