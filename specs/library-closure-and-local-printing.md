@@ -1,17 +1,14 @@
 # Closed immutable values and exact local printing
 
-Approved in the project chat on 9 November 2026: Jonathan agreed the immutable,
-closed-value and exact-local-printing principles discussed as points 3 and 4 of
-the libraries draft review. This does not approve the draft's full Library
-grammar, overloaded constants or expected-type selection policy.
-
 ## Closed immutable values
 
-A stored function/library value is an immutable snapshot of the definitions and
-values it contains. Later additions to a named definition group cannot mutate
-an earlier stored value. Include transitive referenced definitions and captured
-values so there are no free user variables or hidden lexical lookup dependencies.
-Recursive and mutually recursive definitions must have a finite representation.
+A stored function/library value is immutable. Binding `saved = f` captures all
+declarations in the current lexical group as a `PolymorphicValue`, including
+ones spelled after the binding; no ascription is required, though
+`f :: PolymorphicValue` remains an allowed explicit form. A nested scope can
+resolve that name differently. The stored value carries its original group and
+the transitive definitions and values it uses. Recursive and mutually recursive
+definitions have a finite representation.
 
 "Helper" is only informal shorthand for a definition referenced by another
 definition. It is not a different definition kind and does not introduce private
@@ -29,27 +26,19 @@ changing structural value identity.
 Local printing can abbreviate a value or an embedded referenced definition with
 an in-scope name only when that binding denotes the exact same complete value.
 Matching spelling, one matching overload, or equivalent observed behavior is
-insufficient. If a name is shadowed, or its group now contains different
-definitions, do not abbreviate the older value with that name. Another valid
-alias may still be used; otherwise print the closed representation.
+insufficient. A shadowing name that resolves to a different value is ineligible.
+A stored group can use an alias that already denotes its `PolymorphicValue`.
+Choose the first eligible spelling in lexical order. If none is visible, print
+the closed representation.
 
 Global text remains independent of lexical aliases and must reconstruct the
 same value in a fresh environment. Local text requires its naming scope and must
-reconstruct the same value there. Printing changes presentation, not the selected
-definition group, dispatch behavior or identity. Preferred choice among several
-valid aliases is not settled here.
+reconstruct the same value there. Printing preserves the selected definition
+group, dispatch behavior and identity.
 
-## Contracts and remaining conversion
+## Contracts
 
-[named-function-values.test](../tests/specification/named-function-values.test)
-contains todo checks for captured values, transitive referenced definitions,
-finite recursive calls, successive packs, label/rest binders, captured/lazy
-defaults, returned captures, local type/accessor definitions and
-structural identity, alongside the original callable-use cases. Those behavioral
-tests alone do not prove a portable representation without a hidden environment.
-
-The [test proposal](https://github.com/johnwarden/pattern-language/blob/spec/function-values/specs/named-function-value-tests.md) names the remaining
-snapshot, fresh-context and printing checks and the decisions needed to express
-them. Keep this record approved until those representation-level obligations
-are captured as actual tests. No public Function/Library schema, export policy,
-constant selection syntax or implicit Library projection is chosen here.
+Executable contracts for named function values, including closure and identity
+todos, live in [named-function-values.md](named-function-values.md). Its
+fresh-interpreter round trip checks that portable text carries the captured
+values.

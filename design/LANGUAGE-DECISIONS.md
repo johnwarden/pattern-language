@@ -201,15 +201,22 @@ The intended bare-family view, such as using `Rectangle` to admit some `Rectangl
 
 ### D13. Specialization is only a later compiler optimization — confirmed and deferred
 
-It must preserve abstract-call behavior, dispatch and errors; it must not create source-visible overloads or make otherwise invalid definitions valid only at known call sites. The exploratory overload-expansion account in S is superseded by AR. First-class overload-set values remain a separate **unaccepted proposal**; returning a defined function name as `OverloadedFunction(...)` is not approved by accepting specialization. **Sources:** S; AR “only a compiler optimization”; R1/R2.
+It must preserve abstract-call behavior, dispatch and errors; it must not create source-visible overloads or make otherwise invalid definitions valid only at known call sites. The exploratory overload-expansion account in S is superseded by AR. **Sources:** S; AR “only a compiler optimization”; R1/R2.
 
-L12 separately approves ordinary named-function values: a name resolves to the
-full closed implementation, without free user variables. It may be bound,
-passed, returned and supplied directly to `where`. Primitive callable references
-are the baseline; the exact admissible prelude/standard-library vocabulary and
-the rule for a name with multiple definitions remain unspecified. This decision
-does not depend on specialization. See
-[the approved record and partial contracts](../specs/named-function-values.md).
+A named function resolves to its closed `FunctionValue` (L12). Its parameter
+patterns and inert body use ordinary typed constructor text. All declarations
+of an overloaded name in a lexical scope contribute to its static group,
+regardless of where a use appears. A use can select one alternative by
+designation or dispatch. Binding `saved = f` captures the whole group as a
+`PolymorphicValue` with no ascription required; `f :: PolymorphicValue` remains
+an allowed explicit form. The stored value preserves direct-call dispatch and
+can pass through `Any` as a whole. Closed function equality is
+alpha-equivalence after capture-binder normalization; call-visible labels stay
+verbatim, rest capture names normalize with other binders, and capture-binder
+spelling is not observable. Expanded printing uses the same normalized `argN`
+capture binders (outer to inner by binder position), so alpha-equivalent values
+print identically. See the
+[function value specification](../specs/named-function-values.md).
 
 ### D14. Interoperability follows structural descriptors — confirmed intent
 
@@ -561,7 +568,7 @@ rejected. These are todo checks today. `Number` is removed for now.
 | Runtime Expression *value* computation and descriptor/value comparison | **Concrete interpretation required (D03 / type-values); L12 interim bare-raw permission superseded.** Descriptor decoding/equality is separate and remains unsettled. Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
 | Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |
 | Specialization | **Deferred optimization only.** No source-visible generated overload semantics. |
-| Named functions and first-class overload sets | **Named function values approved (L12).** Full closed implementation, with no free user variables. A new overload-set representation and multiple-definition resolution remain unspecified. |
+| Named functions and static overload groups | **Decided.** Closed `FunctionValue` data, static overload groups, ordinary value designation and bare capture as `PolymorphicValue` (`saved = f`; explicit `:: PolymorphicValue` still allowed). Function equality is alpha-equivalence after capture-binder normalization (call-visible labels kept; rest captures normalize); expanded printing uses the same `argN` capture binders. |
 | Numeric aliases/families, rounding edge policies and canonical spelling | **Provisional.** Do not infer these from isolated draft typos or examples. |
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
@@ -588,7 +595,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D10 evidence and refinement-qualified functions | C07–C10; C08 depends on the future static evidence checker |
 | D11 factories and binding-only defaults | C17 |
 | D12 type-valued generics / proposed family views | C05, C12, C18; no case pretends family recovery or MemberOf is settled |
-| D13 specialization and named function values | named-function-values.test captures approved binding/argument/return/predicate uses; closed representation and overload selection remain work. C09/C10/C12 stay independent of specialization |
+| D13 specialization and named function values | [Function value contracts](../specs/named-function-values.md) cover storage, static groups, designation, dispatch and typed text. C09/C10/C12 stay independent of specialization. |
 | D14 structural interoperability | C18, with transport law in C23 |
 | D15 captures/spreading/keyword remainders | C19–C22; new spread/rest surface mechanics explicitly proposed |
 | D16 constructedBy deferral | No active or pending expected-result case selects a semantics |

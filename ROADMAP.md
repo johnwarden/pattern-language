@@ -91,10 +91,12 @@ must test composition and state role differences explicitly.
   where needed; concrete paths need not universally retain it.
 - Code-producing functions do not automatically register macros. Explicit registration,
   phase availability and hygiene remain separate from runtime Code-valued functions.
-- A named function resolves to a self-contained function value, without free user
-  variables. Binding, argument, return and predicate uses have
-  [source todos](tests/specification/named-function-values.test); the complete
-  portable representation remains [approved work](specs/named-function-values.md).
+- A named function resolves to a self-contained function value. An overloaded
+  name offers the alternatives in its static scope. A use can select one
+  alternative or capture the whole group with `saved = f` (no ascription
+  required; `f :: PolymorphicValue` remains an allowed explicit form). Stored
+  groups preserve direct-call dispatch.
+  See the [function value specification](specs/named-function-values.md).
 
 ### Deliberately deferred or provisional
 
@@ -117,12 +119,10 @@ blockers for 5a.2 or 5b while this work is parked. Unspecified extensions to
 generic constraints, MemberOf, bare-family facets, parameter recovery and
 singleton abstract policy remain provisional/unresolved. Equivalent local
 declarations and accessor collisions remain errors for now; their replacement
-alias/import policy is deferred by the author. First-class overload sets are
-not accepted. Specialization is only a deferred optimization of already defined
-abstract-call semantics, never a source-visible overload generator. The rule for
-multiple definitions when resolving a name to a function value remains open.
-Requiring concrete interpretation does not settle public descriptor decoding or
-require the parser's Expression migration to be completed first.
+alias/import policy is deferred by the author. Specialization is a deferred
+optimization of already defined abstract-call semantics. It preserves visible
+overloads. Requiring concrete interpretation does not settle public descriptor
+decoding or require the parser's Expression migration to be completed first.
 
 ## What is implemented now
 
