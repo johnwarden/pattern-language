@@ -4,6 +4,8 @@ import { Interpreter } from "../src/index.ts";
 import { single, unwrap } from "../src/values.ts";
 import { patternCaptures } from "../src/pattern-captures.ts";
 
+// Bootstrap still accepts the pre-consolidation rest spelling. Destination
+// contracts in specs/spreads-and-argpacks.md use (Float32*)... / (Float32**)....
 test("anonymous repeated patterns create no synthetic capture binding", () => {
   for (const source of [
     "concrete [... :: Float32*]",

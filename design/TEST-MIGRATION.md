@@ -50,7 +50,7 @@ No failing placeholder is substituted for an unspecified target result.
 | Type identity, abstract slots, caches, unsupported host environments and transport | type/value/abstract tests keep representation and local-alias checks; print→parse and fresh-Interpreter transport live in test/round-trip-parsing.test.ts |
 | Numeric exactness/conversion, overlapping unions and remaining type/evidence behavior | host and tests/numeric/*.test regressions; supported slices replace their corresponding legacy expectations |
 | Typed quotes, byte normalization and raw syntax encode/decode | tests/quotes/evaluation.test plus host quotes/postfix files; kind/key/encode-decode, empty preludes and hole locations stay |
-| Vertical matching, row keys, ambiguity, descriptor transfer | tests/spreading/*.test plus test/vertical-spread.test.ts; host keeps dimensions, Float32 text, locations and ambiguous partitions. Fresh-interpreter transfer lives in test/round-trip-parsing.test.ts |
+| Vertical matching, row keys, ambiguity, descriptor transfer | specs/spreads-and-argpacks.md plus tests/spreading/body.test and test/vertical-spread.test.ts; host keeps dimensions, Float32 text, locations and ambiguous partitions. Fresh-interpreter transfer lives in test/round-trip-parsing.test.ts |
 | Canonical source behavior of the former test/cases suite | test/source-suite.test.ts; canonicalizes then runs the same DSL expectation |
 | Test schema round trips, execution/isolation traps, fixtures and error phases | test/test-suite.test.ts keeps harness isolation; typed-text transport of test-file values lives in test/round-trip-parsing.test.ts |
 | Recursive discovery, CLI process status and expected-failure reporting | test/test-cli.test.ts; needs filesystem/process observations |
@@ -238,10 +238,11 @@ The [remaining TypeScript audit](TEST-MIGRATION-AUDIT.md) grouped
 `test/vertical-spread.test.ts` as the next mixed batch. Portable matching,
 type-description evaluation and vertical spreading now run under
 `tests/matching/quoted-heads.test`, `tests/matching/open-fields.test`,
-`tests/types/descriptions.test` and `tests/spreading/`. Expected results are
-authored data. Pending keyword-rest `{**rest}` was not selected. `#48` was not
-edited; bootstrap `def … type` remains setup. Existing TodoList, 2-D Matrix and
-nested-Body examples were reused rather than duplicated.
+`tests/types/descriptions.test`, `tests/spreading/body.test`, and
+`specs/spreads-and-argpacks.md`. Expected results are authored data. Pending
+keyword-rest `{**rest}` was not selected. `#48` was not edited; bootstrap
+`def … type` remains setup. Existing TodoList, 2-D Matrix and nested-Body
+examples were reused rather than duplicated.
 
 | Former host block | Current source case(s) | Coverage retained |
 | --- | --- | --- |
@@ -491,7 +492,7 @@ Host remainder in `test/type-atoms.test.ts` is `inspect` REPL abbreviation, `par
 | C07–C10 | tests/specification/refinements.test | future evidence/overload model |
 | C11–C15 | tests/specification/interpretations.test | future projection/designation/abstract model |
 | C16–C18 | tests/specification/declarations.test | future declaration/default/interop model |
-| C19–C22 | tests/specification/spreading.test | future revised numeric/spreading/keyword model |
+| C19–C22 | specs/spreads-and-argpacks.md | future revised numeric/spreading/keyword model |
 | C23–C27 | tests/specification/language.test | future target contracts; C27 unaccepted candidate |
 
 The specification excerpts are synchronized against the decision record by a host

@@ -552,7 +552,7 @@ end
 Wrapping a pattern with a catch-all field spread defines a concrete type
 whose values may have different sets of additional labels. Its values are
 disjoint from values of other concrete types that match the same facet.
-A residual `ArgPack(T)` contains only positional and labeled arguments
+A residual `ArgPack` contains only positional and labeled arguments
 that the preceding patterns left unmatched.
 
 ### Refinements over structs and facets

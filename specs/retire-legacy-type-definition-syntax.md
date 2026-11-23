@@ -85,9 +85,11 @@ end
 
 The facet fixes the `Float` fields, so their annotations may be omitted in typed
 text; an open `color` field keeps its `String` annotation when the facet does
-not determine it. Annotated typed repetition such as `... :: Float32*` follows
-[anonymous repeated patterns](anonymous-repeated-patterns.md) (`type Numbers
-concrete [... :: Float32*]`); do not treat those as open-facet migrations.
+not determine it. Annotated typed repetition such as `(Float32*)...` follows
+[Spreads and ArgPacks](spreads-and-argpacks.md) (`type Numbers struct
+[(Float32*)...]`); do not treat those as open-facet migrations. Open concrete
+types with residual `ArgPack` are allowed by that spec; updating the
+“concrete cannot be open” rule above is phase 2 of that change.
 
 ## Implementation
 

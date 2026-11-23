@@ -208,7 +208,7 @@ declarations and accessor collisions as errors for now. This temporary guard doe
 not block capture-free type construction or independently scoped structural interop.
 
 Single-template mirrored vertical spreading reconstructs collection rows; see
-[the source contracts](tests/spreading/vertical-values.test). Broader row templates
+[Spreads and ArgPacks](specs/spreads-and-argpacks.md). Broader row templates
 and typed keyword remainders remain intended extensions. The remainder is an
 actual typed record preserving labels and field types; it is
 not intrinsically a homogeneous map and does not require specialization to exist.
