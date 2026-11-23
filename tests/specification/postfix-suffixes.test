@@ -14,8 +14,8 @@ test "Spaced plus and star remain infix"
   expect parse(Code)("a+b") fails "infix operators require spaces"
   assert parse(Code)("a + b") == parse(Code)("+(a)(b)")
   assert parse(Code)("T * U") == parse(Code)("*(T)(U)")
-  expect 2 * 3 is 6 :: Rational
-  expect 2 + 3 is 5 :: Rational
+  expect 2 * 3 is 6 :: NumericValue
+  expect 2 + 3 is 5 :: NumericValue
 end
 
 test "A pack field ** is not a suffix wrap on the previous field"

@@ -2,14 +2,14 @@ test "A type accessor name does not occupy the variable namespace"
   def R type :R(x :: Int)
   x = 5
 
-  expect x is 5 :: Rational
+  expect x is 5 :: NumericValue
 end
 
 test "A defined function uses its own parameter names"
   def R type :R(x :: Int)
   def inc(x) x + 1
 
-  expect inc(2) is 3 :: Rational
+  expect inc(2) is 3 :: NumericValue
 end
 
 test "A variable and a defined function can share a name"
@@ -17,14 +17,14 @@ test "A variable and a defined function can share a name"
   f = 9
   (value, applied) = (f, f(2))
 
-  expect value is 9 :: Rational
-  expect applied is 3 :: Rational
+  expect value is 9 :: NumericValue
+  expect applied is 3 :: NumericValue
 end
 
 test "A callable variable is invoked by a call"
   f = x -> x + 1
 
-  expect f(2) is 3 :: Rational
+  expect f(2) is 3 :: NumericValue
 end
 
 test "Defined functions can be overloaded on disjoint constructors"
@@ -32,8 +32,8 @@ test "Defined functions can be overloaded on disjoint constructors"
   def f(:Blue) 2
   (red, blue) = (f(:Red), f(:Blue))
 
-  expect red is 1 :: Rational
-  expect blue is 2 :: Rational
+  expect red is 1 :: NumericValue
+  expect blue is 2 :: NumericValue
 end
 
 test "An overlapping defined function is ambiguous"
@@ -50,7 +50,7 @@ test "Variables, functions and accessors keep separate uses of the same name"
   r = R(2) :: R
   (bound, accessed, dotted) = (x, x(r), r.x)
 
-  expect bound is 5 :: Rational
+  expect bound is 5 :: NumericValue
   expect accessed is 2 :: Int
   expect dotted is 2 :: Int
 end
@@ -130,8 +130,8 @@ test "A non-callable variable does not hide a defined function"
   f = 99
   (value, applied) = (f, f(2))
 
-  expect value is 99 :: Rational
-  expect applied is 3 :: Rational
+  expect value is 99 :: NumericValue
+  expect applied is 3 :: NumericValue
 end
 
 test "A callable variable is ambiguous with a defined function of the same domain"

@@ -11,7 +11,7 @@ check verifies this inventory against every legacy assertion in the source suite
 (`.test` files under `tests/` and runnable fences under `specs/`).
 Adding a blanket failing placeholder is not a replacement specification.
 
-The paired contracts cover intrinsic String/Rational identity, primitive metatypes,
+The paired contracts cover intrinsic String/NumericValue identity, primitive metatypes,
 ordinary symbol identity, and unresolved symbolic-construction changes.
 The todo uses an expected error when the old expression should become invalid.
 Normal arithmetic, copying/rest cardinality and defaults use established concrete
@@ -35,7 +35,7 @@ ordinary assertion if the intended result is already implemented.
 | `examples/expressions#language-as-data` | `len(rules)` | D04: numeric result space of collection lengths; Int family/default numeric vocabulary is provisional. |
 | `examples/expressions#language-as-data` | `len(nodes)` | D04: numeric result space of collection lengths. |
 | `examples/expressions#open-structural-facet` | `toString(Rectangular)(p)` | C15 / typed text: final reconstruction syntax for an abstract facet and its concrete descriptor. |
-| `examples/grammars#sidefix-data-dsl` | `e(expected(check(t)))` | D03 / milestone 5b: a raw grammar operand is syntax, not necessarily an evaluated Rational literal. |
+| `examples/grammars#sidefix-data-dsl` | `e(expected(check(t)))` | D03 / milestone 5b: a raw grammar operand is syntax, not necessarily an evaluated numeric literal. |
 | `examples/grammars#sidefix-data-dsl` | `type(expected(check(t)))` | D03 / milestone 5b: concrete representation of a raw grammar operand. |
 | `examples/grammars#dsl-tests-with-explicit-value-and-type` | `actual(t)` | D03 / milestone 5b: representation of an unevaluated quoted operand. |
 | `examples/grammars#dsl-tests-with-explicit-value-and-type` | `e(expected(t))` | D03 / milestone 5b: concrete representation of an unevaluated compound tree. |

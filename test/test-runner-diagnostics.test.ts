@@ -34,8 +34,8 @@ test("a failed equality names its file, line, column, source and both operands",
     "fixtures/diagnostics.test:" + where(fixtureSource, "assert left == right");
   assert.ok(report.message.includes(at), report.message);
   assert.ok(report.message.includes("assert left == right"), report.message);
-  assert.ok(report.message.includes("left: 1 :: Rational"), report.message);
-  assert.ok(report.message.includes("right: 2 :: Rational"), report.message);
+  assert.ok(report.message.includes("left: 1 :: NumericValue"), report.message);
+  assert.ok(report.message.includes("right: 2 :: NumericValue"), report.message);
   const check = report.checks[0];
   assert.deepEqual(check.location, {
     file: "fixtures/diagnostics.test",
@@ -45,8 +45,8 @@ test("a failed equality names its file, line, column, source and both operands",
   });
   assert.deepEqual(check.operands, {
     operator: "==",
-    left: { expression: "left", actual: "1 :: Rational" },
-    right: { expression: "right", actual: "2 :: Rational" },
+    left: { expression: "left", actual: "1 :: NumericValue" },
+    right: { expression: "right", actual: "2 :: NumericValue" },
   });
 });
 
@@ -54,8 +54,8 @@ test("a failed inequality identifies the != assertion and both equal operands", 
   const report = fixtureReports().get("Failed inequality")!;
   assert.equal(report.status, "failed");
   assert.ok(report.message.includes("assert left != right"), report.message);
-  assert.ok(report.message.includes("left: 1 :: Rational"), report.message);
-  assert.ok(report.message.includes("right: 1 :: Rational"), report.message);
+  assert.ok(report.message.includes("left: 1 :: NumericValue"), report.message);
+  assert.ok(report.message.includes("right: 1 :: NumericValue"), report.message);
   assert.equal(report.checks[0].operands?.operator, "!=");
 });
 
@@ -63,7 +63,7 @@ test("a failed pattern match shows the actual value and the actual RHS pattern v
   const report = fixtureReports().get("Failed pattern match")!;
   assert.equal(report.status, "failed");
   assert.ok(
-    report.message.includes("assert candidate .matches Rational"),
+    report.message.includes("assert candidate .matches NumericValue"),
     report.message,
   );
   assert.ok(
@@ -71,7 +71,7 @@ test("a failed pattern match shows the actual value and the actual RHS pattern v
     report.message,
   );
   assert.ok(
-    report.message.includes("Rational: Rational :: ReservedSymbol"),
+    report.message.includes("NumericValue: NumericValue :: ReservedSymbol"),
     report.message,
   );
   assert.equal(report.checks[0].operands?.operator, ".matches");
@@ -339,20 +339,20 @@ test("an unannotated expected value still requires the same value", () => {
   assert.equal(report.phase, "comparison");
   assert.match(
     report.message,
-    /expected 2 :: Rational; received 1 :: Rational/,
+    /expected 2 :: NumericValue; received 1 :: NumericValue/,
   );
   assert.ok(report.message.includes("optional.test:2:3"), report.message);
   assert.ok(report.message.includes("expect 1 is 2"), report.message);
-  assert.equal(report.checks[0].expected, "2 :: Rational");
-  assert.equal(report.checks[0].actual, "1 :: Rational");
+  assert.equal(report.checks[0].expected, "2 :: NumericValue");
+  assert.equal(report.checks[0].actual, "1 :: NumericValue");
 });
 
 test("an explicit type mismatch remains a failure", () => {
-  const report = outcome("  expect 3 :: Int is 3 :: Rational");
+  const report = outcome("  expect 3 :: Int is 3 :: NumericValue");
   assert.equal(report.status, "failed");
   assert.match(
     report.message,
-    /is type mismatch: expected Rational; received Int/,
+    /is type mismatch: expected NumericValue; received Int/,
   );
 });
 

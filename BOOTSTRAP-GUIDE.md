@@ -4,7 +4,7 @@
 > These sections describe bootstrap behavior, including restrictions superseded in
 > the intended design. The current contract is in [VALUE-SPACES.md](VALUE-SPACES.md),
 > [the bootstrap type reference](TYPE-VALUES-BOOTSTRAP.md) and [GRAMMAR.md](GRAMMAR.md).
-> Exact Rational literals, overlapping abstract unions and the current Test DSL
+> Exact `NumericValue` literals, overlapping abstract unions and the current Test DSL
 > are implemented. Declaration-only accessors and proof-based checking remain work.
 
 > Implemented: exact constructed-field patterns, independent `...`/`**` ignore
@@ -977,7 +977,7 @@ rules (`end` ownership, mixed tab/space prefixes, quoted branches) are in
 test "Current and future primitives"
   expect :Widget is Widget :: UpperCamelSymbol
   legacy expect 5 is 5 :: Expression
-  todo expect 5 is 5 :: Rational
+  todo expect 5 is 5 :: NumericValue
 end
 ```
 

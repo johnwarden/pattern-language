@@ -18,7 +18,7 @@ build, host tests and the source suite.
 | Intended contract | Current bootstrap |
 | --- | --- |
 | `struct` construction, identity-preserving `.where` refinements and `pattern` views | Structural types, subset checks, abstract slots and facets; revised boundary rules still need integration |
-| Numeric literals denote exact Rational values; `0f` is a Float64-rounded Rational | Exact Rational values and syntax payloads; explicit Float32/Float64 conversion and canonical numeric text |
+| Numeric literals denote exact `NumericValue` values, including fractions and complex numbers | Exact real and complex values and syntax payloads, explicit Float32/Float64 conversion, and canonical numeric text |
 | General abstract unions; unambiguous grammars are a separate requirement | Overlapping `UnionType` members are allowed; `unambiguous` is unimplemented |
 | Named type declarations register accessors; plain type construction is capture-free | `def ... type ...` and existing type-expression accessor products |
 | Constructor expressions need a concrete interpretation from context or ascription | Designation and one-boundary explicit matching work; ordinary constructor-binding rejection remains todo |
@@ -79,9 +79,10 @@ The two members can use overlapping numeric syntax. Typed text supplies enough
 information to recover the member. A separate unambiguous-grammar requirement
 supports DSL text that does not need reconstruction annotations.
 
-Every numeric literal denotes an exact Rational value. `0f0.1` denotes the exact
-Rational selected by Float64 rounding, rather than a Float64-typed value. Exact
-designation cannot silently round; explicit converters return typed values:
+Every numeric literal denotes an exact `NumericValue`. For example, `1/3`
+is a fraction and `-1.25+0.5i` is a complex number. `0f0.1` denotes the
+exact value selected by Float64 rounding and has type `NumericValue`.
+Exact designation cannot silently round. Explicit converters return typed values:
 
     (0.5 :: Float32)       # exact
     float32(0.1)           # explicit rounding, returns Float32
@@ -103,15 +104,15 @@ ordered match arms and macro staging.
 Milestone **5a.1 is implemented**. Test files use `.test`, live in broad groups
 under `tests/`, and contain one or more `test` or `todo test` blocks. The runner
 discovers `.test` files under `tests/` and runnable Markdown fences under
-`specs/`. Unlabeled and `pattern` fences run in document order.
+`specs/`. Numeric reader tests live in [numeric literals and exact text](specs/numeric-literals-and-text.md). Unlabeled and `pattern` fences run in document order.
 The playground embeds runnable cases from `tests/examples/`.
 
 ```text
 test "Current and future text result types"
   expect :Widget is Widget :: UpperCamelSymbol
-  expect 0.1 is 0.1 :: Rational
-  legacy expect toString(Rational)(0.1) is "0.1" :: Expression
-  todo expect toString(Rational)(0.1) is "0.1" :: String
+  expect 0.1 is 0.1 :: NumericValue
+  legacy expect toString(NumericValue)(0.1) is "0.1" :: Expression
+  todo expect toString(NumericValue)(0.1) is "0.1" :: String
 end
 ```
 

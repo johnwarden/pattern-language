@@ -23,7 +23,7 @@ test("REPL evaluates a finished form on its last line without a blank line", () 
   assert.equal(repl.stdout, "Widget :: UpperCamelSymbol\n");
   const complete = invoke("if True 1 else 2\n:quit\n", "--repl");
   assert.equal(complete.status, 0, complete.stderr);
-  assert.equal(complete.stdout, "1 :: Rational\n");
+  assert.equal(complete.stdout, "1 :: NumericValue\n");
 });
 test("REPL does not evaluate an incomplete clause-bearing form on the last pending line", () => {
   const incomplete = invoke("if True 1\n", "--repl");
@@ -34,7 +34,7 @@ test("program output annotates every result in a complete labeled pack", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, '(1 :: Int, word: "hello" :: String)\n');
   assert.equal(invoke("()").stdout, "()\n");
-  assert.equal(invoke("3").stdout, "3 :: Rational\n");
+  assert.equal(invoke("3").stdout, "3 :: NumericValue\n");
 });
 test("parse-only output remains surface syntax and errors retain source locations", () => {
   const parsed = invoke("1 + 2", "--parse");

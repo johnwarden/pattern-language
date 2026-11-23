@@ -2,13 +2,13 @@ test "Multiple results"
   f = x -> (x, x)
   (a, b) = f(3)
 
-  expect a + b is 6 :: Rational
+  expect a + b is 6 :: NumericValue
 end
 
 test "Ignore named binding result"
   x = (1, foo: "bar")
 
-  expect x is 1 :: Rational
+  expect x is 1 :: NumericValue
 end
 
 test "Capture named binding result"
@@ -26,23 +26,23 @@ end
 test "Nested bindings require explicit label openness"
   Rect(x, **) = Rect(1, extra: 2)
 
-  expect x is 1 :: Rational
+  expect x is 1 :: NumericValue
 end
 
 test "Nested function patterns permit explicitly ignored labels"
   def f(Rect(x, **)) x
 
-  expect f(Rect(1, extra: 2)) is 1 :: Rational
+  expect f(Rect(1, extra: 2)) is 1 :: NumericValue
 end
 
 test "All calls ignore extra names"
   def f(x) x
 
-  expect f(1, foo: 2) is 1 :: Rational
+  expect f(1, foo: 2) is 1 :: NumericValue
   expect toString(3, extra: 4) is "3" :: String
   expect
     +(1, extra: 4)(2, other: 5)
-  is 3 :: Rational
+  is 3 :: NumericValue
 end
 
 test "Accessors ignore extra names"
@@ -68,21 +68,21 @@ test "Anonymous wrappers remain values"
   def f(x) x + 1
   def use(g) g(3)
 
-  expect use(x -> f(x)) is 4 :: Rational
+  expect use(x -> f(x)) is 4 :: NumericValue
 end
 
 test "Pack partial applications remain values"
   def f(x)(y) x + y
   g = f(2)
 
-  expect g(3) is 5 :: Rational
+  expect g(3) is 5 :: NumericValue
 end
 
 test "Macro in head"
   f = x -> x + 1
   g = x -> x + 2
 
-  expect (if True f else g)(3) is 4 :: Rational
+  expect (if True f else g)(3) is 4 :: NumericValue
 end
 
 test "Extra positional result"

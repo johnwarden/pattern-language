@@ -20,7 +20,7 @@ answer = 42
 <!-- <- punctuation.definition.raw.code-fence.begin.markdown -->
 test "Embedded test"
 <!-- <- keyword.other.test.pattern-language -->
-  expect 2 is 2 :: Rational
+  expect 2 is 2 :: NumericValue
 <!--     ^ constant.numeric.pattern-language -->
 ```
 <!-- <- source.pattern-language -->

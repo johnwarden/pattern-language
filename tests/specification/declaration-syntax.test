@@ -9,15 +9,15 @@ end
 
 test "Equivalent concrete declarations keep the duplicate-type guard"
   expect
-    type First concrete Box(value :: Rational)
-    type Second concrete Box(item :: Rational)
+    type First concrete Box(value :: NumericValue)
+    type Second concrete Box(item :: NumericValue)
     Second
   fails "E_DUPLICATE_TYPE"
 end
 
 test "Concrete declaration accessors keep collision errors"
   expect
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)
     def w(x) 99
     r = Rect(2, 3) :: Rectangle
     r.w

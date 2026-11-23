@@ -45,10 +45,10 @@ end
 test "Prefix star and caret remain ordinary application"
   expect
     *(2)(3)
-  is 6 :: Rational
+  is 6 :: NumericValue
   expect
     ^(2)(3)
-  is 8 :: Rational
+  is 8 :: NumericValue
 end
 
 test "Spaced ampersand and tilde remain infix data"
@@ -74,9 +74,9 @@ test "Optional type descriptions print as None unions"
 end
 
 test "An ordinary postfix question-mark definition coexists with the optional convention"
-  def (n :: Rational)? n + 1
+  def (n :: NumericValue)? n + 1
   (value, none) = (2?, :None :: String?)
 
-  expect value is 3 :: Rational
+  expect value is 3 :: NumericValue
   expect none is None :: String?
 end

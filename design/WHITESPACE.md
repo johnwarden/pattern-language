@@ -261,5 +261,5 @@ tests/specification/postfix-suffixes.test covers suffix wrap order (`T**` is
 `(T*)*`), spaced infix trees, that a pack field `**` is not a suffix on the
 previous field, and that prefix `+Int` / `+(Int)` are the same tree while tight
 `Int+` is not rewritten to prefix `+`. tests/specification/postfix.test covers
-the touching rule and that `#` is a comment. tests/specification/minus.test
+the touching rule and that `#` is a comment. specs/numeric-literals-and-text.md#signed-values-and-prefix-negation
 covers prefix negation versus infix subtraction.

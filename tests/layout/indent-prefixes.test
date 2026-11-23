@@ -5,7 +5,7 @@ test "Pure spaces, pure tabs, and mixed prefixes parse"
     else
       2
     end
-  is 1 :: Rational
+  is 1 :: NumericValue
 
   assert parse(Code)("if True\n\t1\nelse\n\t2\nend") .matches Code
   assert parse(Code)("if True\n \t1\nelse\n \t2\nend") .matches Code

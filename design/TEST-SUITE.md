@@ -43,7 +43,7 @@ end
 test "Current and future literals"
   expect :Widget is Widget :: UpperCamelSymbol
   legacy expect 5 is 5 :: Expression
-  todo expect 5 is 5 :: Rational
+  todo expect 5 is 5 :: NumericValue
 end
 ```
 
@@ -117,8 +117,8 @@ their actual values and types:
 comparison: assertion is False
   at suite.test:8:3
     assert left == right
-  left: 1 :: Rational
-  right: 2 :: Rational
+  left: 1 :: NumericValue
+  right: 2 :: NumericValue
 ```
 
 The operands are captured during the assertion's one ordinary evaluation, in order
@@ -185,7 +185,7 @@ A whole-test todo applies to the case as a unit:
 
 ```text
 todo test "A future capability"
-  expect missing() is 1 :: Rational
+  expect missing() is 1 :: NumericValue
 end
 ```
 

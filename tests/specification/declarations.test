@@ -1,24 +1,24 @@
 test "C16 named declarations install accessors; plain construction cannot declare them"
-  def Rectangle type :Rect(w :: Rational, h :: Rational)
+  def Rectangle type :Rect(w :: NumericValue, h :: NumericValue)
   r = Rect(2, 3) :: Rectangle
-  expect r.w is 2 :: Rational
+  expect r.w is 2 :: NumericValue
 
   expect
-    t = type :Rect(width :: Rational, height :: Rational)
+    t = type :Rect(width :: NumericValue, height :: NumericValue)
     t
   fails "ordinary type construction cannot declare captures/accessors"
 
   expect
-    t = type :Rect(width: Rational, height: Rational)
+    t = type :Rect(width: NumericValue, height: NumericValue)
     (labeled :: t) = Rect(width: 2, height: 3)
     labeled.width
   fails "unbound name"
 end
 
 test "C05 named types equal capture-free type values"
-  def Rectangle type :Rect(w :: Rational, h :: Rational)
+  def Rectangle type :Rect(w :: NumericValue, h :: NumericValue)
   t = Rectangle
-  u = type :Rect(Rational, Rational)
+  u = type :Rect(NumericValue, NumericValue)
   assert t == u
   def Box(T :: Type) type :Box(T)
   assert Box(String) == (type :Box(String))
@@ -54,23 +54,23 @@ end
 
 test "C16 declarations own accessor products"
   expect
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)
     r = (Rect(2, 3) :: Rectangle)
     r.w
   is
     (
       2
     ) :: (
-      type Rectangle concrete Rect(w :: Rational, h :: Rational)
+      type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)
       r = (Rect(2, 3) :: Rectangle)
-      Rational
+      NumericValue
     )
   end
 
   expect
-    type Rectangle concrete Rect(w :: Rational, h :: Rational)
+    type Rectangle concrete Rect(w :: NumericValue, h :: NumericValue)
     r = (Rect(2, 3) :: Rectangle)
-    t = concrete Rect(width :: Rational, height :: Rational)
+    t = concrete Rect(width :: NumericValue, height :: NumericValue)
     t
   fails "ordinary type construction cannot declare captures/accessors"
 end

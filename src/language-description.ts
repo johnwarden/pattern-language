@@ -6,15 +6,9 @@ import {
   LanguageError,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
-import {
-  valLiteral,
-  valRational,
-  valSymbol,
-  unwrap,
-  asRational,
-} from "./values.ts";
+import { valLiteral, valSymbol, unwrap, asNumeric } from "./values.ts";
 import type { Value } from "./values.ts";
-import { rationalFromSyntax, syntaxNumber } from "./rational.ts";
+import { numericFromSyntax, syntaxNumber } from "./rational.ts";
 
 /** These are semantic readers, not hidden additions to surface syntax. */
 export const HOST_READERS = [
@@ -47,7 +41,7 @@ export const HOST_READERS = [
 ] as const;
 
 /** One executable tree schema serves grammar transport and expression inspection. */
-export const SYNTAX_SCHEMA = `def SyntaxNode type Name(String,Bool) | NumberLiteral(Rational) | StringLiteral(String) | Apply(SyntaxNode,[_... :: (type Field(String,SyntaxNode))*]) | Pack([_... :: (type Field(String,SyntaxNode))*]) | Postfix(String,SyntaxNode) | Quote(SyntaxNode) | TypedQuote(SyntaxNode,SyntaxNode,Bool) | TextTemplate([_... :: (type Text(String) | Hole(SyntaxNode,Int,String))*]) | ReaderQuote(SyntaxNode,[_... :: (type Text(String) | Hole(SyntaxNode,Int,String))*]) | Sequence([_... :: SyntaxNode*]) | Block([_... :: SyntaxNode*]) | Form(String,[_... :: SyntaxNode*],[_... :: (type Capture(String,Bool,[_... :: (type Field(String,SyntaxNode))*]))*])
+export const SYNTAX_SCHEMA = `def SyntaxNode type Name(String,Bool) | NumberLiteral(NumericValue) | StringLiteral(String) | Apply(SyntaxNode,[_... :: (type Field(String,SyntaxNode))*]) | Pack([_... :: (type Field(String,SyntaxNode))*]) | Postfix(String,SyntaxNode) | Quote(SyntaxNode) | TypedQuote(SyntaxNode,SyntaxNode,Bool) | TextTemplate([_... :: (type Text(String) | Hole(SyntaxNode,Int,String))*]) | ReaderQuote(SyntaxNode,[_... :: (type Text(String) | Hole(SyntaxNode,Int,String))*]) | Sequence([_... :: SyntaxNode*]) | Block([_... :: SyntaxNode*]) | Form(String,[_... :: SyntaxNode*],[_... :: (type Capture(String,Bool,[_... :: (type Field(String,SyntaxNode))*]))*])
 `;
 
 /** Recursive source-language schema for the actual grammar transport format. */
@@ -92,9 +86,9 @@ export function encodeSyntax(input: Syntax): Value {
         if (typeof s.value === "string")
           return node("StringLiteral", valLiteral(s.value));
         {
-          const r = rationalFromSyntax(s);
+          const r = numericFromSyntax(s);
           if (!r) return invalid("expected numeric literal");
-          return node("NumberLiteral", valRational(r.n, r.d));
+          return node("NumberLiteral", valLiteral(r));
         }
       case "apply":
         return node("Apply", child(s.head), fields(s.body, depth));
@@ -202,7 +196,7 @@ export function decodeSyntax(input: Value): Syntax {
           quoted: (unwrap(xs[1]) as { name: string }).name === "True",
         };
       case "NumberLiteral": {
-        const r = asRational(xs[0]);
+        const r = asNumeric(xs[0]);
         if (!r) return invalid("expected numeric literal");
         return syntaxNumber(r);
       }

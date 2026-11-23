@@ -23,9 +23,9 @@ test "C24 applications preserve complete successive packs"
   end
   partial = combine(1, 2)
   (a, b, c) = partial(3)
-  expect a is 1 :: Rational
-  expect b is 2 :: Rational
-  expect c is 3 :: Rational
+  expect a is 1 :: NumericValue
+  expect b is 2 :: NumericValue
+  expect c is 3 :: NumericValue
   def empty()
     ()
   end
@@ -41,7 +41,7 @@ end
 test "C25 infix operators retain equal precedence"
   expect (2 :: Float64) * ((3 :: Float64) + (4 :: Float64)) is 14 :: Float64
   def select(a)(b) b
-  expect 1 .select 2 is 2 :: Rational
+  expect 1 .select 2 is 2 :: NumericValue
 end
 
 test "C26 todo assertions execute in isolated scopes"
@@ -59,7 +59,7 @@ test "C26 todo assertions execute in isolated scopes"
     futureLocal()
   fails "E_UNBOUND_NAME"
 
-  expect marker is 1 :: Rational
+  expect marker is 1 :: NumericValue
 end
 
 test "C27 candidate Code rejection of redundant primitive quotation"

@@ -9,6 +9,7 @@ import {
   syntaxOrigins,
   concreteSpace,
   isRational,
+  isNumeric,
 } from "./values.ts";
 import {
   syntaxNumber,
@@ -16,7 +17,6 @@ import {
   reduceRational,
   float64ToRational,
 } from "./rational.ts";
-import type { Rational } from "./rational.ts";
 import type { Value } from "./values.ts";
 import { typeData } from "./type-data.ts";
 import { primitiveNames, isCanonicalAtom } from "./primitive-names.ts";
@@ -157,7 +157,7 @@ export function dataSyntax(value: Value): Syntax {
     return { kind: "symbol", name: v.name, quoted: false };
   if (v.kind === "literal") {
     if (typeof v.value === "string") return { kind: "literal", value: v.value };
-    if (typeof v.value === "number" || isRational(v.value))
+    if (typeof v.value === "number" || isNumeric(v.value))
       return syntaxFromNumeric(v.value);
     return { kind: "literal", value: v.value };
   }
@@ -206,10 +206,8 @@ export function literalSyntax(value: Value): Syntax {
     if (typeof raw.value === "string")
       expression = { kind: "literal", value: raw.value };
     else {
-      const r: Rational = isRational(raw.value)
-        ? raw.value
-        : float64ToRational(raw.value);
-      const negative = r.n < 0n;
+      const r = isNumeric(raw.value) ? raw.value : float64ToRational(raw.value);
+      const negative = isRational(r) && r.n < 0n;
       const node = syntaxNumber(negative ? reduceRational(-r.n, r.d) : r);
       expression = negative
         ? {

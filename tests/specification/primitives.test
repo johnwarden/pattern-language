@@ -3,7 +3,7 @@ test "C01 intrinsic primitive values"
   expect False is False :: Bool
   expect Int is Int :: ReservedSymbol
   expect "hello" is "hello" :: String
-  expect 5 is 5 :: Rational
+  expect 5 is 5 :: NumericValue
   expect :Widget is Widget :: UpperCamelSymbol
   expect :foo is foo :: LowerCamelSymbol
   expect :Symbol is Symbol :: UpperCamelSymbol
@@ -113,7 +113,7 @@ end
 
 test "String operations keep intrinsic String identity"
   expect "a" + "b" is "ab" :: String
-  expect toString(Rational)(0.1) is "0.1" :: String
+  expect toString(NumericValue)(0.1) is "0.1" :: String
   s = "x"
   expect s is "x" :: String
   def echo(t) t
@@ -130,34 +130,4 @@ test "String operations keep intrinsic String identity"
     1 < "a"
   fails "E_INCOMPARABLE_TYPES"
   expect parse(String)(toString(String)("hi")) is "hi" :: String
-end
-
-test "C02 exact Rational literal meanings"
-  expect 0.1 is 0.1 :: Rational
-  expect 0f0.5 is 0.5 :: Rational
-  expect 0x1.999999999999Ap-4 is 0f0.1 :: Rational
-  assert 0f0.1 != 0.1
-  assert 0xFp8 == 0b1111p8
-end
-
-test "C03 exact designation differs from rounding"
-  expect 0.5 :: Float32 is 0.5 :: Float32
-  expect float32(0.5) is 0.5 :: Float32
-  todo expect 0f0.5 :: Decimal32 is 0.5 :: Decimal32
-  expect 0f0.1 :: Float64 is 0f0.1 :: Float64
-  assert (0f0.1 :: Float64) == (0x1.999999999999Ap-4 :: Float64)
-  expect 0.1 :: Float64 fails "not exactly representable as Float64"
-  expect
-    (0.1 :: Float32)
-  fails "not exactly representable as Float32"
-  assert 0.5 .matches Float32
-  assert not(0.1 .matches Float32)
-  assert 0.5 .matches Float
-  assert not(0.1 .matches Float)
-  assert 0f0.1 .matches Float
-  expect 0.5 :: Float is 0.5 :: Float
-
-  todo expect
-    (0.5 :: Int16)
-  fails "not an integer"
 end

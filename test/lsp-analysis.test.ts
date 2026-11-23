@@ -12,7 +12,7 @@ const read = (text: string, file = uri) =>
 
 test("LSP outlines concrete and abstract declarations through the shared grammar", () => {
   const result = read(
-    "type Rectangle concrete\n  Rect(w :: Rational, h :: Rational)\nend\ntype Either abstract Float32 | Float64\nEither",
+    "type Rectangle concrete\n  Rect(w :: NumericValue, h :: NumericValue)\nend\ntype Either abstract Float32 | Float64\nEither",
   );
   assert.deepEqual(result.diagnostics, []);
   assert.deepEqual(
@@ -228,7 +228,7 @@ test("LSP analysis has no runtime/bootstrap/test execution path", (t) => {
   });
   for (const [file, source] of [
     [uri, "macro :explode x :: Expression\n  missing(1 / 0)\nend\nexplode 1"],
-    [uri, "def Positive type Rational\n  missing(1 / 0)\nend\nmissing()"],
+    [uri, "def Positive type NumericValue\n  missing(1 / 0)\nend\nmissing()"],
     [
       "file:///test.test",
       'test "Execution canary"\n  missing(1 / 0)\n  expect missing() is None :: MissingType\nend',

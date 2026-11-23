@@ -40,8 +40,9 @@ import {
   valSymbol,
   equal,
   unwrap,
-  compareRationals,
-  rationalFromSyntax,
+  compareNumeric,
+  isRational,
+  numericFromSyntax,
 } from "./values.ts";
 import type { Value } from "./values.ts";
 export const DEFAULT_GRAMMAR = `def Definition type :def signature :: Signature body :: Body
@@ -247,9 +248,9 @@ export class Grammar {
               name: normal(n),
               test: (v) => {
                 if (v.kind !== "literal") return false;
-                const left = rationalFromSyntax(v),
-                  right = rationalFromSyntax(n);
-                if (left && right) return compareRationals(left, right) === 0;
+                const left = numericFromSyntax(v),
+                  right = numericFromSyntax(n);
+                if (left && right) return compareNumeric(left, right) === 0;
                 return v.value === n.value;
               },
             };
@@ -288,9 +289,9 @@ export class Grammar {
         test: (n) => {
           if (n.kind !== "literal") return false;
           if (name === "String") return typeof n.value === "string";
-          const r = rationalFromSyntax(n);
+          const r = numericFromSyntax(n);
           if (!r) return typeof n.value === "number";
-          return name !== "Int" || r.d === 1n;
+          return name !== "Int" || (isRational(r) && r.d === 1n);
         },
       };
     if (name === "Pattern") return { kind: "test", name, test: () => true };

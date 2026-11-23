@@ -1,8 +1,8 @@
 test "independent captures"
   Pair(x, y) = Pair(1, 2)
 
-  expect x is 1 :: Rational
-  expect y is 2 :: Rational
+  expect x is 1 :: NumericValue
+  expect y is 2 :: NumericValue
   (x, y)
 end
 
@@ -21,5 +21,5 @@ end
 test "single pattern grouping"
   (x) = 1
 
-  expect x is 1 :: Rational
+  expect x is 1 :: NumericValue
 end

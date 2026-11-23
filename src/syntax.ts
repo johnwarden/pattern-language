@@ -6,8 +6,14 @@ import { requiresParentheses } from "./infix-grouping.ts";
 import { LanguageError } from "./diagnostics.ts";
 import type { Captures } from "./pattern.ts";
 import type { SourceDocument } from "./diagnostics.ts";
-import type { Rational } from "./rational.ts";
-import { isRational, formatRational, float64ToRational } from "./rational.ts";
+import type { ExactNumeric } from "./rational.ts";
+import {
+  isNumeric,
+  formatNumeric,
+  float64ToRational,
+  numericKey,
+  numericInfixes,
+} from "./rational.ts";
 export { LanguageError } from "./diagnostics.ts";
 /** Lossless structural distinctions; packs occur at call/result boundaries. */
 export interface Span {
@@ -46,7 +52,7 @@ export type Syntax =
   | { kind: "symbol"; name: string; quoted: boolean; span?: Span }
   | {
       kind: "literal";
-      value: string | number | Rational;
+      value: string | number | ExactNumeric;
       spelling?: string;
       span?: Span;
     }
@@ -340,6 +346,17 @@ export function normal(n: Syntax, indent = 0): string {
     fields: body,
     needsGrouping: (node) => node.kind === "sequence" || node.kind === "form",
     rejectedAdjacent: requiresParentheses,
+    atomNeedsGrouping: (node, text, operator, left) => {
+      if (node.kind !== "literal" || typeof node.value === "string")
+        return false;
+      const tight = numericInfixes(text);
+      const adjacent = left ? tight.at(-1)?.text : tight[0]?.text;
+      if (!adjacent) return false;
+      const op = operator.replace(/^:/, "");
+      return left
+        ? requiresParentheses(adjacent, op)
+        : requiresParentheses(op, adjacent);
+    },
   };
   switch (n.kind) {
     case "quote":
@@ -376,9 +393,9 @@ export function normal(n: Syntax, indent = 0): string {
       return (n.quoted ? ":" : "") + n.name;
     case "literal": {
       if (typeof n.value === "string") return stringSource(n.value, indent);
-      if (typeof n.value === "number" || isRational(n.value))
-        return formatRational(
-          isRational(n.value) ? n.value : float64ToRational(n.value),
+      if (typeof n.value === "number" || isNumeric(n.value))
+        return formatNumeric(
+          isNumeric(n.value) ? n.value : float64ToRational(n.value),
         );
       return stringSource(String(n.value), indent);
     }
@@ -443,8 +460,8 @@ export function syntaxKey(n: Syntax): string {
   const key = (n: Syntax): unknown => {
     switch (n.kind) {
       case "literal":
-        return isRational(n.value)
-          ? ["literal", n.value.n.toString(), n.value.d.toString()]
+        return isNumeric(n.value)
+          ? ["literal", ...numericKey(n.value)]
           : ["literal", n.value];
       case "symbol":
         return ["symbol", n.name, n.quoted];

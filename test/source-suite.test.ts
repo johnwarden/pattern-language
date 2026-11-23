@@ -68,8 +68,10 @@ for (const value of sourceCases.filter((value) =>
 }
 
 test("specification corpus names design cases C01 through C27", () => {
-  const cases = sourceCases.filter((value) =>
-    value.file.startsWith("specification/"),
+  const cases = sourceCases.filter(
+    (value) =>
+      value.file.startsWith("specification/") ||
+      value.file.startsWith("specs/"),
   );
   const present = new Set(
     cases.flatMap((value) => {

@@ -6,7 +6,7 @@ implementation on 10 November. This is a coordinated surface-syntax migration.
 ```pattern
 test "Expectation predicates"
   expect 1 is 1
-  expect 1 is 1 :: Rational
+  expect 1 is 1 :: NumericValue
   expect "hello world" contains "world"
   expect parse(Code)("x + ") fails "E_SYNTAX"
 end

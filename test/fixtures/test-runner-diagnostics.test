@@ -16,7 +16,7 @@ end
 
 test "Failed pattern match"
   candidate = "hello"
-  assert candidate .matches Rational
+  assert candidate .matches NumericValue
 end
 
 test "Fulfilled todo"
@@ -28,7 +28,7 @@ test "A value mismatch is a comparison failure"
 end
 
 test "An explicit type mismatch remains a failure"
-  expect 3 :: Int is 3 :: Rational
+  expect 3 :: Int is 3 :: NumericValue
 end
 
 test "Expected data is never executed"

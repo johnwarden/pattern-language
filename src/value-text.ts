@@ -18,14 +18,15 @@ import {
   concreteSpace,
   syntaxOrigins,
   equal,
+  isNumeric,
   isRational,
   parseNumericSpelling,
-  valRational,
+  valLiteral,
   integerValue,
   isExactFloat32,
   isExactFloat64,
   syntaxFromNumeric,
-  rationalFromSyntax,
+  numericFromSyntax,
 } from "./values.ts";
 import { typeIdentity } from "./type-descriptor.ts";
 import { typeData, typeDescription, sym, lit } from "./type-data.ts";
@@ -108,14 +109,10 @@ export function valueText(
       };
       const printedNumericDesignates = (value: Value, space: TypeValue) => {
         const raw = unwrap(value);
-        if (
-          raw.kind !== "literal" ||
-          isRational(raw.value) ||
-          typeof raw.value !== "number"
-        )
+        if (raw.kind !== "literal" || typeof raw.value !== "number")
           return true;
         const parsed = parseNumericSpelling(String(Math.abs(raw.value)));
-        if (!parsed) return false;
+        if (!parsed || !isRational(parsed)) return false;
         const sign = raw.value < 0 || Object.is(raw.value, -0) ? -1n : 1n;
         const rational = { n: sign * parsed.n, d: parsed.d };
         const numeric = space.numeric ?? space.baseType?.numeric;
@@ -299,7 +296,7 @@ export function valueText(
     if (v.kind === "literal") {
       if (typeof v.value === "string")
         return { kind: "literal", value: v.value };
-      if (typeof v.value === "number" || isRational(v.value))
+      if (typeof v.value === "number" || isNumeric(v.value))
         return syntaxFromNumeric(v.value);
       return { kind: "literal", value: v.value };
     }
@@ -553,7 +550,7 @@ const literalSyntax = (v: Value): Syntax => {
     });
   return typeof raw.value === "string"
     ? { kind: "literal", value: raw.value }
-    : typeof raw.value === "number" || isRational(raw.value)
+    : typeof raw.value === "number" || isNumeric(raw.value)
       ? syntaxFromNumeric(raw.value)
       : { kind: "literal", value: raw.value };
 };
@@ -611,11 +608,8 @@ export function typeExpressionText(type: TypeValue): string {
     }
   };
   const names = new Set<string>();
-  const expression = (v: Value): Syntax => descriptionSyntax(
-    v,
-    names,
-    literalSyntax,
-    (description) => {
+  const expression = (v: Value): Syntax =>
+    descriptionSyntax(v, names, literalSyntax, (description) => {
       if (
         description.kind !== "term" ||
         description.head.kind !== "symbol" ||
@@ -626,12 +620,18 @@ export function typeExpressionText(type: TypeValue): string {
         return;
       // Read the descriptor as data. This preserves recursive binders and
       // avoids calling a constructor with the same name in the author's scope.
-      return apply(symbol("Type"), packOf({
-        kind: "quote",
-        value: descriptionSyntax(description.body[0].value, names, literalSyntax),
-      }));
-    },
-  );
+      return apply(
+        symbol("Type"),
+        packOf({
+          kind: "quote",
+          value: descriptionSyntax(
+            description.body[0].value,
+            names,
+            literalSyntax,
+          ),
+        }),
+      );
+    });
   const sugared =
     encoded.kind === "term" &&
     encoded.head.kind === "symbol" &&
@@ -658,7 +658,10 @@ export function sourceText(
     const type = annotations?.get(field);
     if (!type) return body;
     used.add(field);
-    return apply(apply(symbol("::"), packOf(body)), packOf(parseExpression(type)));
+    return apply(
+      apply(symbol("::"), packOf(body)),
+      packOf(parseExpression(type)),
+    );
   };
   const tooLarge = () =>
     new LanguageError("value is too large to quote", undefined, {
@@ -710,9 +713,13 @@ export function sourceText(
   };
   const text = normal(syntax(value));
   if (annotations && used.size !== annotations.size)
-    throw new LanguageError("nested interpretations cannot be written in this value", undefined, {
-      code: "E_VALUE_SERIALIZATION",
-    });
+    throw new LanguageError(
+      "nested interpretations cannot be written in this value",
+      undefined,
+      {
+        code: "E_VALUE_SERIALIZATION",
+      },
+    );
   if (text.length > limit || text.includes("\n")) throw tooLarge();
   return text;
 }
@@ -726,7 +733,7 @@ export function parseValueText(
 ): Value {
   const source = { name: "serialized value", text };
   const numeric = parseNumericSpelling(text);
-  if (numeric && !typeExpected) return valRational(numeric.n, numeric.d);
+  if (numeric && !typeExpected) return valLiteral(numeric);
   const forms = layoutForms?.size ? layoutForms : emptyLayoutForms();
   const structural = !!(layoutForms?.size || layoutForms?.structural);
   let tree = parseSurface(text, source.name, { layoutForms: forms });
@@ -763,9 +770,9 @@ export function parseValueText(
     }
     if (n.kind === "literal") {
       if (typeof n.value === "string") return lit(n.value);
-      const parsed = rationalFromSyntax(n);
+      const parsed = numericFromSyntax(n);
       if (!parsed) return fail("malformed numeric source literal", n);
-      return valRational(parsed.n, parsed.d);
+      return valLiteral(parsed);
     }
     if (n.kind === "quote") return decode(n.value, pattern);
     if (n.kind === "symbol") return sym(n.name);
@@ -836,7 +843,7 @@ export function parseValueText(
               : undefined;
           const parsed = text ? parseNumericSpelling(text) : undefined;
           if (!parsed) return fail("malformed numeric source literal", n);
-          return valRational(parsed.n, parsed.d);
+          return valLiteral(parsed);
         }
         if (n.head.name === "TreeGrammar") {
           const [schema] = positional(n, 1);

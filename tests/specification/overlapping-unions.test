@@ -1,20 +1,3 @@
-test "Float64 is a distinct primitive and float64 converts"
-  expect float64(0.5) is 0.5 :: Float64
-  expect float32(0.5) is 0.5 :: Float32
-  observed = type Float64
-  expect observed is Float64 :: Type
-  expect
-    type Num
-  fails "E_UNBOUND_TYPE"
-  expect
-    type Int64
-  fails "E_UNBOUND_TYPE"
-
-  expect
-    float32(0.5) == float64(0.5)
-  fails "E_INCOMPARABLE_TYPES"
-end
-
 test "Overlapping UnionType keeps Float32 and Float64 identities"
   def EitherFloat UnionType(type Float32, type Float64)
   (a :: EitherFloat) = float32(0.5)

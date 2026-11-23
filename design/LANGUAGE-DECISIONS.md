@@ -107,7 +107,7 @@ permission superseded by type-values.
 ### D04. All numeric literals denote exact NumericValue values — confirmed direction; spelling and unions updating
 
 Decimal, hexadecimal, binary, fraction and complex spellings denote exact values
-of the primitive `NumericValue` (bootstrap name still `Rational` until migration).
+of the primitive `NumericValue`.
 `0f` first selects the Float64-rounded magnitude and denotes that value **as an
 exact `NumericValue`**, not as a Float64-typed value. Consequently `0f0.5` equals
 1/2 and can be designated into a decimal format when one exists. A stored result
@@ -272,7 +272,7 @@ Live: `"hello" :: String`, `True :: Bool`, `Int :: ReservedSymbol`, `5 :: Ration
 `:Widget :: UpperCamelSymbol`. Legacy still treats `type Bool` as Type. Todo:
 `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`.
 
-### C02 — exact literals, including Float64-rounded Rational literals
+### C02 — exact literals, including Float64-rounded magnitudes
 
 Live. `0.1` and `0f0.5` are Rational; `0f0.1` is the Float64-rounded Rational
 `0x1.999999999999Ap-4`, distinct from `0.1`. Hex/binary `0xFp8 == 0b1111p8`.

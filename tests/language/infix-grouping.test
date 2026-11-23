@@ -52,8 +52,8 @@ test "Accepted grouped forms keep their current trees"
 end
 
 test "Grouped arithmetic evaluations keep their current results"
-  expect 2 * (3 + 4) is 14 :: Rational
-  expect (12 / 3) * 2 is 8 :: Rational
+  expect 2 * (3 + 4) is 14 :: NumericValue
+  expect (12 / 3) * 2 is 8 :: NumericValue
 end
 
 test "Binding and arrow keep a free right-hand side"

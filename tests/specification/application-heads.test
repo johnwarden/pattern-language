@@ -56,7 +56,7 @@ end
 # The UpperCamelSymbol(...) form *looks* like a function call. 
 # But Symbols are not callable functions.
 test "A tag value is not implicitly a callable head"
-  def Tagged type :Tag(Rational)
+  def Tagged type :Tag(NumericValue)
   expect Tag(1) :: Tagged is Tag(1) :: Tagged
   expect (:Tag)(1) :: Tagged fails "E_NOT_CALLABLE"
   expect :Tag(1) fails "E_NOT_CALLABLE"
@@ -73,19 +73,19 @@ end
 
 test "A head expression may evaluate to a function"
   f = n -> n + 1
-  expect f(2) is 3 :: Rational
+  expect f(2) is 3 :: NumericValue
 
   def make()
     n -> n
   end
-  expect make()(7) is 7 :: Rational
+  expect make()(7) is 7 :: NumericValue
 
   def add(x)(y) x + y
-  expect add(2)(3) is 5 :: Rational
+  expect add(2)(3) is 5 :: NumericValue
 end
 
 test "A constructed value is not implicitly a callable head"
-  def Tagged type :Tag(Rational)
+  def Tagged type :Tag(NumericValue)
   value = Tag(1) :: Tagged
   expect value(2) fails "E_NOT_CALLABLE"
 

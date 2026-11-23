@@ -151,24 +151,25 @@ today.
 
 ## Numeric values
 
-All numeric literals denote exact Rational values. Decimal, binary and hexadecimal
-spelling do not choose a concrete arithmetic family. `0f0.1` denotes the exact
-Rational selected by Float64 rounding of 0.1, rather than a Float64-typed value.
-`0f0.5` is exactly 1/2 and is eligible for exact Decimal32 designation.
+All numeric literals denote exact `NumericValue` values. Decimal, binary,
+hexadecimal, fraction and complex spelling do not choose a fixed-width
+format. `0f0.1` denotes the exact value selected by Float64 rounding of
+0.1 and has type `NumericValue`. `0f0.5` is exactly 1/2 and is eligible
+for exact Decimal32 designation.
 
-Finite fixed-precision types are concrete carveouts of representable Rational
-values. They have their own arithmetic, not inherited Rational arithmetic.
-Exact designation cannot silently round; converters return typed values directly.
+Finite fixed-precision types are concrete carveouts of representable
+`NumericValue` values and define their own arithmetic. Exact designation
+cannot silently round. Converters return typed values directly.
 
     (0.5 :: Float32)       # exact designation
     (0.1 :: Float32)       # rejected: 1/10 is not exactly representable
     float32(0.1)           # explicit rounding, returns Float32
 
 Constant predicates may be proved; nonconstant designation requires evidence or an
-explicit checked operation. Runtime Rational arithmetic itself is optional. Numeric
-family aliases, complete precision sets, rounding edge/overflow policies and canonical
-spelling remain provisional. IEEE signed zero, NaN identity/payloads and infinities
-remain deferred; no finite-only or IEEE-complete policy is silently selected here.
+explicit checked operation. See [numeric literals and exact text](specs/numeric-literals-and-text.md)
+for the reader and canonical spelling, and [fixed-precision numbers](specs/fixed-precision-numbers.md)
+for arithmetic and overflow rules. IEEE signed zero, NaN identity and payloads,
+and infinities remain deferred.
 
 ## General unions and unambiguous grammars
 

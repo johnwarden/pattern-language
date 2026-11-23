@@ -21,7 +21,7 @@ end
 def Index
   (type Int) .where (n -> n >= (0 :: Int))
 end
-def Data type Rational | String | Bool | Symbol | ReservedSymbol | (head :: Data)(fields... :: Data*,**)
+def Data type NumericValue | String | Bool | Symbol | ReservedSymbol | (head :: Data)(fields... :: Data*,**)
 def FieldPattern(p :: Type) type p | Repeat(p)
 def FieldPack(p :: Type) type :Sequence(parts... :: p*) | :Fields(fields... :: FieldPattern(p)*,**) | :OpenFields(fields :: FieldPack(p),labels: Bool,positional: Bool)
 def patternSymbol(s)
@@ -33,7 +33,7 @@ end
 def PatternSymbol
   (type Symbol) .where (s -> patternSymbol(s))
 end
-def Pattern(t :: Type) type Rational | String | Bool | PatternSymbol | ReservedSymbol | Type(Pattern(t)) | :Facet(Pattern(t)) | :TreeGrammar(t) | :UnionType(first :: t,rest... :: t*) | :Literal(Data) | :Row(FieldPack(Pattern(t))) | :Collect(Pattern(t)) | :Apply(Pattern(t),FieldPack(Pattern(t))) | :Postfix(Pattern(t),Pattern(t)) | :Recursive(Pattern(t)) | :Recur(Index) | :Union(patterns... :: Pattern(t)*) | :|(Pattern(t))(Pattern(t)) | (head :: OrdinaryHead)(fields... :: FieldPattern(Pattern(t))*,**)
+def Pattern(t :: Type) type NumericValue | String | Bool | PatternSymbol | ReservedSymbol | Type(Pattern(t)) | :Facet(Pattern(t)) | :TreeGrammar(t) | :UnionType(first :: t,rest... :: t*) | :Literal(Data) | :Row(FieldPack(Pattern(t))) | :Collect(Pattern(t)) | :Apply(Pattern(t),FieldPack(Pattern(t))) | :Postfix(Pattern(t),Pattern(t)) | :Recursive(Pattern(t)) | :Recur(Index) | :Union(patterns... :: Pattern(t)*) | :|(Pattern(t))(Pattern(t)) | (head :: OrdinaryHead)(fields... :: FieldPattern(Pattern(t))*,**)
 def TypeDescription Facet(type ReservedSymbol | :Recur(Index) | Type(Pattern(TypeDescription)) | :Facet(Pattern(TypeDescription)) | :TreeGrammar(TypeDescription) | :UnionType(first :: TypeDescription,rest... :: TypeDescription*))
 type TypeDescription
 `;

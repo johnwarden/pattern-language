@@ -210,13 +210,13 @@ end
 
 test "C14 unambiguous is a separate grammar requirement"
   todo assert
-    type Token unambiguous pattern Rational | String
+    type Token unambiguous pattern NumericValue | String
     (n :: Token) = 0.5
     (parse(Token)(toString(Token)(n)) == n)
   end
 
   todo expect
-    type Token unambiguous pattern Rational | String
+    type Token unambiguous pattern NumericValue | String
     (n :: Token) = 0.5
     assert parse(Token)(toString(Token)(n)) == n
     type Bad unambiguous pattern Float32 | Float64

@@ -107,7 +107,7 @@ Rough file list for a full cutover:
 - `src/value-text.ts`, `src/parser.ts`, `src/syntax-values.ts`
 - `src/language-description.ts`, `src/test-suite.ts`
 - `test/rational-primitives.test.ts` and `tests/numeric/*`
-- Specs under `specs/rational-*.md` once the canonical form is chosen
+- [Numeric literals and canonical text](../specs/numeric-literals-and-text.md)
 
 A smaller spike (medium) could introduce an internal scaled form only inside
 the reader/printer while still expanding before leaving `rational.ts`; that

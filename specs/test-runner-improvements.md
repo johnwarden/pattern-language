@@ -32,17 +32,17 @@ These deliberately failing fixtures must produce distinct, identifiable reports:
 
     test "Failed pattern match"
       candidate = "hello"
-      assert candidate .matches Rational
+      assert candidate .matches NumericValue
     end
 
     test "Fulfilled todo"
       todo assert 1 == 1
     end
 
-The equality report identifies `assert left == right`, `left: 1 :: Rational`
-and `right: 2 :: Rational`. The inequality report identifies `assert left != right`
-and both `1 :: Rational` operands. The match report identifies
-`assert candidate .matches Rational`, the actual String `"hello"`, and the
+The equality report identifies `assert left == right`, `left: 1 :: NumericValue`
+and `right: 2 :: NumericValue`. The inequality report identifies `assert left != right`
+and both `1 :: NumericValue` operands. The match report identifies
+`assert candidate .matches NumericValue`, the actual String `"hello"`, and the
 actual RHS pattern value. The todo report identifies
 `todo assert 1 == 1` and asks for todo removal. Exact layout is not prescribed.
 
@@ -68,7 +68,7 @@ test "Expected data uses the subject type"
   expect "hello" is "hello"
   expect :Ready is Ready
 
-  type Rectangle concrete Rect(width :: Rational, height :: Rational)
+  type Rectangle concrete Rect(width :: NumericValue, height :: NumericValue)
   rectangle = Rect(2, 3) :: Rectangle
   expect rectangle is Rect(2, 3)
   expect rectangle is Rect(2, 3) :: Rectangle
@@ -82,7 +82,7 @@ Acceptance fixtures that must fail:
     end
 
     test "An explicit type mismatch remains a failure"
-      expect 3 :: Int is 3 :: Rational
+      expect 3 :: Int is 3 :: NumericValue
     end
 
     test "Expected data is never executed"
@@ -93,7 +93,7 @@ Acceptance fixtures that must fail:
     end
 
 The first fixture is valid DSL and reports expected `2`, actual `1`, and its
-assertion location. The second reports the Int/Rational type mismatch. The third
+assertion location. The second reports the Int/NumericValue type mismatch. The third
 cannot succeed by evaluating the expected expression. Preserve canonical,
 inert expected-data rules, one-positional-result checks, explicit-annotation
 behavior, and ordinary/todo/legacy modes. Cover both inline and indented forms.
