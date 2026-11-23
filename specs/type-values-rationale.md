@@ -677,25 +677,26 @@ On `Int??`, `:None .as Int??` selects outer absence, and
 The binding retains the `Int?` value. Its `inner` accessor yields the
 stored `5 :: Int`.
 
-For `x` of concrete wrapper type `T`, the following match has the same
-behavior as a call to one local overloaded function when `P1` and `P2`
-are pairwise disjoint at that boundary:
+For `x` of concrete wrapper type `T`, a match with pairwise disjoint peer arms
+(same domain rule as overloads, including permitted projection on the
+scrutinee) has the same behavior as a call to one local overloaded function:
 
     match x
       P1 -> V1
       P2 -> V2
-      _ -> V3
     end
 
     def f(P1 .as T) V1
     def f(P2 .as T) V2
-    def f(_ :: Remaining) V3
     f(x)
 
-`Remaining` represents the values of `T` outside `P1` and `P2`. The
-trailing residual arm has this domain by definition. An overloaded function would need
-a disjoint parameter pattern for that domain. Public notation for
-`Remaining` is open. The [Reading example](type-values.md#overload-domains-and-projection-dispatch)
+A trailing `else` corresponds to one `Remaining` overload for values of `T`
+outside the peer arms. Match takes one value. Bind a function result pack to
+locals before matching an individual result. An abstract-union match lists
+one arm for each whole alternative. Peer arms keep `->`. See
+[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) and
+[Match arm domains](type-values.md#match-arm-domains). The
+[Reading example](type-values.md#overload-domains-and-projection-dispatch)
 uses two disjoint patterns and needs no subtraction.
 
 A concrete carveout can be used as a field type.

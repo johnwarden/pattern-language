@@ -369,8 +369,7 @@ Selecting a symbol tag needs no raw symbol value. Ordinary bindings and
 parameters cannot implicitly unwrap a value. A single-arm extraction
 requires coverage of its admitted input domain. A match on an abstract
 union tests the stored concrete value. A catch-all spread can collect
-the unmatched arguments into an `ArgPack(T)`, including in an open
-concrete type. See [Spreads and ArgPacks](https://github.com/johnwarden/pattern-language/pull/85).
+unmatched fields within an open constructed value into an `ArgPack(T)`. See [Spreads and ArgPacks](https://github.com/johnwarden/pattern-language/pull/85).
 
 `P .as T` is a proposed explicit projection pattern of lower
 implementation priority. It checks the outer concrete type `T` and
@@ -423,9 +422,318 @@ disjoint. `classify` gives the same results as the earlier `match`
 example. It takes a `Reading` and dispatches on the field's concrete
 type. Refinement requirements in either overload use existing evidence.
 
-Peer match arms follow the same disjointness rule. A trailing residual
-covers the part of the subject domain outside all preceding arms. Public
-notation for that subtraction is open. See [match arm domains](https://github.com/johnwarden/pattern-language/pull/100).
+### Match arm domains
+
+A `match` takes exactly one unlabeled value. Bind a multi-value or labeled
+result pack to local variables before matching one of them. An arm may
+inspect the fields of a constructed value.
+
+Peer arms must be pairwise disjoint. The checker verifies that rule during
+elaboration, when it resolves the scrutinee type and arm patterns. It checks
+the match even if execution never reaches it. The bootstrap still uses
+ordered first-match. Overlap raises `E_OVERLAPPING_MATCH_ARMS`. See
+[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md).
+
+The admitted scrutinee domain is the set of values the scrutinee's static
+type permits at that match. Compare the arms on that same set of original
+inputs, counting the one-boundary projection allowed by `match`. Overlap
+outside that input domain is irrelevant. For an `Int | String` scrutinee,
+the arms annotated with `Int | Bool` and `String | Bool` cover separate
+alternatives because the input domain excludes `Bool`.
+
+An `Outer` whose immediate member is `Inner` can reach an `Outer` arm as a
+whole or an `Inner` arm through projection. Both arms accept the same input.
+A second concrete boundary requires another projection.
+
+A raw designator can have more than one concrete interpretation even when
+the resulting typed values match disjoint arms. For example, the Int and
+Float field arms can both interpret `Box(3)`. This is
+`E_AMBIGUOUS_VALUE_DESIGNATOR`. An explicitly typed field can resolve it.
+
+A function parameter or match arm cannot use `P | Q` as its binding pattern,
+even when constructor tags distinguish the alternatives. Write separate arms
+or overloads. Union types remain valid in annotations.
+
+Erase refinement predicates only when comparing peer domains for disjointness.
+Keep concrete boundaries, tags and fields. If disjointness cannot be proved,
+raise `E_OVERLAPPING_MATCH_ARMS` and report that lack of proof. The checker
+still enforces the selected arm's refinement statically. A refined binding
+requires evidence for the value being bound, for example from its static type
+or an earlier explicit check. Selection does not run a predicate to supply
+missing evidence or fall through to `else`. For ordered predicate checks, put
+`if` / `.matches` inside one base-type arm. See
+[refinement evidence](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
+
+When the scrutinee's static type is an abstract union, require one explicit
+peer arm covering each whole alternative within that type. An alternative may
+itself be concrete or abstract. A parameter with static type `Int | String`
+requires both arms. A scrutinee with static type `Int` is covered by an
+`Int` arm. The peer domains must also satisfy the disjointness rule. For
+example, the alternatives of `Any | Int` cannot each have a peer arm, since
+both would accept the same Int values.
+
+At most one `else` may appear, and only as the last arm. On a scrutinee outside
+the abstract-union rule, it takes any value left by the peer arms. A provably
+unreachable `else` is an error. In particular, a match with all the required
+abstract-union arms has no residual. Peer arms keep `->`.
+
+```pattern
+todo test "Overlapping match arms raise E_OVERLAPPING_MATCH_ARMS"
+  expect
+    match 1 :: Int
+      (a :: Int) -> 1
+      (b :: Int) -> 2
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+todo test "Outer wrapper and projected Inner arms overlap on one Outer value"
+  type Inner concrete Box(String)
+  type Outer concrete Wrapper(Inner)
+  (inner :: Inner) = Box("hi")
+  (o :: Outer) = Wrapper(inner)
+  expect
+    match o
+      (x :: Outer) -> "outer"
+    end
+  is "outer"
+  expect
+    match o
+      (x :: Outer) -> "outer"
+      (y :: Inner) -> "inner"
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+test "A bound Int reaches a single match arm"
+  n = 3 :: Int
+  expect
+    match n
+      (i :: Int) -> i
+    end
+  is 3 :: Int
+end
+
+# The next contracts depend on enum refinements. The standalone membership
+# test tracks setup separately from the overlap and evidence checks.
+todo test "The refinement match fixtures admit their designated values"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  assert (3 :: Int) .matches Positive
+  assert (-2 :: Int) .matches NonZero
+end
+
+todo test "A refined arm can use evidence from an earlier explicit check"
+  type Positive pattern Int .where isPositive
+  def checked(n :: Int)
+    assert n .matches Positive
+    match n
+      (p :: Positive) -> "positive"
+    end
+  end
+  expect checked(3 :: Int) is "positive"
+  expect
+    def unchecked(n :: Int)
+      match n
+        (p :: Positive) -> "positive"
+      end
+    end
+    "defined"
+  fails "missing isPositive"
+end
+
+todo test "An overlapping match is rejected even inside an uncalled function"
+  expect
+    def unused(n :: Int)
+      match n
+        (a :: Int) -> 1
+        (b :: Int) -> 2
+      end
+    end
+    "defined"
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+todo test "A refinement arm overlapping its base raises E_OVERLAPPING_MATCH_ARMS"
+  n = 3 :: Int
+  assert n .matches Int
+  type Positive pattern Int .where isPositive
+  assert n .matches Positive
+  expect
+    match n
+      (x :: Positive) -> "positive"
+      (i :: Int) -> "other"
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+todo test "Two different refinements of Int cannot select peer match arms"
+  n = -2 :: Int
+  assert n .matches Int
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  assert n .matches NonZero
+  expect
+    match n
+      (n :: Positive) -> "positive"
+      (n :: NonZero) -> "nonzero"
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+todo test "Disjoint tags still cannot form a union binding pattern in an arm"
+  expect
+    match Left(1, 2)
+      (Left(x, _) | Right(_, x)) -> x
+    end
+  fails "union pattern"
+end
+
+todo test "Disjoint tags still cannot form a union binding pattern in a function"
+  expect
+    def selected((Left(x, _) | Right(_, x))) x
+    "definitions complete"
+  fails "union pattern"
+end
+
+test "Separate arms can extract the same name from different fields"
+  def selected(p)
+    match p
+      Left(x, _) -> x
+      Right(_, x) -> x
+    end
+  end
+  expect selected(Left(1, 2)) is 1
+  expect selected(Right(1, 2)) is 2
+end
+
+test "An abstract-union match covers each declared alternative"
+  type Input abstract Int | String
+  (v :: Input) = 3 :: Int
+  expect
+    match v
+      (i :: Int) -> "int"
+      (s :: String) -> "string"
+    end
+  is "int"
+  todo expect
+    match v
+      (i :: Int) -> "int"
+    end
+  fails "non-exhaustive match"
+end
+
+test "Overlap outside the scrutinee type does not make two arms overlap"
+  type Input abstract Int | String
+  type Left abstract Int | Bool
+  type Right abstract String | Bool
+  def classify(v :: Input)
+    match v
+      (i :: Left) -> "int"
+      (s :: Right) -> "string"
+    end
+  end
+  expect classify(3 :: Int) is "int"
+  expect classify("hello") is "string"
+end
+
+todo test "An abstract union can have an abstract alternative with its own arm"
+  type Tagged pattern Box(Int)
+  type IntBox struct Box(Int)
+  type Input pattern Tagged | String
+  (v :: Input) = Box(3 :: Int) :: IntBox
+  expect
+    match v
+      (b :: Tagged) -> "box"
+      (s :: String) -> "string"
+    end
+  is "box"
+end
+
+test "Box(3) :: NumBox is an ambiguous designator on its own"
+  type NumBox concrete Box(Int | Float)
+  expect Box(3) :: NumBox fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+
+test "Explicitly typed Box field selects one arm"
+  type NumBox concrete Box(Int | Float)
+  (b :: NumBox) = Box(3 :: Int)
+  expect
+    match b
+      Box(n :: Int) -> "int"
+      Box(n :: Float) -> "float"
+    end
+  is "int"
+end
+
+# Destination: bare Box(3) is ambiguous because the arms supply competing
+# Int/Float field interpretations. Bootstrap currently picks the first arm.
+todo test "Bare Box(3) is ambiguous when Int and Float field arms both compete"
+  expect
+    match Box(3)
+      Box(n :: Int) -> "int"
+      Box(n :: Float) -> "float"
+    end
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect
+    match Box(3)
+      Box(n :: Float) -> "float"
+      Box(n :: Int) -> "int"
+    end
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+
+todo test "An else arm is rejected unless it is last"
+  expect
+    match 1 :: Int
+      else -> 0
+      (i :: Int) -> i
+    end
+  fails "E_OVERLAPPING_MATCH_ARMS"
+end
+
+test "Bind positional results before matching one value"
+  def pair()
+    (1, 2)
+  end
+  (first, second) = pair()
+  expect
+    match second
+      n -> n
+    end
+  is 2
+  todo expect
+    match pair()
+      (a, b) -> "pair"
+    end
+  fails "match requires exactly one unlabeled value"
+end
+
+test "Bind labeled results before matching one value"
+  def labeled()
+    (x: 1, y: 2)
+  end
+  (x: first, y: second) = labeled()
+  expect
+    match second
+      n -> n
+    end
+  is 2
+  todo expect
+    match labeled()
+      (x: a, y: b) -> "labeled"
+    end
+  fails "match requires exactly one unlabeled value"
+end
+```
+
+Trailing `else` sketch (indented display-only):
+
+    match subject
+      P1 -> V1
+      P2 -> V2
+      else -> fallback
+    end
 
 ## Canonical expressions and typed text
 

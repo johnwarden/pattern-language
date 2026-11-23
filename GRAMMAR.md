@@ -75,7 +75,18 @@ parameters, arms, macros and grammar interpretation. Context policies are explic
   unless open. Bare ... ignores extra positions; bare ** ignores extra labels.
 - Positional rests collect positions only; required labels must exist unless a
   binding default supplies a capture. Defaults never complete a type/value.
-- Match arms pair patterns with expressions and are ordered, not first-class functions.
+- A match takes one unlabeled value. Bind a result pack to locals before
+  matching one of its values. Peer arms pair patterns with expressions using
+  `->`. At elaboration, check that their domains are disjoint over the
+  scrutinee’s static type, including permitted projection. Overlap is
+  `E_OVERLAPPING_MATCH_ARMS`. A match on an abstract union has an explicit arm
+  for each complete alternative, concrete or abstract. At most one trailing
+  `else` covers the residual values. The bootstrap still uses ordered matching.
+  See [MATCH-DISJOINTNESS](design/MATCH-DISJOINTNESS.md).
+- Union binding patterns are disallowed in function signatures and match arms.
+  Separate arms or definitions may share a capture name. Union types remain valid
+  in annotations. Check peer disjointness with predicates erased. A selected
+  arm's refinements still require static evidence.
 - Concrete pattern alternatives must have unique interpretations; general abstract
   unions need not have disjoint spellings.
 
@@ -94,19 +105,16 @@ Working target notation:
     type Binding unambiguous pattern Definition | DestructuringBinding
 
 The declaration registers a local name/accessor/display interpretation. Plain
-`struct` / `pattern` expressions produce values without installing captures.
-Refinements use `T .where p` inside either form. Angle-parameter sugar remains
-provisional. Do not implement an ad-hoc parser exception for a semantic
-requirement: grammar forms must remain ordinary tree patterns or an explicitly
-documented bootstrap seed.
+concrete/refinement/abstract expressions produce values without installing captures.
+Their exact keywords, qualifier order and angle-parameter sugar remain provisional.
+Do not implement an ad-hoc parser exception for a semantic requirement: grammar forms
+must remain ordinary tree patterns or an explicitly documented bootstrap seed.
 
-A constructor expression or symbol tag requires a concrete interpretation from
-its context or an explicit ascription. That requirement supersedes bare raw
-runtime expression construction; see
-[Designation and matching](specs/type-values.md#designation-and-matching) and
-the deprecated [raw-expression note](specs/raw-expression-values.md). Parsed Code
-and evaluated Expression values remain separate roles; automatic descriptor
-decoding and the public inspection API remain unsettled.
+Raw structured expressions are allowed at runtime for now. An annotation, typed
+quote or sufficient expected context can give that expression a concrete
+interpretation. [C04 and the raw-expression contracts](specs/raw-expression-values.md)
+record the distinction. Parsed Code and evaluated raw values are separate roles;
+automatic descriptor decoding and the public inspection API remain unsettled.
 
 ## Designation, projection and evidence
 
@@ -163,10 +171,12 @@ portable closed dependencies remain later work.
 A standalone ... pattern row repeats its preceding row. Each repeated dimension
 adds one list layer to the complete capture annotation:
 
-    type Matrix struct [
-      cells... :: Float32**
-      ...
-    ]
+```text
+type Matrix concrete [
+  cells... :: Float32**
+  ...
+]
+```
 
 Horizontal-only rest has T*. Horizontal rest across repeated rows has T**. Vertical-only
 capture followed by ... has T*. Labels sort per pack, while positional and row order
