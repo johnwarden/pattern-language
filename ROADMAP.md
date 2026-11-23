@@ -325,15 +325,18 @@ Implemented slices: exact numeric values/syntax, overlapping abstract unions,
 source-defined postfix conventions, direct-member concrete designation and bounded
 match-only projection. The unified source/host suite checks their composition.
 
-The first structural-type slice uses `type BoxedText struct Box(value :: String)`
-(C05, C16, C18). A producer prints its descriptor and one boxed string. In a
-fresh interpreter with the same prelude, the reader reconstructs both from
-text. The descriptor must equal an independently constructed `struct Box(String)`,
-and the value must equal the corresponding independently constructed box.
-Both must print back to the same text. The producer's `.value` accessor is
-local to its declaration. The reader can declare its own accessor for the
-restored value. The [declaration tests](tests/specification/declarations.test)
-and [transport tests](test/round-trip-parsing.test.ts) cover this slice.
+**Milestone acceptance test (structural interoperability).** A single-field
+`type BoxedText struct Box(value :: String)` round trip (C05, C16, C18): a
+producer block prints the descriptor and one boxed string and returns only those
+two texts; outside that block, where the producer's name and accessor are not
+visible, `parse(Type)` and `parse(restoredType)` reconstruct both; the
+reconstructed type equals an independently constructed `struct Box(String)` and
+the reconstructed value equals the corresponding independently constructed box;
+both print back to the same text. Named contracts live in
+[type-values](specs/type-values.md#milestone-5a2-acceptance-single-field-struct-round-trip)
+and matching destination todos in
+[declaration tests](tests/specification/declarations.test). Destination `struct`
+contracts are todos until the declaration grammar parses.
 
 Remaining alignment slices:
 
