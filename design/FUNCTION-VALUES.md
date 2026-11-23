@@ -5,8 +5,12 @@ The [function value spec](../specs/named-function-values.md) defines closed
 abstract function type. The [printing spec](../specs/library-closure-and-local-printing.md)
 describes exact local aliases and portable text.
 
-Specialization is a compiler optimization that preserves the visible overload
-group and its dispatch behavior.
+Specialization applies ordinary polymorphic-value designation at a requested
+arrow type. A function over an abstract domain is a `PolymorphicValue` even
+with one definition; a concrete-only function is not (any abstract pack
+pattern counts; `Int` is a plain alias of `Int64` and is concrete). Full-domain
+validity: narrowing never rescues an invalid definition. See
+[FUNCTION-SPECIALIZATION.md](FUNCTION-SPECIALIZATION.md).
 
 ## Closing a definition
 

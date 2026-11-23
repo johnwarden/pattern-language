@@ -211,23 +211,63 @@ Type values are ordinary values; parameterized type factories produce structural
 
 The intended bare-family view, such as using `Rectangle` to admit some `Rectangle<N>`, is a proposal. Its structural membership and parameter recovery must not be claimed solved. Phantom/non-injective parameters cannot generally be recovered from a descriptor. The reviewer recommendation to make this existential, structural membership rather than declaration provenance has not itself completed the design. K also contains incompatible broad statements about abstract types inside patterns; its individual recipes are not all ratified restrictions. **Sources:** A type parameters, K “Generics / Type Constructors,” S; R1/R2.
 
-### D13. Specialization is only a later compiler optimization — confirmed and deferred
+### D13. Specialization is polymorphic narrowing — confirmed direction
 
-It must preserve abstract-call behavior, dispatch and errors; it must not create source-visible overloads or make otherwise invalid definitions valid only at known call sites. The exploratory overload-expansion account in S is superseded by AR. **Sources:** S; AR “only a compiler optimization”; R1/R2.
+A function whose domain is abstract is a `PolymorphicValue`, even when it has
+a single definition. A function whose domain is entirely concrete is an
+ordinary closed function value. The domain is abstract when **any** parameter
+pattern in the complete argument-pack sequence (including rests / open
+residuals; defaults do not by themselves change the judgment) is an abstract
+type under ordinary designation — union (including a written single-member
+abstract union), `pattern` / facet, `Any`, or abstract refinement. Untyped
+parameters count as abstract. Concrete-only means every such pattern is a
+`struct` / concrete carveout or a plain alias of one; a zero-parameter
+function is concrete. `Int` is a plain alias of `Int64` and `Float` of
+`Float64` (Jonathan 2026-11-27), so a function over `Int` is concrete, not
+polymorphic. A concrete function requested at an arrow uses ordinary arrow
+compatibility (not polymorphic narrowing); failure is still
+`E_PATTERN_MISMATCH`.
+
+Overloaded functions and single abstract-domain definitions are both
+polymorphic values; the existing polymorphic / ambiguous-value designation
+rules decide which types they can represent and how they narrow. Those rules
+apply unchanged. Do **not** normalize distinct spellings into one definition
+for equality; do not pin equal or unequal outcomes between overload and
+match-body spellings of the same effective behavior.
+
+Specialization means applying those polymorphic-value rules at a requested
+arrow (narrower or otherwise). Failure to fit is ordinary
+`E_PATTERN_MISMATCH`; a call outside the resulting domain is `E_NO_METHOD`.
+No silent runtime fallback; no specialization-specific error code. A
+definition is checked over its **full declared domain** when defined;
+narrowing never rescues an invalid definition. Private compiler memoization
+(milestone 11) may still optimize already-defined abstract-call behavior; it
+must not invent source-visible specialization lists or change validity. See
+[FUNCTION-SPECIALIZATION.md](FUNCTION-SPECIALIZATION.md) and the illustrative
+todos in [function-specialization.md](../specs/function-specialization.md).
+
+The older “optimization only” reading of this entry, an earlier one-signature
+/ one-`match`-body normalization draft, and the exploratory overload-expansion
+account in S are superseded.
+**Sources:** Jonathan 2026-11-23 (revised same day; OMP review 2026-11-24;
+`Int` plain alias 2026-11-27); S; AR; R1/R2.
 
 A named function resolves to its closed `FunctionValue` (L12). Its parameter
 patterns and inert body use ordinary typed constructor text. All declarations
-of an overloaded name in a lexical scope contribute to its static group,
-regardless of where a use appears. A use can select one alternative by
-designation or dispatch. Binding `saved = f` captures the whole group as a
-`PolymorphicValue` with no ascription required; `f :: PolymorphicValue` remains
-an allowed explicit form. The stored value preserves direct-call dispatch and
-can pass through `Any` as a whole. Closed function equality is
-alpha-equivalence after capture-binder normalization; call-visible labels stay
-verbatim, rest capture names normalize with other binders, and capture-binder
-spelling is not observable. Expanded printing uses the same normalized `argN`
-capture binders (outer to inner by binder position), so alpha-equivalent values
-print identically. See the
+of an overloaded name in a lexical scope contribute to its static
+`PolymorphicValue` group, regardless of where a use appears. A single
+definition whose domain is already abstract is likewise a `PolymorphicValue`.
+A use can select or narrow by designation, dispatch or arrow ascription.
+Binding `saved = f` captures the polymorphic value with no ascription
+required; `f :: PolymorphicValue` remains an allowed explicit form. The stored
+value preserves direct-call dispatch and can pass through `Any` as a whole.
+Closed function equality is alpha-equivalence after capture-binder
+normalization; call-visible labels stay verbatim, rest capture names normalize
+with other binders, and capture-binder spelling is not observable. Expanded
+printing uses the same normalized `argN` capture binders (outer to inner by
+binder position), so alpha-equivalent values print identically. Ordinary value
+rules apply; there are no special printing rules for abstract-domain
+functions. See the
 [function value specification](../specs/named-function-values.md).
 
 ### D14. Interoperability follows structural descriptors — confirmed intent
@@ -577,8 +617,8 @@ rejected. These are todo checks today. `Number` is removed for now.
 | Singleton abstract unions and qualifiers narrowed to one member | **Unresolved.** Author proposed rejecting explicit singleton unions; normalization is only a reviewer recommendation. |
 | Runtime Expression *value* computation and descriptor/value comparison | **Concrete interpretation required (D03 / type-values); L12 interim bare-raw permission superseded.** Descriptor decoding/equality is separate and remains unsettled. Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
 | Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |
-| Specialization | **Deferred optimization only.** No source-visible generated overload semantics. |
-| Named functions and static overload groups | **Decided.** Closed `FunctionValue` data, static overload groups, ordinary value designation and bare capture as `PolymorphicValue` (`saved = f`; explicit `:: PolymorphicValue` still allowed). Function equality is alpha-equivalence after capture-binder normalization (call-visible labels kept; rest captures normalize); expanded printing uses the same `argN` capture binders. |
+| Specialization | **Confirmed direction (polymorphic narrowing).** Domain is abstract if any pack pattern is abstract (unions/facets/`Any`/…); `Int`/`Float` are plain aliases of `Int64`/`Float64` and are concrete. Abstract-domain functions (single def or overloads) are `PolymorphicValue`s. Specialize by ordinary polymorphic designation at a requested arrow; full-domain validity; narrowing never rescues. Mismatch `E_PATTERN_MISMATCH`; call-outside-domain `E_NO_METHOD`. Equality between distinct spellings not pinned. See [FUNCTION-SPECIALIZATION.md](FUNCTION-SPECIALIZATION.md). |
+| Named functions and static overload groups | **Decided.** Closed `FunctionValue` data, static overload groups, ordinary value designation and bare capture as `PolymorphicValue` (`saved = f`; explicit `:: PolymorphicValue` still allowed). A single abstract-domain definition is also a `PolymorphicValue` (D13). Function equality is alpha-equivalence after capture-binder normalization (call-visible labels kept; rest captures normalize); expanded printing uses the same `argN` capture binders. |
 | Numeric aliases/families, rounding edge policies and canonical spelling | **Provisional.** Do not infer these from isolated draft typos or examples. |
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
@@ -605,7 +645,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D10 evidence and refinement-qualified functions | C07–C10; C08 depends on the future static evidence checker |
 | D11 factories and binding-only defaults | C17 |
 | D12 type-valued generics / proposed family views | C05, C12, C18; no case pretends family recovery or MemberOf is settled |
-| D13 specialization and named function values | [Function value contracts](../specs/named-function-values.md) cover storage, static groups, designation, dispatch and typed text. C09/C10/C12 stay independent of specialization. |
+| D13 specialization and named function values | [Specialization note](FUNCTION-SPECIALIZATION.md) and [illustrative todos](../specs/function-specialization.md); [function value contracts](../specs/named-function-values.md) cover storage, static groups, designation, dispatch and typed text. C09/C10/C12 stay independent of specialization. |
 | D14 structural interoperability | C18, with transport law in C23 |
 | D15 captures/spreading/keyword remainders | C19–C22; new spread/rest surface mechanics explicitly proposed |
 | D16 constructedBy deferral | No active or pending expected-result case selects a semantics |
