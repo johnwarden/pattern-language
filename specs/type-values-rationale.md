@@ -691,9 +691,15 @@ scrutinee) has the same behavior as a call to one local overloaded function:
     f(x)
 
 A trailing `else` corresponds to one `Remaining` overload for values of `T`
-outside the peer arms. Bind a function result before matching it. If the call
-returns several values, match one of the bound locals. An abstract-union
-match lists exactly the declared alternatives, one per arm. Peer arms keep `->`. See
+outside the peer arms. Bind a multi-valued call result before matching
+(`E_MATCH_CALL_SUBJECT`) so arms compare that value's static type.
+Single-result calls may be matched directly. An UpperCamel head is a
+constructor designator, never evaluated as a function call, so it is not a
+call subject
+([#110](https://github.com/johnwarden/pattern-language/pull/110) elaborates
+that rule). An abstract-union match lists exactly the declared alternatives,
+one per arm.
+Peer arms keep `->`. See
 [MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md) and
 [Match arm domains](type-values.md#match-arm-domains). The
 [Reading example](type-values.md#overload-domains-and-projection-dispatch)
