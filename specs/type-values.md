@@ -208,11 +208,6 @@ todo test "Int64 and Struct(Int64) compare unequal through Type"
   (y :: Type) = Struct(Int64)
   assert not(x === y)
 end
-
-todo test "=== diverges from == once exact identity is stricter than structural equality"
-  # Parked until === is stricter than ==. Replace with a real divergence pair then.
-  assert True === False
-end
 ```
 
 Once fixed formats are prelude definitions, both values in this example have

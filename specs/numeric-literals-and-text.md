@@ -145,6 +145,13 @@ test "Exact complex arithmetic stores both coefficients and rejects ordering"
   assert (value - value) == 0
   expect value < 2 fails "E_INCOMPARABLE_TYPES"
 end
+
+test "Exact equality compares complex NumericValues without ordering"
+  assert (1+2i) === (1+2i)
+  assert not((1+2i) !== (1+2i))
+  assert (1+2i) == (1+2i)
+  expect (1+2i) < (1+2i) fails "E_INCOMPARABLE_TYPES"
+end
 ```
 
 ## Canonical NumericValue text

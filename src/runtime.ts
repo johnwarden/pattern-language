@@ -953,7 +953,12 @@ export class Interpreter {
       scope.bindings.set(
         name,
         this.native(name, [1, 1], ([a, b]) => {
-          if (name !== "==" && name !== "!=") {
+          if (
+            name !== "==" &&
+            name !== "!=" &&
+            name !== "===" &&
+            name !== "!=="
+          ) {
             const left = asNumeric(a),
               right = asNumeric(b);
             if ((left && !isRational(left)) || (right && !isRational(right)))
