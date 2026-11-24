@@ -1,6 +1,6 @@
 test "Concrete type declaration syntax"
   type Color concrete :Black | :White
 
-  expect Color is Type(:Black | :White) :: Type
+  expect Color is Struct(:Black | :White) :: Type
   expect :Black :: Color is Black :: Color
 end

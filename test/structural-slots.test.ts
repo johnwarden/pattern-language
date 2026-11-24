@@ -192,7 +192,7 @@ test("open type patterns are abstract facets and preserve the complete concrete 
       full +
         "(p :: Rectangular) = r\n(p,p.w,p.h,p == r,toString(Rectangular)(p))",
     ),
-    '(Rect(2, 3, color: "black"), 2, 3, True, "Rect(2, 3, color: \\"black\\") :: Type(Rect(Float, Float, color: String))")',
+    '(Rect(2, 3, color: "black"), 2, 3, True, "Rect(2, 3, color: \\"black\\") :: Struct(Rect(Float, Float, color: String))")',
   );
   rejects(
     'def Rectangular type :Rect(w :: Float,h :: Float,**)\n(p :: Rectangular) = Rect(2,3,color: "black")\np',
@@ -233,7 +233,7 @@ test("concrete Type cannot disguise an open constraint", () => {
   assert.throws(
     () =>
       run(
-        "Type(Apply(:R,OpenFields(Fields(Int),labels: True,positional: False)))",
+        "Struct(Apply(:R,OpenFields(Fields(Int),labels: True,positional: False)))",
       ),
     /Facet/,
   );
@@ -309,7 +309,7 @@ test("serialized abstract fields require concrete tags through facets and Any", 
 
 test("named repetition cannot be smuggled through a portable field description", () => {
   assert.throws(
-    () => run("Type(R(x: Repeat(Int)))"),
+    () => run("Struct(R(x: Repeat(Int)))"),
     /invalid type-description shape/,
   );
 });
@@ -325,7 +325,7 @@ test("REPL inspection retains abstract field metadata in otherwise concrete valu
 test("Facet construction normalizes root type aliases without creating a concrete space", () => {
   assert.equal(
     run(
-      "a = Facet(type :R(Int))\nb = Facet(:(Type(R(Int))))\n(a == b,parse(Type)(toString(Type)(a)) == a)",
+      "a = Facet(type :R(Int))\nb = Facet(:(Struct(R(Int))))\n(a == b,parse(Type)(toString(Type)(a)) == a)",
     ),
     "(True, True)",
   );
@@ -339,7 +339,7 @@ test("Facet root normalization is independent of caches and source accessor meta
     "(True, True)",
   );
   rejects(
-    "a = type :R(Int,**)\nb = Type(Expression$` Type($(a)))\nR(1) :: b",
+    "a = type :R(Int,**)\nb = Struct(Expression$` Struct($(a)))\nR(1) :: b",
     "E_ABSTRACT_ASCRIPTION",
   );
 });

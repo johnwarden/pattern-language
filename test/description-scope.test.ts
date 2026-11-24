@@ -64,7 +64,7 @@ test("untyped type captures require inference rather than implying Any", () => {
   assert.equal(run("match Foo(1)\n  Foo(x) -> x\nend"), "1");
   assert.equal(
     run("def Rectangle type :Rect(w :: Float,h :: Float)\ntype Rectangle"),
-    "Type(Rect(Float, Float))",
+    "Struct(Rect(Float, Float))",
   );
   assert.equal(
     run(
@@ -76,7 +76,7 @@ test("untyped type captures require inference rather than implying Any", () => {
     run("t = type :Box(Any)\nparse(Type)(toString(Type)(t)) == t"),
     "True",
   );
-  for (const source of ["Type(:_)", 'parse(Type)("Type(Foo(_))")'])
+  for (const source of ["Struct(:_)", 'parse(Type)("Struct(Foo(_))")'])
     assert.throws(() => run(source), /invalid type-description shape/);
   // These names no longer carry capture-slot semantics.
   assert.equal(run("t = type :Bind(Int,Int)\nBind(0,1) .matches t"), "True");
@@ -85,29 +85,34 @@ test("untyped type captures require inference rather than implying Any", () => {
 test("recursive indexes skip ordinary type scopes and select the intended binder", () => {
   assert.equal(
     run(
-      "t = Type(:(Recursive(Box(Type(Recursive(Pair(Recur(0),Recur(1))))))))\nparse(Type)(toString(Type)(t)) == t",
+      "t = Struct(:(Recursive(Box(Struct(Recursive(Pair(Recur(0),Recur(1))))))))\nparse(Type)(toString(Type)(t)) == t",
     ),
     "True",
   );
   for (const source of [
-    "Type(:(Recur(0)))",
-    "Type(:(Recursive(Box(Type(Recur(1))))))",
-    "Type(:(Recursive(Box(Type(Recursive(Pair(Recur(0),Recur(2))))))))",
+    "Struct(:(Recur(0)))",
+    "Struct(:(Recursive(Box(Struct(Recur(1))))))",
+    "Struct(:(Recursive(Box(Struct(Recursive(Pair(Recur(0),Recur(2))))))))",
   ])
     assert.throws(() => run(source), /outside its binder/);
 });
 
 test("scope failures report a descriptor path and source location", () => {
   assert.throws(
-    () => run("Type(:(Outer(Type(Inner(Recur(3))))))"),
+    () => run("Struct(:(Outer(Struct(Inner(Recur(3))))))"),
     (error: unknown) => {
       assert(error instanceof LanguageError);
       assert.equal(error.diagnostic.code, "E_TYPE_DESCRIPTION");
-      assert.deepEqual(error.diagnostic.path, ["Type", "_1", "Type", "_1"]);
+      assert.deepEqual(error.diagnostic.path, [
+        "Struct",
+        "_1",
+        "Struct",
+        "_1",
+      ]);
       assert.equal(error.diagnostic.primary?.line, 1);
       assert.match(
         renderDiagnostic(error),
-        /In type description: Type → _1 → Type → _1/,
+        /In type description: Struct → _1 → Struct → _1/,
       );
       return true;
     },

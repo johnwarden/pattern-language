@@ -62,7 +62,7 @@ field, the arm `Reading(Int)` selects instances whose field holds an
 `Int`.
 
 ```pattern
-todo test "A match sees the concrete member stored in an abstract field"
+test "A match sees the concrete member stored in an abstract field"
   type Reading struct Reading(value :: (Int | Float))
 
   def kind(r :: Reading)
@@ -83,7 +83,7 @@ union inside one constructor pattern. The second has a union of two
 constructor patterns.
 
 ```pattern
-todo test "A field union and a union of shapes have distinct descriptors"
+test "A field union and a union of shapes have distinct descriptors"
   fieldUnion = pattern Reading(Int | Float)
   shapeUnion = pattern Reading(Int) | Reading(Float)
   assert fieldUnion !== shapeUnion
@@ -196,9 +196,11 @@ to the bootstrap. Quoting a self-evaluating type name or Boolean literal
 name in executable source raises `E_QUOTED_PRIMITIVE`. The Code reader
 preserves that source spelling.
 
-Exact equality uses the ordinary rule for overlapping static domains. `Int64`
-and `Struct(Int64)` describe different concrete value spaces. The abstract
-bindings below admit both descriptors, so the comparison returns `False`:
+Exact equality uses the ordinary rule for overlapping static domains. Bootstrap
+`===` / `!==` currently share the same implementation as `==` / `!=`; they do
+not yet check a stricter identity. `Int64` and `Struct(Int64)` describe
+different concrete value spaces. The abstract bindings below admit both
+descriptors, so the comparison returns `False`:
 
 ```pattern
 todo test "Int64 and Struct(Int64) compare unequal through Type"
@@ -230,7 +232,7 @@ An ordinary match can extract the field and use it to construct another
 descriptor.
 
 ```pattern
-todo test "Descriptor inspection binds the typed pattern field"
+test "Descriptor inspection binds the typed pattern field"
   t = Struct(Rect(Int))
   copy = match t
     Struct(p) -> Struct(p)
@@ -304,11 +306,11 @@ both. The reconstructed type must equal an independently constructed
 independently constructed box, and both must print back to the same text.
 
 Supporting destination identity, plain-construction accessor locality, and
-same-process interop are the todos below (and matching cases in
+same-process interop are the live cases below (and matching cases in
 [declarations.test](../tests/specification/declarations.test)).
 
 ```pattern
-todo test "5a.2 acceptance: BoxedText type and value travel as printed text"
+test "5a.2 acceptance: BoxedText type and value travel as printed text"
   (typeText, valueText) = (
     type BoxedText struct Box(value :: String)
     box = Box("hello") :: BoxedText
@@ -324,7 +326,7 @@ todo test "5a.2 acceptance: BoxedText type and value travel as printed text"
   expect box.value fails "E_UNBOUND_NAME"
 end
 
-todo test "5a.2 acceptance: BoxedText equals capture-free struct Box(String)"
+test "5a.2 acceptance: BoxedText equals capture-free struct Box(String)"
   type BoxedText struct Box(value :: String)
   plain = struct Box(String)
   assert BoxedText === plain
@@ -333,7 +335,7 @@ todo test "5a.2 acceptance: BoxedText equals capture-free struct Box(String)"
   assert box.value == "hello"
 end
 
-todo test "5a.2 acceptance: plain struct construction installs no accessor"
+test "5a.2 acceptance: plain struct construction installs no accessor"
   plain = struct Box(String)
   (box :: plain) = Box("hello")
   expect box.value fails "E_UNBOUND_NAME"
@@ -343,7 +345,7 @@ todo test "5a.2 acceptance: plain struct construction installs no accessor"
   fails "E_PLAIN_TYPE_CAPTURE"
 end
 
-todo test "5a.2 acceptance: independently named boxes interoperate in-process"
+test "5a.2 acceptance: independently named boxes interoperate in-process"
   produced = (
     type BoxedText struct Box(value :: String)
     Box("hello") :: BoxedText
@@ -381,8 +383,16 @@ respective orders. Equality compares exact descriptors without normalizing
 the operands or testing extensional equivalence. Compiled matchers,
 accessors, aliases, allocation identities and construction history do not
 participate. A policy requiring normal form can be considered separately.
+Bootstrap `Type(...)` remains recognized as a constructor and in parseable
+text; it rewrites to the same descriptor as `Struct(...)`.
 
 ```pattern
+test "Bootstrap Type(...) constructors and text still rewrite to Struct(...)"
+  assert Type(Rect(Int)) === Struct(Rect(Int))
+  assert parse(Type)("Type(Rect(Int))") === Struct(Rect(Int))
+  expect toString(Type)(Type(Int)) is "Struct(Int)" :: String
+end
+
 todo test "Macros normalize alternatives and direct descriptors preserve them"
   normal = struct Int | Int
   repeated = Struct(Int | Int)
@@ -496,9 +506,16 @@ type. Refinement requirements in either overload use existing evidence.
 
 ### Match arm domains
 
-A `match` takes exactly one unlabeled value. Bind a multi-value or labeled
-result pack to local variables before matching one of them. An arm may
-inspect the fields of a constructed value.
+A `match` takes exactly one unlabeled value. A call whose result can be
+more than one value — a function or overload group whose possible results
+span more than one type or arm — must be bound to a local before matching;
+a direct multi-valued call subject raises `E_MATCH_CALL_SUBJECT`. Binding
+names the value whose static type the arms compare. Single-result calls
+and operator calls with a single result type may be matched directly. An
+UpperCamel head is a constructor designator, never evaluated as a function
+call, so it is not a call subject
+([#110](https://github.com/johnwarden/pattern-language/pull/110) elaborates
+that rule).
 
 Peer arms must be pairwise disjoint. The checker verifies that rule during
 elaboration, when it resolves the scrutinee type and arm patterns. It checks
@@ -509,9 +526,10 @@ ordered first-match. Overlap raises `E_OVERLAPPING_MATCH_ARMS`. See
 The admitted scrutinee domain is the set of values the scrutinee's static
 type permits at that match. Compare the arms on that same set of original
 inputs, counting the one-boundary projection allowed by `match`. Overlap
-outside that input domain is irrelevant. For an `Int | String` scrutinee,
-the arms annotated with `Int | Bool` and `String | Bool` cover separate
-alternatives because the input domain excludes `Bool`.
+outside that input domain is irrelevant to disjointness. For an `Int`
+scrutinee, arms annotated with `Int | Bool` and `String | Bool` do not
+overlap because the input domain excludes `Bool` and `String`. Abstract
+unions also require the arms to match their declared alternatives exactly.
 
 An `Outer` whose immediate member is `Inner` can reach an `Outer` arm as a
 whole or an `Inner` arm through projection. Both arms accept the same input.
@@ -537,9 +555,11 @@ missing evidence or fall through to `else`. For ordered predicate checks, put
 [refinement evidence](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
 
 When the scrutinee's static type is an abstract union, require one explicit
-peer arm covering each whole alternative within that type. An alternative may
-itself be concrete or abstract. A parameter with static type `Int | String`
-requires both arms. A scrutinee with static type `Int` is covered by an
+peer arm for each declared alternative and no additional arms. Each arm's
+domain must equal its alternative before restricting the arm to the scrutinee.
+An alternative may itself be concrete or abstract. For `Int | String`, the
+arms are `Int` and `String` in either order. Adding `Bool` to an arm or as a
+third arm is an error. A scrutinee with static type `Int` is covered by an
 `Int` arm. The peer domains must also satisfy the disjointness rule. For
 example, the alternatives of `Any | Int` cannot each have a peer arm, since
 both would accept the same Int values.
@@ -695,21 +715,41 @@ test "An abstract-union match covers each declared alternative"
   fails "non-exhaustive match"
 end
 
-test "Overlap outside the scrutinee type does not make two arms overlap"
+test "An abstract union rejects wider and additional arms"
   type Input abstract Int | String
   type Left abstract Int | Bool
   type Right abstract String | Bool
-  def classify(v :: Input)
+  (v :: Input) = 3 :: Int
+  todo expect
     match v
       (i :: Left) -> "int"
       (s :: Right) -> "string"
     end
-  end
-  expect classify(3 :: Int) is "int"
-  expect classify("hello") is "string"
+  fails "declared alternative"
+  todo expect
+    match v
+      (i :: Int) -> "int"
+      (s :: String) -> "string"
+      (b :: Bool) -> "bool"
+    end
+  fails "declared alternative"
 end
 
-todo test "An abstract union can have an abstract alternative with its own arm"
+# Non-abstract Int scrutinee: Left/Right overlap only on Bool, outside the
+# input domain, so the arms are disjoint for this match.
+test "Overlap outside the scrutinee type does not make two arms overlap"
+  type Left abstract Int | Bool
+  type Right abstract String | Bool
+  n = 3 :: Int
+  expect
+    match n
+      (i :: Left) -> "int"
+      (s :: Right) -> "string"
+    end
+  is "int"
+end
+
+test "An abstract union can have an abstract alternative with its own arm"
   type Tagged pattern Box(Int)
   type IntBox struct Box(Int)
   type Input pattern Tagged | String
@@ -764,6 +804,23 @@ todo test "An else arm is rejected unless it is last"
   fails "E_OVERLAPPING_MATCH_ARMS"
 end
 
+test "A constructor designator may be matched without binding first"
+  expect
+    match Box(3 :: Int)
+      Box(n :: Int) -> n
+    end
+  is 3 :: Int
+end
+
+test "A single-result call may be matched directly"
+  def one() 1 :: Int
+  expect
+    match one()
+      (i :: Int) -> i
+    end
+  is 1 :: Int
+end
+
 test "Bind positional results before matching one value"
   def pair()
     (1, 2)
@@ -776,9 +833,10 @@ test "Bind positional results before matching one value"
   is 2
   todo expect
     match pair()
-      (a, b) -> "pair"
+      (a :: String, b :: String) -> "strings"
+      else -> "other"
     end
-  fails "match requires exactly one unlabeled value"
+  fails "E_MATCH_CALL_SUBJECT"
 end
 
 test "Bind labeled results before matching one value"
@@ -795,7 +853,7 @@ test "Bind labeled results before matching one value"
     match labeled()
       (x: a, y: b) -> "labeled"
     end
-  fails "match requires exactly one unlabeled value"
+  fails "E_MATCH_CALL_SUBJECT"
 end
 ```
 

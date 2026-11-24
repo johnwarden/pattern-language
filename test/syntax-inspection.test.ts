@@ -127,18 +127,18 @@ test("a typed Code binding is inspected through its syntaxTree without evaluatio
     "def Binding Code .where e -> isBinding(e)",
     "",
     "code = Code` f = x -> x * 2",
-    "(patternText, bodyText) =",
+    "(lhsText, bodyText) =",
     "  match code",
     "    (binding :: Binding) ->",
     "      Apply(Apply(_, left), right) = syntaxTree(binding)",
-    '      [Field("_1", pattern)] = left',
+    '      [Field("_1", lhs)] = left',
     '      [Field("_1", value)] = right',
-    "      (toString(Code)(Code(syntaxExpression(pattern))), toString(Code)(Code(syntaxExpression(value))))",
+    "      (toString(Code)(Code(syntaxExpression(lhs))), toString(Code)(Code(syntaxExpression(value))))",
     "    end",
     '    _ -> panic("Expected a binding")',
     "  end",
     "end",
-    "(patternText, bodyText)",
+    "(lhsText, bodyText)",
   ].join("\n");
   assert.equal(run(source), '("f", "x -> x * 2")');
 });

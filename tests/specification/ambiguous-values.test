@@ -213,8 +213,8 @@ test "Recursive member suggestions use writable descriptor expressions"
   def IntList type :Nil | :Cons(Int, IntList)
   def FloatList type :Nil | :Cons(Float, FloatList)
   u = abstract IntList | FloatList
-  expect :Nil .matches u fails ":Nil :: Type(:(Recursive(:Nil | Cons(Float, Recur(0)))))"
-  assert (:Nil :: Type(:(Recursive(:Nil | Cons(Float, Recur(0)))))) .matches u
+  expect :Nil .matches u fails ":Nil :: Struct(:(Recursive(:Nil | Cons(Float, Recur(0)))))"
+  assert (:Nil :: Struct(:(Recursive(:Nil | Cons(Float, Recur(0)))))) .matches u
 end
 
 test "A recursive suggestion preserves binders across nested types"
@@ -222,8 +222,8 @@ test "A recursive suggestion preserves binders across nested types"
   def B type :Empty | :Some(A)
   other = type :Leaf | :Other
   u = abstract A | other
-  expect :Leaf .matches u fails ":Leaf :: Type(:(Recursive(:Leaf | Node(Type(:Empty | Some(Recur(0)))))))"
-  assert (:Leaf :: Type(:(Recursive(:Leaf | Node(Type(:Empty | Some(Recur(0)))))))) .matches u
+  expect :Leaf .matches u fails ":Leaf :: Struct(:(Recursive(:Leaf | Node(Struct(:Empty | Some(Recur(0)))))))"
+  assert (:Leaf :: Struct(:(Recursive(:Leaf | Node(Struct(:Empty | Some(Recur(0)))))))) .matches u
 end
 
 test "An abstract member with no disambiguating ascription uses the count"
@@ -357,9 +357,9 @@ test "Literal designation checks refinements nested in lists, options and constr
   def f(x :: list) x
   g = (x :: option) -> x
   def h(x :: box) x
-  expect toString(list)(f([3])) is "[3] :: Type([Repeat(Float)])" :: String
-  expect toString(option)(g(3)) is "3 :: Type(Float | :None)" :: String
-  expect toString(box)(h(Box(3))) is "Box(3) :: Type(Box(Float))" :: String
+  expect toString(list)(f([3])) is "[3] :: Struct([Repeat(Float)])" :: String
+  expect toString(option)(g(3)) is "3 :: Struct(Float | :None)" :: String
+  expect toString(box)(h(Box(3))) is "Box(3) :: Struct(Box(Float))" :: String
   expect [7] .matches list fails "2 interpretations match"
   expect 7 .matches option fails "2 interpretations match"
 end

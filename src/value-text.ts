@@ -29,7 +29,7 @@ import {
   numericFromSyntax,
 } from "./values.ts";
 import { typeIdentity } from "./type-descriptor.ts";
-import { typeData, typeDescription, sym, lit } from "./type-data.ts";
+import { typeData, typeDescription, wrapType, sym, lit } from "./type-data.ts";
 import { isInfixApplication } from "./application-format.ts";
 import { infixPunctuation } from "./lexical.ts";
 
@@ -42,6 +42,7 @@ function quoteValueSymbol(name: string, expected?: TypeValue): boolean {
 }
 const reserved = new Set([
   "Type",
+  "Struct",
   "UnionType",
   "Facet",
   "**",
@@ -344,7 +345,7 @@ export function valueText(
       if (
         domain &&
         h.kind === "symbol" &&
-        ["Type", "UnionType", "Facet"].includes(h.name)
+        ["Type", "Struct", "UnionType", "Facet"].includes(h.name)
       ) {
         try {
           const decoded = domain.type(v);
@@ -443,19 +444,7 @@ export function valueText(
                     ],
                   }
                 : typeDescription(t, domain.localReferences);
-            return (description.kind === "symbol" &&
-              primitiveNames.has(description.name)) ||
-              (description.kind === "term" &&
-                description.head.kind === "symbol" &&
-                ["Type", "UnionType", "Facet", "TreeGrammar"].includes(
-                  description.head.name,
-                ))
-              ? description
-              : {
-                  kind: "term" as const,
-                  head: sym("Type"),
-                  body: [{ label: "_1", value: description }],
-                };
+            return wrapType(description);
           })()
         : typeData(t);
     } catch (error) {
@@ -613,7 +602,7 @@ export function typeExpressionText(type: TypeValue): string {
       if (
         description.kind !== "term" ||
         description.head.kind !== "symbol" ||
-        description.head.name !== "Type" ||
+        !["Type", "Struct"].includes(description.head.name) ||
         description.body.length !== 1 ||
         description.body[0].value.kind !== "term"
       )
@@ -621,7 +610,7 @@ export function typeExpressionText(type: TypeValue): string {
       // Read the descriptor as data. This preserves recursive binders and
       // avoids calling a constructor with the same name in the author's scope.
       return apply(
-        symbol("Type"),
+        symbol("Struct"),
         packOf({
           kind: "quote",
           value: descriptionSyntax(
@@ -635,7 +624,7 @@ export function typeExpressionText(type: TypeValue): string {
   const sugared =
     encoded.kind === "term" &&
     encoded.head.kind === "symbol" &&
-    encoded.head.name === "Type" &&
+    ["Type", "Struct"].includes(encoded.head.name) &&
     encoded.body.length === 1
       ? sugar(encoded.body[0].value, expression)
       : undefined;
@@ -856,18 +845,22 @@ export function parseValueText(
             })),
           });
         }
-        if (n.head.name === "Type" || n.head.name === "Facet")
-          return n.head.name === "Type"
+        if (
+          n.head.name === "Type" ||
+          n.head.name === "Struct" ||
+          n.head.name === "Facet"
+        )
+          return n.head.name === "Facet"
             ? domain.type({
                 kind: "term",
-                head: sym("Type"),
+                head: sym("Facet"),
                 body: [
                   { label: "_1", value: decode(positional(n, 1)[0], true) },
                 ],
               })
             : domain.type({
                 kind: "term",
-                head: sym("Facet"),
+                head: sym("Struct"),
                 body: [
                   { label: "_1", value: decode(positional(n, 1)[0], true) },
                 ],

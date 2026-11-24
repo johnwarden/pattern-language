@@ -6,8 +6,12 @@ def Definition type :def signature :: Signature body :: Body
 def TypeExpression type :type pattern :: PatternBody
 def ConcreteTypeDeclaration type :type signature :: Signature :concrete pattern :: PatternBody
 def AbstractTypeDeclaration type :type signature :: Signature :abstract pattern :: PatternBody
+def StructTypeDeclaration type :type signature :: Signature :struct pattern :: PatternBody
+def PatternTypeDeclaration type :type signature :: Signature :pattern pattern :: PatternBody
 def ConcreteTypeExpression type :concrete pattern :: PatternBody
 def AbstractTypeExpression type :abstract pattern :: PatternBody
+def StructTypeExpression type :struct pattern :: PatternBody
+def PatternTypeExpression type :pattern pattern :: PatternBody
 def UnionTypeExpression type :unionType pattern :: PatternBody
 def IfExpression type :if condition :: Expression consequent :: Body :else alternative :: Body
 def MatchExpression type :match subject :: Expression arms :: Arms

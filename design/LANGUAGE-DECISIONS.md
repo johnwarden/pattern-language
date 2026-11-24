@@ -496,10 +496,10 @@ for quoted primitive names.
 Every symbol prints bare in value text, with no special cases:
 `toString(Color)(:Black)` is `"Black"` and `None` in `String?` prints `None`.
 Code keeps `:` where a bare name would bind: `a = :None :: Int?`,
-`Type(:None | String)`, `toString(Expression)(:foo)`. Value text is read with the
+`Struct(:None | String)`, `toString(Expression)(:foo)`. Value text is read with the
 expected type's grammar, so `test` or `expect` are keywords only where that
 grammar makes them so. Union `::` tags still follow D07: `None` in `Float??`
-prints `None`, while the inner member prints `None :: Type(Float | :None)`.
+prints `None`, while the inner member prints `None :: Struct(Float | :None)`.
 **Sources:** L9.
 
 ### D20. Primitive names are ReservedSymbol values — confirmed 9 November 2026
@@ -545,7 +545,7 @@ expect :Int fails "E_QUOTED_PRIMITIVE"
 expect :True fails "E_QUOTED_PRIMITIVE"
 expect Int == :Int fails "E_QUOTED_PRIMITIVE"
 expect type :String(:A) fails "E_QUOTED_PRIMITIVE"
-assert (type String(:A)) == Type(Apply(Literal(String), Fields(:A)))
+assert (type String(:A)) == Struct(Apply(Literal(String), Fields(:A)))
 expect :(Int) is Int :: Expression
 expect parse(Code)(":Int") is :Int :: Code
 ```

@@ -75,14 +75,23 @@ parameters, arms, macros and grammar interpretation. Context policies are explic
   unless open. Bare ... ignores extra positions; bare ** ignores extra labels.
 - Positional rests collect positions only; required labels must exist unless a
   binding default supplies a capture. Defaults never complete a type/value.
-- A match takes one unlabeled value. Bind a result pack to locals before
-  matching one of its values. Peer arms pair patterns with expressions using
-  `->`. At elaboration, check that their domains are disjoint over the
-  scrutinee’s static type, including permitted projection. Overlap is
-  `E_OVERLAPPING_MATCH_ARMS`. A match on an abstract union has an explicit arm
-  for each complete alternative, concrete or abstract. At most one trailing
-  `else` covers the residual values. The bootstrap still uses ordered matching.
-  See [MATCH-DISJOINTNESS](design/MATCH-DISJOINTNESS.md).
+- A match takes one unlabeled value. Bind a multi-valued call result (a
+  function or overload group whose possible results span more than one type
+  or arm) to a local before matching, so arm domains compare against that
+  value's static type; a direct multi-valued call subject is
+  `E_MATCH_CALL_SUBJECT`. Single-result calls and operator calls with a
+  single result type may be matched directly. An UpperCamel head is a
+  constructor designator, never evaluated as a function call, so it is not
+  a call subject
+  ([#110](https://github.com/johnwarden/pattern-language/pull/110) elaborates
+  that rule). Peer arms pair patterns with expressions using `->`. At
+  elaboration, check that their domains are disjoint over the scrutinee’s
+  static type, including permitted projection. Overlap is
+  `E_OVERLAPPING_MATCH_ARMS`. A match on an abstract union has an explicit
+  arm matching each declared alternative exactly, with no additional arms.
+  At most one trailing `else` covers the residual values. The bootstrap
+  still uses ordered matching. See
+  [MATCH-DISJOINTNESS](design/MATCH-DISJOINTNESS.md).
 - Union binding patterns are disallowed in function signatures and match arms.
   Separate arms or definitions may share a capture name. Union types remain valid
   in annotations. Check peer disjointness with predicates erased. A selected
@@ -109,6 +118,13 @@ concrete/refinement/abstract expressions produce values without installing captu
 Their exact keywords, qualifier order and angle-parameter sugar remain provisional.
 Do not implement an ad-hoc parser exception for a semantic requirement: grammar forms
 must remain ordinary tree patterns or an explicitly documented bootstrap seed.
+`struct` and `pattern` are sideform macros, like `def` and `if`: recognized only
+where the surface is unambiguous (spaced operands). They are not reserved words, so
+`def struct(x) …` / `struct(…)` and `def pattern(x) …` / `pattern(…)` are ordinary
+calls. Separately, `Struct` is a reserved **descriptor head** (with `Type`, `Facet`,
+`UnionType`, and the other portable kind constructors); a user term headed
+`Struct(...)` is not an ordinary constructor value. Bootstrap `Type(...)` still
+constructs and parses, and prints as `Struct(...)`.
 
 Raw structured expressions are allowed at runtime for now. An annotation, typed
 quote or sufficient expected context can give that expression a concrete

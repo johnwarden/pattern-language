@@ -101,7 +101,7 @@ test("recursive and parameterized types travel to a fresh interpreter as finite 
     i,
     "def List(t :: Type) type :Nil | :Cons(t,List(t))\ntoString(Type)(type List(Int))",
   );
-  assert.equal(text, "Type(Recursive(:Nil | Cons(Int, Recur(0))))");
+  assert.equal(text, "Struct(Recursive(:Nil | Cons(Int, Recur(0))))");
   const j = transfer(text);
   assert.equal(
     displayResults(
@@ -123,7 +123,7 @@ test("recursive and parameterized types travel to a fresh interpreter as finite 
 test("postfix type descriptions round-trip inhabitants across interpreters", () => {
   const i = new Interpreter();
   const text = stringResult(i, "def T type (Int)@\ntoString(Type)(T)");
-  assert.equal(text, "Type(Postfix(:@, Int))");
+  assert.equal(text, "Struct(Postfix(:@, Int))");
   assert.equal(
     displayResults(
       i.run(
@@ -169,7 +169,7 @@ test("primitive, union, list, labeled and capture-free type descriptions round t
     ":(Recursive(Int))",
     ":Literal(Int)",
     "Float64(Int)",
-    "Type(Int)",
+    "Struct(Int)",
   ]) {
     assert.equal(
       run(`t = type (${pattern})
@@ -293,7 +293,7 @@ test("nested recursive boundaries retain references to enclosing binders", () =>
     first,
     "def Tree type :Leaf(Int) | :Branch([_... :: Tree*])\ntoString(Type)(type Tree)",
   );
-  assert.equal(text, "Type(Recursive(Branch([Repeat(Recur(0))]) | Leaf(Int)))");
+  assert.equal(text, "Struct(Recursive(Branch([Repeat(Recur(0))]) | Leaf(Int)))");
   const second = transfer(text);
   assert.equal(
     displayResults(
@@ -311,7 +311,7 @@ test("singleton types include arbitrary strings and negative numbers", () => {
     i.env.bindings.set("value", valLiteral(value));
     assert.equal(
       displayResults(
-        i.run("t = Type(value)\nparse(Type)(toString(Type)(t)) == t"),
+        i.run("t = Struct(value)\nparse(Type)(toString(Type)(t)) == t"),
       ),
       "True",
     );
@@ -331,7 +331,7 @@ test("generic parse and print factories support whole-pack partial application",
   );
   assert.equal(
     run("t = type :Rect(Int,String)\nCode$` $t"),
-    "Type(Rect(Int, String))",
+    "Struct(Rect(Int, String))",
   );
 });
 
@@ -364,7 +364,7 @@ test("postfix values can be type-factory arguments", () => {
     i,
     "def Box(x) type :Box(x)\ntoString(Type)(Box(1@))",
   );
-  assert.equal(text, "Type(Box(Postfix(:@, 1)))");
+  assert.equal(text, "Struct(Box(Postfix(:@, 1)))");
   assert.equal(
     displayResults(
       i.run(
@@ -425,7 +425,7 @@ test("nested portable type descriptions survive schema validation and round trip
   assert.equal(
     displayResults(
       new Interpreter().run(
-        "t = Type(:(" + pattern + "))\nparse(Type)(toString(Type)(t)) == t",
+        "t = Struct(:(" + pattern + "))\nparse(Type)(toString(Type)(t)) == t",
       ),
     ),
     "True",
@@ -820,7 +820,7 @@ test("facet descriptions are ordinary reconstructible values", () => {
   assert.equal(
     run(
       full +
-        "t = type Rectangular\nu = parse(Type)(toString(Type)(t))\nFacet(pattern) = t\n(t == u,Facet(pattern) == t)",
+        "t = type Rectangular\nu = parse(Type)(toString(Type)(t))\nFacet(body) = t\n(t == u,Facet(body) == t)",
     ),
     "(True, True)",
   );
@@ -859,7 +859,7 @@ test("type-description grammar is a structural facet over cached and reconstruct
 // From test/value-representation.test.ts
 
 test("equal trees have equal global text regardless of compiled caches", () => {
-  for (const expression of ["Type(Rect(Float))", "UnionType(Int,String)"]) {
+  for (const expression of ["Struct(Rect(Float))", "UnionType(Int,String)"]) {
     assert.equal(
       run(
         "a = " +
@@ -885,7 +885,7 @@ test("ordinary type trees work in type positions without a preexisting matcher",
     "(True, True, True)",
   );
   assert.equal(
-    run("def factory() :(Type(Rect(Int)))\ndef R factory()\nRect(3) :: R"),
+    run("def factory() :(Struct(Rect(Int)))\ndef R factory()\nRect(3) :: R"),
     "Rect(3)",
   );
   assert.equal(run("t = Int\nr = t .where (n -> n > (0 :: Int))\n1 :: r"), "1");
@@ -913,17 +913,17 @@ test("invalid type-shaped data is not compiled or silently normalized by matchin
 
 // From test/type-atoms.test.ts
 
-test("explicit Type(Int) preserves its distinct ordinary value tree", () => {
+test("explicit Struct(Int) preserves its distinct ordinary value tree", () => {
   assert.equal(
-    run("(Type(Int),Type(Int) == Int,Type(Type(Int)) == Type(Int))"),
-    "(Type(Int), False, True)",
+    run("(Struct(Int),Struct(Int) == Int,Struct(Struct(Int)) == Struct(Int))"),
+    "(Struct(Int), False, True)",
   );
   assert.equal(
-    run("t = Type(Int)\nparse(Type)(toString(Type)(t)) == t"),
+    run("t = Struct(Int)\nparse(Type)(toString(Type)(t)) == t"),
     "True",
   );
   assert.equal(
-    run("t = Type(Box(Type(Int)))\nparse(Type)(toString(Type)(t)) == t"),
+    run("t = Struct(Box(Struct(Int)))\nparse(Type)(toString(Type)(t)) == t"),
     "True",
   );
 });
@@ -975,7 +975,7 @@ test("factory defaults and type descriptions remain separate ordinary values", (
     run(
       'def Rectangle type :Rect(w :: Int,h :: Int,color: String)\ndef rectangle(w :: Int,h :: Int,color: String = "black") Rect(w,h,color: color) :: Rectangle\nt = type Rectangle\n(toString(Type)(t),parse(Type)(toString(Type)(t)) == t)',
     ),
-    '("Type(Rect(Int, Int, color: String))", True)',
+    '("Struct(Rect(Int, Int, color: String))", True)',
   );
 });
 

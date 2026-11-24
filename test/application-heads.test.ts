@@ -59,7 +59,7 @@ test("raw Expression heads continue as data while actual functions call", () => 
     ["raw(2)", "Tag(1)(2)"],
     ["Tag(1)(2)", "Tag(1)(2)"],
     ["1 .Plus 2", "Plus(1)(2)"],
-    ["Type(String)", "Type(String)"],
+    ["Struct(String)", "Struct(String)"],
     ["String([65])", '"A"'],
   ]) {
     assert.equal(

@@ -61,15 +61,15 @@ test("type unions flatten, deduplicate, and have order independent canonical tex
 });
 
 test("concrete pattern unions remain distinct from abstract type unions", () => {
-  assert.equal(run("type Int | String"), "Type(Int | String)");
+  assert.equal(run("type Int | String"), "Struct(Int | String)");
   const interpreter = new Interpreter();
-  interpreter.env.bindings.set("text", valLiteral("Type(Int | String)"));
+  interpreter.env.bindings.set("text", valLiteral("Struct(Int | String)"));
   assert.equal(
     displayResults(interpreter.run("parse(Type)(text)")),
-    "Type(Int | String)",
+    "Struct(Int | String)",
   );
   assert.throws(() => run("UnionType(1)"), /type values/);
-  assert.equal(run("type :Some(Int) | :None"), "Type(:None | Some(Int))");
+  assert.equal(run("type :Some(Int) | :None"), "Struct(:None | Some(Int))");
 });
 
 test("union descriptions support normal destructuring and preserve literal data escapes", () => {

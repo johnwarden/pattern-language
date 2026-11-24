@@ -6,7 +6,7 @@ test "A direct union arm takes precedence over inward designation"
   expect outer is None :: Float??
   expect inner is (None :: Float?) :: Float??
   expect toString(Float??)(outer) is "None" :: String
-  expect toString(Float??)(inner) is "None :: Type(Float | :None)" :: String
+  expect toString(Float??)(inner) is "None :: Struct(Float | :None)" :: String
   assert outer == sameOuter
   assert outer != inner
   assert parse(Float??)(toString(Float??)(outer)) == outer
@@ -18,7 +18,7 @@ test "Nested String options print relative to the requested grammar"
 
   optionText = toString(String??)(inner)
   anyText = toString(Any)(inner)
-  expect optionText is "None :: Type(:None | String)" :: String
+  expect optionText is "None :: Struct(:None | String)" :: String
   assert parse(String??)(optionText) == inner
   assert parse(Any)(anyText) == inner
   assert toString(String??)(parse(String??)(optionText)) == optionText
@@ -32,8 +32,8 @@ test "An explicit concrete member identifies an otherwise ambiguous branch"
 
   expect x is (None :: String?) :: MyType
   expect y is (None :: Float?) :: MyType
-  expect toString(MyType)(x) is "None :: Type(:None | String)" :: String
-  expect toString(MyType)(y) is "None :: Type(Float | :None)" :: String
+  expect toString(MyType)(x) is "None :: Struct(:None | String)" :: String
+  expect toString(MyType)(y) is "None :: Struct(Float | :None)" :: String
   assert x != y
   assert parse(MyType)(toString(MyType)(x)) == x
   assert parse(MyType)(toString(MyType)(y)) == y

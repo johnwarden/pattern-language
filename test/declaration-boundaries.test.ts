@@ -21,7 +21,7 @@ test("constructor subpatterns expose captures on Picture, not on a synthetic sha
   );
   assert.equal(
     run(picture + "type Picture"),
-    "Type(Picture(color: Type(:Black | :Red), shape: Rectangle(Float, Float)))",
+    "Struct(Picture(color: Struct(:Black | :Red), shape: Rectangle(Float, Float)))",
   );
 });
 
@@ -136,7 +136,7 @@ test("type construction sorts alternatives without redefining ordinary tree equa
     ),
     "(True, True, True)",
   );
-  assert.equal(run("Type(:(B | A)) == (type :A | :B)"), "True");
+  assert.equal(run("Struct(:(B | A)) == (type :A | :B)"), "True");
   assert.equal(run(":(A | B) == :(B | A)"), "False");
 });
 

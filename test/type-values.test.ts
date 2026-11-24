@@ -13,25 +13,25 @@ const transfer = (text: string) => {
 test("type values construct, destructure, and rebuild using ordinary patterns", () => {
   assert.equal(
     run(
-      "def Rectangle type :Rect(w :: Float,h :: Float)\nt = Type(Rect(Float,Float))\nType(p) = t\n(Type(p) == t,t == (type Rectangle))",
+      "def Rectangle type :Rect(w :: Float,h :: Float)\nt = Struct(Rect(Float,Float))\nStruct(p) = t\n(Struct(p) == t,t == (type Rectangle))",
     ),
     "(True, True)",
   );
   assert.equal(
-    run("def R Type(Rect(Float,Float))\nRect(3,4) :: R"),
+    run("def R Struct(Rect(Float,Float))\nRect(3,4) :: R"),
     "Rect(3, 4)",
   );
   assert.equal(
     run(
-      "def shape(Type(Rect(w,h))) Type(Rect(h,w))\nshape(type :Rect(Int,String)) == (type :Rect(String,Int))",
+      "def shape(Struct(Rect(w,h))) Struct(Rect(h,w))\nshape(type :Rect(Int,String)) == (type :Rect(String,Int))",
     ),
     "True",
   );
   assert.equal(
     run(
-      "t = type :Rect(Int,String)\nmatch t\n  Type(Rect(a,b)) -> Type(Rect(b,a))\nend",
+      "t = type :Rect(Int,String)\nmatch t\n  Struct(Rect(a,b)) -> Struct(Rect(b,a))\nend",
     ),
-    "Type(Rect(String, Int))",
+    "Struct(Rect(String, Int))",
   );
 });
 
@@ -59,7 +59,7 @@ test("global text does not depend on names; local aliases resolve in the caller 
   );
   const source =
     "def Rectangle type :Rect(Float,Float)\nt = type Rectangle\ndef f()\n  def Rectangle type :Other\n  (toStringLocal(Type)(t),parseLocal(Type)(toStringLocal(Type)(t)) == t)\nend\nf()";
-  assert.equal(run(source), '("Type(Rect(Float, Float))", True)');
+  assert.equal(run(source), '("Struct(Rect(Float, Float))", True)');
   assert.equal(
     run(
       'def Rectangle type :Rect(Float,Float)\nparseLocal(Symbol)("Rectangle")',
@@ -109,10 +109,10 @@ test("local inspection keeps nested type values structural in raw data", () => {
   const value = term("Box", rectangle);
   assert.equal(
     i.inspect([{ label: "_1", value }]),
-    "Box(Type(Rect(Int))) :: Expression",
+    "Box(Struct(Rect(Int))) :: Expression",
   );
   const restored = single(
-    i.run('parseLocal(Expression)("Box(Type(Rect(Int)))")'),
+    i.run('parseLocal(Expression)("Box(Struct(Rect(Int)))")'),
   );
   assert.equal(equal(restored, value), true);
 });
@@ -129,11 +129,11 @@ test("primitive atoms are ordinary self-evaluating type values", () => {
 
 test("explicit Type wrappers and primitive atoms have different value trees", () => {
   assert.equal(
-    run("(Type(Int) == Int,Type(Type(Int)) == Type(Int))"),
+    run("(Struct(Int) == Int,Struct(Struct(Int)) == Struct(Int))"),
     "(False, True)",
   );
   assert.equal(
-    run("(Type(Float) == (type Float),Float == Type(Float))"),
+    run("(Struct(Float) == (type Float),Float == Struct(Float))"),
     "(False, False)",
   );
 });
@@ -156,7 +156,7 @@ test("referenced types remain nested values in unions and constructor fields", (
     "def Circle type :Circle(Float)\ndef Square type :Square(Float)\nshape = UnionType(type Circle,type Square)\n";
   assert.equal(
     run(source + "shape"),
-    "UnionType(Type(Circle(Float)), Type(Square(Float)))",
+    "UnionType(Struct(Circle(Float)), Struct(Square(Float)))",
   );
   assert.equal(
     run(source + "parse(Type)(toString(Type)(shape)) == shape"),
@@ -165,13 +165,13 @@ test("referenced types remain nested values in unions and constructor fields", (
   assert.equal(
     run(
       source +
-        "UnionType(a,b) = shape\n(Type(a) == (type Circle),Type(b) == (type Square))",
+        "UnionType(a,b) = shape\n(Struct(a) == (type Circle),Struct(b) == (type Square))",
     ),
     "(True, True)",
   );
   assert.equal(
     run("def Circle type :Circle(Float)\ntype :Box(Circle)"),
-    "Type(Box(Type(Circle(Float))))",
+    "Struct(Box(Struct(Circle(Float))))",
   );
   assert.equal(
     run(source + "shape == (type :Circle(Float) | :Square(Float))"),
@@ -193,8 +193,8 @@ test("root aliases collapse while nested aliases preserve one type boundary", ()
     "True",
   );
   for (const text of [
-    "Type(Type(Fields(Int)))",
-    "Type(Recursive(Repeat(Int)))",
+    "Struct(Struct(Fields(Int)))",
+    "Struct(Recursive(Repeat(Int)))",
   ])
     assert.throws(
       () => transfer(text).run("parse(Type)(text)"),
@@ -212,7 +212,7 @@ test("parse never calls functions, executes bindings, or evaluates interpolation
     assert.throws(() => i.run("parse(Expression)(text)"), LanguageError);
   }
   assert.throws(() => run('parse(Int)("hello")'), /expected/);
-  assert.throws(() => run("Type(Recur(0))"), /outside its binder/);
+  assert.throws(() => run("Struct(Recur(0))"), /outside its binder/);
 });
 
 test("unsupported predicate environments fail explicitly", () => {
