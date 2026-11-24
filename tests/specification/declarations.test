@@ -29,15 +29,6 @@ test "C05 named types equal capture-free type values"
   assert text == "hello"
 end
 
-todo test "5a.2 acceptance (C05): named BoxedText equals capture-free struct Box(String)"
-  type BoxedText struct Box(value :: String)
-  plain = struct Box(String)
-  assert BoxedText === plain
-  expect toString(Type)(plain) is "Struct(Box(String))" :: String
-  (box :: plain) = Box("hello") :: BoxedText
-  expect box.value is "hello" :: String
-end
-
 test "C18 independent lexical scopes interoperate structurally"
   produced = (
     def Option(T :: Type) type :None | Some(T)
@@ -82,40 +73,6 @@ test "C16 declarations own accessor products"
     t = concrete Rect(width :: NumericValue, height :: NumericValue)
     t
   fails "ordinary type construction cannot declare captures/accessors"
-end
-
-test "5a.2 acceptance (C16): plain struct construction installs no accessor"
-  todo expect
-    plain = struct Box(String)
-    (box :: plain) = Box("hello")
-    box.value
-  fails "E_UNBOUND_NAME"
-  expect
-    bad = concrete Box(item :: String)
-    bad
-  fails "E_PLAIN_TYPE_CAPTURE"
-  todo expect
-    bad = struct Box(item :: String)
-    bad
-  fails "E_PLAIN_TYPE_CAPTURE"
-end
-
-todo test "5a.2 acceptance (C18): independently named BoxedText values interoperate across lexical scopes"
-  produced = (
-    type BoxedText struct Box(value :: String)
-    Box("hello") :: BoxedText
-  )
-  expect produced.value fails "E_UNBOUND_NAME"
-
-  consumed = (
-    type LocalBox struct Box(content :: String)
-    (local :: LocalBox) = produced
-    local.content
-  )
-  expect consumed is "hello" :: String
-
-  independent = Box("hello") :: (struct Box(String))
-  assert produced === independent
 end
 
 test "C17 defaults belong to bindings and explicit factories"

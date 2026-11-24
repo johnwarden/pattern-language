@@ -43,6 +43,7 @@ const primitiveNames: Record<string, string> = {
 };
 const reserved = new Set([
   "Type",
+  "Struct",
   "Facet",
   "**",
   "UnionType",
@@ -147,7 +148,7 @@ export function typeDescription(
             value.kind === "symbol" &&
             primitiveAtoms.has(value.name)
           )
-            value = term("Type", value);
+            value = term("Struct", value);
           if (p.facet && !hasHead(value, "Facet") && !hasHead(value, "Recur"))
             value = term("Facet", value);
           return root ? value : wrapType(value);
@@ -283,7 +284,7 @@ export function typeDescription(
     result.kind === "symbol" &&
     primitiveAtoms.has(result.name)
   )
-    return term("Type", result);
+    return term("Struct", result);
   return type.facet && !hasHead(result, "Facet")
     ? term("Facet", result)
     : result;
@@ -291,15 +292,24 @@ export function typeDescription(
 
 const hasHead = (v: Value, name: string): boolean =>
   v.kind === "term" && v.head.kind === "symbol" && v.head.name === name;
-const wrapType = (description: Value): Value =>
-  hasHead(description, "Facet") ||
-  hasHead(description, "Type") ||
-  (description.kind === "symbol" && primitiveAtoms.has(description.name)) ||
-  hasHead(description, "Recur") ||
-  hasHead(description, "UnionType") ||
-  hasHead(description, "TreeGrammar")
-    ? description
-    : term("Type", description);
+/**
+ * Destination concrete descriptors print as Struct(...).
+ * Bootstrap Type(...) rewrites in place, preserving the whole body.
+ */
+export const wrapType = (description: Value): Value => {
+  if (hasHead(description, "Type") && description.kind === "term")
+    return { kind: "term", head: sym("Struct"), body: description.body };
+  if (
+    hasHead(description, "Facet") ||
+    hasHead(description, "Struct") ||
+    (description.kind === "symbol" && primitiveAtoms.has(description.name)) ||
+    hasHead(description, "Recur") ||
+    hasHead(description, "UnionType") ||
+    hasHead(description, "TreeGrammar")
+  )
+    return description;
+  return term("Struct", description);
+};
 
 export const typeData = (type: TypeValue): Value =>
   wrapType(typeDescription(type));
@@ -440,8 +450,9 @@ export function descriptionPattern(
             ),
           };
         case "Type":
+        case "Struct":
         case "Facet": {
-          const kind = v.head.name;
+          const kind = v.head.name === "Type" ? "Struct" : v.head.name;
           const facet = kind === "Facet";
           const enclosingBoundary = facetBoundary;
           facetBoundary = facet;
@@ -452,7 +463,7 @@ export function descriptionPattern(
             while (
               input.kind === "term" &&
               input.head.kind === "symbol" &&
-              ["Type", "Facet"].includes(input.head.name)
+              ["Type", "Struct", "Facet"].includes(input.head.name)
             )
               input = args(input)[0];
           }

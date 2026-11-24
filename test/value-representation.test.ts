@@ -6,7 +6,7 @@ const run = (s: string) => displayResults(new Interpreter().run(s));
 test("compiled types compare as their ordinary value trees, including nested values", () => {
   assert.equal(
     run(
-      "a = Type(Rect(Int))\nb = :(Type(Rect(Int)))\n(a == b,[a] == [b],Type(10) < Type(2))",
+      "a = Struct(Rect(Int))\nb = :(Struct(Rect(Int)))\n(a == b,[a] == [b],Struct(10) < Struct(2))",
     ),
     "(True, True, False)",
   );
@@ -14,5 +14,5 @@ test("compiled types compare as their ordinary value trees, including nested val
     run("UnionType(Int,String) == :(UnionType(Int,String))"),
     "True",
   );
-  assert.equal(run("Type(Int) == Int"), "False");
+  assert.equal(run("Struct(Int) == Int"), "False");
 });

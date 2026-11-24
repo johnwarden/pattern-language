@@ -17,7 +17,7 @@ test("a todo result pack remains a trial instead of becoming playground output",
 test("future generic setup uses its source schema and keeps the current definition", () => {
   const value = read(`  legacy def Color type :Black | :White
   todo type Color<T> concrete :Black | :White
-  expect Color is Type(:Black | :White) :: Type`);
+  expect Color is Struct(:Black | :White) :: Type`);
   assert.deepEqual(
     value.steps.map((s) => [s.kind, s.mode]),
     [
@@ -47,7 +47,7 @@ test("an implemented replacement is not hidden by the legacy type's duplicate na
   const report = runTest(
     read(`  legacy def Color type :Black | :White
   todo def Color type :Black | :White
-  expect Color is Type(:Black | :White) :: Type`),
+  expect Color is Struct(:Black | :White) :: Type`),
   );
   assert.equal(report.passed, false);
   assert.match(report.message, /setup now succeeds; remove todo/);

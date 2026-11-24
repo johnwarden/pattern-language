@@ -69,8 +69,8 @@ test "Prefix question mark is ordinary application, not an optional"
 end
 
 test "Optional type descriptions print as None unions"
-  expect toString(Type)(type String?) is "Type(:None | String)" :: String
-  expect toString(Type)(type String??) is "Type(:None | Type(:None | String))" :: String
+  expect toString(Type)(type String?) is "Struct(:None | String)" :: String
+  expect toString(Type)(type String??) is "Struct(:None | Struct(:None | String))" :: String
 end
 
 test "An ordinary postfix question-mark definition coexists with the optional convention"

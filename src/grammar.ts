@@ -50,8 +50,12 @@ def MacroRegistration type :macro signature :: Signature body :: Body
 def TypeExpression type :type pattern :: PatternBody
 def ConcreteTypeDeclaration type :type signature :: Signature :concrete pattern :: PatternBody
 def AbstractTypeDeclaration type :type signature :: Signature :abstract pattern :: PatternBody
+def StructTypeDeclaration type :type signature :: Signature :struct pattern :: PatternBody
+def PatternTypeDeclaration type :type signature :: Signature :pattern pattern :: PatternBody
 def ConcreteTypeExpression type :concrete pattern :: PatternBody
 def AbstractTypeExpression type :abstract pattern :: PatternBody
+def StructTypeExpression type :struct pattern :: PatternBody
+def PatternTypeExpression type :pattern pattern :: PatternBody
 def UnionTypeExpression type :unionType pattern :: PatternBody
 def IfExpression type :if condition :: Expression consequent :: Body :else alternative :: Body
 def MatchExpression type :match subject :: Expression arms :: Arms`;
@@ -399,18 +403,29 @@ export class Grammar {
       };
     throw new LanguageError("unknown grammar reference: " + name);
   }
-  /** Concrete/abstract forms elaborate to the existing declaration/type operations.
+  /** Concrete/abstract/struct/pattern forms elaborate to the existing declaration/type operations.
    * Keep original items and spans so source printing and inert inspection remain lossless. */
   private elaborateTypeForm(
     n: Extract<Syntax, { kind: "form" }>,
     sourceItems: Syntax[],
   ): Syntax {
-    if (n.name === "ConcreteTypeExpression")
+    if (
+      n.name === "ConcreteTypeExpression" ||
+      n.name === "StructTypeExpression"
+    )
       return { ...n, name: "TypeExpression", items: sourceItems };
-    if (n.name === "AbstractTypeExpression")
+    if (
+      n.name === "AbstractTypeExpression" ||
+      n.name === "PatternTypeExpression"
+    )
       return { ...n, name: "UnionTypeExpression", items: sourceItems };
     if (
-      !["ConcreteTypeDeclaration", "AbstractTypeDeclaration"].includes(n.name)
+      ![
+        "ConcreteTypeDeclaration",
+        "AbstractTypeDeclaration",
+        "StructTypeDeclaration",
+        "PatternTypeDeclaration",
+      ].includes(n.name)
     )
       return n;
     const signature = n.captures.get("signature");
@@ -427,12 +442,12 @@ export class Grammar {
         { code: "E_TYPE_DECLARATION_SIGNATURE", phase: "declaration" },
       );
     const pattern = n.captures.get("pattern")!;
+    const concrete =
+      n.name === "ConcreteTypeDeclaration" ||
+      n.name === "StructTypeDeclaration";
     const body: Syntax = {
       kind: "form",
-      name:
-        n.name === "ConcreteTypeDeclaration"
-          ? "TypeExpression"
-          : "UnionTypeExpression",
+      name: concrete ? "TypeExpression" : "UnionTypeExpression",
       captures: new Map([["pattern", pattern]]),
       items: sourceItems.slice(2),
       span: sourceItems[2]?.span ?? n.span,

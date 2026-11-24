@@ -6,7 +6,7 @@ the enum value structurally and print it by name, so a reader can recover
 the same predicate without the caller's lexical environment.
 
 ```pattern
-todo test "Predicate is a concrete enum of named cases"
+test "Predicate is a concrete enum of named cases"
   type Predicate struct :isNonZero | :isPositive | :isSquare
 
   def checkPredicate(p :: Predicate)(value)

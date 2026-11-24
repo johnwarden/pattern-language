@@ -18,7 +18,7 @@ const rejects = (source: string, code: string) =>
   );
 
 test("type construction sees the same value through abstract storage", () => {
-  assert.equal(run("(t :: Any) = Int\nType(t) == Type(Int)"), "True");
+  assert.equal(run("(t :: Any) = Int\nStruct(t) == Struct(Int)"), "True");
 });
 
 test("canonical enum type text can also be evaluated as an ordinary type value", () => {
@@ -38,7 +38,7 @@ test("local names abbreviate REPL type annotations, not structural type values",
     ),
     "Red :: Color",
   );
-  assert.equal(i.inspect(i.run("r = Color\nr")), "Type(:Green | :Red) :: Type");
+  assert.equal(i.inspect(i.run("r = Color\nr")), "Struct(:Green | :Red) :: Type");
 });
 
 test("angle brackets no longer introduce a second application form", () => {
@@ -89,8 +89,8 @@ test("language constants self-evaluate independently of lexical storage", () => 
 
 test("equal compiled and raw type trees have equal canonical strings", () => {
   for (const expression of [
-    "Type(Rect(Float,Float))",
-    "Type(Int)",
+    "Struct(Rect(Float,Float))",
+    "Struct(Int)",
     "UnionType(Int,String)",
   ]) {
     assert.equal(

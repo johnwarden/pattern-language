@@ -46,7 +46,7 @@ test "Definitions evaluate their bodies"
 
   expect :(Rect(Float)) is Rect(Float) :: Expression
   observed = type R
-  expect observed is Type(Rect(Float)) :: Type
+  expect observed is Struct(Rect(Float)) :: Type
   (r, (type R))
 end
 
@@ -104,7 +104,7 @@ test "Language as data"
   assert r == l
 
   Language(rules: rules, **) = l
-  legacy expect rules.len is 10 :: Expression
+  legacy expect rules.len is 14 :: Expression
 
   Block(nodes) = parseSyntax(r)("if True 1 else 2")
   legacy expect nodes.len is 1 :: Expression
@@ -184,7 +184,7 @@ test "Open structural facet"
 
   assert p == r
   # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
-  legacy expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: Type(Rect(Float, Float, color: String))" :: String
+  legacy expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: Struct(Rect(Float, Float, color: String))" :: String
 
   assert parse(Rectangular)(toString(Rectangular)(p)) == r
 

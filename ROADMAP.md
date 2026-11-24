@@ -334,9 +334,9 @@ reconstructed type equals an independently constructed `struct Box(String)` and
 the reconstructed value equals the corresponding independently constructed box;
 both print back to the same text. Named contracts live in
 [type-values](specs/type-values.md#milestone-5a2-acceptance-single-field-struct-round-trip)
-and matching destination todos in
-[declaration tests](tests/specification/declarations.test). Destination `struct`
-contracts are todos until the declaration grammar parses.
+(executable spec fences are the source of truth). Destination forms use
+`struct` / `Struct(...)`; bootstrap `concrete` / `Type(...)` remain
+recognized.
 
 Remaining alignment slices:
 

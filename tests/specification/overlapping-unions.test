@@ -65,7 +65,7 @@ test "UnionType text distinguishes Float64 from Float"
 end
 
 test "Overlapping option unions construct; unannotated None is ambiguous"
-  expect UnionType(Int?, String?) is UnionType(Type(Int | :None), Type(:None | String)) :: Type
+  expect UnionType(Int?, String?) is UnionType(Struct(Int | :None), Struct(:None | String)) :: Type
 
   expect
     def U UnionType(Int?, String?)
@@ -82,7 +82,7 @@ test "Overlapping numeric and constructor unions construct"
     def A type :X(Int)
     def B type :X(Float)
     UnionType(A, B)
-  is UnionType(Type(X(Float)), Type(X(Int))) :: Type
+  is UnionType(Struct(X(Float)), Struct(X(Int))) :: Type
 
   expect
     def U UnionType(type Int, type Float)
@@ -121,7 +121,7 @@ test "Type construction removes equal alternatives with different spellings"
   assert (type 1 | 1.0) == (type 1)
   one = 1 :: Int
   assert (type 1 | one) == (type 1)
-  assert Type(:(Box(Int) | Box(Int))) != (type Box(Int))
+  assert Struct(:(Box(Int) | Box(Int))) != (type Box(Int))
   a = type :A
   assert (type :A) == a
   assert (type :A | a) == a
@@ -138,7 +138,7 @@ test "A factory result and a quoted head normalize when their types are equal"
 end
 
 test "Type alternatives keep unequal explicit wrappers"
-  wrapped = Type(Int)
+  wrapped = Struct(Int)
   assert wrapped != Int
   assert (type Int | wrapped) != Int
   assert (type wrapped | wrapped) == wrapped
@@ -161,5 +161,5 @@ test "Overlapping abstract facet members retain spaces"
   def Colored type :Rect(Float, Float, color: String)
   def Rectangular type :Rect(w :: Float, h :: Float, **)
 
-  expect UnionType(type Rectangular, type Colored) is UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Type(Rect(Float, Float, color: String))) :: Type
+  expect UnionType(type Rectangular, type Colored) is UnionType(Facet(Apply(:Rect, OpenFields(Fields(Float, Float), labels: True, positional: False))), Struct(Rect(Float, Float, color: String))) :: Type
 end

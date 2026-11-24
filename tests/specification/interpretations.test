@@ -161,13 +161,13 @@ test "C13 abstract union retains overlapping numeric members"
     (parse(EitherFloat)(text) == a)
   end
 
-  todo assert
+  assert
     type EitherFloat pattern Float32 | Float64
     domain = pattern Float32 | Float64
     (domain === EitherFloat)
   end
 
-  todo expect
+  expect
     type EitherFloat pattern Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
     (b :: EitherFloat) = float64(0.5)
@@ -183,7 +183,7 @@ test "C13 abstract union retains overlapping numeric members"
     )
   end
 
-  todo expect
+  expect
     type EitherFloat pattern Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
     (b :: EitherFloat) = float64(0.5)
@@ -199,7 +199,7 @@ test "C13 abstract union retains overlapping numeric members"
     )
   end
 
-  todo assert
+  assert
     type EitherFloat pattern Float32 | Float64
     (a :: EitherFloat) = float32(0.5)
     (b :: EitherFloat) = float64(0.5)

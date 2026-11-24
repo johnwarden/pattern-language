@@ -949,7 +949,7 @@ export class Interpreter {
           (xs) => !this.materializeType(xs[0].value),
         ),
       );
-    for (const name of ["==", "!=", "<", ">", "<=", ">="])
+    for (const name of ["==", "!=", "===", "!==", "<", ">", "<=", ">="])
       scope.bindings.set(
         name,
         this.native(name, [1, 1], ([a, b]) => {
@@ -964,11 +964,16 @@ export class Interpreter {
               );
           }
           const c =
-            name === "==" || name === "!=" ? equal(a, b) : compare(a, b);
+            name === "==" ||
+            name === "!=" ||
+            name === "===" ||
+            name === "!=="
+              ? equal(a, b)
+              : compare(a, b);
           const yes =
-            name === "=="
+            name === "==" || name === "==="
               ? c
-              : name === "!="
+              : name === "!=" || name === "!=="
                 ? !c
                 : name === "<"
                   ? Number(c) < 0
@@ -1068,14 +1073,15 @@ export class Interpreter {
         }
       }),
     );
-    scope.functions.set("Type", [
-      this.native("Type", [1], ([pattern]) => {
+    const typeConstructor = (head: "Type" | "Struct") =>
+      this.native(head, [1], ([pattern]) => {
         const type = this.materializeType(pattern);
         return type && typeDescription(type).kind !== "symbol"
           ? type
-          : this.structuralType(term("Type", unwrap(pattern)));
-      }),
-    ]);
+          : this.structuralType(term("Struct", unwrap(pattern)));
+      });
+    scope.functions.set("Type", [typeConstructor("Type")]);
+    scope.functions.set("Struct", [typeConstructor("Struct")]);
     scope.bindings.set(
       "|",
       this.native("|", [1, 1], ([left, right]) => ({
@@ -3329,7 +3335,9 @@ export class Interpreter {
     if (
       value.kind !== "term" ||
       value.head.kind !== "symbol" ||
-      !["Type", "UnionType", "Facet", "TreeGrammar"].includes(value.head.name)
+      !["Type", "Struct", "UnionType", "Facet", "TreeGrammar"].includes(
+        value.head.name,
+      )
     )
       return undefined;
     try {
@@ -3427,7 +3435,7 @@ export class Interpreter {
       wrappedPrimitive:
         description.kind === "term" &&
         description.head.kind === "symbol" &&
-        description.head.name === "Type" &&
+        ["Type", "Struct"].includes(description.head.name) &&
         description.body.length === 1 &&
         (() => {
           const t = this.materializeType(description.body[0].value);
@@ -3498,7 +3506,7 @@ export class Interpreter {
       if (
         value.kind === "term" &&
         value.head.kind === "symbol" &&
-        ["Type", "UnionType", "Facet"].includes(value.head.name)
+        ["Type", "Struct", "UnionType", "Facet"].includes(value.head.name)
       )
         return this.structuralType(value);
       throw new LanguageError(

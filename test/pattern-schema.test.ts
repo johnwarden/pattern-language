@@ -14,16 +14,16 @@ test("documented schema is the exact runtime bootstrap source", () => {
 });
 
 test("language schema gates descriptor shapes without consulting the user scope", () => {
-  for (const source of ["Type(:(String(:A)))", "Type(:(|(:A,:B)))"])
+  for (const source of ["Struct(:(String(:A)))", "Struct(:(|(:A,:B)))"])
     assert.throws(() => run(source), /invalid type-description shape/);
   assert.equal(
     run(
-      "def ordinaryHead(h) False\ndef TypeDescription type :Nope\nType(:(Box(Int))) == (type :Box(Int))",
+      "def ordinaryHead(h) False\ndef TypeDescription type :Nope\nStruct(:(Box(Int))) == (type :Box(Int))",
     ),
     "True",
   );
   assert.throws(
-    () => run("def ordinaryHead(h) True\nType(:(|(:A,:B)))"),
+    () => run("def ordinaryHead(h) True\nStruct(:(|(:A,:B)))"),
     /invalid type-description shape/,
   );
 });
@@ -35,7 +35,7 @@ test("schema validation work budgets reset across operations and sessions", () =
       assert.equal(
         displayResults(
           interpreter.run(
-            "Type(:(Box(:A,:B,:C,:D,:E,:F,:G,:H))) == (type :Box(:A,:B,:C,:D,:E,:F,:G,:H))",
+            "Struct(:(Box(:A,:B,:C,:D,:E,:F,:G,:H))) == (type :Box(:A,:B,:C,:D,:E,:F,:G,:H))",
           ),
         ),
         "True",
@@ -70,11 +70,11 @@ test("recursive pattern schema covers portable descriptors without Expression pl
 
 test("pattern schema rejects malformed reserved constructors rather than accepting a generic node", () => {
   for (const data of [
-    ":(Type(Fields(Int)))",
-    ":(Type(Repeat(Int)))",
-    ":(Type(Apply(X,Y)))",
-    ":(Type(Recur(-(1))))",
-    ":(Type(_))",
+    ":(Struct(Fields(Int)))",
+    ":(Struct(Repeat(Int)))",
+    ":(Struct(Apply(X,Y)))",
+    ":(Struct(Recur(-(1))))",
+    ":(Struct(_))",
     ":(UnionType())",
     ":(UnionType(Int,Bogus))",
   ])
@@ -87,7 +87,7 @@ test("pattern schema rejects malformed reserved constructors rather than accepti
 
 test("public type equality rejects invalid Type constructors", () => {
   assert.throws(
-    () => run("Type(Apply(:A,Int))"),
+    () => run("Struct(Apply(:A,Int))"),
     /invalid type-description shape/,
   );
 });
@@ -128,15 +128,15 @@ test("schema and decoder agree on generated single-value and argument-pack posit
         "decoder: " + descriptor,
       );
   };
-  const leaves = [":A", "Int", "Type(Box(String))", "Literal(:A)"];
+  const leaves = [":A", "Int", "Struct(Box(String))", "Literal(:A)"];
   const contexts = [
-    (p: string) => "Type(" + p + ")",
-    (p: string) => "Type(Box(" + p + "))",
-    (p: string) => "Type(Apply(" + p + ",Fields()))",
-    (p: string) => "Type(Apply(:Box,Fields(Repeat(" + p + "))))",
-    (p: string) => "Type(Bind(0," + p + "))",
-    (p: string) => "Type(Union(:Z," + p + "))",
-    (p: string) => "Type(Recursive(Box(" + p + ")))",
+    (p: string) => "Struct(" + p + ")",
+    (p: string) => "Struct(Box(" + p + "))",
+    (p: string) => "Struct(Apply(" + p + ",Fields()))",
+    (p: string) => "Struct(Apply(:Box,Fields(Repeat(" + p + "))))",
+    (p: string) => "Struct(Bind(0," + p + "))",
+    (p: string) => "Struct(Union(:Z," + p + "))",
+    (p: string) => "Struct(Recursive(Box(" + p + ")))",
   ];
   for (const context of contexts) {
     for (const leaf of leaves) check(context(leaf), true);
@@ -144,13 +144,13 @@ test("schema and decoder agree on generated single-value and argument-pack posit
       check(context(pack), false);
   }
   for (const descriptor of [
-    "Type(Repeat(:A))",
-    "Type(Apply(Repeat(:A),Fields()))",
-    "Type(Apply(:Box,Fields(Repeat(Repeat(:A)))))",
-    "Type(Union(:A,Repeat(:A)))",
+    "Struct(Repeat(:A))",
+    "Struct(Apply(Repeat(:A),Fields()))",
+    "Struct(Apply(:Box,Fields(Repeat(Repeat(:A)))))",
+    "Struct(Union(:A,Repeat(:A)))",
   ])
     check(descriptor, false);
-  check("Type(Box(Repeat(:A)))", true);
+  check("Struct(Box(Repeat(:A)))", true);
   check(
     "Facet(Apply(:Box,OpenFields(Fields(Repeat(:A)),labels: True,positional: False)))",
     true,

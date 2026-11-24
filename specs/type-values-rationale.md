@@ -263,7 +263,7 @@ end
 ### Concrete singleton
 
 ```pattern
-todo test "A struct singleton is a distinct concrete space"
+test "A struct singleton is a distinct concrete space"
   t = struct :None
   (v :: t) = :None
   expect v !== (:None :: Int?) fails "E_INCOMPARABLE_TYPES"
@@ -505,7 +505,7 @@ or function parameter, bind the entire value and access its fields or
 open it with `match` inside the body.
 
 ```pattern
-todo test "A concrete Rect supports an area match"
+test "A concrete Rect supports an area match"
   t = struct Rect(Int, Int)
   expect t is Struct(Rect(Int, Int))
 
@@ -580,7 +580,7 @@ An explicit match projects one concrete boundary at a time. Ordinary
 bindings and function arguments respect that boundary.
 
 ```pattern
-todo test "Match projects one concrete union boundary"
+test "Match projects one concrete union boundary"
   t = struct Int | String
   (y :: t) = 5 :: Int
   expect y === (5 :: Int) fails "E_INCOMPARABLE_TYPES"
@@ -596,7 +596,7 @@ end
 An abstract binding stores its member with the original concrete type.
 
 ```pattern
-todo test "An abstract union binding keeps the stored Int"
+test "An abstract union binding keeps the stored Int"
   t = pattern Int | String
   (y :: t) = 5 :: Int
   assert y === (5 :: Int)
@@ -610,7 +610,7 @@ A `Rectangle` whose two `Num` fields hold Int values matches
 `pattern Rect(Int, Int)` the same way:
 
 ```pattern
-todo test "A rectangle matches the concrete members held in its fields"
+test "A rectangle matches the concrete members held in its fields"
   type Num pattern Int | Float
   type Rectangle struct Rect(Num, Num)
 
@@ -644,7 +644,7 @@ An enum arm selects a tag. A whole-value binding can retain the typed
 enum, while selecting a tag alone discards the tag payload.
 
 ```pattern
-todo test "An enum match selects a tag without a raw symbol value"
+test "An enum match selects a tag without a raw symbol value"
   type TrafficLight struct :Red | :Amber | :Green
   x = :Green :: TrafficLight
 

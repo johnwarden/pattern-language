@@ -88,7 +88,7 @@ todo test "Numeric equality can hold for values dispatched to different overload
   expect kind(0 :: NumericValue) is "NumericValue"
 end
 
-todo test "A lone outer overload preserves the chosen absence"
+test "A lone outer overload preserves the chosen absence"
   def outer(v :: String??) v
   outerNone = :None :: String??
   innerNone = (:None :: String?) :: String??

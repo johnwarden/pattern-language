@@ -1,0 +1,29 @@
+# `struct` and `pattern` are sideform macros, like `def` and `if`. They are
+# recognized only where the surface is unambiguous (spaced operands). A function
+# may reuse those names when called with ordinary application parentheses.
+
+test "A function named struct coexists with the struct type macro"
+  def struct(x) x
+  expect struct(3) is 3 :: NumericValue
+  plain = struct Box(String)
+  expect toString(Type)(plain) is "Struct(Box(String))" :: String
+end
+
+test "A function named pattern coexists with the pattern type macro"
+  def pattern(x) x
+  expect pattern(3) is 3 :: NumericValue
+  plain = pattern Box(String)
+  expect toString(Type)(plain) is "UnionType(Struct(Box(String)))" :: String
+end
+
+test "A function named if coexists with the if macro"
+  def if(x) x
+  expect if(3) is 3 :: NumericValue
+  expect
+    if True
+      1
+    else
+      0
+    end
+  is 1 :: NumericValue
+end

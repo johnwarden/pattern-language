@@ -60,27 +60,27 @@ test("nonproductive recursive groups reject with source locations", () => {
 test("local type-value inspection expands roots and names nested references", () => {
   const i = new Interpreter();
   assert.equal(i.inspect(i.run("Code")), "TreeGrammar(SyntaxNode) :: Type");
-  assert.equal(i.inspect(i.run("Type(Int)")), "Type(Int) :: Type");
-  assert.equal(i.inspect(i.run("type :Empty")), "Type(:Empty) :: Type");
+  assert.equal(i.inspect(i.run("Struct(Int)")), "Struct(Int) :: Type");
+  assert.equal(i.inspect(i.run("type :Empty")), "Struct(:Empty) :: Type");
   assert.equal(
     i.inspect(
       i.run(
         "def Circle type :Circle(Float)\ndef Picture type :Picture(Circle)\nPicture",
       ),
     ),
-    "Type(Picture(Circle)) :: Type",
+    "Struct(Picture(Circle)) :: Type",
   );
   const j = new Interpreter();
   assert.match(j.inspect(j.run(recursive + "A")), /\bB\b/);
   assert.equal(
-    displayResults(j.run('parseLocal(Type)("Type(A(B))") == (type :A(B))')),
+    displayResults(j.run('parseLocal(Type)("Struct(A(B))") == (type :A(B))')),
     "True",
   );
   assert.equal(
     run(
       "def Circle type :Circle(Float)\ndef Picture type :Picture(Circle)\ntoString(Type)(Picture)",
     ),
-    '"Type(Picture(Type(Circle(Float))))"',
+    '"Struct(Picture(Struct(Circle(Float))))"',
   );
 });
 test("generated type patterns honor the lexical origin of aliases and private names", () => {
@@ -102,7 +102,7 @@ test("generated type patterns honor the lexical origin of aliases and private na
           name +
           ")\nend\nmacro :make Args()\n  build()\nend\nmake Args()",
       ),
-      /Type\(Box\(/,
+      /Struct\(Box\(/,
     );
   }
 });

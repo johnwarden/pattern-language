@@ -26,7 +26,7 @@ const displayPrograms: [string, string, string][] = [
   [
     "lazy names",
     "def List(t :: Type) type :Nil | :Cons(t,List(t))\nList(Int)",
-    "Type(Recursive(:Nil | Cons(Int, Recur(0))))",
+    "Struct(Recursive(:Nil | Cons(Int, Recur(0))))",
   ],
 ];
 

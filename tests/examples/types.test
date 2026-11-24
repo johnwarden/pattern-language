@@ -4,12 +4,12 @@ test "Canonical type alternatives"
 
   assert a == b
   # Legacy blocked: public descriptor text is still provisional; retain normalization and round-trip checks.
-  legacy expect toString(Type)(a) is "Type(:Black | :Red)" :: String
+  legacy expect toString(Type)(a) is "Struct(:Black | :Red)" :: String
 
   assert parse(Type)(toString(Type)(a)) == b
 
   mixed = type Some(Int) | 10 | :None | 2
-  expect mixed is Type(:None | 2 | 10 | Some(Int)) :: Type
+  expect mixed is Struct(:None | 2 | 10 | Some(Int)) :: Type
 
   ((a == b), toString(Type)(a), (parse(Type)(toString(Type)(a)) == b), mixed)
 end
@@ -35,7 +35,7 @@ test "Factory defaults and complete types"
   expect r is Rect(3, 4, color: Black) :: Rectangle
   expect r.color is Black :: Color
   # Legacy blocked: public descriptor text is still provisional.
-  legacy expect toString(Type)(type Rectangle) is "Type(Rect(Int, Int, color: Type(:Black | :White)))" :: String
+  legacy expect toString(Type)(type Rectangle) is "Struct(Rect(Int, Int, color: Struct(:Black | :White)))" :: String
 
   assert not(:(Rect(3, 4)) .matches (type Rectangle))
   (r, r.color, toString(Type)(type Rectangle), :(Rect(3, 4)) .matches (type Rectangle))
@@ -54,14 +54,14 @@ test "Type fields and ignored captures"
   Rect(_, h) = r
 
   observed = type Rectangle
-  expect observed is Type(Rect(Float, Float)) :: Type
+  expect observed is Struct(Rect(Float, Float)) :: Type
   expect h is 4 :: Float
   ((type Rectangle), h)
 end
 
 test "Inspect a pattern union"
   t = type :Some(Int) | :None
-  Type(:|(left)(right)) = t
+  Struct(:|(left)(right)) = t
 
   legacy expect left is :None :: Expression
   legacy expect right is Some(Int) :: Expression
@@ -76,7 +76,7 @@ test "Local and global type text"
 
   expect local is "Rectangle" :: String
   # Legacy blocked: local alias policy and global descriptor spelling are still provisional.
-  legacy expect global is "Type(Rect(Float, Float))" :: String
+  legacy expect global is "Struct(Rect(Float, Float))" :: String
 
   assert parseLocal(Type)(local) == t
 
@@ -121,7 +121,7 @@ test "A union of type values"
   def Square type :Square(Float)
   shape = UnionType(type Circle, type Square)
 
-  expect shape is UnionType(Type(Circle(Float)), Type(Square(Float))) :: Type
+  expect shape is UnionType(Struct(Circle(Float)), Struct(Square(Float))) :: Type
 end
 
 test "Option factory with ()"
@@ -132,7 +132,7 @@ test "Option factory with ()"
   expect toString(Option(Int))(a) is "None" :: String
   expect a is None :: Option(Int)
   expect b is Some(5) :: Option(Int)
-  expect Option(Int) is Type(:None | Some(Int)) :: Type
+  expect Option(Int) is Struct(:None | Some(Int)) :: Type
   (toString(Option(Int))(a), b, Option(Int))
 end
 
@@ -201,7 +201,7 @@ test "Local recursive type block"
     List(Int)
   )) = Cons(5, :Nil)
 
-  expect x is Cons(5, Nil) :: (parse(Type)("Type(Recursive(:Nil | Cons(Int,Recur(0))))"))
+  expect x is Cons(5, Nil) :: (parse(Type)("Struct(Recursive(:Nil | Cons(Int,Recur(0))))"))
 end
 
 test "Portable recursive type"
@@ -211,7 +211,7 @@ test "Portable recursive type"
   restored = parse(Type)(text)
   value = Cons(5, :Nil) :: restored
   # Legacy blocked: public recursive descriptor text is still provisional.
-  legacy expect text is "Type(Recursive(:Nil | Cons(Int, Recur(0))))" :: String
+  legacy expect text is "Struct(Recursive(:Nil | Cons(Int, Recur(0))))" :: String
 
   assert restored == t
 
@@ -250,12 +250,12 @@ test "Types are ordinary values"
   r = Rect
   value = Rect(2, 2) :: Rect
 
-  expect r is Type(Rect(Float, Float)) :: Type
+  expect r is Struct(Rect(Float, Float)) :: Type
   expect value is Rect(2, 2) :: Rect
   expect Int is Int :: ReservedSymbol
   expect Float is Float :: ReservedSymbol
-  expect Type(Int) is Type(Int) :: Type
-  (r, value, Int, Float, Type(Int))
+  expect Struct(Int) is Struct(Int) :: Type
+  (r, value, Int, Float, Struct(Int))
 end
 
 test "Type factory · ordinary calls"
@@ -276,26 +276,26 @@ test "Type normalization and wrappers"
   expect observedInt is Int :: Type
   expect observedTypeInt is Int :: Type
   expect observedTypeTypeInt is Int :: Type
-  expect Type(Int) is Type(Int) :: Type
-  expect observedRect is Type(Rect(Float, Float)) :: Type
-  expect observedTypeRect is Type(Rect(Float, Float)) :: Type
-  expect Type(Rect) is Type(Rect(Float, Float)) :: Type
-  expect Type(Type(Rect)) is Type(Rect(Float, Float)) :: Type
-  (observedInt, observedTypeInt, observedTypeTypeInt, Type(Int), observedRect, observedTypeRect, Type(Rect), Type(Type(Rect)))
+  expect Struct(Int) is Struct(Int) :: Type
+  expect observedRect is Struct(Rect(Float, Float)) :: Type
+  expect observedTypeRect is Struct(Rect(Float, Float)) :: Type
+  expect Struct(Rect) is Struct(Rect(Float, Float)) :: Type
+  expect Struct(Struct(Rect)) is Struct(Rect(Float, Float)) :: Type
+  (observedInt, observedTypeInt, observedTypeTypeInt, Struct(Int), observedRect, observedTypeRect, Struct(Rect), Struct(Struct(Rect)))
 end
 
 test "Types as ordinary values"
   def Rectangle type :Rect(width :: Float, height :: Float)
-  t = Type(Rect(Float, Float))
-  Type(pattern) = t
+  t = Struct(Rect(Float, Float))
+  Struct(body) = t
 
-  assert Type(pattern) == t
+  assert Struct(body) == t
 
   assert t == (type Rectangle)
   # Legacy blocked: public descriptor text is still provisional.
-  legacy expect toString(Type)(t) is "Type(Rect(Float, Float))" :: String
+  legacy expect toString(Type)(t) is "Struct(Rect(Float, Float))" :: String
 
-  ((Type(pattern) == t), (t == (type Rectangle)), toString(Type)(t))
+  ((Struct(body) == t), (t == (type Rectangle)), toString(Type)(t))
 end
 
 test "Inspect a typed code binding without evaluating it"
@@ -308,21 +308,21 @@ test "Inspect a typed code binding without evaluating it"
   def Binding Code .where e -> isBinding(e)
 
   code = Code` f = x -> x * 2
-  (patternText, bodyText) =
+  (lhsText, bodyText) =
     match code
       (binding :: Binding) ->
-        :(pattern = value) = binding
-        (toString(Code)(Code(pattern)), toString(Code)(Code(value)))
+        :(lhs = value) = binding
+        (toString(Code)(Code(lhs)), toString(Code)(Code(value)))
       end
       _ -> panic("Expected a binding")
     end
   end
 
-  expect patternText is "f" :: String
+  expect lhsText is "f" :: String
   expect bodyText is "x -> x * 2" :: String
   expect isBinding(Code` f(x)) is False :: Bool
   expect isBinding(Code` f == x) is False :: Bool
-  (patternText, bodyText)
+  (lhsText, bodyText)
 end
 
 test "Overlapping unions and narrowing"

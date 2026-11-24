@@ -23,8 +23,14 @@ Jonathan (seed, with later clarification: *“one trailing error”* was a typo 
    overloads. Overlap is rejected; there is no ordered first-match priority
    among peer arms.
 2. **One scrutinee value:** a single `match` takes one unlabeled value.
-   Bind positional or labeled function results to locals before matching
-   one of them.
+   Bind a multi-valued call result first (`E_MATCH_CALL_SUBJECT`) — a
+   function or overload group whose possible results span more than one
+   type or arm — so arms compare against that value's static type.
+   Single-result calls and operator calls with a single result type may be
+   matched directly. An UpperCamel head is a constructor designator, never
+   evaluated as a function call, so it is not a call subject
+   ([#110](https://github.com/johnwarden/pattern-language/pull/110)
+   elaborates that rule).
 3. **At most one trailing `else`**, and only last. Its body is an ordinary
    expression. Its domain is the values the peer arms leave uncovered.
    See the coverage rule for abstract unions below.
@@ -88,7 +94,18 @@ Migrate to `else` when residual coverage is implemented. Examples:
 [call-label-spacing.test](../tests/layout/call-label-spacing.test),
 [type-schema.pattern](../examples/type-schema.pattern).
 
-### D. Prose that still teaches ordered first-match
+### D. Multi-valued call results in the bootstrap
+
+Normative text and executable contracts live under
+[Match arm domains](../specs/type-values.md#match-arm-domains) and
+[GRAMMAR](../GRAMMAR.md). When implementing `E_MATCH_CALL_SUBJECT`, bind
+multi-valued results before matching in
+`examples/code-categories.pattern`, the executable type-schema examples and
+their embedded source, and the comparison cases in
+`tests/specification/primitives.test`. Single-result calls (including
+operators with a single result type) may stay as direct match subjects.
+
+### E. Prose that still teaches ordered first-match
 
 [tutorial/pages/04-choose-a-matching-arm.md](../tutorial/pages/04-choose-a-matching-arm.md),
 [tutorial/TEACHING-PLAN.md](../tutorial/TEACHING-PLAN.md),
@@ -181,10 +198,10 @@ separator change is a wide mechanical edit plus printer/grammar/`Arms` work.
    patterns when checking the enclosing expression or function. Check their
    domains before evaluating the match. An unused function can still contain
    an overlap error.
-2. **Abstract-union coverage.** Require one explicit arm covering each whole
-   alternative of the scrutinee's abstract union, including an abstract
-   alternative. Check the declared alternatives even if the current value
-   selects one of the arms already present.
+2. **Abstract-union coverage.** Require exactly one explicit arm per declared
+   alternative, concrete or abstract. Each arm must match that alternative
+   exactly. Wider, missing, and additional arms are errors. Check against the
+   scrutinee's static type before evaluating its value.
 3. **Residual coverage.** A trailing `else` covers values outside the peer
    arms. Reject `else` when the residual is provably empty. An abstract union
    with all required alternatives handled has empty residual coverage.

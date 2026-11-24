@@ -62,7 +62,7 @@ test("computed type aliases preserve recursive identity", () => {
     ),
     "True",
   );
-  errorCode("def makeType() 3\ndef Wrong makeType()\n0", "E_EXPECTED_TYPE");
+  errorCode("def makeStruct() 3\ndef Wrong makeStruct()\n0", "E_EXPECTED_TYPE");
 });
 
 test("refinement predicates are lexical closures and never create accessors", () => {
@@ -136,7 +136,7 @@ test("ordinary dispatch reports competing where and matches definitions", () => 
     "E_AMBIGUOUS_CALL",
   );
   errorCode(
-    "def matches(value)(pattern) False\nSome(3) .matches (type :Some(Int))",
+    "def matches(value)(p) False\nSome(3) .matches (type :Some(Int))",
     "E_AMBIGUOUS_CALL",
   );
   errorCode(
