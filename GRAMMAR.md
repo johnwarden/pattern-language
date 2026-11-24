@@ -144,7 +144,7 @@ constructs and parses, and prints as `Struct(...)`.
 A constructor expression or bare symbol-tag designator requires a concrete
 interpretation from its context or an explicit ascription. A bare form such as
 `Rect(2, 2)` or `:None` used as an expression without that type raises
-`E_UNTYPED_CONSTRUCTOR`. That requirement supersedes bare raw runtime expression
+`E_UNTYPED_EXPRESSION`. That requirement supersedes bare raw runtime expression
 construction; see
 [Designation and matching](specs/type-values.md#designation-and-matching) and the
 deprecated [raw-expression note](specs/raw-expression-values.md). Parsed Code and

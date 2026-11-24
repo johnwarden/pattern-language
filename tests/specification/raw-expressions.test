@@ -7,7 +7,7 @@ test "Raw runtime expressions can be interpreted as concrete values"
   todo expect
     e = Rect(2, 2)
     e
-  fails "E_UNTYPED_CONSTRUCTOR"
+  fails "E_UNTYPED_EXPRESSION"
 
   def Rectangle type Rect(width :: Int, height :: Int)
 

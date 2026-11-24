@@ -4,7 +4,7 @@
 [Types, descriptors, and type expressions](type-values.md#designation-and-matching)
 supersedes bare raw runtime expression construction. A constructor expression
 or symbol tag needs a concrete interpretation from its context or an explicit
-ascription. A bare form without that type raises `E_UNTYPED_CONSTRUCTOR`. See
+ascription. A bare form without that type raises `E_UNTYPED_EXPRESSION`. See
 also
 [Migration and remaining work](type-values.md#migration-and-remaining-work)
 and the model summary in [VALUE-SPACES.md](../VALUE-SPACES.md).

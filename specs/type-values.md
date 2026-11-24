@@ -445,7 +445,7 @@ Construction interprets a designator in its expected concrete type. A raw
 constructor expression or symbol tag requires a concrete interpretation
 supplied by its context or an explicit ascription. Without that type, a bare
 UpperCamel constructor application or bare symbol-tag designator used as an
-expression raises `E_UNTYPED_CONSTRUCTOR` (distinct from `E_PATTERN_MISMATCH`,
+expression raises `E_UNTYPED_EXPRESSION` (distinct from `E_PATTERN_MISMATCH`,
 which remains a failed match against an expected pattern). A shape can construct
 a new struct from field designators. An already typed struct cannot be
 reinterpreted as an unrelated struct just because its payload would fit.
@@ -455,18 +455,18 @@ over recursive inward designation. Equally ranked distinct peer paths
 are ambiguous. See [ambiguous value designators](ambiguous-values.md).
 
 ```pattern
-todo test "A bare constructor expression without a type raises E_UNTYPED_CONSTRUCTOR"
+todo test "A bare constructor expression without a type raises E_UNTYPED_EXPRESSION"
   expect
     x = Rect(2, 2)
     x
-  fails "E_UNTYPED_CONSTRUCTOR"
+  fails "E_UNTYPED_EXPRESSION"
 end
 
-todo test "A bare symbol tag without a type raises E_UNTYPED_CONSTRUCTOR"
+todo test "A bare symbol tag without a type raises E_UNTYPED_EXPRESSION"
   expect
     x = :None
     x
-  fails "E_UNTYPED_CONSTRUCTOR"
+  fails "E_UNTYPED_EXPRESSION"
 end
 ```
 
