@@ -327,14 +327,13 @@ match-only projection. The unified source/host suite checks their composition.
 
 **Milestone acceptance test (structural interoperability).** A single-field
 `type BoxedText struct Box(value :: String)` round trip (C05, C16, C18): a
-producer block prints the descriptor and one boxed string and returns only those
-two texts; outside that block, where the producer's name and accessor are not
-visible, `parse(Type)` and `parse(restoredType)` reconstruct both; the
-reconstructed type equals an independently constructed `struct Box(String)` and
-the reconstructed value equals the corresponding independently constructed box;
-both print back to the same text. Named contracts live in
-[type-values](specs/type-values.md#milestone-5a2-acceptance-single-field-struct-round-trip)
-(executable spec fences are the source of truth). Destination forms use
+producer block prints the descriptor and one boxed string. Run the same reader
+outside that block in the shared interpreter and in a fresh interpreter with
+the same prelude. Give each reader only the two strings. Both reconstruct
+the independently described type and value, reproduce both strings, and can
+declare a local accessor for the box. See the
+[executable spec](specs/type-values.md#milestone-5a2-acceptance-single-field-struct-round-trip)
+and its [two-interpreter check](test/round-trip-parsing.test.ts). Destination forms use
 `struct` / `Struct(...)`; bootstrap `concrete` / `Type(...)` remain
 recognized.
 

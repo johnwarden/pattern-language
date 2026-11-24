@@ -304,6 +304,10 @@ Reading those strings with `parse(Type)` and `parse(restoredType)` reconstructs
 both. The reconstructed type must equal an independently constructed
 `struct Box(String)`, the reconstructed value must equal the corresponding
 independently constructed box, and both must print back to the same text.
+A reader in the shared interpreter and a reader in a fresh interpreter with
+the same prelude must give the same results from those two strings. In both
+readers, `.value` is out of scope and a local declaration can supply `.content`.
+The [transport test](../test/round-trip-parsing.test.ts) runs both readers.
 
 Supporting destination identity, plain-construction accessor locality, and
 same-process interop are the live cases below (and matching cases in
@@ -949,7 +953,9 @@ Portable user-defined predicates are a later extension.
 
 For supported types and values, `parse(Type)(toString(Type)(t))`
 returns the same descriptor, and `parse(T)(toString(T)(v))` returns the
-same exact value. A typed value's text supplies member tags and nested
+same exact value. For the same expression, inputs and visible definitions, shared and fresh
+interpreters must produce the same result or language error. This applies
+to reading and printing global text as well. A typed value's text supplies member tags and nested
 ascriptions where the expected grammar needs them. Global printing
 uses no lexical aliases. Where a struct wrapper's immediate member
 needs an ascription, the text preserves it independently of the outer
