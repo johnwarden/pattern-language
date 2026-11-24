@@ -21,8 +21,11 @@ test "C04 raw expressions are allowed and explicit types establish an interpreta
   todo expect
     x = Rect(2, 2)
     x
-  fails "E_PATTERN_MISMATCH"
+  fails "E_UNTYPED_EXPRESSION"
 end
+
+# UpperCamel vs lowerCamel head contracts live once under
+# specs/type-values.md § Constructor heads versus function calls.
 
 test "C05 types are structural values"
   assert
