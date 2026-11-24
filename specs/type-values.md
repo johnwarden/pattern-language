@@ -291,6 +291,77 @@ Field labels, pack structure, and concrete boundaries are part of
 descriptor identity. Defaults belong to binding patterns. Existing
 duplicate declaration and accessor collision rules apply.
 
+### Milestone 5a.2 acceptance: single-field struct round trip
+
+The first structural-interoperability **milestone acceptance test** for
+[5a.2](../ROADMAP.md#5a2-align-the-bootstrap-with-the-revised-value-model--in-progress)
+is a single-field `BoxedText` text round trip. A producer block declares the
+named type, builds one boxed string, and returns only the two printed texts.
+Outside that block the producer's name and `.value` accessor are not visible.
+Reading those strings with `parse(Type)` and `parse(restoredType)` reconstructs
+both. The reconstructed type must equal an independently constructed
+`struct Box(String)`, the reconstructed value must equal the corresponding
+independently constructed box, and both must print back to the same text.
+
+Supporting destination identity, plain-construction accessor locality, and
+same-process interop are the todos below (and matching cases in
+[declarations.test](../tests/specification/declarations.test)).
+
+```pattern
+todo test "5a.2 acceptance: BoxedText type and value travel as printed text"
+  (typeText, valueText) = (
+    type BoxedText struct Box(value :: String)
+    box = Box("hello") :: BoxedText
+    (toString(Type)(BoxedText), toString(BoxedText)(box))
+  )
+  restoredType = parse(Type)(typeText)
+  box = parse(restoredType)(valueText)
+  plain = struct Box(String)
+  assert restoredType === plain
+  assert box === (Box("hello") :: plain)
+  assert toString(Type)(restoredType) == typeText
+  assert toString(restoredType)(box) == valueText
+  expect box.value fails "E_UNBOUND_NAME"
+end
+
+todo test "5a.2 acceptance: BoxedText equals capture-free struct Box(String)"
+  type BoxedText struct Box(value :: String)
+  plain = struct Box(String)
+  assert BoxedText === plain
+  assert toString(Type)(plain) == "Struct(Box(String))"
+  (box :: plain) = Box("hello") :: BoxedText
+  assert box.value == "hello"
+end
+
+todo test "5a.2 acceptance: plain struct construction installs no accessor"
+  plain = struct Box(String)
+  (box :: plain) = Box("hello")
+  expect box.value fails "E_UNBOUND_NAME"
+  expect
+    bad = struct Box(item :: String)
+    bad
+  fails "E_PLAIN_TYPE_CAPTURE"
+end
+
+todo test "5a.2 acceptance: independently named boxes interoperate in-process"
+  produced = (
+    type BoxedText struct Box(value :: String)
+    Box("hello") :: BoxedText
+  )
+  expect produced.value fails "E_UNBOUND_NAME"
+
+  consumed = (
+    type LocalBox struct Box(content :: String)
+    (local :: LocalBox) = produced
+    local.content
+  )
+  assert consumed == "hello"
+
+  independent = Box("hello") :: (struct Box(String))
+  assert produced === independent
+end
+```
+
 The `pattern` and `struct` macros resolve type references, collapse nested
 abstract pattern forms, sort alternatives canonically, and remove repeated
 alternatives that compare exactly equal. They preserve explicit concrete
