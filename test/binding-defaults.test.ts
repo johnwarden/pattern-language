@@ -84,16 +84,19 @@ test("membership, matches, and parsing inspect existing complete fields", () => 
 });
 
 test("ambiguous overloads do not evaluate omitted defaults", () => {
+  // Same label, disjoint domain types: definition succeeds; an empty call is
+  // ambiguous via defaults without running either default expression.
+  // (Distinct labels with open packs overlap and are rejected at definition.)
   for (const defaults of [
-    ["(1 / 0)", "2"],
+    ["(1 / 0)", '"ok"'],
     ["2", "(1 / 0)"],
   ])
     assert.throws(
       () =>
         run(
-          `def f(x: Int = ${defaults[0]}) 1\ndef f(y: Int = ${defaults[1]}) 2\nf()`,
+          `def f(x: Int = ${defaults[0]}) 1\ndef f(x: String = ${defaults[1]}) 2\nf()`,
         ),
-      /ambiguous call/,
+      /ambiguous/,
     );
 });
 

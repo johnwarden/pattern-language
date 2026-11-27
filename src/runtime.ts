@@ -34,6 +34,7 @@ import {
   isOpenPattern,
   patternCaptures,
   explicitPatternCaptures,
+  orderedParts,
 } from "./pattern-captures.ts";
 import { dispatchSignature } from "./dispatch-domain.ts";
 import { TYPE_SCHEMA } from "./type-schema.ts";
@@ -74,6 +75,7 @@ import {
   operator,
   spread,
   positional,
+  fieldPattern,
   canonicalFields,
   normal,
   apply,
@@ -114,6 +116,15 @@ import {
   syntaxNumber,
 } from "./values.ts";
 import { exactArithmetic, isRational, negateNumeric } from "./rational.ts";
+import {
+  isPredicateCase,
+  predicateTest,
+  predicatesOfType,
+  checkBodyEvidence,
+  addEvidence,
+  emptyEvidence,
+  copyEvidence,
+} from "./refinement-evidence.ts";
 import type {
   Value,
   TypeValue,
@@ -368,6 +379,16 @@ export class Interpreter {
         accessors: [],
       });
       if (prelude) this.run(prelude, "repl", "prelude");
+      const predicateBinding = this.env.get("Predicate");
+      if (predicateBinding && !("kind" in predicateBinding)) {
+        this.primitives.set(
+          "Predicate",
+          this.instantiate(predicateBinding, []),
+        );
+      } else if (predicateBinding) {
+        const predicate = this.materializeType(predicateBinding);
+        if (predicate) this.primitives.set("Predicate", predicate);
+      }
     }
   }
   inspect(results: Field<Value>[]): string {
@@ -930,6 +951,15 @@ export class Interpreter {
                 throw new LanguageError("string size limit exceeded");
               return this.ascribeString(valLiteral(a.value + b.value));
             }
+            if (
+              (name === "/" || name === "%" || name === "div" || name === "flDiv") &&
+              !predicateTest("isNonZero", b)
+            )
+              throw new LanguageError(
+                "divisor does not satisfy isNonZero",
+                undefined,
+                { code: "E_REFINEMENT_FAILED", phase: "match" },
+              );
             if (!space || space.numeric === "rational") {
               const left = asNumeric(a),
                 right = asNumeric(b);
@@ -1043,6 +1073,9 @@ export class Interpreter {
         this.refine(base, predicate, env),
       ),
     );
+    // Predicate cases are designated after .where and tested inside refine();
+    // they are not installed as competing top-level callables (user isSquare
+    // definitions must remain unambiguous).
     scope.bindings.set(
       "matches",
       this.native("matches", [1, 1], ([value, pattern]) => {
@@ -2001,15 +2034,51 @@ export class Interpreter {
         }
       : single(this.evaluate(n.head, env), "function head");
     const unique = this.uniqueClosure(fn);
-    const args = this.evaluateFields(
-      n.body,
-      env,
-      unique
-        ? this.expectedFieldsFromPattern(unique.parameters[0] ?? [], unique.env)
-        : [],
-    );
+    const wherePartial = this.wherePredicatePack(fn);
+    const args = wherePartial
+      ? this.evaluateWherePredicate(n.body, env)
+      : this.evaluateFields(
+          n.body,
+          env,
+          unique
+            ? this.expectedFieldsFromPattern(
+                unique.parameters[0] ?? [],
+                unique.env,
+              )
+            : [],
+        );
     this.recordOperands(n, args);
     return this.invoke(fn, args, env);
+  }
+  /** The second pack of where(T)(p) designates Predicate from a bare name. */
+  private wherePredicatePack(fn: Value): boolean {
+    const value = unwrap(fn);
+    return (
+      value.kind === "native" &&
+      value.name === "where" &&
+      value.arities.length === 1
+    );
+  }
+  private evaluateWherePredicate(
+    body: Field<Syntax>[],
+    env: Scope,
+  ): Field<Value>[] {
+    if (body.length !== 1) return this.evaluateFields(body, env);
+    const arg = body[0].value;
+    // Known Predicate case names designate the enum member and ignore bindings
+    // (specs/refinement-predicates.md). Other operands evaluate normally so
+    // bootstrap function predicates and wrappers keep working.
+    if (arg.kind === "symbol" && !arg.quoted && isPredicateCase(arg.name))
+      return singleton(this.predicateValue(arg.name));
+    return this.evaluateFields(body, env);
+  }
+  private predicateValue(name: string): Value {
+    const predicate = this.primitives.get("Predicate");
+    if (!predicate)
+      throw new LanguageError("Predicate is not available", undefined, {
+        code: "E_EXPECTED_PREDICATE",
+      });
+    return single(this.check(predicate, valSymbol(name)));
   }
   /**
    * Host embedding API: report the evaluated operand packs of the one binary
@@ -2059,6 +2128,7 @@ export class Interpreter {
     copy.functions = new Map(env.functions);
     copy.typeDefinitions = new Map(env.typeDefinitions);
     copy.runtimeBindings = new Set(env.runtimeBindings);
+    copy.evidence = copyEvidence(env.evidence);
     return copy;
   }
   private uniqueClosure(fn: Value): Closure | undefined {
@@ -2261,6 +2331,7 @@ export class Interpreter {
             fn,
             env.visible(name.name).filter((other) => other.id !== fn.id),
           );
+        this.checkFunctionEvidence(fn, fn.parameters, fn.env);
       }
       const group = new Set(declarations);
       for (const declaration of [...declarations, ...functions])
@@ -2410,7 +2481,77 @@ export class Interpreter {
       };
     this.registerMethod(head.name, fn, env);
     local.functions.set(head.name, env.functions.get(head.name)!);
+    if (!this.deferringDeclarations && !isMacro)
+      this.checkFunctionEvidence(fn, packs, local);
     return singleton(fn);
+  }
+  /** Definition-time evidence obligations for refined uses of parameters. */
+  private checkFunctionEvidence(
+    fn: Closure,
+    packs: Field<Syntax>[][],
+    env: Scope,
+  ): void {
+    const checkEnv = new Scope(env);
+    const evidence = emptyEvidence();
+    const registerCapture = (
+      name: string,
+      typeSyntax: Syntax | undefined,
+    ) => {
+      if (checkEnv.bindings.has(name)) return;
+      let type = this.primitives.get("Any")!;
+      if (typeSyntax) {
+        try {
+          type = this.typeFromSyntax(typeSyntax, env);
+          addEvidence(evidence, name, predicatesOfType(type));
+        } catch {
+          /* annotation type errors surface on use */
+        }
+      }
+      checkEnv.bindings.set(name, {
+        kind: "slot",
+        type,
+        value: valSymbol("\0runtime"),
+      });
+      checkEnv.runtimeBindings.add(name);
+    };
+    const visitPattern = (n: Syntax): void => {
+      const annotation = binary(n, "::");
+      if (annotation) {
+        if (annotation[0].kind === "symbol" && !annotation[0].quoted)
+          registerCapture(annotation[0].name, annotation[1]);
+        visitPattern(annotation[0]);
+        return;
+      }
+      if (n.kind === "symbol" && !n.quoted) {
+        registerCapture(n.name, undefined);
+        return;
+      }
+      if (n.kind === "sequence") {
+        for (const item of n.items) visitPattern(item);
+        return;
+      }
+      if (n.kind === "postfix") {
+        visitPattern(n.operand);
+        return;
+      }
+      if (n.kind === "apply" || n.kind === "pack") {
+        if (n.kind !== "pack" && n.head.kind !== "symbol") visitPattern(n.head);
+        for (const field of n.body) {
+          const { pattern } = fieldPattern(field.value);
+          visitPattern(pattern);
+        }
+      }
+    };
+    for (const pack of packs)
+      for (const field of pack) visitPattern(field.value);
+    checkEnv.evidence = evidence;
+    checkBodyEvidence({
+      body: fn.body,
+      env: checkEnv,
+      evidence,
+      binders: captureNames,
+      resolveType: (syntax, scope) => this.typeFromSyntax(syntax, scope),
+    });
   }
   private registerMethod(name: string, fn: Closure, env: Scope) {
     const existing = env.visible(name);
@@ -2446,34 +2587,345 @@ export class Interpreter {
   ): void {
     if (!fn.macro && existing.some((c) => c.kind === "closure" && !c.macro)) {
       const domain = this.methodDomain(fn);
+      const domainPacks = fn.parameters.map((pack) =>
+        this.compiler(fn.env, false).fields(pack),
+      );
       for (const prior of existing) {
         if (prior.kind !== "closure" || prior.macro) continue;
         const other = this.methodDomain(prior);
-        if ((domain.refined || other.refined) && domain.key === other.key)
+        const related = [
+          {
+            message: "Conflicting overload",
+            span: prior.signature?.span,
+          },
+        ];
+        if (domain.key === other.key) {
+          if (domain.refined || other.refined)
+            throw new LanguageError(
+              "overloads cannot differ only by refinements: " + name,
+              fn.signature?.span,
+              {
+                code: "E_REFINED_OVERLOAD",
+                phase: "declaration",
+                notes: [
+                  "Compare overload domains after erasing refinement predicates.",
+                  "Refinements validate the selected function; they cannot select an overload.",
+                ],
+                related,
+              },
+            );
           throw new LanguageError(
-            "overloads cannot differ only by refinements: " + name,
+            "overlapping overload domains for " + name,
             fn.signature?.span,
             {
-              code: "E_REFINED_OVERLOAD",
+              code: "E_OVERLAPPING_OVERLOAD",
+              phase: "declaration",
+              related,
+            },
+          );
+        }
+        const otherPacks = prior.parameters.map((pack) =>
+          this.compiler(prior.env, false).fields(pack),
+        );
+        const packCount = Math.min(domainPacks.length, otherPacks.length);
+        let overlaps = true;
+        for (let i = 0; i < packCount; i++) {
+          if (!this.dispatchDomainsOverlap(domainPacks[i], otherPacks[i])) {
+            overlaps = false;
+            break;
+          }
+        }
+        if (overlaps)
+          throw new LanguageError(
+            "overlapping overload domains for " + name,
+            fn.signature?.span,
+            {
+              code: "E_OVERLAPPING_OVERLOAD",
               phase: "declaration",
               notes: [
-                "Refinements validate the selected function; they cannot select an overload.",
+                "Compare overload domains after erasing refinement predicates.",
               ],
-              related: [
-                {
-                  message: "Conflicting overload",
-                  span: prior.signature?.span,
-                },
-              ],
+              related,
             },
           );
       }
     }
   }
+  /**
+   * Structural overlap after predicate erasure. Distinct concrete type
+   * identities are disjoint for overload dispatch (Int vs Float64). An
+   * untyped or Any position absorbs every counterpart. Abstract unions and
+   * facets expand to their admitted structural patterns before the comparison,
+   * preserving concrete field boundaries and open/repeated-field semantics.
+   */
+  private dispatchDomainsOverlap(
+    left: Pattern<Value>,
+    right: Pattern<Value>,
+  ): boolean {
+    const anyType = this.primitives.get("Any");
+    const anyId = anyType ? typeIdentity(anyType) : undefined;
+    const peel = (p: Pattern<Value>): Pattern<Value> => {
+      while (true) {
+        if (p.kind === "capture" || p.kind === "map") {
+          p = p.pattern;
+          continue;
+        }
+        if (p.kind === "ref" && p.dispatchBase) {
+          p = p.dispatchBase();
+          continue;
+        }
+        break;
+      }
+      return p;
+    };
+    const peelPart = (p: Pattern<Value>): Pattern<Value> => {
+      while (p.kind === "capture" || p.kind === "map") p = p.pattern;
+      return p;
+    };
+    const abstractDomain = (
+      p: Extract<Pattern<Value>, { kind: "ref" }>,
+    ): boolean => {
+      if (p.facet) return true;
+      const type = p.referent;
+      if (
+        !type ||
+        typeof type !== "object" ||
+        !("kind" in type) ||
+        (type as TypeValue).kind !== "type" ||
+        !(type as TypeValue).transparent
+      )
+        return false;
+      for (const primitive of this.primitives.values())
+        if (primitive === type) return false;
+      return true;
+    };
+    /** Unwrap single-member transparent/facet wrappers to admitted structure.
+     * Multi-member abstract unions stay as refs so unionChoices can expand
+     * them to typed member refs (preserving concrete identities).
+     */
+    const expandDomain = (p: Pattern<Value>): Pattern<Value> => {
+      p = peel(p);
+      if (p.kind !== "ref" || !abstractDomain(p)) return p;
+      const type = p.referent as TypeValue;
+      const members = type.unionMembers;
+      if (members?.length === 1) return members[0].pattern();
+      if (members && members.length > 1) return p;
+      return type.pattern();
+    };
+    const unionChoices = (p: Pattern<Value>): Pattern<Value>[] | undefined => {
+      if (p.kind === "union") return p.choices;
+      if (p.kind === "ref" && p.referent && p.referent.kind === "type") {
+        const members = this.expandDispatchTypes(p.referent);
+        if (members.length > 1)
+          return members.map((member) => this.typePattern(member));
+      }
+      return;
+    };
+    const fieldsOverlap = (
+      a: Extract<Pattern<Value>, { kind: "fields" }>,
+      b: Extract<Pattern<Value>, { kind: "fields" }>,
+    ): boolean => {
+      const shape = (p: typeof a) => {
+        const fixed = new Map<string, Pattern<Value>>();
+        let repeat: Pattern<Value> | undefined;
+        for (const part of p.parts) {
+          const q = peelPart(part);
+          if (q.kind === "repeat") repeat = q.pattern;
+          else if (q.kind === "label") fixed.set(q.label, q.pattern);
+          else return;
+        }
+        return { fixed, repeat };
+      };
+      const x = shape(a),
+        y = shape(b);
+      if (!x || !y) {
+        const partsA = orderedParts(a.parts);
+        const partsB = orderedParts(b.parts);
+        if (partsA.length !== partsB.length) return false;
+        return partsA.every((part, i) => go(part, partsB[i]));
+      }
+      for (const label of new Set([...x.fixed.keys(), ...y.fixed.keys()])) {
+        const positional = /^_\d+$/.test(label);
+        const leftField = x.fixed.get(label);
+        const rightField = y.fixed.get(label);
+        if (leftField && rightField) {
+          if (!go(leftField, rightField)) return false;
+          continue;
+        }
+        // Complete pack labels still distinguish overloads (x: Int vs y: Int).
+        // Positional openness (`...` / ignorePositions) or a repeat absorbs a
+        // missing positional field; labeled openness (`**` / openLabels)
+        // absorbs a missing named label — matching union-disjointness.ts.
+        const other = leftField ? y : x;
+        const source = leftField ?? rightField!;
+        const openSide = leftField ? b : a;
+        if (positional && other.repeat) {
+          if (!go(source, other.repeat)) return false;
+        } else if (positional && openSide.ignorePositions) {
+          /* absorbed by positional rest */
+        } else if (!positional && openSide.openLabels) {
+          /* absorbed by labeled rest */
+        } else return false;
+      }
+      return true;
+    };
+    const go = (a: Pattern<Value>, b: Pattern<Value>): boolean => {
+      a = expandDomain(a);
+      b = expandDomain(b);
+      a = peel(a);
+      b = peel(b);
+      if (a.kind === "any" || b.kind === "any") return true;
+      if (a.kind === "ref" && a.dispatchIdentity?.() === anyId) return true;
+      if (b.kind === "ref" && b.dispatchIdentity?.() === anyId) return true;
+      const choicesA = unionChoices(a);
+      const choicesB = unionChoices(b);
+      if (choicesA || choicesB) {
+        const leftChoices = choicesA ?? [a];
+        const rightChoices = choicesB ?? [b];
+        return leftChoices.some((leftChoice) =>
+          rightChoices.some((rightChoice) => go(leftChoice, rightChoice)),
+        );
+      }
+      if (a.kind === "ref" && b.kind === "ref") {
+        const idA = a.dispatchIdentity?.() ?? a.key;
+        const idB = b.dispatchIdentity?.() ?? b.key;
+        if (idA === idB) return true;
+        // Remaining abstract wrappers expand once more; concrete identities
+        // (Int vs Float64) stay disjoint by descriptor. If expansion cannot
+        // expose structure, treat the domains as overlapping.
+        if (abstractDomain(a) || abstractDomain(b)) {
+          const expandedA = expandDomain(a);
+          const expandedB = expandDomain(b);
+          if (expandedA === a && expandedB === b) return true;
+          return go(expandedA, expandedB);
+        }
+        return false;
+      }
+      if (a.kind === "test" && b.kind === "test")
+        return (
+          JSON.stringify(a.identity ?? a.name) ===
+          JSON.stringify(b.identity ?? b.name)
+        );
+      if (a.kind === "label" && b.kind === "label")
+        return a.label === b.label && go(a.pattern, b.pattern);
+      if (a.kind === "fields" && b.kind === "fields") return fieldsOverlap(a, b);
+      if (a.kind === "node" && b.kind === "node")
+        return go(a.head, b.head) && go(a.body, b.body);
+      if (a.kind === "sequence" && b.kind === "sequence")
+        return (
+          a.parts.length === b.parts.length &&
+          a.parts.every((part, i) => go(part, b.parts[i]))
+        );
+      return false;
+    };
+    return go(left, right);
+  }
+  /** Expand abstract unions (and their aliases) to admitted member types. */
+  private expandDispatchTypes(type: TypeValue): TypeValue[] {
+    const ownMembers = Object.getOwnPropertyDescriptor(type, "unionMembers");
+    const members =
+      ownMembers && !ownMembers.get
+        ? (ownMembers.value as TypeValue[] | undefined)
+        : undefined;
+    if (members && members.length > 1)
+      return members.flatMap((member) => this.expandDispatchTypes(member));
+    const alias = this.aliasTargets.get(type);
+    if (alias) {
+      const expanded = this.expandDispatchTypes(alias);
+      if (expanded.length > 1 || expanded[0] !== alias) return expanded;
+    }
+    return [type];
+  }
   private methodDomain(fn: Closure) {
     return dispatchSignature(
       fn.parameters.map((pack) => this.compiler(fn.env, false).fields(pack)),
     );
+  }
+  /**
+   * Build the union of parameter types across structurally applicable
+   * closures and designate each supplied argument against that union.
+   * Returns typed arguments when designation changes at least one value.
+   */
+  private designateAgainstOverloadUnion(
+    candidates: Closure[],
+    args: Field<Value>[],
+  ): Field<Value>[] | undefined {
+    const designated = args.map((arg) => ({ ...arg }));
+    let changed = false;
+    const usedByCandidate = candidates.map(() => new Set<number>());
+    for (let ai = 0; ai < args.length; ai++) {
+      const arg = args[ai];
+      const types: TypeValue[] = [];
+      for (let ci = 0; ci < candidates.length; ci++) {
+        const parameters = candidates[ci].parameters[0];
+        const used = usedByCandidate[ci];
+        const index = !positional(arg.label)
+          ? parameters.findIndex((field) => field.label === arg.label)
+          : parameters.findIndex(
+              (field, i) => !used.has(i) && positional(field.label),
+            );
+        if (index < 0) return;
+        used.add(index);
+        const annotation = binary(parameters[index].value, "::");
+        if (!annotation) return;
+        try {
+          types.push(this.typeFromSyntax(annotation[1], candidates[ci].env));
+        } catch {
+          return;
+        }
+      }
+      const expanded = types.flatMap((type) => this.expandDispatchTypes(type));
+      if (expanded.length < 2) continue;
+      const unique = [
+        ...new Map(
+          expanded.map((t) => [typeIdentity(t), t] as const),
+        ).values(),
+      ];
+      const expected =
+        unique.length === 1 ? unique[0] : this.unionType(unique);
+      try {
+        const checked = single(this.check(expected, arg.value));
+        designated[ai] = { ...arg, value: checked };
+        changed = true;
+      } catch (error) {
+        // A false constant predicate excludes a member during designation of
+        // the overload union. A predicate *error* (including inside an
+        // abstract-union parameter) must propagate rather than restore
+        // competing overload candidates as mere ambiguity.
+        throw error;
+      }
+    }
+    return changed ? designated : undefined;
+  }
+  /**
+   * Erase refinement wrappers (and single-member unions of them) to the
+   * structural base used for overload-domain comparison.
+   */
+  private erasedDispatchBase(type: TypeValue | undefined): TypeValue | undefined {
+    if (!type) return;
+    if (type.baseType) return type.baseType;
+    // Only read a data `unionMembers` field. Structural Recursive descriptors
+    // expose an accessor that can throw while the descriptor is still decoding.
+    const ownMembers = (t: TypeValue) => {
+      const desc = Object.getOwnPropertyDescriptor(t, "unionMembers");
+      if (!desc || desc.get) return;
+      return desc.value as TypeValue[] | undefined;
+    };
+    const alias = this.aliasTargets.get(type);
+    if (alias) {
+      const fromAlias = this.erasedDispatchBase(alias);
+      if (fromAlias) return fromAlias;
+      const aliasMembers = ownMembers(alias);
+      if (aliasMembers?.length === 1) {
+        const member = aliasMembers[0];
+        return this.erasedDispatchBase(member) ?? member.baseType;
+      }
+    }
+    const members = ownMembers(type);
+    if (members?.length === 1) {
+      const member = members[0];
+      return this.erasedDispatchBase(member) ?? member.baseType;
+    }
   }
   private expandMacro(
     fn: Closure,
@@ -2603,6 +3055,8 @@ export class Interpreter {
           const pattern = this.compiler(candidate.env, false).fields(
             candidate.parameters[0],
           );
+          // Structural recognition only. Predicates do not select overloads;
+          // designation against the union of domains runs after this loop.
           valueMatcher().recognize(pattern, args);
           applicable.push({ candidate });
         } catch (e) {
@@ -2665,6 +3119,8 @@ export class Interpreter {
           undefined,
           { code: "E_NOT_CALLABLE" },
         );
+      const sole =
+        reasons.length === 1 ? reasons[0].error.diagnostic.code : undefined;
       throw new Mismatch(
         "no applicable function" +
           (fn.kind === "overload" ? " " + fn.name : "") +
@@ -2674,9 +3130,10 @@ export class Interpreter {
         reasons.length === 1 ? reasons[0].error.diagnostic.primary : undefined,
         {
           code:
-            reasons.length === 1 &&
-            reasons[0].error.diagnostic.code === "E_MISSING_FIELD"
-              ? "E_MISSING_FIELD"
+            sole === "E_MISSING_FIELD" ||
+            sole === "E_REFINEMENT_FAILED" ||
+            sole === "E_NOT_EXACTLY_REPRESENTABLE"
+              ? sole
               : "E_NO_METHOD",
           causes: reasons.map((r) => r.error.diagnostic),
           notes: reasons.map(
@@ -2692,15 +3149,68 @@ export class Interpreter {
         },
       );
     }
-    if (applicable.length !== 1)
+    if (
+      applicable.length > 1 &&
+      args.length > 0 &&
+      applicable.every((a) => a.candidate.kind === "closure")
+    ) {
+      // Designate supplied args against the union of structurally applicable
+      // domains, then let the typed result select one clause. Predicates run
+      // during designation, not as an overload filter.
+      const closures = applicable.map((a) => a.candidate as Closure);
+      const designated = this.designateAgainstOverloadUnion(closures, args);
+      if (designated) {
+        const narrowed: typeof applicable = [];
+        for (const entry of applicable) {
+          const candidate = entry.candidate as Closure;
+          try {
+            this.matchParameters(
+              candidate.parameters[0],
+              designated,
+              candidate.env,
+            );
+            narrowed.push(entry);
+          } catch (e) {
+            if (!(e instanceof Mismatch) && !(e instanceof LanguageError))
+              throw e;
+            rejected.push({
+              candidate,
+              error:
+                e instanceof Mismatch
+                  ? e
+                  : new Mismatch(e.message, e.diagnostic.primary, e.diagnostic),
+            });
+          }
+        }
+        if (narrowed.length === 1) {
+          applicable.length = 0;
+          applicable.push(narrowed[0]);
+          args = designated;
+        }
+      }
+    }
+    if (applicable.length !== 1) {
+      // Competing closures with a supplied argument are value designation
+      // (typed domains / tag patterns). Zero-arg overload ties and accessor
+      // collisions stay ordinary call ambiguity.
+      const designation =
+        args.length > 0 &&
+        applicable.every((a) => a.candidate.kind === "closure");
       throw new LanguageError(
-        "ambiguous call: " +
-          applicable.length +
-          " applicable functions" +
-          (fn.kind === "overload" ? " named " + fn.name : ""),
+        designation
+          ? "ambiguous value designator: " +
+              applicable.length +
+              " interpretations match" +
+              (fn.kind === "overload" ? " for " + fn.name : "")
+          : "ambiguous call: " +
+              applicable.length +
+              " applicable functions" +
+              (fn.kind === "overload" ? " named " + fn.name : ""),
         undefined,
         {
-          code: "E_AMBIGUOUS_CALL",
+          code: designation
+            ? "E_AMBIGUOUS_VALUE_DESIGNATOR"
+            : "E_AMBIGUOUS_CALL",
           phase: "match",
           related: applicable.slice(0, 8).map((a) => ({
             message: "Matching candidate " + describe(a.candidate),
@@ -2708,6 +3218,7 @@ export class Interpreter {
           })),
         },
       );
+    }
     const { candidate, fields } = applicable[0];
     if (candidate.kind === "accessor") return fields!;
     if (candidate.kind === "closure")
@@ -3695,21 +4206,44 @@ export class Interpreter {
           ],
         },
       );
-    if (!["closure", "native", "accessor", "overload"].includes(predicate.kind))
+    const predicateType = this.primitives.get("Predicate");
+    const enumCase =
+      predicate.kind === "symbol" && isPredicateCase(predicate.name)
+        ? predicate.name
+        : undefined;
+    const isEnumPredicate =
+      !!enumCase &&
+      (!predicateType ||
+        (() => {
+          try {
+            this.check(predicateType, predicateValue);
+            return true;
+          } catch {
+            return !!enumCase;
+          }
+        })());
+    if (
+      !isEnumPredicate &&
+      !["closure", "native", "accessor", "overload"].includes(predicate.kind)
+    )
       throw new LanguageError(
-        "where requires a predicate function as its second argument",
+        "where requires a Predicate or predicate function as its second argument",
         undefined,
         {
           code: "E_EXPECTED_PREDICATE",
-          notes: ["Pass a closure such as n -> isInt64(n)."],
+          notes: [
+            "Pass a Predicate case such as isNonZero, or a closure such as n -> n != 0.",
+          ],
         },
       );
-    const identity =
-      predicate.kind === "overload"
+    const identity = isEnumPredicate
+      ? enumCase!
+      : predicate.kind === "overload"
         ? predicate.candidates.map((c) => c.id)
         : (predicate as Candidate).id;
-    const description =
-      predicate.kind === "closure"
+    const description = isEnumPredicate
+      ? enumCase!
+      : predicate.kind === "closure"
         ? "(" +
           normal(
             apply(
@@ -3735,6 +4269,7 @@ export class Interpreter {
         pattern: this.typePattern(base),
         validate: (fields) =>
           fields.every((f) => {
+            if (isEnumPredicate) return predicateTest(enumCase!, f.value);
             const result = unwrap(
               single(
                 this.invoke(predicate, singleton(f.value)),
@@ -3805,6 +4340,7 @@ export class Interpreter {
     requireConcrete = false,
     allowProjection = false,
   ): Pattern<Value> {
+    const erased = this.erasedDispatchBase(type) ?? type.baseType;
     return {
       kind: "ref",
       key: type.key,
@@ -3817,10 +4353,10 @@ export class Interpreter {
       get wrappedPrimitive() {
         return type.wrappedPrimitive;
       },
-      dispatchBase: type.baseType
-        ? () => this.typePattern(type.baseType!, requireConcrete)
+      dispatchBase: erased
+        ? () => this.typePattern(erased, requireConcrete)
         : undefined,
-      dispatchIdentity: () => typeIdentity(type.baseType ?? type),
+      dispatchIdentity: () => typeIdentity(erased ?? type),
       resolve: () => {
         let original: Value | undefined;
         let selected: Pattern<Value> | undefined;
@@ -4259,6 +4795,7 @@ export class Interpreter {
             e.diagnostic.message,
           e.diagnostic.primary,
           {
+            code: e.diagnostic.code,
             related: e.diagnostic.related,
             path: e.diagnostic.path,
             expected: e.diagnostic.expected,

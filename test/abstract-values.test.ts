@@ -91,15 +91,29 @@ test("same-space refinement union members are rejected independent of overlap", 
 });
 
 test("refinements cannot distinguish overloads with the same whole pack domain", () => {
+  // Portable contracts live in specs/type-values.md (overload domains).
+  // Host coverage keeps the bootstrap where-lambda form and the disjoint
+  // multi-argument case that those fences do not exercise.
   const defs =
     "def Positive\n  (type Int) .where (x -> x > (0 :: Int))\nend\ndef Negative\n  (type Int) .where (x -> x < (0 :: Int))\nend\n";
   assert.throws(
     () => run(defs + "def f(x :: Positive) 1\ndef f(y :: Negative) 2\n0"),
-    /cannot differ only by refinements/,
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      e.diagnostic.code === "E_REFINED_OVERLOAD",
   );
   assert.throws(
     () => run(defs + "def f(x :: Int) 1\ndef f(y :: Positive) 2\n0"),
-    /cannot differ only by refinements/,
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      e.diagnostic.code === "E_REFINED_OVERLOAD",
+  );
+  assert.throws(
+    () => run(defs + "def f(x :: Positive) 1\ndef f(x) 2\n0"),
+    (e: unknown) =>
+      e instanceof LanguageError &&
+      (e.diagnostic.code === "E_OVERLAPPING_OVERLOAD" ||
+        e.diagnostic.code === "E_REFINED_OVERLOAD"),
   );
   assert.equal(
     run(
@@ -109,12 +123,8 @@ test("refinements cannot distinguish overloads with the same whole pack domain",
     "(1, 2)",
   );
   assert.throws(
-    () => run(defs + "def f(x :: Positive) 1\ndef f(x) 2\nf(negate(1))"),
-    /ambiguous call/,
-  );
-  assert.throws(
     () => run(defs + "def f(x :: Positive) 1\nf(negate(1))"),
-    /subset/,
+    /E_REFINEMENT_FAILED|subset|does not satisfy/,
   );
 });
 

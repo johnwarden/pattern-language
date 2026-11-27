@@ -6,7 +6,7 @@ successful check can establish that a particular value satisfies the
 predicate. That guarantee is **refinement evidence**.
 
 ```pattern
-todo test "A refined binding carries its guarantee into the next binding"
+test "A refined binding carries its guarantee into the next binding"
   type NonZeroFloat pattern Float .where isNonZero
 
   (x :: NonZeroFloat) = 2 :: Float
@@ -56,7 +56,7 @@ The binding annotation requests that check directly. A separate expression
 ascription can request it too.
 
 ```pattern
-todo test "A base-typed constant can be checked against a refinement"
+test "A base-typed constant can be checked against a refinement"
   type NonZeroFloat pattern Float .where isNonZero
   def twice(n :: Float) n + n
   def keep(n :: NonZeroFloat) n
@@ -68,7 +68,8 @@ todo test "A base-typed constant can be checked against a refinement"
   expect keep(two) is 2 :: Float
   expect keep(twice(1 :: Float)) is 2 :: Float
   expect (6 :: Float) / two is 3 :: Float
-  expect (6 :: Float) / 2 is 3 :: Float
+  # Mixed Float / bare NumericValue fit waits on fixed-precision promotion (#121).
+  todo expect (6 :: Float) / 2 is 3 :: Float
 
   (zero :: Float) = twice(0 :: Float)
   expect
@@ -96,6 +97,7 @@ The same rule applies to the fit predicate of a concrete numeric type.
 checking evaluates `fitsInt32` on the bound constant `a`.
 
 ```pattern
+# Fixed-width Int32 designation depends on #121 (cursor/feat-fixed-width-integers-6b49).
 todo test "A bound constant can designate into a fixed-width parameter"
   def f(x :: Int32) x
   a = 1
@@ -121,7 +123,7 @@ A field or element can establish its own refinement this way even when a
 different field is supplied at runtime.
 
 ```pattern
-todo test "A constant field can establish a refinement beside a runtime field"
+test "A constant field can establish a refinement beside a runtime field"
   type NonZeroFloat pattern Float .where isNonZero
   type PairOfFloats struct Pair(NonZeroFloat, Float)
   (two :: Float) = (1 :: Float) + (1 :: Float)
@@ -140,6 +142,7 @@ failed). Numeric fit predicates that fail exact representation report
 If evaluation raises an error, preserve its diagnostic.
 
 ```pattern
+# Number / NonZeroNumber wait on the Real|Complex Number union from fixed-precision work.
 todo test "A literal can establish a refinement"
   type NonZeroFloat pattern Float .where isNonZero
   type NonZeroNumber pattern Number .where isNonZero
@@ -169,6 +172,8 @@ checker knows that this particular `y` passed. An assignment, a type
 annotation, or a call can use that evidence.
 
 ```pattern
+# Return-type annotations on def and the Number union are not in this slice;
+# evidence for .matches / missing evidence is covered by the Float-only cases above.
 todo test "A Float parameter can be used as nonzero in the checked branch"
   type NonZeroFloat pattern Float .where isNonZero
   type NonZeroNumber pattern Number .where isNonZero
@@ -219,6 +224,94 @@ arm's **guard** is a condition that must succeed before its body runs. If
 the arm binds `n :: Float` and its guard checks `n .matches NonZeroFloat`,
 the body can use `n` as nonzero.
 
+```pattern
+test "Statements after an if do not keep branch-only evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float)
+      if n .matches NonZeroFloat
+        0
+      end
+      keep(n)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "A local alias keeps the runtime parameter's missing evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float)
+      alias = n
+      keep(alias)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Evidence does not transfer to a computed value"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: NonZeroFloat) keep(n - n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "A shadowing binding does not keep the shadowed name's evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float, m :: Float)
+      if n .matches NonZeroFloat
+        (n :: Float) = m
+        keep(n)
+      else
+        0 :: Float
+      end
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "A shadowing lambda parameter does not keep the outer name's evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float, m :: Float)
+      if n .matches NonZeroFloat
+        g = (n :: Float) -> keep(n)
+        g(m)
+      else
+        0 :: Float
+      end
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "A lambda parameter does not leak into the surrounding checker environment"
+  type NZ pattern Float .where isNonZero
+  def keep(n :: NZ) n
+  expect
+    def bad(n :: Float)
+      g = (n :: String) -> n
+      keep(n)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+```
+
+Evidence is keyed by binding identity, not by name. A new binding of a
+name starts with no evidence. A direct copy of a binding that already has
+evidence receives that evidence; a computation over the value does not.
+Lambda parameters are checked in a child scope so their bindings cannot
+change the surrounding function's types or evidence.
+
+
 ### Ordering explicit checks
 
 Use explicit checks to give predicates a priority within one base-type
@@ -226,7 +319,7 @@ function. The overload-domain rule is specified in
 [type values](type-values.md#overload-domains-and-projection-dispatch).
 
 ```pattern
-todo test "One Int overload can give its predicates an explicit priority"
+test "One Int overload can give its predicates an explicit priority"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
   def classify(n :: Int)
@@ -249,7 +342,7 @@ predicates on nested fields. A successful parse returns a value with the
 guarantees of `T`.
 
 ```pattern
-todo test "Typed parsing establishes nested field refinements"
+test "Typed parsing establishes nested field refinements"
   type PositiveInt pattern Int .where isPositive
   type Rectangle struct Rect(PositiveInt, PositiveInt)
 
@@ -270,6 +363,7 @@ the true branch returns the value that passed the check. The other branch
 returns the absence case of `NonZeroNumber?`.
 
 ```pattern
+# Number and def return-type annotations are outside this slice.
 todo test "Every return path meets a refined optional result"
   type NonZeroNumber pattern Number .where isNonZero
   def zeroAsNone(x :: Number) :: NonZeroNumber?
@@ -302,7 +396,25 @@ unchecked call fails with `E_NO_METHOD`. See
 
 ```pattern
 test "A literal zero fails the divisor refinement"
-  todo expect (1 :: Float) / (0 :: Float) fails "E_REFINEMENT_FAILED"
+  expect (1 :: Float) / (0 :: Float) fails "E_REFINEMENT_FAILED"
+end
+
+test "A runtime Float divisor needs nonzero evidence"
+  expect
+    def unchecked(d :: Float)
+      (1 :: Float) / d
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Successive packs check each refined parameter"
+  type NonZeroFloat pattern Float .where isNonZero
+  def divide(n :: Float)(d :: NonZeroFloat) n / d
+  expect
+    def bad(d :: Float) divide(1 :: Float)(d)
+    "defined"
+  fails "E_NO_METHOD"
 end
 ```
 
@@ -333,11 +445,10 @@ test "Int and Float64 overloads accept typed arguments and compete for a literal
   def pick(n :: Float64) "float"
   expect pick(3 :: Int) is "integer"
   expect pick(3 :: Float64) is "float"
-  legacy expect pick(3) fails "E_AMBIGUOUS_CALL"
-  todo expect pick(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect pick(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
-todo test "Union bindings and overloads use the same constant designation"
+test "Union bindings and overloads use the same constant designation"
   type PositiveInt pattern Int .where isPositive
   type Choice pattern PositiveInt | Float64
   def pick(n :: PositiveInt) "integer"
@@ -374,6 +485,216 @@ A failed predicate excludes one constant interpretation. A predicate error
 retains its diagnostic. After one interpretation is selected, reuse its
 predicate checks when binding parameters. Runtime arguments require evidence
 from their types or earlier explicit checks. See [ambiguous value designators](ambiguous-values.md).
+
+```pattern
+test "A Float64 argument selects the Float64 overload without Int evidence"
+  type PositiveInt pattern Int .where isPositive
+  def pick(n :: PositiveInt) "integer"
+  def pick(n :: Float64) "float"
+  def relay(n :: Float64) pick(n)
+  expect relay(3 :: Float64) is "float"
+end
+
+test "A predicate error during designation retains its diagnostic"
+  def onlyStrings(s :: String) True
+  p = Int .where (n -> onlyStrings(n))
+  def pick(n :: p) "integer"
+  def pick(n :: Float64) "float"
+  expect pick(3) fails "E_NO_METHOD"
+end
+
+test "A predicate error inside an abstract-union parameter propagates"
+  def onlyStrings(s :: String) True
+  p = Int .where (n -> onlyStrings(n))
+  type Choice pattern p | String
+  def pick(n :: Choice) "choice"
+  def pick(n :: Float64) "float"
+  expect pick(3) fails "E_NO_METHOD"
+end
+
+test "An abstract union parameter overlaps a concrete member overload"
+  type Input pattern Int | String
+  expect
+    def f(n :: Input) "union"
+    def f(n :: String) "string"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Closed and open structural facets with overlapping domains are rejected"
+  type R pattern Rect(Float, Float)
+  type OpenR pattern Rect(Float, Float, ...)
+  expect
+    def area(r :: R) "closed"
+    def area(r :: OpenR) "open"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Inline closed and open structural parameters with overlapping domains are rejected"
+  expect
+    def area(Rect(a :: Float, b :: Float)) "closed"
+    def area(Rect(a :: Float, b :: Float, ...)) "open"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Inline closed and open labeled structural parameters with overlapping domains are rejected"
+  expect
+    def f(Rect(x: Int, **)) "open"
+    def f(Rect(x: Int, y: Int)) "closed"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Closed and open labeled structural facets with overlapping domains are rejected"
+  type A pattern Rect(x: Int, **)
+  type B pattern Rect(x: Int, y: Int)
+  expect
+    def f(n :: A) "open"
+    def f(n :: B) "closed"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Distinct closed labeled structural parameters remain disjoint overloads"
+  type Rect struct Rect(...)
+  def f(Rect(x: Int, y: Int)) "xy"
+  def f(Rect(x: Int, z: Int)) "xz"
+  expect f(Rect(x: 1, y: 2)) is "xy"
+  expect f(Rect(x: 1, z: 3)) is "xz"
+  assert not(Rect(x: 1, y: 2, z: 3) .matches Rect(x: Int, y: Int))
+  assert not(Rect(x: 1, y: 2, z: 3) .matches Rect(x: Int, z: Int))
+end
+
+test "Box Int and Box Float64 facets are disjoint overloads"
+  type I pattern Box(Int)
+  type F pattern Box(Float64)
+  def pick(n :: I) "integer"
+  def pick(n :: F) "float"
+  type BoxedInt struct Box(Int)
+  type BoxedFloat struct Box(Float64)
+  assert (Box(1) :: BoxedInt) .matches I
+  assert not((Box(1) :: BoxedInt) .matches F)
+  assert (Box(1.5) :: BoxedFloat) .matches F
+  assert not((Box(1.5) :: BoxedFloat) .matches I)
+  expect pick(Box(1) :: BoxedInt) is "integer"
+  expect pick(Box(1.5) :: BoxedFloat) is "float"
+end
+
+test "Union-typed overload parameters designate through their members"
+  type PositiveInt pattern Int .where isPositive
+  type Choice pattern PositiveInt | String
+  def pick(n :: Choice) "choice"
+  def pick(n :: Float64) "float"
+  expect pick(-3) is "float"
+end
+
+test "An annotated runtime alias keeps its refinement evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  def ok(n :: NonZeroFloat)
+    (alias :: NonZeroFloat) = n
+    keep(alias)
+  end
+  expect ok(2 :: Float) is 2 :: Float
+end
+
+test "An inferred runtime alias keeps its refinement evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  def relay(n :: NonZeroFloat)
+    alias = n
+    keep(alias)
+  end
+  expect relay(2 :: Float) is 2 :: Float
+end
+
+test "An inferred alias inside a matches branch keeps that evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  def relay(n :: Float)
+    if n .matches NonZeroFloat
+      alias = n
+      keep(alias)
+    else
+      0 :: Float
+    end
+  end
+  expect relay(2 :: Float) is 2 :: Float
+end
+
+test "A bare runtime alias still lacks evidence for a computed use"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float)
+      alias = n
+      keep(alias - alias)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Every member of a runtime union argument needs evidence"
+  type PositiveInt pattern Int .where isPositive
+  type Input pattern Int | Float64
+  type Choice pattern PositiveInt | Float64
+  def keep(n :: Choice) n
+  expect
+    def bad(n :: Input) keep(n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Nested parameter captures are runtime bindings"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(Box(n :: Float)) keep(n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Calls through a stored callable check refinement evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  keep = (n :: NonZeroFloat) -> n
+  expect
+    def bad(n :: Float) keep(n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Omitted defaults do not skip required argument evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat, spare: Float = 0 :: Float) n
+  expect
+    def bad(n :: Float) keep(n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "A complete argument pack selects among tag-distinguished overloads"
+  type Tag struct :A | :B
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  def pick(:A :: Tag, n :: Positive) "pos"
+  def pick(:B :: Tag, n :: NonZero) "nz"
+  def relay(n :: Int)
+    if n .matches NonZero
+      pick(:B :: Tag, n)
+    else
+      "zero"
+    end
+  end
+  expect relay(2 :: Int) is "nz"
+  expect relay(0 :: Int) is "zero"
+end
+```
+
+Host tests cover reuse of a successful predicate check when binding a sole
+refined parameter and when designation selects among disjoint overloads
+(`test/ambiguous-values.test.ts`).
 
 ## Diagnostics and test migration
 

@@ -739,7 +739,7 @@ export class Matcher<T> {
         }).flatMap((m) =>
           !this.recognizing && p.validate && !p.validate(m.fields)
             ? this.reject(p.failure ?? "value does not satisfy constraint", {
-                code: "E_SUBSET_MISMATCH",
+                code: "E_REFINEMENT_FAILED",
               })
             : [
                 {
@@ -838,9 +838,12 @@ export class Matcher<T> {
     if (!matches.length) {
       const best = [...this.failures].sort(
         (a, b) =>
-          Number(b.code === "E_SUBSET_MISMATCH") -
-            Number(a.code === "E_SUBSET_MISMATCH") ||
-          b.path.length - a.path.length,
+          Number(
+            b.code === "E_REFINEMENT_FAILED" || b.code === "E_SUBSET_MISMATCH",
+          ) -
+            Number(
+              a.code === "E_REFINEMENT_FAILED" || a.code === "E_SUBSET_MISMATCH",
+            ) || b.path.length - a.path.length,
       )[0];
       const message = best
         ? (best.path.length ? best.path.join(".") + ": " : "") + best.message

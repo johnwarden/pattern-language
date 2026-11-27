@@ -567,7 +567,7 @@ disjointness.
 
 ```pattern
 test "Overlapping overload domains are rejected at definition time"
-  todo expect
+  expect
     def f(x :: Any) 1
     def f(x :: Int) 2
     "definitions complete"
@@ -579,7 +579,7 @@ The integer examples use the numeric prelude cases `isPositive`, `isNonZero`,
 and `isNegative`. The last case accepts integers strictly below zero.
 
 ```pattern
-todo test "Refinements alone cannot distinguish overloads, even when mutually exclusive"
+test "Refinements alone cannot distinguish overloads, even when mutually exclusive"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
   type Negative pattern Int .where isNegative
@@ -595,7 +595,7 @@ todo test "Refinements alone cannot distinguish overloads, even when mutually ex
   fails "E_REFINED_OVERLOAD"
 end
 
-todo test "The same tag leaves the erased overload domains overlapping"
+test "The same tag leaves the erased overload domains overlapping"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
   expect
@@ -605,7 +605,7 @@ todo test "The same tag leaves the erased overload domains overlapping"
   fails "E_REFINED_OVERLOAD"
 end
 
-todo test "Distinct tags distinguish overloads with refinements on the same Int"
+test "Distinct tags distinguish overloads with refinements on the same Int"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
   type Tag struct :A | :B
@@ -750,7 +750,7 @@ end
 
 # The next contracts depend on enum refinements. The standalone membership
 # test tracks setup separately from the overlap and evidence checks.
-todo test "The refinement match fixtures admit their designated values"
+test "The refinement match fixtures admit their designated values"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
   assert (3 :: Int) .matches Positive

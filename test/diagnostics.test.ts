@@ -62,12 +62,15 @@ test("missing label reports call and requirement locations", () => {
   assert.equal(error.diagnostic.primary?.line, 2);
   assert.equal(error.diagnostic.related.at(-1)?.span?.column, 7);
 });
-test("ambiguity lists both definitions", () => {
-  const error = fail("def f(x) 1\ndef f(:Red) 2\nf(:Red)");
-  assert.equal(error.diagnostic.code, "E_AMBIGUOUS_CALL");
+test("overlapping overloads list both definitions", () => {
+  const error = fail('def f(x) 1\ndef f(:Red) 2\n"ok"');
+  assert.equal(error.diagnostic.code, "E_OVERLAPPING_OVERLOAD");
+  // Mutual def groups validate each clause against the others, so the
+  // primary lands on the first clause and related points at the peer.
+  assert.equal(error.diagnostic.primary?.line, 1);
   assert.deepEqual(
     error.diagnostic.related.map((r) => r.span?.line),
-    [1, 2],
+    [2],
   );
 });
 test("duplicate label has parse phase and points at second label", () => {

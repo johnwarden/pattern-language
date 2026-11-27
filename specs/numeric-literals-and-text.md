@@ -372,8 +372,7 @@ test "A zero denominator fails during literal reading"
   expect parse(Code)("(1/0)") fails "E_SYNTAX"
   expect parse(Code)("(1/0)e20") fails "E_SYNTAX"
   assert parse(Code)("(1 / 0)") == Code` /(1)(0)
-  legacy expect 1 / 0 fails "result exceeds safe numeric range"
-  todo expect 1 / 0 fails "E_REFINEMENT_FAILED"
+  expect 1 / 0 fails "E_REFINEMENT_FAILED"
 end
 
 test "An overflowing conversion in a default runs only when selected"

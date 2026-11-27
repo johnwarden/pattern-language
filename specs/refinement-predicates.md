@@ -7,17 +7,17 @@ the same predicate without the caller's lexical environment.
 
 ```pattern
 test "Predicate is a concrete enum of named cases"
-  type Predicate struct :isNonZero | :isPositive | :isSquare
-
   def checkPredicate(p :: Predicate)(value)
     match p
       :isNonZero -> isNonZero(value)
       :isPositive -> isPositive(value)
+      :isNegative -> isNegative(value)
       :isSquare -> isSquare(value)
     end
   end
 
   assert (:isNonZero :: Predicate) .matches Predicate
+  assert (:isNegative :: Predicate) .matches Predicate
   assert (:isSquare :: Predicate) .matches Predicate
 end
 ```
@@ -27,7 +27,7 @@ Boolean test. Each case has an input domain. A refinement's base pattern
 must admit only values that the selected case can test. Checking that
 compatibility does not execute the test. For `isSquare`, the domain is a
 rectangular facet (width and height fields); for `isNonZero` /
-`isPositive`, numeric formats supply the fit.
+`isPositive` / `isNegative`, numeric formats supply the fit.
 
 ## Designation and identity
 
@@ -73,8 +73,8 @@ end
 Numeric formats supply any additional fit cases and their tests with
 the corresponding types. Facet predicates such as `isSquare` ship with
 the structural facet contracts. This spec leaves the full enum inventory
-open to those contracts while requiring `isNonZero`, `isPositive`, and
-`isSquare` in the initial set shown above.
+open to those contracts while requiring `isNonZero`, `isPositive`,
+`isNegative`, and `isSquare` in the initial set shown above.
 
 ## Evidence and first tests
 
@@ -94,6 +94,7 @@ test "Refinements require Predicate operands"
     Int .where "isNonZero"
   fails "E_EXPECTED_PREDICATE"
 
+  # Lambdas remain accepted until portable Predicate-only refinements land.
   todo expect
     Int .where (n -> True)
   fails "E_EXPECTED_PREDICATE"
@@ -101,7 +102,7 @@ end
 ```
 
 ```pattern
-todo test "isSquare designates a Predicate case, not a local function"
+test "isSquare designates a Predicate case, not a local function"
   type Rectangular pattern Rect(w :: Float, h :: Float)
   type Rectangle struct Rect(w :: Float, h :: Float)
   def isSquare(r :: Rectangular) False

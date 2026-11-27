@@ -92,6 +92,39 @@ test("a predicate in an unselected overload does not run", () => {
   assert.equal(state.calls, 0);
 });
 
+test("a sole refined overload reuses its successful predicate at binding", () => {
+  const { interpreter, state } = probe();
+  const result = displayResults(
+    interpreter.run(
+      "p = Float .where (n -> probe())\ndef keep(n :: p) n\nkeep(2 :: Float)",
+    ),
+  );
+  assert.equal(result, "2");
+  assert.equal(state.calls, 1);
+});
+
+test("disjoint overload designation reuses a successful predicate at binding", () => {
+  const { interpreter, state } = probe();
+  const result = displayResults(
+    interpreter.run(
+      "p = Int .where (n -> probe())\ndef pick(n :: p) \"int\"\ndef pick(n :: String) \"str\"\npick(3)",
+    ),
+  );
+  assert.equal(result, '"int"');
+  assert.equal(state.calls, 1);
+});
+
+test("a false constant predicate excludes one disjoint overload interpretation", () => {
+  const { interpreter, state } = probe(false);
+  const result = displayResults(
+    interpreter.run(
+      "p = Int .where (n -> probe())\ndef pick(n :: p) \"int\"\ndef pick(n :: Float64) \"float\"\npick(-3)",
+    ),
+  );
+  assert.equal(result, '"float"');
+  assert.equal(state.calls, 1);
+});
+
 test("a grammar ambiguity lists the rules that accept the text", () => {
   const grammar = new Grammar(
     "def R type :item x :: Int\ndef S type :item x :: Int\ndef Q type R | S",

@@ -414,7 +414,7 @@ that mix completed values with callables, which would require evaluating a
 completed body when forming the group.
 
 ```pattern
-todo test "A completing clause may not share its final pack with a continuing overload"
+test "A completing clause may not share its final pack with a continuing overload"
   expect
     def pick(key :: String) "done"
     def pick(key :: String)(value :: Int) "later"
@@ -424,7 +424,7 @@ end
 ```
 
 ```pattern
-todo test "A clause returning a callable still completes at its declared final pack"
+test "A clause returning a callable still completes at its declared final pack"
   expect
     def pick(key :: String)
       (value :: Int) -> "done"
