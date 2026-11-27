@@ -61,7 +61,11 @@ test("numeric spaces have explicit conversion and different arithmetic", () => {
     ),
     "True",
   );
-  assert.equal(run("x = 5 :: Int\ny = 2 :: Int\nx / y"), "2");
+  assert.throws(
+    () => run("x = 5 :: Int\ny = 2 :: Int\nx / y"),
+    (e: unknown) =>
+      e instanceof LanguageError && e.diagnostic.code === "E_NO_METHOD",
+  );
   assert.equal(run("x = 5 :: Float\ny = 2 :: Float\nx / y"), "2.5");
   incomparable("(1 :: Float32) == (1 :: Float)");
 });

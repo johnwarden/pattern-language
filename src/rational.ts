@@ -692,7 +692,7 @@ export function fitsFixedInteger(
   }
 }
 
-/** Integer + - * / % over fixed formats; / truncates toward zero. */
+/** Integer + - * % over fixed formats (division requires Ratio results). */
 export function fixedIntegerArithmetic(
   op: string,
   left: Rational,
@@ -707,10 +707,6 @@ export function fixedIntegerArithmetic(
       return { n: left.n - right.n, d: 1n };
     case "*":
       return { n: left.n * right.n, d: 1n };
-    case "/":
-      if (right.n === 0n)
-        throw new LanguageError("result exceeds safe numeric range");
-      return { n: left.n / right.n, d: 1n };
     case "%":
       if (right.n === 0n)
         throw new LanguageError("result exceeds safe numeric range");
@@ -718,6 +714,60 @@ export function fixedIntegerArithmetic(
     default:
       throw new LanguageError("expected an integer operation");
   }
+}
+
+export function powFixedInteger(
+  left: Rational,
+  right: Rational,
+  kind: FixedIntegerKind,
+): Rational {
+  if (left.d !== 1n) throw new LanguageError("expected an integer");
+  const exponent = nonnegativeIntegerExponent(right);
+  const b = left.n;
+  if (exponent === 0n) return { n: 1n, d: 1n };
+  if (b === 0n) return { n: 0n, d: 1n };
+  if (b === 1n) return { n: 1n, d: 1n };
+  if (b === -1n) {
+    const value = { n: exponent % 2n === 0n ? 1n : -1n, d: 1n };
+    if (!fitsFixedInteger(value, kind))
+      throw new LanguageError("integer overflow", undefined, {
+        code: "E_OVERFLOW",
+      });
+    return value;
+  }
+  const maxAbs =
+    kind === "int32"
+      ? -INT32_MIN
+      : kind === "int64"
+        ? -INT64_MIN
+        : UINT64_MAX;
+  const abs = (x: bigint) => (x < 0n ? -x : x);
+  let result = 1n;
+  let factor = b;
+  let power = exponent;
+  while (power > 0n) {
+    if (power & 1n) {
+      result *= factor;
+      if (abs(result) > maxAbs)
+        throw new LanguageError("integer overflow", undefined, {
+          code: "E_OVERFLOW",
+        });
+    }
+    power >>= 1n;
+    if (power > 0n) {
+      factor *= factor;
+      if (abs(factor) > maxAbs)
+        throw new LanguageError("integer overflow", undefined, {
+          code: "E_OVERFLOW",
+        });
+    }
+  }
+  const value = { n: result, d: 1n };
+  if (!fitsFixedInteger(value, kind))
+    throw new LanguageError("integer overflow", undefined, {
+      code: "E_OVERFLOW",
+    });
+  return value;
 }
 
 export function negateNumeric(value: ExactNumeric): ExactNumeric {
@@ -794,15 +844,29 @@ export function remRationals(a: Rational, b: Rational): Rational {
   const q = (a.n * b.d) / (a.d * b.n);
   return subRationals(a, mulRationals(reduceRational(q, 1n), b));
 }
+function powBigInt(base: bigint, exponent: bigint): bigint {
+  if (exponent === 0n || base === 1n) return 1n;
+  if (base === 0n) return 0n;
+  if (base === -1n) return exponent % 2n === 0n ? 1n : -1n;
+  let result = 1n;
+  let factor = base;
+  let power = exponent;
+  while (power > 0n) {
+    if (power & 1n) result *= factor;
+    power >>= 1n;
+    if (power > 0n) factor *= factor;
+  }
+  return result;
+}
+
 export function powRationals(a: Rational, b: Rational): Rational {
   const exponent = nonnegativeIntegerExponent(b);
-  let n = 1n,
-    d = 1n;
-  for (let i = 0n; i < exponent; i++) {
-    n *= a.n;
-    d *= a.d;
-  }
-  return reduceRational(n, d);
+  if (exponent === 0n) return { n: 1n, d: 1n };
+  if (a.n === 0n) return { n: 0n, d: 1n };
+  if (a.d === 1n && a.n === 1n) return { n: 1n, d: 1n };
+  if (a.d === 1n && a.n === -1n)
+    return { n: exponent % 2n === 0n ? 1n : -1n, d: 1n };
+  return reduceRational(powBigInt(a.n, exponent), powBigInt(a.d, exponent));
 }
 
 function powComplex(base: ExactNumeric, exponent: Rational): ExactNumeric {

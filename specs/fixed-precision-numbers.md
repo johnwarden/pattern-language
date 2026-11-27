@@ -169,7 +169,19 @@ test "Checked conversion validates stored and computed exact values"
   expect checkedConvert(Int32)(integer) is 42 :: Int32
   expect checkedConvert(Int32)(half) fails "E_NOT_EXACTLY_REPRESENTABLE"
   expect checkedConvert(Float64)(tenth) fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect checkedConvert(Int32)(2i) fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect checkedConvert(Float64)(2i) fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect checkedConvert(Int32)(2 :: Float64) fails "E_NO_METHOD"
+  expect checkedConvert(Int32)(2 :: Int32) fails "E_NO_METHOD"
   expect float64(tenth) is 0f0.1 :: Float64
+end
+
+test "A bound NumericValue does not supply fixed-width call evidence"
+  def f(x :: Int32) x
+  a = 1
+  # Bootstrap call dispatch retains NumericValue -> fixed conversion pending refinement evidence (#89).
+  legacy expect f(a) is 1 :: Int32
+  todo expect f(a) fails "E_NO_METHOD"
 end
 ```
 
@@ -357,6 +369,23 @@ test "Bootstrap powers keep exact real and complex results"
   expect 2i ^ 1i fails "expected a real exponent for ^"
 end
 
+test "Bootstrap fixed-width powers handle large exponents and prompt overflow"
+  expect (1 :: Int) ^ (1000000000000 :: Int) is 1 :: Int64
+  expect ((-1) :: Int) ^ (1000000000000 :: Int) is 1 :: Int64
+  expect ((-1) :: Int) ^ (1000000000001 :: Int) is (-1) :: Int64
+  expect (0 :: Int) ^ (1000000000000 :: Int) is 0 :: Int64
+  expect (1 :: Int32) ^ (2147483647 :: Int32) is 1 :: Int32
+  expect (1 :: UInt64) ^ (1000000000000 :: UInt64) is 1 :: UInt64
+  expect ((-2) :: Int32) ^ (31 :: Int32) is (-2147483648) :: Int32
+  expect (2 :: Int32) ^ (31 :: Int32) fails "E_OVERFLOW"
+  expect ((-2) :: Int) ^ (63 :: Int) is (-9223372036854775808) :: Int64
+  expect (2 :: Int) ^ (63 :: Int) fails "E_OVERFLOW"
+  expect (2 :: Int) ^ (1000000000000 :: Int) fails "E_OVERFLOW"
+  expect (2 :: UInt64) ^ (63 :: UInt64) is 0x1p63 :: UInt64
+  expect (2 :: UInt64) ^ (64 :: UInt64) fails "E_OVERFLOW"
+  expect (2 :: UInt64) ^ (1000000000000 :: UInt64) fails "E_OVERFLOW"
+end
+
 todo test "Exponentiation uses one complete argument pack"
   expect pow(2, 3) is 8 :: NumericValue
 end
@@ -473,6 +502,15 @@ test "Fixed-width integer types designate exact integers in range"
   expect 18446744073709551615 :: UInt64 is 0xFFFFFFFFFFFFFFFF :: UInt64
   expect (20 :: Int32) + (22 :: Int32) is 42 :: Int32
   expect (1 :: Int64) + (2 :: Int64) is 3 :: Int
+end
+
+test "Fixed-width integer formats do not truncate on /"
+  legacy expect (5 :: Int32) / (2 :: Int32) fails "E_NO_METHOD"
+  todo expect (5 :: Int32) / (2 :: Int32) is 5/2 :: Ratio64
+  legacy expect (5 :: Int64) / (2 :: Int64) fails "E_NO_METHOD"
+  todo expect (5 :: Int64) / (2 :: Int64) is 5/2 :: Ratio128
+  legacy expect (5 :: UInt64) / (2 :: UInt64) fails "E_NO_METHOD"
+  todo expect (5 :: UInt64) / (2 :: UInt64) is 5/2 :: Ratio128
 end
 
 todo test "Integer division returns an exact ratio selected by operand width"

@@ -120,6 +120,7 @@ import {
   fitsFixedInteger,
   isRational,
   negateNumeric,
+  powFixedInteger,
 } from "./rational.ts";
 import type { FixedIntegerKind } from "./rational.ts";
 import type {
@@ -935,14 +936,22 @@ export class Interpreter {
               space.numeric === "int64" ||
               space.numeric === "uint64"
             ) {
+              if (name === "/")
+                throw new LanguageError(
+                  "no applicable function /: division on " +
+                    space.name +
+                    " is unavailable until Ratio support lands",
+                  undefined,
+                  { code: "E_NO_METHOD" },
+                );
               const left = asRational(a),
                 right = asRational(b);
               if (!left || !right) throw new LanguageError("expected a number");
               const result =
                 name === "^"
-                  ? exactArithmetic("^", left, right)
+                  ? powFixedInteger(left, right, space.numeric)
                   : fixedIntegerArithmetic(name, left, right);
-              if (!isRational(result) || !fitsFixedInteger(result, space.numeric))
+              if (!fitsFixedInteger(result, space.numeric))
                 throw new LanguageError("integer overflow", undefined, {
                   code: "E_OVERFLOW",
                 });
@@ -1057,8 +1066,17 @@ export class Interpreter {
           throw new LanguageError(
             "checkedConvert requires a fixed numeric format",
           );
-        const r = asRational(value);
-        if (!r) throw new LanguageError("expected a number");
+        try {
+          this.check(this.primitives.get("NumericValue")!, value);
+        } catch (e) {
+          if (e instanceof Mismatch)
+            throw new Mismatch(
+              "no applicable function checkedConvert: " + e.diagnostic.message,
+              e.diagnostic.primary,
+              { code: "E_NO_METHOD", causes: [e.diagnostic] },
+            );
+          throw e;
+        }
         const fail = (): never => {
           throw new LanguageError(
             "not exactly representable as " + type.name,
@@ -1066,6 +1084,8 @@ export class Interpreter {
             { code: "E_NOT_EXACTLY_REPRESENTABLE" },
           );
         };
+        const r = asRational(value);
+        if (!r) return fail();
         if (type.numeric === "float32") {
           if (!isExactFloat32(r)) fail();
           return this.check(
