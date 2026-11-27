@@ -2753,8 +2753,9 @@ export class Interpreter {
           continue;
         }
         // Complete pack labels still distinguish overloads (x: Int vs y: Int).
-        // Only positional openness (`...` / ignorePositions) or a repeat can
-        // absorb a missing positional field — not openLabels alone.
+        // Positional openness (`...` / ignorePositions) or a repeat absorbs a
+        // missing positional field; labeled openness (`**` / openLabels)
+        // absorbs a missing named label — matching union-disjointness.ts.
         const other = leftField ? y : x;
         const source = leftField ?? rightField!;
         const openSide = leftField ? b : a;
@@ -2762,6 +2763,8 @@ export class Interpreter {
           if (!go(source, other.repeat)) return false;
         } else if (positional && openSide.ignorePositions) {
           /* absorbed by positional rest */
+        } else if (!positional && openSide.openLabels) {
+          /* absorbed by labeled rest */
         } else return false;
       }
       return true;

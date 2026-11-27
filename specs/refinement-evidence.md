@@ -539,6 +539,34 @@ test "Inline closed and open structural parameters with overlapping domains are 
   fails "E_OVERLAPPING_OVERLOAD"
 end
 
+test "Inline closed and open labeled structural parameters with overlapping domains are rejected"
+  expect
+    def f(Rect(x: Int, **)) "open"
+    def f(Rect(x: Int, y: Int)) "closed"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Closed and open labeled structural facets with overlapping domains are rejected"
+  type A pattern Rect(x: Int, **)
+  type B pattern Rect(x: Int, y: Int)
+  expect
+    def f(n :: A) "open"
+    def f(n :: B) "closed"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Distinct closed labeled structural parameters remain disjoint overloads"
+  type Rect struct Rect(...)
+  def f(Rect(x: Int, y: Int)) "xy"
+  def f(Rect(x: Int, z: Int)) "xz"
+  expect f(Rect(x: 1, y: 2)) is "xy"
+  expect f(Rect(x: 1, z: 3)) is "xz"
+  assert not(Rect(x: 1, y: 2, z: 3) .matches Rect(x: Int, y: Int))
+  assert not(Rect(x: 1, y: 2, z: 3) .matches Rect(x: Int, z: Int))
+end
+
 test "Box Int and Box Float64 facets are disjoint overloads"
   type I pattern Box(Int)
   type F pattern Box(Float64)
