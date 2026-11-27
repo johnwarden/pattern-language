@@ -156,9 +156,12 @@ end
 
 ## Canonical NumericValue text
 
-Canonical text depends only on the mathematical value. Printing must not
-approximate. Extend the shortest-exact selection across real and imaginary
-parts.
+Canonical text depends only on the mathematical value and preserves it
+exactly. Canonical numeric atoms always use decimal notation, even if a
+hexadecimal or binary spelling would be shorter. This applies to
+`NumericValue`, numeric atoms in `Code`, and the numeric payload in typed
+text. The reader accepts hexadecimal and binary input spellings under the
+literal grammar above.
 
 For a nonnegative real `NumericValue` (imaginary part zero), choose the
 shortest exact spelling among:
@@ -167,14 +170,12 @@ shortest exact spelling among:
 | --- | --- |
 | Decimal | Integer and terminating decimal forms, with or without a decimal `e` exponent |
 | Float64-selected decimal | `0f` followed by a decimal spelling whose prescribed Float64 rounding denotes this exact value |
-| Hexadecimal | Exact `0x` forms, with or without a binary `p` exponent |
-| Binary | Exact `0b` forms, with or without a binary `p` exponent |
-| Fraction | Reduced `n/d` with positive integer components. Either component can use any allowed integer radix. The numerator may have the exponent for its radix. |
+| Fraction | Reduced `n/d` with positive decimal integer components. The numerator may have a decimal `e` exponent. |
 
-Lexical normalization before compare: ASCII digits; lowercase `0f`, `0x`,
-`0b`, `e`, `p`, and `i`; uppercase hexadecimal digits; no spaces,
-underscores, redundant leading zeros, exponent `+`, or zero exponents;
-no trailing fractional zeros; exponent magnitude at most `10000`.
+Compare spellings after lexical normalization. Use ASCII digits and lowercase
+`0f`, `e`, and `i`. Omit spaces, underscores, redundant leading zeros,
+exponent `+`, zero exponents, and trailing fractional zeros. Written
+exponents have magnitude at most `10000`.
 If a shorter spelling would exceed that cap, consider moving powers into
 coefficient digits or using full integer or reduced fraction text.
 
@@ -193,9 +194,8 @@ Join a nonzero imaginary part to a nonzero real part with `+` or `-` as
 required, with no spaces, as in `1+3i` or `1-1e3i`. A pure imaginary value
 prints without a real part, as in `-1i`.
 
-When both parts are present, choose radices and spellings that minimize
-total atom length under the same tie-breaks applied to the whole atom
-string. Mixed-radix atoms are allowed when they win.
+When both parts are present, choose decimal spellings that minimize total atom
+length under the same tie-breaks applied to the whole atom string.
 
 ```pattern
 test "Canonical NumericValue text omits zero imaginary parts"
@@ -205,11 +205,14 @@ test "Canonical NumericValue text omits zero imaginary parts"
   expect toString(NumericValue)(parse(NumericValue)("0-0i")) is "0" :: String
 end
 
-test "Canonical complex text picks one shortest atom"
-  # 10+10i: "10+10i" length 6 beats "0xa+0xai" (8) and "0xa+10i" (7).
+test "Canonical complex text chooses the shortest decimal atom"
   expect toString(NumericValue)(parse(NumericValue)("10+10i")) is "10+10i" :: String
   expect toString(NumericValue)(parse(NumericValue)("0xa+0xai")) is "10+10i" :: String
   expect toString(NumericValue)(parse(NumericValue)("3+3i")) is "3+3i" :: String
+  mixed = parse(NumericValue)("0xFFFFFFFFFFFFFFFF+0b1p-20i")
+  legacy expect toString(NumericValue)(mixed) is "0xFFFFFFFFFFFFFFFF+0x1p-20i" :: String
+  todo expect toString(NumericValue)(mixed) is "18446744073709551615+1i/1048576" :: String
+  assert parse(NumericValue)(toString(NumericValue)(mixed)) == mixed
 end
 
 test "Complex atoms round-trip decimal coefficients and independent signs"
@@ -321,7 +324,8 @@ test "The minus in a negative literal belongs to the numeric atom"
 
   assert parse(Code)("-(0x1p-20)") != parse(Code)("-0x1p-20")
   expect toString(Code)(parse(Code)("-0.5")) is "-0.5" :: String
-  expect toString(Code)(parse(Code)("-0x1p-20")) is "-0x1p-20" :: String
+  legacy expect toString(Code)(parse(Code)("-0x1p-20")) is "-0x1p-20" :: String
+  todo expect toString(Code)(parse(Code)("-0x1p-20")) is "-1/1048576" :: String
 
   negation = Code` -(0.5)
   assert parse(Code)(toString(Code)(negation)) == negation
@@ -778,12 +782,32 @@ test "Canonical text chooses short exact decimal spellings"
   expect toString(NumericValue)(1 / 100000000000000000) is "1e-17" :: String
 end
 
-test "Canonical text compares fractions, hexadecimal and binary spellings"
+test "Canonical real text uses decimal even when another radix is shorter"
   expect toString(NumericValue)(1 / 16) is "1/16" :: String
-  expect toString(NumericValue)(1 / 1048576) is "0x1p-20" :: String
-  expect toString(NumericValue)(18446744073709551615) is "0xFFFFFFFFFFFFFFFF" :: String
-  expect toString(NumericValue)(0b1p-2000) is "0x1p-2000" :: String
+  legacy expect toString(NumericValue)(1 / 1048576) is "0x1p-20" :: String
+  todo expect toString(NumericValue)(1 / 1048576) is "1/1048576" :: String
+  legacy expect toString(NumericValue)(0xFFFFFFFFFFFFFFFF) is "0xFFFFFFFFFFFFFFFF" :: String
+  todo expect toString(NumericValue)(0xFFFFFFFFFFFFFFFF) is "18446744073709551615" :: String
+  assert toString(NumericValue)(0b1p-20) == toString(NumericValue)(1 / 1048576)
   assert parse(NumericValue)(toString(NumericValue)(0x1p-2000)) == 0x1p-2000
+end
+
+test "Canonical fractions use decimal numerators and denominators"
+  numerator = parse(NumericValue)("0xFFFFFFFFFFFFFFFD/3")
+  denominator = parse(NumericValue)("1/0xFFFFFFFFFFFFFFFD")
+  legacy expect toString(NumericValue)(numerator) is "0xFFFFFFFFFFFFFFFD/3" :: String
+  todo expect toString(NumericValue)(numerator) is "18446744073709551613/3" :: String
+  legacy expect toString(NumericValue)(denominator) is "1/0xFFFFFFFFFFFFFFFD" :: String
+  todo expect toString(NumericValue)(denominator) is "1/18446744073709551613" :: String
+  assert parse(NumericValue)(toString(NumericValue)(numerator)) == numerator
+  assert parse(NumericValue)(toString(NumericValue)(denominator)) == denominator
+end
+
+test "Canonical typed float text uses decimal"
+  value = 0x1p-20 :: Float64
+  legacy expect toString(Float64)(value) is "0x1p-20" :: String
+  todo expect toString(Float64)(value) is "1/1048576" :: String
+  assert parse(Float64)(toString(Float64)(value)) == value
 end
 
 test "A Float64-selected spelling is canonical only for its exact value"
