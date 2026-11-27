@@ -32,7 +32,7 @@ binding gives access to the binding rows and the final result pack. The
 quoted `=` in the destructuring pattern (`:=`) matches the stored binding.
 
 ```pattern
-todo test "An ordinary pattern destructures the binding in stored Code"
+test "An ordinary pattern destructures the binding in stored Code"
   (body :: Body) = restored
   [binding] = body.bindings
   ((name :: LowerCamelSymbol) := (literal :: String)) = binding
@@ -45,6 +45,48 @@ end
 ```
 
 The field names and binding pattern come from the
-[bounded Body grammar](../examples/body-grammar.pattern). Milestone 5b makes
-this inspection available on the value read as `Code` with the standard
-prelude. The same pattern must work after the text round trip.
+[bounded Body grammar](../examples/body-grammar.pattern). The prelude supplies
+`bindings` and `resultExpression` as ordinary functions over `Code`, using
+that grammar to inspect the block. Their local type declarations keep the
+helper types and capture accessors within each call. The same patterns work
+after the text round trip. This first 5b slice retains the bootstrap `Body`
+annotation while providing inspection of the bounded grammar; public category
+membership for the full Code grammar remains later 5b work.
+
+```pattern
+test "Body inspection preserves result packs and exact numeric syntax"
+  program = Code`
+    original = 1/3
+    (missing, "done")
+  end
+  printed = toString(Code)(program)
+  restored = parse(Code)(printed)
+  [binding] = restored.bindings
+  ((name :: LowerCamelSymbol) := (literal :: NumericValue)) = binding
+  [reference, text] = restored.resultExpression
+
+  expect name is original :: LowerCamelSymbol
+  expect literal is 1/3 :: NumericValue
+  expect reference is missing :: LowerCamelSymbol
+  expect text is "done" :: String
+  assert toString(Code)(restored) == printed
+  expect original fails "E_UNBOUND_NAME"
+end
+
+test "Body inspection preserves an explicitly empty final pack"
+  program = Code`
+    ()
+  end
+  expect program.bindings is []
+  expect program.resultExpression is []
+end
+
+test "A statement cannot be the final result row during Body inspection"
+  program = Code`
+    localName = "kept"
+  end
+  expect program.bindings fails "E_PATTERN_MISMATCH"
+  expect program.resultExpression fails "E_PATTERN_MISMATCH"
+  expect localName fails "E_UNBOUND_NAME"
+end
+```
