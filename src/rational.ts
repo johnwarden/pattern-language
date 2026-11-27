@@ -216,27 +216,15 @@ export function matchNumericSource(
   return numericPrefix.exec(source)?.[0];
 }
 
-/** Operators exposed by an ungrouped atom, in source order. */
-export function numericInfixes(
-  source: string,
-): { text: string; offset: number }[] {
-  const start = Number(source.startsWith("-"));
-  numericPrefix.lastIndex = start;
-  const match = numericPrefix.exec(source);
-  if (!match?.groups || match[0].length + start !== source.length) return [];
-  const { mixedReal, sign, mixedImag } = match.groups;
-  const slash = (part: string, base: number) => {
-    const offset = part.indexOf("/");
-    return offset < 0 ? [] : [{ text: "/", offset: base + offset }];
-  };
-  if (!mixedReal) return slash(match[0], start);
-  const offset = start + mixedReal.length;
-  return [
-    ...slash(mixedReal, start),
-    { text: sign, offset },
-    ...slash(mixedImag, offset + 1),
-  ];
+export function isCompoundNumericSpelling(spelling: string): boolean {
+  numericPrefix.lastIndex = 0;
+  const match = numericPrefix.exec(spelling);
+  return (
+    match?.[0] === spelling &&
+    !!(match.groups?.mixedReal || spelling.includes("/"))
+  );
 }
+
 function parseDecimalExact(spelling: string): Rational | undefined {
   const match = decimalSpelling.exec(spelling);
   if (!match) return;

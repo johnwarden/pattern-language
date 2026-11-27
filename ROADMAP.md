@@ -39,10 +39,10 @@ must test composition and state role differences explicitly.
 - Callability is checked when Code is evaluated, not by restricting application
   syntax. See [application-head contracts](tests/specification/application-heads.test)
   and their [phase explanation](tests/specification/application-heads.md).
-- Formatting and whitespace mistakes must produce syntax errors, never logic
-  errors, within a form fixed by the applied grammar. Raw layout and explicitly
-  declared keyword alternatives are exceptions; see
-  [WHITESPACE.md](design/WHITESPACE.md) for examples and remaining review boundaries.
+- Within a form fixed by the applied grammar, formatting that preserves atoms
+  must preserve the tree or produce a syntax error. Spaces inside atoms can
+  change the program. [WHITESPACE.md](design/WHITESPACE.md) also describes raw
+  layout, explicit keyword alternatives, and remaining review boundaries.
 - Patterns share structural recognition/capture rules. Packs tolerate extra labels;
   constructed shapes are exact unless open. Positional rests never collect labels.
   Each repeated dimension adds one list layer; horizontal-plus-vertical has T**.

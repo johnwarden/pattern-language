@@ -12,7 +12,6 @@ import {
   formatNumeric,
   float64ToRational,
   numericKey,
-  numericInfixes,
 } from "./rational.ts";
 export { LanguageError } from "./diagnostics.ts";
 /** Lossless structural distinctions; packs occur at call/result boundaries. */
@@ -346,17 +345,6 @@ export function normal(n: Syntax, indent = 0): string {
     fields: body,
     needsGrouping: (node) => node.kind === "sequence" || node.kind === "form",
     rejectedAdjacent: requiresParentheses,
-    atomNeedsGrouping: (node, text, operator, left) => {
-      if (node.kind !== "literal" || typeof node.value === "string")
-        return false;
-      const tight = numericInfixes(text);
-      const adjacent = left ? tight.at(-1)?.text : tight[0]?.text;
-      if (!adjacent) return false;
-      const op = operator.replace(/^:/, "");
-      return left
-        ? requiresParentheses(adjacent, op)
-        : requiresParentheses(op, adjacent);
-    },
   };
   switch (n.kind) {
     case "quote":
