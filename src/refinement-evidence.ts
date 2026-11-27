@@ -2,10 +2,17 @@
  * Refinement evidence helpers: Predicate case inventory, predicate ids on
  * refined types, and definition-time evidence obligation checking.
  */
-import { LanguageError, binary, operator, isName } from "./syntax.ts";
+import {
+  LanguageError,
+  binary,
+  operator,
+  isName,
+  fieldPattern,
+  positional,
+} from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
-import type { TypeValue, Scope, Closure, Value } from "./values.ts";
-import { unwrap, asNumeric, equal } from "./values.ts";
+import type { TypeValue, Scope, Closure, Value, Candidate } from "./values.ts";
+import { unwrap, asNumeric, equal, valSymbol } from "./values.ts";
 import { isRational } from "./rational.ts";
 import type { Pattern } from "./pattern.ts";
 import { runtimeDependency, patternExpressions } from "./availability.ts";
@@ -321,33 +328,82 @@ export function checkBodyEvidence(options: {
             ),
           );
           for (const name of binders({ kind: "pack", body: binding[0] })) {
-            if (rhsRuntime) {
-              // Preserve runtime provenance through aliases such as `alias = n`.
-              localRuntime.add(name);
-            } else {
-              localBound.add(name);
-              for (const field of binding[0]) {
-                const annotation = binary(field.value, "::");
-                const capture =
-                  field.value.kind === "symbol"
-                    ? field.value
-                    : annotation?.[0].kind === "symbol"
-                      ? annotation[0]
-                      : undefined;
-                if (!capture || capture.quoted || capture.name !== name)
-                  continue;
-                if (annotation) {
-                  try {
-                    addEvidence(
-                      localEvidence,
-                      name,
-                      predicatesOfType(resolveType(annotation[1], env)),
-                    );
-                  } catch {
-                    /* type errors surface elsewhere */
-                  }
+            let annotatedType: TypeValue | undefined;
+            for (const field of binding[0]) {
+              const annotation = binary(field.value, "::");
+              const capture =
+                field.value.kind === "symbol"
+                  ? field.value
+                  : annotation?.[0].kind === "symbol"
+                    ? annotation[0]
+                    : undefined;
+              if (!capture || capture.quoted || capture.name !== name) continue;
+              if (annotation) {
+                try {
+                  annotatedType = resolveType(annotation[1], env);
+                  addEvidence(
+                    localEvidence,
+                    name,
+                    predicatesOfType(annotatedType),
+                  );
+                } catch {
+                  /* type errors surface elsewhere */
                 }
               }
+            }
+            if (rhsRuntime) {
+              // Preserve runtime provenance through aliases such as `alias = n`.
+              // Annotated aliases also keep the checked type's evidence.
+              localRuntime.add(name);
+              env.runtimeBindings.add(name);
+              let type = annotatedType;
+              if (!type) {
+                const source = binding[1]
+                  .map((field) =>
+                    runtimeSubject(
+                      field.value,
+                      env,
+                      binders,
+                      localBound,
+                      localRuntime,
+                    ),
+                  )
+                  .find(Boolean);
+                if (source) {
+                  const prior = env.get(source.name);
+                  if (
+                    prior &&
+                    "kind" in prior &&
+                    prior.kind === "slot" &&
+                    prior.type?.kind === "type"
+                  )
+                    type = prior.type;
+                }
+              }
+              if (!type) {
+                try {
+                  type = resolveType(
+                    { kind: "symbol", name: "Any", quoted: false },
+                    env,
+                  );
+                } catch {
+                  /* keep undefined only if Any is unavailable */
+                }
+              }
+              if (type)
+                env.bindings.set(name, {
+                  kind: "slot",
+                  type,
+                  value: valSymbol("\0runtime"),
+                });
+            } else {
+              localBound.add(name);
+              if (annotatedType)
+                env.bindings.set(name, {
+                  kind: "slot",
+                  type: annotatedType,
+                  value: valSymbol("\0bound"),
+                });
             }
           }
         } else {
@@ -661,23 +717,31 @@ function predicatesOfSelected(
       argType = binding.type;
   }
   if (argType) {
-    const argBase = argType.baseType ?? argType;
-    const matching = members.filter((member) => {
-      const base = member.baseType ?? member;
-      return (
-        base.key === argBase.key ||
-        base.name === argBase.name ||
-        member.key === argType!.key ||
-        member.name === argType!.name
-      );
-    });
-    if (matching.length)
-      return matching.reduce((ids, member) => {
-        for (const id of predicatesOfType(member)) ids.add(id);
-        return ids;
-      }, new Set<PredicateId>());
+    const argMembers = argType.unionMembers?.length
+      ? argType.unionMembers
+      : [argType];
+    const required = new Set<PredicateId>();
+    let matched = false;
+    for (const argMember of argMembers) {
+      const argBase = argMember.baseType ?? argMember;
+      const matching = members.filter((member) => {
+        const base = member.baseType ?? member;
+        return (
+          base.key === argBase.key ||
+          base.name === argBase.name ||
+          member.key === argMember.key ||
+          member.name === argMember.name ||
+          member.key === argType!.key ||
+          member.name === argType!.name
+        );
+      });
+      if (!matching.length) continue;
+      matched = true;
+      for (const member of matching)
+        for (const id of predicatesOfType(member)) required.add(id);
+    }
     // Typed argument that matches no member: no predicate obligation here.
-    return new Set();
+    return matched ? required : new Set();
   }
   // Untyped designator: do not demand every member's predicates at once.
   return new Set();
@@ -769,27 +833,37 @@ function requireCallEvidence(
       }
     }
   }
-  const candidates = env.visible(head.name);
-  const closures = candidates.filter(
-    (c): c is Closure => c.kind === "closure" && !c.macro,
-  );
+  const closures = callableClosures(head.name, env);
   for (const candidate of closures) {
     if (candidate.parameters.length < packs.length) continue;
+    const alignments: { param: Field<Syntax>; arg: Syntax }[][] = [];
     let applicable = true;
     for (let p = 0; p < packs.length; p++) {
       const patterns = candidate.parameters[p];
       const args = packs[p];
-      if (!patterns || !args || patterns.length !== args.length) {
+      if (!patterns || !args) {
         applicable = false;
         break;
       }
+      const aligned = alignSuppliedPack(patterns, args);
+      if (!aligned) {
+        applicable = false;
+        break;
+      }
+      alignments.push(aligned);
     }
     if (!applicable) continue;
-    for (let p = 0; p < packs.length; p++) {
-      const patterns = candidate.parameters[p];
-      const args = packs[p];
-      for (let i = 0; i < patterns.length; i++) {
-        const annotation = binary(patterns[i].value, "::");
+    // The complete pack (including tags) decides which overload applies.
+    if (
+      alignments.some((aligned) =>
+        aligned.some(({ param, arg }) => !staticParamCompatible(param, arg)),
+      )
+    )
+      continue;
+    for (const aligned of alignments) {
+      for (const { param, arg } of aligned) {
+        const { pattern } = fieldPattern(param.value);
+        const annotation = binary(pattern, "::");
         if (!annotation) continue;
         let paramType: TypeValue;
         try {
@@ -799,11 +873,10 @@ function requireCallEvidence(
         }
         // Skip refined obligations that the argument's static type cannot meet
         // when another overload covers that type (e.g. Float64 vs PositiveInt).
-        if (!argumentMayMeet(args[i].value, paramType, env, resolveType))
-          continue;
+        if (!argumentMayMeet(arg, paramType, env, resolveType)) continue;
         try {
           requireExpressionEvidence(
-            args[i].value,
+            arg,
             annotation[1],
             evidence,
             bound,
@@ -823,6 +896,89 @@ function requireCallEvidence(
       }
     }
   }
+}
+
+/** Closures reachable as `name` methods or as a callable binding value. */
+function callableClosures(name: string, env: Scope): Closure[] {
+  const found: Closure[] = [];
+  const seen = new Set<number>();
+  const add = (candidate: Candidate) => {
+    if (candidate.kind === "closure" && !candidate.macro && !seen.has(candidate.id)) {
+      seen.add(candidate.id);
+      found.push(candidate);
+    }
+  };
+  for (const candidate of env.visible(name)) add(candidate);
+  const binding = env.get(name);
+  if (binding && "kind" in binding) {
+    if (binding.kind === "closure") add(binding);
+    else if (binding.kind === "overload")
+      for (const candidate of binding.candidates) add(candidate);
+    else if (binding.kind === "slot") {
+      const value = binding.value;
+      if (value && "kind" in value) {
+        if (value.kind === "closure") add(value as Closure);
+        else if (value.kind === "overload")
+          for (const candidate of (value as { candidates: Candidate[] }).candidates)
+            add(candidate);
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Align supplied arguments with a parameter pack, allowing omitted defaults.
+ * Returns the supplied pairs, or undefined when a required parameter is missing.
+ */
+function alignSuppliedPack(
+  patterns: Field<Syntax>[],
+  args: Field<Syntax>[],
+): { param: Field<Syntax>; arg: Syntax }[] | undefined {
+  const used = new Set<number>();
+  const aligned: { param: Field<Syntax>; arg: Syntax }[] = [];
+  for (const arg of args) {
+    const index = !positional(arg.label)
+      ? patterns.findIndex((field) => field.label === arg.label)
+      : patterns.findIndex(
+          (field, i) => !used.has(i) && positional(field.label),
+        );
+    if (index < 0) return;
+    used.add(index);
+    aligned.push({ param: patterns[index], arg: arg.value });
+  }
+  for (let i = 0; i < patterns.length; i++) {
+    if (used.has(i)) continue;
+    const { fallback } = fieldPattern(patterns[i].value);
+    if (!fallback) return;
+  }
+  return aligned;
+}
+
+/**
+ * Constant tag/literal parameters must agree with a statically known argument.
+ * Type-only parameters do not exclude a candidate here.
+ */
+function staticParamCompatible(param: Field<Syntax>, arg: Syntax): boolean {
+  const { pattern } = fieldPattern(param.value);
+  const annotation = binary(pattern, "::");
+  const core = annotation?.[0] ?? pattern;
+  if (core.kind !== "symbol" || !core.quoted) return true;
+  let subject = arg;
+  while (true) {
+    const ascribed = binary(subject, "::");
+    if (ascribed) {
+      subject = ascribed[0];
+      continue;
+    }
+    if (subject.kind === "pack" && subject.body.length === 1) {
+      subject = subject.body[0].value;
+      continue;
+    }
+    break;
+  }
+  if (subject.kind !== "symbol") return true;
+  return subject.name === core.name;
 }
 
 /**
@@ -855,16 +1011,21 @@ function argumentMayMeet(
       argType = binding.type;
   }
   if (!argType) return true;
-  const argBase = argType.baseType ?? argType;
+  const argBases = (argType.unionMembers?.length
+    ? argType.unionMembers
+    : [argType]
+  ).map((member) => member.baseType ?? member);
   const paramBases = (paramType.unionMembers ?? [paramType]).map(
     (member) => member.baseType ?? member,
   );
-  return paramBases.some(
-    (base) =>
-      base.key === argBase.key ||
-      base.name === argBase.name ||
-      base.name === "Any" ||
-      argBase.name === "Any",
+  return argBases.some((argBase) =>
+    paramBases.some(
+      (base) =>
+        base.key === argBase.key ||
+        base.name === argBase.name ||
+        base.name === "Any" ||
+        argBase.name === "Any",
+    ),
   );
 }
 

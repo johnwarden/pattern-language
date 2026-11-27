@@ -451,6 +451,100 @@ test "A predicate error during designation retains its diagnostic"
   def pick(n :: Float64) "float"
   expect pick(3) fails "E_NO_METHOD"
 end
+
+test "An abstract union parameter overlaps a concrete member overload"
+  type Input pattern Int | String
+  expect
+    def f(n :: Input) "union"
+    def f(n :: String) "string"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Union-typed overload parameters designate through their members"
+  type PositiveInt pattern Int .where isPositive
+  type Choice pattern PositiveInt | String
+  def pick(n :: Choice) "choice"
+  def pick(n :: Float64) "float"
+  expect pick(-3) is "float"
+end
+
+test "An annotated runtime alias keeps its refinement evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  def ok(n :: NonZeroFloat)
+    (alias :: NonZeroFloat) = n
+    keep(alias)
+  end
+  expect ok(2 :: Float) is 2 :: Float
+end
+
+test "A bare runtime alias still lacks evidence for a computed use"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float)
+      alias = n
+      keep(alias - alias)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Every member of a runtime union argument needs evidence"
+  type PositiveInt pattern Int .where isPositive
+  type Input pattern Int | Float64
+  type Choice pattern PositiveInt | Float64
+  def keep(n :: Choice) n
+  expect
+    def bad(n :: Input) keep(n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Nested parameter captures are runtime bindings"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(Box(n :: Float)) keep(n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Calls through a stored callable check refinement evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  keep = (n :: NonZeroFloat) -> n
+  expect
+    def bad(n :: Float) keep(n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Omitted defaults do not skip required argument evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat, spare: Float = 0 :: Float) n
+  expect
+    def bad(n :: Float) keep(n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "A complete argument pack selects among tag-distinguished overloads"
+  type Tag struct :A | :B
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  def pick(:A :: Tag, n :: Positive) "pos"
+  def pick(:B :: Tag, n :: NonZero) "nz"
+  def relay(n :: Int)
+    if n .matches NonZero
+      pick(:B :: Tag, n)
+    else
+      "zero"
+    end
+  end
+  expect relay(2 :: Int) is "nz"
+  expect relay(0 :: Int) is "zero"
+end
 ```
 
 Host tests cover reuse of a successful predicate check when binding a sole

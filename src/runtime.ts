@@ -75,6 +75,7 @@ import {
   operator,
   spread,
   positional,
+  fieldPattern,
   canonicalFields,
   normal,
   apply,
@@ -2492,34 +2493,57 @@ export class Interpreter {
   ): void {
     const checkEnv = new Scope(env);
     const evidence = emptyEvidence();
-    for (const pack of packs) {
-      for (const field of pack) {
-        const annotation = binary(field.value, "::");
-        const capture =
-          field.value.kind === "symbol"
-            ? field.value
-            : annotation?.[0].kind === "symbol"
-              ? annotation[0]
-              : undefined;
-        if (!capture || capture.quoted) continue;
-        // Placeholder so availability treats the parameter as a runtime binding.
-        let type = this.primitives.get("Any")!;
-        if (annotation) {
-          try {
-            type = this.typeFromSyntax(annotation[1], env);
-            addEvidence(evidence, capture.name, predicatesOfType(type));
-          } catch {
-            /* annotation type errors surface on use */
-          }
+    const registerCapture = (
+      name: string,
+      typeSyntax: Syntax | undefined,
+    ) => {
+      if (checkEnv.bindings.has(name)) return;
+      let type = this.primitives.get("Any")!;
+      if (typeSyntax) {
+        try {
+          type = this.typeFromSyntax(typeSyntax, env);
+          addEvidence(evidence, name, predicatesOfType(type));
+        } catch {
+          /* annotation type errors surface on use */
         }
-        checkEnv.bindings.set(capture.name, {
-          kind: "slot",
-          type,
-          value: valSymbol("\0runtime"),
-        });
-        checkEnv.runtimeBindings.add(capture.name);
       }
-    }
+      checkEnv.bindings.set(name, {
+        kind: "slot",
+        type,
+        value: valSymbol("\0runtime"),
+      });
+      checkEnv.runtimeBindings.add(name);
+    };
+    const visitPattern = (n: Syntax): void => {
+      const annotation = binary(n, "::");
+      if (annotation) {
+        if (annotation[0].kind === "symbol" && !annotation[0].quoted)
+          registerCapture(annotation[0].name, annotation[1]);
+        visitPattern(annotation[0]);
+        return;
+      }
+      if (n.kind === "symbol" && !n.quoted) {
+        registerCapture(n.name, undefined);
+        return;
+      }
+      if (n.kind === "sequence") {
+        for (const item of n.items) visitPattern(item);
+        return;
+      }
+      if (n.kind === "postfix") {
+        visitPattern(n.operand);
+        return;
+      }
+      if (n.kind === "apply" || n.kind === "pack") {
+        if (n.kind !== "pack" && n.head.kind !== "symbol") visitPattern(n.head);
+        for (const field of n.body) {
+          const { pattern } = fieldPattern(field.value);
+          visitPattern(pattern);
+        }
+      }
+    };
+    for (const pack of packs)
+      for (const field of pack) visitPattern(field.value);
     checkEnv.evidence = evidence;
     checkBodyEvidence({
       body: fn.body,
@@ -2630,7 +2654,8 @@ export class Interpreter {
   /**
    * Structural overlap after predicate erasure. Distinct concrete type
    * identities are disjoint for overload dispatch (Int vs Float64). An
-   * untyped or Any position absorbs every counterpart.
+   * untyped or Any position absorbs every counterpart. Abstract unions and
+   * facets expand to their admitted members before the comparison.
    */
   private dispatchDomainsOverlap(
     left: Pattern<Value>,
@@ -2652,12 +2677,30 @@ export class Interpreter {
       }
       return p;
     };
+    const unionChoices = (p: Pattern<Value>): Pattern<Value>[] | undefined => {
+      if (p.kind === "union") return p.choices;
+      if (p.kind === "ref" && p.referent && p.referent.kind === "type") {
+        const members = this.expandDispatchTypes(p.referent);
+        if (members.length > 1)
+          return members.map((member) => this.typePattern(member));
+      }
+      return;
+    };
     const go = (a: Pattern<Value>, b: Pattern<Value>): boolean => {
       a = peel(a);
       b = peel(b);
       if (a.kind === "any" || b.kind === "any") return true;
       if (a.kind === "ref" && a.dispatchIdentity?.() === anyId) return true;
       if (b.kind === "ref" && b.dispatchIdentity?.() === anyId) return true;
+      const choicesA = unionChoices(a);
+      const choicesB = unionChoices(b);
+      if (choicesA || choicesB) {
+        const leftChoices = choicesA ?? [a];
+        const rightChoices = choicesB ?? [b];
+        return leftChoices.some((leftChoice) =>
+          rightChoices.some((rightChoice) => go(leftChoice, rightChoice)),
+        );
+      }
       if (a.kind === "ref" && b.kind === "ref") {
         const idA = a.dispatchIdentity?.() ?? a.key;
         const idB = b.dispatchIdentity?.() ?? b.key;
@@ -2681,6 +2724,22 @@ export class Interpreter {
       return false;
     };
     return go(left, right);
+  }
+  /** Expand abstract unions (and their aliases) to admitted member types. */
+  private expandDispatchTypes(type: TypeValue): TypeValue[] {
+    const ownMembers = Object.getOwnPropertyDescriptor(type, "unionMembers");
+    const members =
+      ownMembers && !ownMembers.get
+        ? (ownMembers.value as TypeValue[] | undefined)
+        : undefined;
+    if (members && members.length > 1)
+      return members.flatMap((member) => this.expandDispatchTypes(member));
+    const alias = this.aliasTargets.get(type);
+    if (alias) {
+      const expanded = this.expandDispatchTypes(alias);
+      if (expanded.length > 1 || expanded[0] !== alias) return expanded;
+    }
+    return [type];
   }
   private methodDomain(fn: Closure) {
     return dispatchSignature(
@@ -2720,19 +2779,35 @@ export class Interpreter {
           return;
         }
       }
-      if (types.length < 2) continue;
-      // Multi-member union parameters designate at bind time. Skipping them
-      // here keeps probe-style predicate errors from selecting overloads
-      // (tests/specification/ambiguous-values.test).
-      if (types.some((t) => (t.unionMembers?.length ?? 0) > 1)) return;
+      const expanded = types.flatMap((type) => this.expandDispatchTypes(type));
+      if (expanded.length < 2) continue;
       const unique = [
-        ...new Map(types.map((t) => [typeIdentity(t), t] as const)).values(),
+        ...new Map(
+          expanded.map((t) => [typeIdentity(t), t] as const),
+        ).values(),
       ];
       const expected =
         unique.length === 1 ? unique[0] : this.unionType(unique);
-      const checked = single(this.check(expected, arg.value));
-      designated[ai] = { ...arg, value: checked };
-      changed = true;
+      try {
+        const checked = single(this.check(expected, arg.value));
+        designated[ai] = { ...arg, value: checked };
+        changed = true;
+      } catch (error) {
+        // A false constant predicate excludes a member during designation.
+        // A predicate *error* inside an abstract-union parameter must not
+        // select among overloads (tests/specification/ambiguous-values.test);
+        // leave the competing clauses applicable so the call stays ambiguous.
+        // Errors from non-union refined domains still propagate.
+        const fromUnionParam = types.some(
+          (type) => this.expandDispatchTypes(type).length > 1,
+        );
+        const code =
+          error instanceof Mismatch || error instanceof LanguageError
+            ? error.diagnostic.code
+            : undefined;
+        if (fromUnionParam && code === "E_NO_METHOD") return;
+        throw error;
+      }
     }
     return changed ? designated : undefined;
   }
