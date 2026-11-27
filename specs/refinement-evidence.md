@@ -259,7 +259,44 @@ test "Evidence does not transfer to a computed value"
     "defined"
   fails "E_NO_METHOD"
 end
+
+test "A shadowing binding does not keep the shadowed name's evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float, m :: Float)
+      if n .matches NonZeroFloat
+        (n :: Float) = m
+        keep(n)
+      else
+        0 :: Float
+      end
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "A shadowing lambda parameter does not keep the outer name's evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float, m :: Float)
+      if n .matches NonZeroFloat
+        g = (n :: Float) -> keep(n)
+        g(m)
+      else
+        0 :: Float
+      end
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
 ```
+
+Evidence is keyed by binding identity, not by name. A new binding of a
+name starts with no evidence. A direct copy of a binding that already has
+evidence receives that evidence; a computation over the value does not.
+
 
 ### Ordering explicit checks
 
@@ -452,11 +489,30 @@ test "A predicate error during designation retains its diagnostic"
   expect pick(3) fails "E_NO_METHOD"
 end
 
+test "A predicate error inside an abstract-union parameter propagates"
+  def onlyStrings(s :: String) True
+  p = Int .where (n -> onlyStrings(n))
+  type Choice pattern p | String
+  def pick(n :: Choice) "choice"
+  def pick(n :: Float64) "float"
+  expect pick(3) fails "E_NO_METHOD"
+end
+
 test "An abstract union parameter overlaps a concrete member overload"
   type Input pattern Int | String
   expect
     def f(n :: Input) "union"
     def f(n :: String) "string"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Closed and open structural facets with overlapping domains are rejected"
+  type R pattern Rect(Float, Float)
+  type OpenR pattern Rect(Float, Float, ...)
+  expect
+    def area(r :: R) "closed"
+    def area(r :: OpenR) "open"
     "definitions complete"
   fails "E_OVERLAPPING_OVERLOAD"
 end
@@ -477,6 +533,30 @@ test "An annotated runtime alias keeps its refinement evidence"
     keep(alias)
   end
   expect ok(2 :: Float) is 2 :: Float
+end
+
+test "An inferred runtime alias keeps its refinement evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  def relay(n :: NonZeroFloat)
+    alias = n
+    keep(alias)
+  end
+  expect relay(2 :: Float) is 2 :: Float
+end
+
+test "An inferred alias inside a matches branch keeps that evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  def relay(n :: Float)
+    if n .matches NonZeroFloat
+      alias = n
+      keep(alias)
+    else
+      0 :: Float
+    end
+  end
+  expect relay(2 :: Float) is 2 :: Float
 end
 
 test "A bare runtime alias still lacks evidence for a computed use"

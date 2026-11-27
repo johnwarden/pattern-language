@@ -37,6 +37,7 @@ import {
   orderedParts,
 } from "./pattern-captures.ts";
 import { dispatchSignature } from "./dispatch-domain.ts";
+import { patternOverlap } from "./union-disjointness.ts";
 import { TYPE_SCHEMA } from "./type-schema.ts";
 import { CODE_SCHEMA } from "./code-schema.ts";
 import { readCode } from "./syntax-values.ts";
@@ -2704,7 +2705,32 @@ export class Interpreter {
       if (a.kind === "ref" && b.kind === "ref") {
         const idA = a.dispatchIdentity?.() ?? a.key;
         const idB = b.dispatchIdentity?.() ?? b.key;
-        return idA === idB;
+        if (idA === idB) return true;
+        // Abstract pattern/facet domains (transparent non-primitive types) can
+        // share concrete values across distinct descriptors — closed vs open
+        // Rect facets, or a facet vs a matching struct. Reject when overlap
+        // cannot be disproved. Concrete identities and transparent primitives
+        // such as Type stay disjoint by descriptor.
+        const abstractDomain = (
+          p: Extract<Pattern<Value>, { kind: "ref" }>,
+        ) => {
+          if (p.facet) return true;
+          const type = p.referent;
+          if (
+            !type ||
+            typeof type !== "object" ||
+            !("kind" in type) ||
+            (type as TypeValue).kind !== "type" ||
+            !(type as TypeValue).transparent
+          )
+            return false;
+          for (const primitive of this.primitives.values())
+            if (primitive === type) return false;
+          return true;
+        };
+        if (abstractDomain(a) || abstractDomain(b))
+          return patternOverlap(a, b) !== "no";
+        return false;
       }
       if (a.kind === "label" && b.kind === "label")
         return a.label === b.label && go(a.pattern, b.pattern);
@@ -2793,19 +2819,10 @@ export class Interpreter {
         designated[ai] = { ...arg, value: checked };
         changed = true;
       } catch (error) {
-        // A false constant predicate excludes a member during designation.
-        // A predicate *error* inside an abstract-union parameter must not
-        // select among overloads (tests/specification/ambiguous-values.test);
-        // leave the competing clauses applicable so the call stays ambiguous.
-        // Errors from non-union refined domains still propagate.
-        const fromUnionParam = types.some(
-          (type) => this.expandDispatchTypes(type).length > 1,
-        );
-        const code =
-          error instanceof Mismatch || error instanceof LanguageError
-            ? error.diagnostic.code
-            : undefined;
-        if (fromUnionParam && code === "E_NO_METHOD") return;
+        // A false constant predicate excludes a member during designation of
+        // the overload union. A predicate *error* (including inside an
+        // abstract-union parameter) must propagate rather than restore
+        // competing overload candidates as mere ambiguity.
         throw error;
       }
     }

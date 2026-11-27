@@ -370,7 +370,9 @@ test "Overload selection does not use refinement predicate failures"
   u = abstract p | Float
   def f(n :: u) "union"
   def f(n :: NumericValue) "rational"
-  expect f(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  # A predicate error inside a union parameter propagates; it must not restore
+  # competing overload candidates as E_AMBIGUOUS_VALUE_DESIGNATOR.
+  expect f(3) fails "E_NO_METHOD"
 end
 
 test "A predicate error in the selected definition retains its diagnostic"

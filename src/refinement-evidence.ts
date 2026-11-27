@@ -127,6 +127,36 @@ export function addEvidence(
   for (const id of ids) set.add(id);
 }
 
+/**
+ * Replace evidence for a binding. A new binding starts empty; callers then
+ * add annotation predicates or copy evidence from a source binding.
+ * Keyed by binding identity: shadowing must not keep the shadowed name's set.
+ */
+export function setEvidence(
+  evidence: EvidenceMap,
+  name: string,
+  ids: Iterable<PredicateId> = [],
+): void {
+  evidence.set(name, new Set(ids));
+}
+
+/** Evidence known for `name` under the binding-identity rule. */
+export function evidenceOf(
+  evidence: EvidenceMap,
+  name: string,
+  scope?: Scope,
+): Set<PredicateId> {
+  if (evidence.has(name)) return new Set(evidence.get(name));
+  if (!scope) return new Set();
+  // A local binding without an evidence entry starts with none.
+  if (scope.bindings.has(name)) return new Set();
+  const parent = scope.parent as
+    | (Scope & { evidence?: EvidenceMap })
+    | undefined;
+  if (parent?.evidence) return evidenceOf(parent.evidence, name, parent);
+  return new Set();
+}
+
 export function hasEvidence(
   evidence: EvidenceMap,
   name: string,
@@ -134,15 +164,40 @@ export function hasEvidence(
   scope?: Scope,
 ): boolean {
   if (!required.size) return true;
-  const local = evidence.get(name);
-  if (local && [...required].every((id) => local.has(id))) return true;
+  // A present entry (including an empty tombstone) is this binding's evidence.
+  if (evidence.has(name)) {
+    const local = evidence.get(name)!;
+    return [...required].every((id) => local.has(id));
+  }
   if (!scope) return false;
+  // Shadowing: a local binding does not inherit parent evidence by name.
+  if (scope.bindings.has(name)) return false;
   const parent = scope.parent as
     | (Scope & { evidence?: EvidenceMap })
     | undefined;
   if (parent?.evidence)
     return hasEvidence(parent.evidence, name, required, parent);
   return false;
+}
+
+/** Bare name designator after peeling packs and ascriptions. */
+function bareDesignator(
+  expression: Syntax,
+): Extract<Syntax, { kind: "symbol" }> | undefined {
+  let n = expression;
+  while (true) {
+    const annotation = binary(n, "::");
+    if (annotation) {
+      n = annotation[0];
+      continue;
+    }
+    if (n.kind === "pack" && n.body.length === 1) {
+      n = n.body[0].value;
+      continue;
+    }
+    break;
+  }
+  return n.kind === "symbol" && !n.quoted ? n : undefined;
 }
 
 /** `x .matches T` desugars to matches(x)(T). */
@@ -327,8 +382,14 @@ export function checkBodyEvidence(options: {
               localRuntime,
             ),
           );
+          // A sole bare RHS name is a direct copy; its evidence transfers.
+          const copiedFrom =
+            binding[1].length === 1
+              ? bareDesignator(binding[1][0].value)
+              : undefined;
           for (const name of binders({ kind: "pack", body: binding[0] })) {
             let annotatedType: TypeValue | undefined;
+            let annotationEvidence: Set<PredicateId> | undefined;
             for (const field of binding[0]) {
               const annotation = binary(field.value, "::");
               const capture =
@@ -341,19 +402,23 @@ export function checkBodyEvidence(options: {
               if (annotation) {
                 try {
                   annotatedType = resolveType(annotation[1], env);
-                  addEvidence(
-                    localEvidence,
-                    name,
-                    predicatesOfType(annotatedType),
-                  );
+                  annotationEvidence = predicatesOfType(annotatedType);
                 } catch {
                   /* type errors surface elsewhere */
                 }
               }
             }
+            // New binding identity: clear any shadowed evidence first.
+            if (annotationEvidence) setEvidence(localEvidence, name, annotationEvidence);
+            else if (copiedFrom)
+              setEvidence(
+                localEvidence,
+                name,
+                evidenceOf(localEvidence, copiedFrom.name, env),
+              );
+            else setEvidence(localEvidence, name);
             if (rhsRuntime) {
               // Preserve runtime provenance through aliases such as `alias = n`.
-              // Annotated aliases also keep the checked type's evidence.
               localRuntime.add(name);
               env.runtimeBindings.add(name);
               let type = annotatedType;
@@ -425,6 +490,64 @@ export function checkBodyEvidence(options: {
       walk(n.operand, evidence, bound, runtimeNames);
       return;
     }
+    const arrow = operator(n, "->");
+    if (arrow) {
+      for (const expression of patternExpressions({
+        kind: "pack",
+        body: arrow[0],
+      }))
+        walk(expression, evidence, bound, runtimeNames);
+      const localEvidence = copyEvidence(evidence);
+      const localBound = new Set(bound);
+      const localRuntime = new Set(runtimeNames);
+      for (const name of binders({ kind: "pack", body: arrow[0] })) {
+        let annotatedType: TypeValue | undefined;
+        let annotationEvidence: Set<PredicateId> | undefined;
+        for (const field of arrow[0]) {
+          const annotation = binary(field.value, "::");
+          const capture =
+            field.value.kind === "symbol"
+              ? field.value
+              : annotation?.[0].kind === "symbol"
+                ? annotation[0]
+                : undefined;
+          if (!capture || capture.quoted || capture.name !== name) continue;
+          if (annotation) {
+            try {
+              annotatedType = resolveType(annotation[1], env);
+              annotationEvidence = predicatesOfType(annotatedType);
+            } catch {
+              /* type errors surface elsewhere */
+            }
+          }
+        }
+        // Lambda parameters are a new binding identity: no inherited evidence.
+        setEvidence(localEvidence, name, annotationEvidence ?? []);
+        localRuntime.add(name);
+        env.runtimeBindings.add(name);
+        const type =
+          annotatedType ??
+          (() => {
+            try {
+              return resolveType(
+                { kind: "symbol", name: "Any", quoted: false },
+                env,
+              );
+            } catch {
+              return undefined;
+            }
+          })();
+        if (type)
+          env.bindings.set(name, {
+            kind: "slot",
+            type,
+            value: valSymbol("\0runtime"),
+          });
+      }
+      for (const field of arrow[1])
+        walk(field.value, localEvidence, localBound, localRuntime);
+      return;
+    }
     const annotation = binary(n, "::");
     if (annotation) {
       walk(annotation[0], evidence, bound, runtimeNames);
@@ -453,20 +576,8 @@ function isDirectRuntimeDesignator(
   expression: Syntax,
   name: string,
 ): boolean {
-  let n = expression;
-  while (true) {
-    const annotation = binary(n, "::");
-    if (annotation) {
-      n = annotation[0];
-      continue;
-    }
-    if (n.kind === "pack" && n.body.length === 1) {
-      n = n.body[0].value;
-      continue;
-    }
-    break;
-  }
-  return n.kind === "symbol" && !n.quoted && n.name === name;
+  const designator = bareDesignator(expression);
+  return !!designator && designator.name === name;
 }
 
 function expressionDependsOnRuntime(
