@@ -64,7 +64,7 @@ test("missing label reports call and requirement locations", () => {
 });
 test("ambiguity lists both definitions", () => {
   const error = fail("def f(x) 1\ndef f(:Red) 2\nf(:Red)");
-  assert.equal(error.diagnostic.code, "E_AMBIGUOUS_CALL");
+  assert.equal(error.diagnostic.code, "E_AMBIGUOUS_VALUE_DESIGNATOR");
   assert.deepEqual(
     error.diagnostic.related.map((r) => r.span?.line),
     [1, 2],

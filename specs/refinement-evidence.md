@@ -6,7 +6,7 @@ successful check can establish that a particular value satisfies the
 predicate. That guarantee is **refinement evidence**.
 
 ```pattern
-todo test "A refined binding carries its guarantee into the next binding"
+test "A refined binding carries its guarantee into the next binding"
   type NonZeroFloat pattern Float .where isNonZero
 
   (x :: NonZeroFloat) = 2 :: Float
@@ -56,7 +56,7 @@ The binding annotation requests that check directly. A separate expression
 ascription can request it too.
 
 ```pattern
-todo test "A base-typed constant can be checked against a refinement"
+test "A base-typed constant can be checked against a refinement"
   type NonZeroFloat pattern Float .where isNonZero
   def twice(n :: Float) n + n
   def keep(n :: NonZeroFloat) n
@@ -68,7 +68,8 @@ todo test "A base-typed constant can be checked against a refinement"
   expect keep(two) is 2 :: Float
   expect keep(twice(1 :: Float)) is 2 :: Float
   expect (6 :: Float) / two is 3 :: Float
-  expect (6 :: Float) / 2 is 3 :: Float
+  # Mixed Float / bare NumericValue fit waits on fixed-precision promotion (#121).
+  todo expect (6 :: Float) / 2 is 3 :: Float
 
   (zero :: Float) = twice(0 :: Float)
   expect
@@ -96,6 +97,7 @@ The same rule applies to the fit predicate of a concrete numeric type.
 checking evaluates `fitsInt32` on the bound constant `a`.
 
 ```pattern
+# Fixed-width Int32 designation depends on #121 (cursor/feat-fixed-width-integers-6b49).
 todo test "A bound constant can designate into a fixed-width parameter"
   def f(x :: Int32) x
   a = 1
@@ -121,7 +123,7 @@ A field or element can establish its own refinement this way even when a
 different field is supplied at runtime.
 
 ```pattern
-todo test "A constant field can establish a refinement beside a runtime field"
+test "A constant field can establish a refinement beside a runtime field"
   type NonZeroFloat pattern Float .where isNonZero
   type PairOfFloats struct Pair(NonZeroFloat, Float)
   (two :: Float) = (1 :: Float) + (1 :: Float)
@@ -140,6 +142,7 @@ failed). Numeric fit predicates that fail exact representation report
 If evaluation raises an error, preserve its diagnostic.
 
 ```pattern
+# Number / NonZeroNumber wait on the Real|Complex Number union from fixed-precision work.
 todo test "A literal can establish a refinement"
   type NonZeroFloat pattern Float .where isNonZero
   type NonZeroNumber pattern Number .where isNonZero
@@ -169,6 +172,8 @@ checker knows that this particular `y` passed. An assignment, a type
 annotation, or a call can use that evidence.
 
 ```pattern
+# Return-type annotations on def and the Number union are not in this slice;
+# evidence for .matches / missing evidence is covered by the Float-only cases above.
 todo test "A Float parameter can be used as nonzero in the checked branch"
   type NonZeroFloat pattern Float .where isNonZero
   type NonZeroNumber pattern Number .where isNonZero
@@ -226,7 +231,7 @@ function. The overload-domain rule is specified in
 [type values](type-values.md#overload-domains-and-projection-dispatch).
 
 ```pattern
-todo test "One Int overload can give its predicates an explicit priority"
+test "One Int overload can give its predicates an explicit priority"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
   def classify(n :: Int)
@@ -249,7 +254,7 @@ predicates on nested fields. A successful parse returns a value with the
 guarantees of `T`.
 
 ```pattern
-todo test "Typed parsing establishes nested field refinements"
+test "Typed parsing establishes nested field refinements"
   type PositiveInt pattern Int .where isPositive
   type Rectangle struct Rect(PositiveInt, PositiveInt)
 
@@ -270,6 +275,7 @@ the true branch returns the value that passed the check. The other branch
 returns the absence case of `NonZeroNumber?`.
 
 ```pattern
+# Number and def return-type annotations are outside this slice.
 todo test "Every return path meets a refined optional result"
   type NonZeroNumber pattern Number .where isNonZero
   def zeroAsNone(x :: Number) :: NonZeroNumber?
@@ -302,7 +308,7 @@ unchecked call fails with `E_NO_METHOD`. See
 
 ```pattern
 test "A literal zero fails the divisor refinement"
-  todo expect (1 :: Float) / (0 :: Float) fails "E_REFINEMENT_FAILED"
+  expect (1 :: Float) / (0 :: Float) fails "E_REFINEMENT_FAILED"
 end
 ```
 
@@ -333,11 +339,10 @@ test "Int and Float64 overloads accept typed arguments and compete for a literal
   def pick(n :: Float64) "float"
   expect pick(3 :: Int) is "integer"
   expect pick(3 :: Float64) is "float"
-  legacy expect pick(3) fails "E_AMBIGUOUS_CALL"
-  todo expect pick(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect pick(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
-todo test "Union bindings and overloads use the same constant designation"
+test "Union bindings and overloads use the same constant designation"
   type PositiveInt pattern Int .where isPositive
   type Choice pattern PositiveInt | Float64
   def pick(n :: PositiveInt) "integer"

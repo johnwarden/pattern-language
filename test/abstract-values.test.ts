@@ -108,13 +108,19 @@ test("refinements cannot distinguish overloads with the same whole pack domain",
     ),
     "(1, 2)",
   );
+  // Constant refinement failure excludes the Positive interpretation
+  // (specs/refinement-evidence.md); the untyped overload remains.
+  assert.equal(
+    run(defs + "def f(x :: Positive) 1\ndef f(x) 2\nf(negate(1))"),
+    "2",
+  );
   assert.throws(
-    () => run(defs + "def f(x :: Positive) 1\ndef f(x) 2\nf(negate(1))"),
-    /ambiguous call/,
+    () => run(defs + "def f(x :: Positive) 1\ndef f(x) 2\nf(1)"),
+    /ambiguous/,
   );
   assert.throws(
     () => run(defs + "def f(x :: Positive) 1\nf(negate(1))"),
-    /subset/,
+    /E_REFINEMENT_FAILED|subset|does not satisfy/,
   );
 });
 

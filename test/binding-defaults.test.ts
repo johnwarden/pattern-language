@@ -93,7 +93,7 @@ test("ambiguous overloads do not evaluate omitted defaults", () => {
         run(
           `def f(x: Int = ${defaults[0]}) 1\ndef f(y: Int = ${defaults[1]}) 2\nf()`,
         ),
-      /ambiguous call/,
+      /ambiguous/,
     );
 });
 

@@ -41,7 +41,7 @@ test "An overlapping defined function is ambiguous"
     def f(x) 1
     def f(:Red) 2
     f(:Red)
-  fails "ambiguous call"
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "Variables, functions and accessors keep separate uses of the same name"

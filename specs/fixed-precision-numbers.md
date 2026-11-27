@@ -637,7 +637,7 @@ todo test "Mixed ordering accepts the same exact value in every form"
   assert one < n
 end
 
-todo test "An Int refinement can order its input against an exact zero"
+test "An Int refinement can order its input against an exact zero"
   type PositiveInt pattern Int .where isPositive
 
   assert (2 :: Int) .matches PositiveInt

@@ -339,18 +339,14 @@ end
 test "A value that fails a refinement reports the failed predicate"
   p = Int .where (n -> n > (5 :: Int))
   u = abstract p | Float
-  legacy expect
-    def f(n :: u) n
-    f(3 :: p)
-  fails "E_PATTERN_MISMATCH"
-  legacy expect
-    def f(n :: u) n
-    f(3 :: p)
-  fails "value does not satisfy subset (n -> n > (5 :: Int))"
-  todo expect
+  expect
     def f(n :: u) n
     f(3 :: p)
   fails "E_REFINEMENT_FAILED"
+  expect
+    def f(n :: u) n
+    f(3 :: p)
+  fails "value does not satisfy subset (n -> n > (5 :: Int))"
 end
 
 test "Literal designation checks refinements nested in lists, options and constructor fields"
@@ -374,7 +370,7 @@ test "Overload selection does not use refinement predicate failures"
   u = abstract p | Float
   def f(n :: u) "union"
   def f(n :: NumericValue) "rational"
-  expect f(3) fails "E_AMBIGUOUS_CALL"
+  expect f(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
 end
 
 test "A predicate error in the selected definition retains its diagnostic"
@@ -389,7 +385,7 @@ test "A runtime argument must already supply refinement evidence"
   p = Int .where (n -> n > (5 :: Int))
   u = abstract p | Float
   def f(n :: u) n
-  todo expect
+  expect
     def unchecked(n :: Int) f(n)
     "defined"
   fails "E_NO_METHOD"
@@ -399,7 +395,7 @@ test "A field supplied by a runtime parameter still needs refinement evidence"
   p = Int .where (n -> n > (5 :: Int))
   u = abstract (type :Box(p)) | (type :Box(Float))
   def f(n :: u) "designated"
-  todo expect
+  expect
     def unchecked(n :: Int) f(Box(n))
     "defined"
   fails "E_NO_METHOD"

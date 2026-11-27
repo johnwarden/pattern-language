@@ -104,7 +104,7 @@ test "Language as data"
   assert r == l
 
   Language(rules: rules, **) = l
-  legacy expect rules.len is 14 :: Expression
+  legacy expect rules.len is 15 :: Expression
 
   Block(nodes) = parseSyntax(r)("if True 1 else 2")
   legacy expect nodes.len is 1 :: Expression

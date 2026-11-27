@@ -605,7 +605,7 @@ todo test "The same tag leaves the erased overload domains overlapping"
   fails "E_REFINED_OVERLOAD"
 end
 
-todo test "Distinct tags distinguish overloads with refinements on the same Int"
+test "Distinct tags distinguish overloads with refinements on the same Int"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
   type Tag struct :A | :B
@@ -750,7 +750,7 @@ end
 
 # The next contracts depend on enum refinements. The standalone membership
 # test tracks setup separately from the overlap and evidence checks.
-todo test "The refinement match fixtures admit their designated values"
+test "The refinement match fixtures admit their designated values"
   type Positive pattern Int .where isPositive
   type NonZero pattern Int .where isNonZero
   assert (3 :: Int) .matches Positive

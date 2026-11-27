@@ -114,6 +114,15 @@ import {
   syntaxNumber,
 } from "./values.ts";
 import { exactArithmetic, isRational, negateNumeric } from "./rational.ts";
+import {
+  isPredicateCase,
+  predicateTest,
+  predicatesOfType,
+  checkBodyEvidence,
+  addEvidence,
+  emptyEvidence,
+  copyEvidence,
+} from "./refinement-evidence.ts";
 import type {
   Value,
   TypeValue,
@@ -368,6 +377,16 @@ export class Interpreter {
         accessors: [],
       });
       if (prelude) this.run(prelude, "repl", "prelude");
+      const predicateBinding = this.env.get("Predicate");
+      if (predicateBinding && !("kind" in predicateBinding)) {
+        this.primitives.set(
+          "Predicate",
+          this.instantiate(predicateBinding, []),
+        );
+      } else if (predicateBinding) {
+        const predicate = this.materializeType(predicateBinding);
+        if (predicate) this.primitives.set("Predicate", predicate);
+      }
     }
   }
   inspect(results: Field<Value>[]): string {
@@ -930,6 +949,15 @@ export class Interpreter {
                 throw new LanguageError("string size limit exceeded");
               return this.ascribeString(valLiteral(a.value + b.value));
             }
+            if (
+              (name === "/" || name === "%" || name === "div" || name === "flDiv") &&
+              !predicateTest("isNonZero", b)
+            )
+              throw new LanguageError(
+                "divisor does not satisfy isNonZero",
+                undefined,
+                { code: "E_REFINEMENT_FAILED", phase: "match" },
+              );
             if (!space || space.numeric === "rational") {
               const left = asNumeric(a),
                 right = asNumeric(b);
@@ -1043,6 +1071,9 @@ export class Interpreter {
         this.refine(base, predicate, env),
       ),
     );
+    // Predicate cases are designated after .where and tested inside refine();
+    // they are not installed as competing top-level callables (user isSquare
+    // definitions must remain unambiguous).
     scope.bindings.set(
       "matches",
       this.native("matches", [1, 1], ([value, pattern]) => {
@@ -2001,15 +2032,51 @@ export class Interpreter {
         }
       : single(this.evaluate(n.head, env), "function head");
     const unique = this.uniqueClosure(fn);
-    const args = this.evaluateFields(
-      n.body,
-      env,
-      unique
-        ? this.expectedFieldsFromPattern(unique.parameters[0] ?? [], unique.env)
-        : [],
-    );
+    const wherePartial = this.wherePredicatePack(fn);
+    const args = wherePartial
+      ? this.evaluateWherePredicate(n.body, env)
+      : this.evaluateFields(
+          n.body,
+          env,
+          unique
+            ? this.expectedFieldsFromPattern(
+                unique.parameters[0] ?? [],
+                unique.env,
+              )
+            : [],
+        );
     this.recordOperands(n, args);
     return this.invoke(fn, args, env);
+  }
+  /** The second pack of where(T)(p) designates Predicate from a bare name. */
+  private wherePredicatePack(fn: Value): boolean {
+    const value = unwrap(fn);
+    return (
+      value.kind === "native" &&
+      value.name === "where" &&
+      value.arities.length === 1
+    );
+  }
+  private evaluateWherePredicate(
+    body: Field<Syntax>[],
+    env: Scope,
+  ): Field<Value>[] {
+    if (body.length !== 1) return this.evaluateFields(body, env);
+    const arg = body[0].value;
+    // Known Predicate case names designate the enum member and ignore bindings
+    // (specs/refinement-predicates.md). Other operands evaluate normally so
+    // bootstrap function predicates and wrappers keep working.
+    if (arg.kind === "symbol" && !arg.quoted && isPredicateCase(arg.name))
+      return singleton(this.predicateValue(arg.name));
+    return this.evaluateFields(body, env);
+  }
+  private predicateValue(name: string): Value {
+    const predicate = this.primitives.get("Predicate");
+    if (!predicate)
+      throw new LanguageError("Predicate is not available", undefined, {
+        code: "E_EXPECTED_PREDICATE",
+      });
+    return single(this.check(predicate, valSymbol(name)));
   }
   /**
    * Host embedding API: report the evaluated operand packs of the one binary
@@ -2059,6 +2126,7 @@ export class Interpreter {
     copy.functions = new Map(env.functions);
     copy.typeDefinitions = new Map(env.typeDefinitions);
     copy.runtimeBindings = new Set(env.runtimeBindings);
+    copy.evidence = copyEvidence(env.evidence);
     return copy;
   }
   private uniqueClosure(fn: Value): Closure | undefined {
@@ -2261,6 +2329,7 @@ export class Interpreter {
             fn,
             env.visible(name.name).filter((other) => other.id !== fn.id),
           );
+        this.checkFunctionEvidence(fn, fn.parameters, fn.env);
       }
       const group = new Set(declarations);
       for (const declaration of [...declarations, ...functions])
@@ -2410,7 +2479,54 @@ export class Interpreter {
       };
     this.registerMethod(head.name, fn, env);
     local.functions.set(head.name, env.functions.get(head.name)!);
+    if (!this.deferringDeclarations && !isMacro)
+      this.checkFunctionEvidence(fn, packs, local);
     return singleton(fn);
+  }
+  /** Definition-time evidence obligations for refined uses of parameters. */
+  private checkFunctionEvidence(
+    fn: Closure,
+    packs: Field<Syntax>[][],
+    env: Scope,
+  ): void {
+    const checkEnv = new Scope(env);
+    const evidence = emptyEvidence();
+    for (const pack of packs) {
+      for (const field of pack) {
+        const annotation = binary(field.value, "::");
+        const capture =
+          field.value.kind === "symbol"
+            ? field.value
+            : annotation?.[0].kind === "symbol"
+              ? annotation[0]
+              : undefined;
+        if (!capture || capture.quoted) continue;
+        // Placeholder so availability treats the parameter as a runtime binding.
+        let type = this.primitives.get("Any")!;
+        if (annotation) {
+          try {
+            type = this.typeFromSyntax(annotation[1], env);
+            addEvidence(evidence, capture.name, predicatesOfType(type));
+          } catch {
+            /* annotation type errors surface on use */
+          }
+        }
+        checkEnv.bindings.set(capture.name, {
+          kind: "slot",
+          type,
+          value: valSymbol("\0runtime"),
+        });
+        checkEnv.runtimeBindings.add(capture.name);
+      }
+    }
+    checkEnv.evidence = evidence;
+    checkBodyEvidence({
+      body: fn.body,
+      env: checkEnv,
+      evidence,
+      binders: captureNames,
+      resolveType: (syntax, scope) => this.typeFromSyntax(syntax, scope),
+    });
   }
   private registerMethod(name: string, fn: Closure, env: Scope) {
     const existing = env.visible(name);
@@ -2474,6 +2590,41 @@ export class Interpreter {
     return dispatchSignature(
       fn.parameters.map((pack) => this.compiler(fn.env, false).fields(pack)),
     );
+  }
+  /**
+   * During overload designation, exclude a candidate when a supplied argument
+   * fails that candidate's non-union refinement (constant predicate check).
+   * Union designation still runs at bind time so probe-style predicates are
+   * not double-executed during selection. Omitted defaults are not touched.
+   */
+  private checkSuppliedRefinements(
+    parameters: Field<Syntax>[],
+    args: Field<Value>[],
+    env: Scope,
+  ): void {
+    const used = new Set<number>();
+    for (const arg of args) {
+      const index = !positional(arg.label)
+        ? parameters.findIndex((field) => field.label === arg.label)
+        : parameters.findIndex(
+            (field, i) => !used.has(i) && positional(field.label),
+          );
+      if (index < 0) continue;
+      used.add(index);
+      const annotation = binary(parameters[index].value, "::");
+      if (!annotation) continue;
+      let type: TypeValue;
+      try {
+        type = this.typeFromSyntax(annotation[1], env);
+      } catch {
+        continue;
+      }
+      // Multi-member unions designate at bind time (once). A `pattern`
+      // alias is a single-member union and still needs its refinement check.
+      if (type.unionMembers && type.unionMembers.length > 1) continue;
+      if (!predicatesOfType(type).size) continue;
+      this.check(type, arg.value, env);
+    }
   }
   private expandMacro(
     fn: Closure,
@@ -2603,8 +2754,43 @@ export class Interpreter {
           const pattern = this.compiler(candidate.env, false).fields(
             candidate.parameters[0],
           );
+          // Structural recognition first (no defaults). Then constant
+          // refinement checks on supplied args may exclude an interpretation
+          // (specs/refinement-evidence.md — union bindings and overloaded calls).
           valueMatcher().recognize(pattern, args);
-          applicable.push({ candidate });
+          try {
+            this.checkSuppliedRefinements(
+              candidate.parameters[0],
+              args,
+              candidate.env,
+            );
+            applicable.push({ candidate });
+          } catch (e) {
+            if (!(e instanceof Mismatch) && !(e instanceof LanguageError))
+              throw e;
+            const code =
+              e instanceof Mismatch || e instanceof LanguageError
+                ? e.diagnostic.code
+                : undefined;
+            if (
+              code === "E_REFINEMENT_FAILED" ||
+              code === "E_NOT_EXACTLY_REPRESENTABLE" ||
+              code === "E_PATTERN_MISMATCH" ||
+              code === "E_SUBSET_MISMATCH"
+            )
+              rejected.push({
+                candidate,
+                error:
+                  e instanceof Mismatch
+                    ? e
+                    : new Mismatch(
+                        e.message,
+                        e.diagnostic.primary,
+                        e.diagnostic,
+                      ),
+              });
+            else applicable.push({ candidate });
+          }
         } catch (e) {
           if (!(e instanceof Mismatch)) throw e;
           rejected.push({ candidate, error: e });
@@ -2665,6 +2851,8 @@ export class Interpreter {
           undefined,
           { code: "E_NOT_CALLABLE" },
         );
+      const sole =
+        reasons.length === 1 ? reasons[0].error.diagnostic.code : undefined;
       throw new Mismatch(
         "no applicable function" +
           (fn.kind === "overload" ? " " + fn.name : "") +
@@ -2674,9 +2862,10 @@ export class Interpreter {
         reasons.length === 1 ? reasons[0].error.diagnostic.primary : undefined,
         {
           code:
-            reasons.length === 1 &&
-            reasons[0].error.diagnostic.code === "E_MISSING_FIELD"
-              ? "E_MISSING_FIELD"
+            sole === "E_MISSING_FIELD" ||
+            sole === "E_REFINEMENT_FAILED" ||
+            sole === "E_NOT_EXACTLY_REPRESENTABLE"
+              ? sole
               : "E_NO_METHOD",
           causes: reasons.map((r) => r.error.diagnostic),
           notes: reasons.map(
@@ -2692,15 +2881,28 @@ export class Interpreter {
         },
       );
     }
-    if (applicable.length !== 1)
+    if (applicable.length !== 1) {
+      // Competing closures with a supplied argument are value designation
+      // (typed domains / tag patterns). Zero-arg overload ties and accessor
+      // collisions stay ordinary call ambiguity.
+      const designation =
+        args.length > 0 &&
+        applicable.every((a) => a.candidate.kind === "closure");
       throw new LanguageError(
-        "ambiguous call: " +
-          applicable.length +
-          " applicable functions" +
-          (fn.kind === "overload" ? " named " + fn.name : ""),
+        designation
+          ? "ambiguous value designator: " +
+              applicable.length +
+              " interpretations match" +
+              (fn.kind === "overload" ? " for " + fn.name : "")
+          : "ambiguous call: " +
+              applicable.length +
+              " applicable functions" +
+              (fn.kind === "overload" ? " named " + fn.name : ""),
         undefined,
         {
-          code: "E_AMBIGUOUS_CALL",
+          code: designation
+            ? "E_AMBIGUOUS_VALUE_DESIGNATOR"
+            : "E_AMBIGUOUS_CALL",
           phase: "match",
           related: applicable.slice(0, 8).map((a) => ({
             message: "Matching candidate " + describe(a.candidate),
@@ -2708,6 +2910,7 @@ export class Interpreter {
           })),
         },
       );
+    }
     const { candidate, fields } = applicable[0];
     if (candidate.kind === "accessor") return fields!;
     if (candidate.kind === "closure")
@@ -3695,21 +3898,44 @@ export class Interpreter {
           ],
         },
       );
-    if (!["closure", "native", "accessor", "overload"].includes(predicate.kind))
+    const predicateType = this.primitives.get("Predicate");
+    const enumCase =
+      predicate.kind === "symbol" && isPredicateCase(predicate.name)
+        ? predicate.name
+        : undefined;
+    const isEnumPredicate =
+      !!enumCase &&
+      (!predicateType ||
+        (() => {
+          try {
+            this.check(predicateType, predicateValue);
+            return true;
+          } catch {
+            return !!enumCase;
+          }
+        })());
+    if (
+      !isEnumPredicate &&
+      !["closure", "native", "accessor", "overload"].includes(predicate.kind)
+    )
       throw new LanguageError(
-        "where requires a predicate function as its second argument",
+        "where requires a Predicate or predicate function as its second argument",
         undefined,
         {
           code: "E_EXPECTED_PREDICATE",
-          notes: ["Pass a closure such as n -> isInt64(n)."],
+          notes: [
+            "Pass a Predicate case such as isNonZero, or a closure such as n -> n != 0.",
+          ],
         },
       );
-    const identity =
-      predicate.kind === "overload"
+    const identity = isEnumPredicate
+      ? enumCase!
+      : predicate.kind === "overload"
         ? predicate.candidates.map((c) => c.id)
         : (predicate as Candidate).id;
-    const description =
-      predicate.kind === "closure"
+    const description = isEnumPredicate
+      ? enumCase!
+      : predicate.kind === "closure"
         ? "(" +
           normal(
             apply(
@@ -3735,6 +3961,7 @@ export class Interpreter {
         pattern: this.typePattern(base),
         validate: (fields) =>
           fields.every((f) => {
+            if (isEnumPredicate) return predicateTest(enumCase!, f.value);
             const result = unwrap(
               single(
                 this.invoke(predicate, singleton(f.value)),
@@ -4259,6 +4486,7 @@ export class Interpreter {
             e.diagnostic.message,
           e.diagnostic.primary,
           {
+            code: e.diagnostic.code,
             related: e.diagnostic.related,
             path: e.diagnostic.path,
             expected: e.diagnostic.expected,

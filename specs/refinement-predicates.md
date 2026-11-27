@@ -7,8 +7,6 @@ the same predicate without the caller's lexical environment.
 
 ```pattern
 test "Predicate is a concrete enum of named cases"
-  type Predicate struct :isNonZero | :isPositive | :isSquare
-
   def checkPredicate(p :: Predicate)(value)
     match p
       :isNonZero -> isNonZero(value)
@@ -94,6 +92,7 @@ test "Refinements require Predicate operands"
     Int .where "isNonZero"
   fails "E_EXPECTED_PREDICATE"
 
+  # Lambdas remain accepted until portable Predicate-only refinements land.
   todo expect
     Int .where (n -> True)
   fails "E_EXPECTED_PREDICATE"
@@ -101,7 +100,7 @@ end
 ```
 
 ```pattern
-todo test "isSquare designates a Predicate case, not a local function"
+test "isSquare designates a Predicate case, not a local function"
   type Rectangular pattern Rect(w :: Float, h :: Float)
   type Rectangle struct Rect(w :: Float, h :: Float)
   def isSquare(r :: Rectangular) False

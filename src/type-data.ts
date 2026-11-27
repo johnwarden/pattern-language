@@ -155,10 +155,23 @@ export function typeDescription(
         };
       }
       case "map":
-        if (p.identity !== undefined)
+        if (p.identity !== undefined) {
+          // Predicate enum cases serialize as T .where caseName.
+          if (
+            Array.isArray(p.identity) &&
+            p.identity[0] === "predicate" &&
+            typeof p.identity[1] === "string" &&
+            !p.identity[1].startsWith("fn:")
+          ) {
+            const base = encode(p.pattern, root);
+            const name = p.identity[1];
+            return (bs) =>
+              term("where", base(bs), { kind: "symbol", name });
+          }
           return unavailable(
             "refinement types need a portable predicate description before serialization",
           );
+        }
         return encode(p.pattern, root);
       case "label":
         if (p.fallback)

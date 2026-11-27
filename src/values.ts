@@ -175,6 +175,8 @@ export class Scope {
   functions = new Map<string, Candidate[]>();
   typeDefinitions = new Map<string, TypeDefinition>();
   runtimeBindings = new Set<string>();
+  /** Predicate evidence known for runtime bindings in this scope. */
+  evidence = new Map<string, Set<string>>();
   isRuntime(name: string): boolean {
     return this.bindings.has(name)
       ? this.runtimeBindings.has(name)
