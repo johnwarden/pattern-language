@@ -224,6 +224,43 @@ arm's **guard** is a condition that must succeed before its body runs. If
 the arm binds `n :: Float` and its guard checks `n .matches NonZeroFloat`,
 the body can use `n` as nonzero.
 
+```pattern
+test "Statements after an if do not keep branch-only evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float)
+      if n .matches NonZeroFloat
+        0
+      end
+      keep(n)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "A local alias keeps the runtime parameter's missing evidence"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: Float)
+      alias = n
+      keep(alias)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Evidence does not transfer to a computed value"
+  type NonZeroFloat pattern Float .where isNonZero
+  def keep(n :: NonZeroFloat) n
+  expect
+    def bad(n :: NonZeroFloat) keep(n - n)
+    "defined"
+  fails "E_NO_METHOD"
+end
+```
+
 ### Ordering explicit checks
 
 Use explicit checks to give predicates a priority within one base-type
@@ -310,6 +347,24 @@ unchecked call fails with `E_NO_METHOD`. See
 test "A literal zero fails the divisor refinement"
   expect (1 :: Float) / (0 :: Float) fails "E_REFINEMENT_FAILED"
 end
+
+test "A runtime Float divisor needs nonzero evidence"
+  expect
+    def unchecked(d :: Float)
+      (1 :: Float) / d
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+
+test "Successive packs check each refined parameter"
+  type NonZeroFloat pattern Float .where isNonZero
+  def divide(n :: Float)(d :: NonZeroFloat) n / d
+  expect
+    def bad(d :: Float) divide(1 :: Float)(d)
+    "defined"
+  fails "E_NO_METHOD"
+end
 ```
 
 A checked conversion can also establish a predicate for a runtime value.
@@ -379,6 +434,28 @@ A failed predicate excludes one constant interpretation. A predicate error
 retains its diagnostic. After one interpretation is selected, reuse its
 predicate checks when binding parameters. Runtime arguments require evidence
 from their types or earlier explicit checks. See [ambiguous value designators](ambiguous-values.md).
+
+```pattern
+test "A Float64 argument selects the Float64 overload without Int evidence"
+  type PositiveInt pattern Int .where isPositive
+  def pick(n :: PositiveInt) "integer"
+  def pick(n :: Float64) "float"
+  def relay(n :: Float64) pick(n)
+  expect relay(3 :: Float64) is "float"
+end
+
+test "A predicate error during designation retains its diagnostic"
+  def onlyStrings(s :: String) True
+  p = Int .where (n -> onlyStrings(n))
+  def pick(n :: p) "integer"
+  def pick(n :: Float64) "float"
+  expect pick(3) fails "E_NO_METHOD"
+end
+```
+
+Host tests cover reuse of a successful predicate check when binding a sole
+refined parameter and when designation selects among disjoint overloads
+(`test/ambiguous-values.test.ts`).
 
 ## Diagnostics and test migration
 
