@@ -203,7 +203,7 @@ different concrete value spaces. The abstract bindings below admit both
 descriptors, so the comparison returns `False`:
 
 ```pattern
-todo test "Int64 and Struct(Int64) compare unequal through Type"
+test "Int64 and Struct(Int64) compare unequal through Type"
   (x :: Type) = Int64
   (y :: Type) = Struct(Int64)
   assert not(x === y)

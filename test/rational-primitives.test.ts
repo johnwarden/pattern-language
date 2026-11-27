@@ -70,12 +70,11 @@ test("a complex NumberLiteral transports both exact coefficients", () => {
   );
 });
 
-test("0.5 :: Int remains a generic mismatch until D07 integer designation", () => {
+test("0.5 :: Int fails with E_NOT_EXACTLY_REPRESENTABLE", () => {
   assert.throws(
     () => run("0.5 :: Int"),
     (e: unknown) =>
       e instanceof LanguageError &&
-      e.diagnostic.code === "E_PATTERN_MISMATCH" &&
-      /expected Int/.test(e.message),
+      e.diagnostic.code === "E_NOT_EXACTLY_REPRESENTABLE",
   );
 });

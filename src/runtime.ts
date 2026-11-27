@@ -946,8 +946,11 @@ export class Interpreter {
               const left = asRational(a),
                 right = asRational(b);
               if (!left || !right) throw new LanguageError("expected a number");
-              const result = fixedIntegerArithmetic(name, left, right);
-              if (!fitsFixedInteger(result, space.numeric))
+              const result =
+                name === "^"
+                  ? exactArithmetic("^", left, right)
+                  : fixedIntegerArithmetic(name, left, right);
+              if (!isRational(result) || !fitsFixedInteger(result, space.numeric))
                 throw new LanguageError("integer overflow", undefined, {
                   code: "E_OVERFLOW",
                 });
