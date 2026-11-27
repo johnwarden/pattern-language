@@ -669,6 +669,57 @@ export function mulRationals(a: Rational, b: Rational): Rational {
   return reduceRational(a.n * b.n, a.d * b.d);
 }
 
+/** Fixed-width integer formats in the initial prelude. */
+export type FixedIntegerKind = "int32" | "int64" | "uint64";
+export const INT32_MIN = -(2n ** 31n);
+export const INT32_MAX = 2n ** 31n - 1n;
+export const INT64_MIN = -(2n ** 63n);
+export const INT64_MAX = 2n ** 63n - 1n;
+export const UINT64_MAX = 2n ** 64n - 1n;
+
+export function fitsFixedInteger(
+  value: Rational,
+  kind: FixedIntegerKind,
+): boolean {
+  if (value.d !== 1n) return false;
+  switch (kind) {
+    case "int32":
+      return value.n >= INT32_MIN && value.n <= INT32_MAX;
+    case "int64":
+      return value.n >= INT64_MIN && value.n <= INT64_MAX;
+    case "uint64":
+      return value.n >= 0n && value.n <= UINT64_MAX;
+  }
+}
+
+/** Integer + - * / % over fixed formats; / truncates toward zero. */
+export function fixedIntegerArithmetic(
+  op: string,
+  left: Rational,
+  right: Rational,
+): Rational {
+  if (left.d !== 1n || right.d !== 1n)
+    throw new LanguageError("expected an integer");
+  switch (op) {
+    case "+":
+      return { n: left.n + right.n, d: 1n };
+    case "-":
+      return { n: left.n - right.n, d: 1n };
+    case "*":
+      return { n: left.n * right.n, d: 1n };
+    case "/":
+      if (right.n === 0n)
+        throw new LanguageError("result exceeds safe numeric range");
+      return { n: left.n / right.n, d: 1n };
+    case "%":
+      if (right.n === 0n)
+        throw new LanguageError("result exceeds safe numeric range");
+      return { n: left.n % right.n, d: 1n };
+    default:
+      throw new LanguageError("expected an integer operation");
+  }
+}
+
 export function negateNumeric(value: ExactNumeric): ExactNumeric {
   const neg = (part: Rational) => ({ n: -part.n, d: part.d });
   return isRational(value)

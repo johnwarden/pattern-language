@@ -3,6 +3,8 @@ import type { Value, TypeValue } from "./values.ts";
 import { unwrap, equal, asRational, asNumeric } from "./values.ts";
 import { LanguageError } from "./syntax.ts";
 import { primitiveNames, ordinarySymbolCategory } from "./primitive-names.ts";
+import { fitsFixedInteger } from "./rational.ts";
+import type { FixedIntegerKind } from "./rational.ts";
 
 type P = Pattern<Value>;
 type Answer = "yes" | "no" | "unknown";
@@ -19,12 +21,16 @@ const some = (answers: Answer[]): Answer =>
       ? "unknown"
       : "no";
 const numeric = new Set([
+  "int32",
   "int64",
+  "uint64",
   "float32",
   "float64",
   "rational",
   "Int",
+  "Int32",
   "Int64",
+  "UInt64",
   "Float",
   "Float32",
   "Float64",
@@ -58,12 +64,15 @@ export function patternOverlap(left: P, right: P): Answer {
     if (numeric.has(name)) {
       const r = asRational(value);
       if (!r) return false;
-      if (name === "int64")
-        return (
-          r.d === 1n &&
-          r.n >= BigInt(Number.MIN_SAFE_INTEGER) &&
-          r.n <= BigInt(Number.MAX_SAFE_INTEGER)
-        );
+      const kind =
+        name === "int32" || name === "Int32"
+          ? "int32"
+          : name === "uint64" || name === "UInt64"
+            ? "uint64"
+            : name === "int64" || name === "Int" || name === "Int64"
+              ? "int64"
+              : undefined;
+      if (kind) return fitsFixedInteger(r, kind as FixedIntegerKind);
       return true;
     }
     if (name === "String")

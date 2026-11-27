@@ -160,7 +160,7 @@ without evidence cannot. See
 [refinement evidence](refinement-evidence.md#checking-a-constant-expression).
 
 ```pattern
-todo test "Checked conversion validates stored and computed exact values"
+test "Checked conversion validates stored and computed exact values"
   half = 1 / 2
   tenth = 1 / 10
   integer = 20 + 22
@@ -450,11 +450,29 @@ todo test "Float64 operands designate exactly and results round"
   expect x + 0f0.1 is 0f1.1 :: Float64
 end
 
-todo test "Checked integers reject unrepresentable results"
+test "Checked integers reject unrepresentable results"
   maxInt = 9223372036854775807 :: Int
-  expect maxInt + 1 fails "E_OVERFLOW"
+  expect maxInt + (1 :: Int) fails "E_OVERFLOW"
+  minInt = -9223372036854775808 :: Int
+  expect
+    -(minInt)
+  fails "E_OVERFLOW"
+  expect (2147483647 :: Int32) + (1 :: Int32) fails "E_OVERFLOW"
+  expect (0 :: UInt64) - (1 :: UInt64) fails "E_OVERFLOW"
+end
+
+todo test "Signed minimum divided by -1 overflows for .div"
   minInt = -9223372036854775808 :: Int
   expect minInt .div (-1) fails "E_OVERFLOW"
+end
+
+test "Fixed-width integer types designate exact integers in range"
+  expect 2147483647 :: Int32 is 2147483647 :: Int32
+  expect 0.5 :: Int32 fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect (-1) :: UInt64 fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect 18446744073709551615 :: UInt64 is 0xFFFFFFFFFFFFFFFF :: UInt64
+  expect (20 :: Int32) + (22 :: Int32) is 42 :: Int32
+  expect (1 :: Int64) + (2 :: Int64) is 3 :: Int
 end
 
 todo test "Integer division returns an exact ratio selected by operand width"
@@ -701,8 +719,7 @@ test "An exact literal can be added to Int"
 end
 
 test "Inexact Float designation"
-  legacy expect 0.1 :: Float fails "not exactly representable as Float"
-  todo expect 0.1 :: Float fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect 0.1 :: Float fails "E_NOT_EXACTLY_REPRESENTABLE"
 end
 
 test "A literal with several fixed formats is ambiguous in Number"
@@ -728,12 +745,16 @@ test "Numeric conversions preserve format and equality compares magnitudes"
   expect
     type Num
   fails "E_UNBOUND_TYPE"
-  legacy expect
+  expect
     type Int64
-  fails "E_UNBOUND_TYPE"
-  todo expect
-    type Int64
-  is Int64 :: Type
+  is Int :: Type
+  assert (type Int) === (type Int64)
+  expect
+    type Int32
+  is Int32 :: Type
+  expect
+    type UInt64
+  is UInt64 :: Type
 
   legacy expect float32(0.5) == float64(0.5) fails "E_INCOMPARABLE_TYPES"
   todo expect float32(0.5) == float64(0.5) is True :: Bool
@@ -745,10 +766,8 @@ test "C03 exact designation differs from rounding"
   todo expect 0f0.5 :: Decimal32 is 0.5 :: Decimal32
   expect 0f0.1 :: Float64 is 0f0.1 :: Float64
   assert (0f0.1 :: Float64) == (0x1.999999999999Ap-4 :: Float64)
-  legacy expect 0.1 :: Float64 fails "not exactly representable as Float64"
-  todo expect 0.1 :: Float64 fails "E_NOT_EXACTLY_REPRESENTABLE"
-  legacy expect 0.1 :: Float32 fails "not exactly representable as Float32"
-  todo expect 0.1 :: Float32 fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect 0.1 :: Float64 fails "E_NOT_EXACTLY_REPRESENTABLE"
+  expect 0.1 :: Float32 fails "E_NOT_EXACTLY_REPRESENTABLE"
   assert 0.5 .matches Float32
   assert not(0.1 .matches Float32)
   assert 0.5 .matches Float

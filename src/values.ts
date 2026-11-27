@@ -67,7 +67,7 @@ export interface TypeValue {
   packaged?: boolean;
   /** Structural facet: preserves the actual concrete space of its input. */
   facet?: boolean;
-  numeric?: "int64" | "float32" | "float64" | "rational";
+  numeric?: "int32" | "int64" | "uint64" | "float32" | "float64" | "rational";
   arguments?: Field<Value>[];
   /** An explicit Type(Int) is distinct from the primitive Int atom. */
   wrappedPrimitive?: boolean;
