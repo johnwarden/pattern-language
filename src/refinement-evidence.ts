@@ -11,8 +11,8 @@ import {
   positional,
 } from "./syntax.ts";
 import type { Syntax, Field } from "./syntax.ts";
-import type { TypeValue, Scope, Closure, Value, Candidate } from "./values.ts";
-import { unwrap, asNumeric, equal, valSymbol } from "./values.ts";
+import type { TypeValue, Closure, Value, Candidate } from "./values.ts";
+import { Scope, unwrap, asNumeric, equal, valSymbol } from "./values.ts";
 import { isRational } from "./rational.ts";
 import type { Pattern } from "./pattern.ts";
 import { runtimeDependency, patternExpressions } from "./availability.ts";
@@ -277,38 +277,40 @@ export function checkBodyEvidence(options: {
   binders: CaptureNames;
   resolveType: TypeResolver;
 }): void {
-  const { body, env, binders, resolveType } = options;
+  const { body, binders, resolveType } = options;
   const walkIf = (
     branch: { condition: Syntax; consequent: Syntax; alternative: Syntax },
     evidence: EvidenceMap,
     bound: Set<string>,
     runtimeNames: RuntimeNames,
+    scope: Scope,
   ) => {
     const check = matchesCheck(branch.condition);
     if (check) {
       let type: TypeValue | undefined;
       try {
-        type = resolveType(check.type, env);
+        type = resolveType(check.type, scope);
       } catch {
         type = undefined;
       }
       const thenEvidence = copyEvidence(evidence);
       if (type)
         addEvidence(thenEvidence, check.subject.name, predicatesOfType(type));
-      walk(branch.condition, evidence, bound, runtimeNames);
-      walk(branch.consequent, thenEvidence, bound, runtimeNames);
-      walk(branch.alternative, evidence, bound, runtimeNames);
+      walk(branch.condition, evidence, bound, runtimeNames, scope);
+      walk(branch.consequent, thenEvidence, bound, runtimeNames, scope);
+      walk(branch.alternative, evidence, bound, runtimeNames, scope);
       return;
     }
-    walk(branch.condition, evidence, bound, runtimeNames);
-    walk(branch.consequent, evidence, bound, runtimeNames);
-    walk(branch.alternative, evidence, bound, runtimeNames);
+    walk(branch.condition, evidence, bound, runtimeNames, scope);
+    walk(branch.consequent, evidence, bound, runtimeNames, scope);
+    walk(branch.alternative, evidence, bound, runtimeNames, scope);
   };
   const walk = (
     n: Syntax,
     evidence: EvidenceMap,
     bound: Set<string>,
     runtimeNames: RuntimeNames,
+    scope: Scope,
   ) => {
     if (
       n.kind === "literal" ||
@@ -321,13 +323,13 @@ export function checkBodyEvidence(options: {
     if (n.kind === "form") {
       const branch = surfaceIf(n);
       if (branch) {
-        walkIf(branch, evidence, bound, runtimeNames);
+        walkIf(branch, evidence, bound, runtimeNames, scope);
         return;
       }
       if (n.name === "Definition" || n.name === "MacroRegistration") return;
       for (const [, capture] of n.captures)
         for (const field of capture.fields)
-          walk(field.value, evidence, bound, runtimeNames);
+          walk(field.value, evidence, bound, runtimeNames, scope);
       return;
     }
     if (n.kind === "block") {
@@ -344,7 +346,7 @@ export function checkBodyEvidence(options: {
             span: n.span,
           });
           if (pair) {
-            walkIf(pair, localEvidence, localBound, localRuntime);
+            walkIf(pair, localEvidence, localBound, localRuntime, scope);
             i += 2;
             continue;
           }
@@ -360,23 +362,23 @@ export function checkBodyEvidence(options: {
             kind: "pack",
             body: binding[0],
           }))
-            walk(expression, localEvidence, localBound, localRuntime);
+            walk(expression, localEvidence, localBound, localRuntime, scope);
           for (const field of binding[1])
-            walk(field.value, localEvidence, localBound, localRuntime);
+            walk(field.value, localEvidence, localBound, localRuntime, scope);
           requirePatternEvidence(
             binding[0],
             binding[1],
             localEvidence,
             localBound,
             localRuntime,
-            env,
+            scope,
             binders,
             resolveType,
           );
           const rhsRuntime = binding[1].some((field) =>
             expressionDependsOnRuntime(
               field.value,
-              env,
+              scope,
               binders,
               localBound,
               localRuntime,
@@ -401,7 +403,7 @@ export function checkBodyEvidence(options: {
               if (!capture || capture.quoted || capture.name !== name) continue;
               if (annotation) {
                 try {
-                  annotatedType = resolveType(annotation[1], env);
+                  annotatedType = resolveType(annotation[1], scope);
                   annotationEvidence = predicatesOfType(annotatedType);
                 } catch {
                   /* type errors surface elsewhere */
@@ -414,20 +416,20 @@ export function checkBodyEvidence(options: {
               setEvidence(
                 localEvidence,
                 name,
-                evidenceOf(localEvidence, copiedFrom.name, env),
+                evidenceOf(localEvidence, copiedFrom.name, scope),
               );
             else setEvidence(localEvidence, name);
             if (rhsRuntime) {
               // Preserve runtime provenance through aliases such as `alias = n`.
               localRuntime.add(name);
-              env.runtimeBindings.add(name);
+              scope.runtimeBindings.add(name);
               let type = annotatedType;
               if (!type) {
                 const source = binding[1]
                   .map((field) =>
                     runtimeSubject(
                       field.value,
-                      env,
+                      scope,
                       binders,
                       localBound,
                       localRuntime,
@@ -435,7 +437,7 @@ export function checkBodyEvidence(options: {
                   )
                   .find(Boolean);
                 if (source) {
-                  const prior = env.get(source.name);
+                  const prior = scope.get(source.name);
                   if (
                     prior &&
                     "kind" in prior &&
@@ -449,14 +451,14 @@ export function checkBodyEvidence(options: {
                 try {
                   type = resolveType(
                     { kind: "symbol", name: "Any", quoted: false },
-                    env,
+                    scope,
                   );
                 } catch {
                   /* keep undefined only if Any is unavailable */
                 }
               }
               if (type)
-                env.bindings.set(name, {
+                scope.bindings.set(name, {
                   kind: "slot",
                   type,
                   value: valSymbol("\0runtime"),
@@ -464,7 +466,7 @@ export function checkBodyEvidence(options: {
             } else {
               localBound.add(name);
               if (annotatedType)
-                env.bindings.set(name, {
+                scope.bindings.set(name, {
                   kind: "slot",
                   type: annotatedType,
                   value: valSymbol("\0bound"),
@@ -472,22 +474,23 @@ export function checkBodyEvidence(options: {
             }
           }
         } else {
-          walk(item, localEvidence, localBound, localRuntime);
+          walk(item, localEvidence, localBound, localRuntime, scope);
         }
       }
       return;
     }
     if (n.kind === "pack") {
       for (const field of n.body)
-        walk(field.value, evidence, bound, runtimeNames);
+        walk(field.value, evidence, bound, runtimeNames, scope);
       return;
     }
     if (n.kind === "sequence") {
-      for (const item of n.items) walk(item, evidence, bound, runtimeNames);
+      for (const item of n.items)
+        walk(item, evidence, bound, runtimeNames, scope);
       return;
     }
     if (n.kind === "postfix") {
-      walk(n.operand, evidence, bound, runtimeNames);
+      walk(n.operand, evidence, bound, runtimeNames, scope);
       return;
     }
     const arrow = operator(n, "->");
@@ -496,7 +499,10 @@ export function checkBodyEvidence(options: {
         kind: "pack",
         body: arrow[0],
       }))
-        walk(expression, evidence, bound, runtimeNames);
+        walk(expression, evidence, bound, runtimeNames, scope);
+      // Lambda parameters live in a child checker scope so they cannot change
+      // the surrounding function's bindings, types, or evidence.
+      const localScope = new Scope(scope);
       const localEvidence = copyEvidence(evidence);
       const localBound = new Set(bound);
       const localRuntime = new Set(runtimeNames);
@@ -514,7 +520,7 @@ export function checkBodyEvidence(options: {
           if (!capture || capture.quoted || capture.name !== name) continue;
           if (annotation) {
             try {
-              annotatedType = resolveType(annotation[1], env);
+              annotatedType = resolveType(annotation[1], scope);
               annotationEvidence = predicatesOfType(annotatedType);
             } catch {
               /* type errors surface elsewhere */
@@ -524,51 +530,59 @@ export function checkBodyEvidence(options: {
         // Lambda parameters are a new binding identity: no inherited evidence.
         setEvidence(localEvidence, name, annotationEvidence ?? []);
         localRuntime.add(name);
-        env.runtimeBindings.add(name);
+        localScope.runtimeBindings.add(name);
         const type =
           annotatedType ??
           (() => {
             try {
               return resolveType(
                 { kind: "symbol", name: "Any", quoted: false },
-                env,
+                scope,
               );
             } catch {
               return undefined;
             }
           })();
         if (type)
-          env.bindings.set(name, {
+          localScope.bindings.set(name, {
             kind: "slot",
             type,
             value: valSymbol("\0runtime"),
           });
       }
       for (const field of arrow[1])
-        walk(field.value, localEvidence, localBound, localRuntime);
+        walk(field.value, localEvidence, localBound, localRuntime, localScope);
       return;
     }
     const annotation = binary(n, "::");
     if (annotation) {
-      walk(annotation[0], evidence, bound, runtimeNames);
+      walk(annotation[0], evidence, bound, runtimeNames, scope);
       requireExpressionEvidence(
         annotation[0],
         annotation[1],
         evidence,
         bound,
         runtimeNames,
-        env,
+        scope,
         binders,
         resolveType,
       );
       return;
     }
-    walk(n.head, evidence, bound, runtimeNames);
+    walk(n.head, evidence, bound, runtimeNames, scope);
     for (const field of n.body)
-      walk(field.value, evidence, bound, runtimeNames);
-    requireCallEvidence(n, evidence, bound, runtimeNames, env, binders, resolveType);
+      walk(field.value, evidence, bound, runtimeNames, scope);
+    requireCallEvidence(
+      n,
+      evidence,
+      bound,
+      runtimeNames,
+      scope,
+      binders,
+      resolveType,
+    );
   };
-  walk(body, options.evidence, new Set(), new Set());
+  walk(body, options.evidence, new Set(), new Set(), options.env);
 }
 
 /** True when `expression` is the bare runtime name (not a computation over it). */

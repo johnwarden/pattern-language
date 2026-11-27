@@ -37,7 +37,6 @@ import {
   orderedParts,
 } from "./pattern-captures.ts";
 import { dispatchSignature } from "./dispatch-domain.ts";
-import { patternOverlap } from "./union-disjointness.ts";
 import { TYPE_SCHEMA } from "./type-schema.ts";
 import { CODE_SCHEMA } from "./code-schema.ts";
 import { readCode } from "./syntax-values.ts";
@@ -2656,7 +2655,8 @@ export class Interpreter {
    * Structural overlap after predicate erasure. Distinct concrete type
    * identities are disjoint for overload dispatch (Int vs Float64). An
    * untyped or Any position absorbs every counterpart. Abstract unions and
-   * facets expand to their admitted members before the comparison.
+   * facets expand to their admitted structural patterns before the comparison,
+   * preserving concrete field boundaries and open/repeated-field semantics.
    */
   private dispatchDomainsOverlap(
     left: Pattern<Value>,
@@ -2678,6 +2678,40 @@ export class Interpreter {
       }
       return p;
     };
+    const peelPart = (p: Pattern<Value>): Pattern<Value> => {
+      while (p.kind === "capture" || p.kind === "map") p = p.pattern;
+      return p;
+    };
+    const abstractDomain = (
+      p: Extract<Pattern<Value>, { kind: "ref" }>,
+    ): boolean => {
+      if (p.facet) return true;
+      const type = p.referent;
+      if (
+        !type ||
+        typeof type !== "object" ||
+        !("kind" in type) ||
+        (type as TypeValue).kind !== "type" ||
+        !(type as TypeValue).transparent
+      )
+        return false;
+      for (const primitive of this.primitives.values())
+        if (primitive === type) return false;
+      return true;
+    };
+    /** Unwrap single-member transparent/facet wrappers to admitted structure.
+     * Multi-member abstract unions stay as refs so unionChoices can expand
+     * them to typed member refs (preserving concrete identities).
+     */
+    const expandDomain = (p: Pattern<Value>): Pattern<Value> => {
+      p = peel(p);
+      if (p.kind !== "ref" || !abstractDomain(p)) return p;
+      const type = p.referent as TypeValue;
+      const members = type.unionMembers;
+      if (members?.length === 1) return members[0].pattern();
+      if (members && members.length > 1) return p;
+      return type.pattern();
+    };
     const unionChoices = (p: Pattern<Value>): Pattern<Value>[] | undefined => {
       if (p.kind === "union") return p.choices;
       if (p.kind === "ref" && p.referent && p.referent.kind === "type") {
@@ -2687,7 +2721,54 @@ export class Interpreter {
       }
       return;
     };
+    const fieldsOverlap = (
+      a: Extract<Pattern<Value>, { kind: "fields" }>,
+      b: Extract<Pattern<Value>, { kind: "fields" }>,
+    ): boolean => {
+      const shape = (p: typeof a) => {
+        const fixed = new Map<string, Pattern<Value>>();
+        let repeat: Pattern<Value> | undefined;
+        for (const part of p.parts) {
+          const q = peelPart(part);
+          if (q.kind === "repeat") repeat = q.pattern;
+          else if (q.kind === "label") fixed.set(q.label, q.pattern);
+          else return;
+        }
+        return { fixed, repeat };
+      };
+      const x = shape(a),
+        y = shape(b);
+      if (!x || !y) {
+        const partsA = orderedParts(a.parts);
+        const partsB = orderedParts(b.parts);
+        if (partsA.length !== partsB.length) return false;
+        return partsA.every((part, i) => go(part, partsB[i]));
+      }
+      for (const label of new Set([...x.fixed.keys(), ...y.fixed.keys()])) {
+        const positional = /^_\d+$/.test(label);
+        const leftField = x.fixed.get(label);
+        const rightField = y.fixed.get(label);
+        if (leftField && rightField) {
+          if (!go(leftField, rightField)) return false;
+          continue;
+        }
+        // Complete pack labels still distinguish overloads (x: Int vs y: Int).
+        // Only positional openness (`...` / ignorePositions) or a repeat can
+        // absorb a missing positional field — not openLabels alone.
+        const other = leftField ? y : x;
+        const source = leftField ?? rightField!;
+        const openSide = leftField ? b : a;
+        if (positional && other.repeat) {
+          if (!go(source, other.repeat)) return false;
+        } else if (positional && openSide.ignorePositions) {
+          /* absorbed by positional rest */
+        } else return false;
+      }
+      return true;
+    };
     const go = (a: Pattern<Value>, b: Pattern<Value>): boolean => {
+      a = expandDomain(a);
+      b = expandDomain(b);
       a = peel(a);
       b = peel(b);
       if (a.kind === "any" || b.kind === "any") return true;
@@ -2706,40 +2787,25 @@ export class Interpreter {
         const idA = a.dispatchIdentity?.() ?? a.key;
         const idB = b.dispatchIdentity?.() ?? b.key;
         if (idA === idB) return true;
-        // Abstract pattern/facet domains (transparent non-primitive types) can
-        // share concrete values across distinct descriptors — closed vs open
-        // Rect facets, or a facet vs a matching struct. Reject when overlap
-        // cannot be disproved. Concrete identities and transparent primitives
-        // such as Type stay disjoint by descriptor.
-        const abstractDomain = (
-          p: Extract<Pattern<Value>, { kind: "ref" }>,
-        ) => {
-          if (p.facet) return true;
-          const type = p.referent;
-          if (
-            !type ||
-            typeof type !== "object" ||
-            !("kind" in type) ||
-            (type as TypeValue).kind !== "type" ||
-            !(type as TypeValue).transparent
-          )
-            return false;
-          for (const primitive of this.primitives.values())
-            if (primitive === type) return false;
-          return true;
-        };
-        if (abstractDomain(a) || abstractDomain(b))
-          return patternOverlap(a, b) !== "no";
+        // Remaining abstract wrappers expand once more; concrete identities
+        // (Int vs Float64) stay disjoint by descriptor. If expansion cannot
+        // expose structure, treat the domains as overlapping.
+        if (abstractDomain(a) || abstractDomain(b)) {
+          const expandedA = expandDomain(a);
+          const expandedB = expandDomain(b);
+          if (expandedA === a && expandedB === b) return true;
+          return go(expandedA, expandedB);
+        }
         return false;
       }
+      if (a.kind === "test" && b.kind === "test")
+        return (
+          JSON.stringify(a.identity ?? a.name) ===
+          JSON.stringify(b.identity ?? b.name)
+        );
       if (a.kind === "label" && b.kind === "label")
         return a.label === b.label && go(a.pattern, b.pattern);
-      if (a.kind === "fields" && b.kind === "fields") {
-        const partsA = orderedParts(a.parts);
-        const partsB = orderedParts(b.parts);
-        if (partsA.length !== partsB.length) return false;
-        return partsA.every((part, i) => go(part, partsB[i]));
-      }
+      if (a.kind === "fields" && b.kind === "fields") return fieldsOverlap(a, b);
       if (a.kind === "node" && b.kind === "node")
         return go(a.head, b.head) && go(a.body, b.body);
       if (a.kind === "sequence" && b.kind === "sequence")

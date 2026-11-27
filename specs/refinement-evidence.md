@@ -291,11 +291,25 @@ test "A shadowing lambda parameter does not keep the outer name's evidence"
     "defined"
   fails "E_NO_METHOD"
 end
+
+test "A lambda parameter does not leak into the surrounding checker environment"
+  type NZ pattern Float .where isNonZero
+  def keep(n :: NZ) n
+  expect
+    def bad(n :: Float)
+      g = (n :: String) -> n
+      keep(n)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
 ```
 
 Evidence is keyed by binding identity, not by name. A new binding of a
 name starts with no evidence. A direct copy of a binding that already has
 evidence receives that evidence; a computation over the value does not.
+Lambda parameters are checked in a child scope so their bindings cannot
+change the surrounding function's types or evidence.
 
 
 ### Ordering explicit checks
@@ -515,6 +529,29 @@ test "Closed and open structural facets with overlapping domains are rejected"
     def area(r :: OpenR) "open"
     "definitions complete"
   fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Inline closed and open structural parameters with overlapping domains are rejected"
+  expect
+    def area(Rect(a :: Float, b :: Float)) "closed"
+    def area(Rect(a :: Float, b :: Float, ...)) "open"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
+end
+
+test "Box Int and Box Float64 facets are disjoint overloads"
+  type I pattern Box(Int)
+  type F pattern Box(Float64)
+  def pick(n :: I) "integer"
+  def pick(n :: F) "float"
+  type BoxedInt struct Box(Int)
+  type BoxedFloat struct Box(Float64)
+  assert (Box(1) :: BoxedInt) .matches I
+  assert not((Box(1) :: BoxedInt) .matches F)
+  assert (Box(1.5) :: BoxedFloat) .matches F
+  assert not((Box(1.5) :: BoxedFloat) .matches I)
+  expect pick(Box(1) :: BoxedInt) is "integer"
+  expect pick(Box(1.5) :: BoxedFloat) is "float"
 end
 
 test "Union-typed overload parameters designate through their members"
