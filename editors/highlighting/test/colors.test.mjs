@@ -32,8 +32,8 @@ const source = [
   ":None :UpperCamel :String :if",
   'value = $"$(42) $(UpperCamel) $(:None)"',
   '"42 UpperCamel if :None" # 42 UpperCamel if :None',
-  "Some(Int) Outer(Some(String), Pair(Float, Rational)) Factory(Int)",
-  "Int(String) Float(Rational) Type(Bool)",
+  "Some(Int) Outer(Some(String), Pair(Float, NumericValue)) Factory(Int)",
+  "Int(String) Float(NumericValue) Type(Bool)",
   "BareType Some Some (Int) Some?(Int) Factory",
   "ABC(Int) A_(String) :Some(Int) :Int(String)",
 ].join("\n");
@@ -200,7 +200,7 @@ for (const scheme of schemes) {
           expected.symbol,
           `tight call head ${spelling}`,
         );
-      for (const spelling of ["Int", "String", "Float", "Rational"])
+      for (const spelling of ["Int", "String", "Float", "NumericValue"])
         assert.equal(
           colorAt(6, spelling),
           expected.type,
@@ -210,7 +210,7 @@ for (const scheme of schemes) {
         "Int",
         "String",
         "Float",
-        "Rational",
+        "NumericValue",
         "Type",
         "Bool",
       ])

@@ -11,8 +11,8 @@ x@# also a comment
 "# stays in text"
 #^^^^^^^ string.quoted.double - comment
 
-# source numeric spellings remain exact Rational spellings
-1_024 0.1 12e-3 0f0.1 0F1_000e-2 0x1.4p3 0X1_F.8P-2 0b1.01p+2 0B10_01
+# numeric atoms and grouped digits
+1_024 0.1 12e-3 0f0.1 0F1_000e-2 0x1.4p3 0X10_FF.8P-2 0b1.01p+2 0B10000000_00000001
 # <- constant.numeric
 #^^^^ constant.numeric
 #     ^^^ constant.numeric
@@ -20,15 +20,21 @@ x@# also a comment
 #               ^^^^^ constant.numeric
 #                     ^^^^^^^^^^ constant.numeric
 #                                ^^^^^^^ constant.numeric
-#                                        ^^^^^^^^^^ constant.numeric
-#                                                   ^^^^^^^^^ constant.numeric
-#                                                             ^^^^^^^ constant.numeric
+#                                        ^^^^^^^^^^^^ constant.numeric
+#                                                     ^^^^^^^^^ constant.numeric
+#                                                               ^^^^^^^^^^^^^^^^^^^ constant.numeric
 -2 1//3 0xFFjunk 0b102 0fInfinity
 # <- keyword.operator - constant.numeric
 #   ^^ keyword.operator - constant.numeric
 #       ^^^^^^^^ source.pattern-language - constant.numeric
 #                ^^^^^ source.pattern-language - constant.numeric
 #                      ^^^^^^^^^^ source.pattern-language - constant.numeric
+1/3 1/3-2i/5 2e2i 4 / 5
+# <- constant.numeric
+#^^ constant.numeric
+#   ^^^^^^^^ constant.numeric
+#            ^^^^ constant.numeric
+#                   ^ keyword.operator
 
 # ASCII symbol classes include short UpperSnake trailing underscores
 foo UpperCamel ABC ABC1 A_ AB_ A_B _ _12 :None :A_ :[] :{} :+ :(x)
@@ -57,20 +63,20 @@ Some(Int)
 # <- constant.other.symbol.constructor - entity.name.type
 #^^^ constant.other.symbol.constructor - entity.name.type
 #    ^^^ support.type - constant.other.symbol
-Outer(Some(String), Pair(Float, Rational))
+Outer(Some(String), Pair(Float, NumericValue))
 # <- constant.other.symbol.constructor
 #^^^^ constant.other.symbol.constructor
 #     ^^^^ constant.other.symbol.constructor
 #                   ^^^^ constant.other.symbol.constructor
 #          ^^^^^^ support.type
 #                        ^^^^^ support.type
-#                               ^^^^^^^^ support.type
-Int(String) Float(Rational) Type(Bool)
+#                               ^^^^^^^^^^^^ support.type
+Int(String) Float(NumericValue) Type(Bool)
 # <- support.type - constant.other.symbol
 #^^ support.type - constant.other.symbol
 #           ^^^^^ support.type - constant.other.symbol
-#                           ^^^^ support.type - constant.other.symbol
-#                                ^^^^ support.type - constant.other.symbol
+#                               ^^^^ support.type - constant.other.symbol
+#                                    ^^^^ support.type - constant.other.symbol
 Some Some (Int)
 # <- entity.name.type - constant.other.symbol
 #^^^ entity.name.type - constant.other.symbol
@@ -117,8 +123,8 @@ end
 # <- keyword.control
 #^^ keyword.control
 concrete refinement FutureKeyword
-# <- variable.other - keyword - storage
-#^^^^^^^ variable.other - keyword - storage
+# <- storage.type
+#^^^^^^^ storage.type
 {label:value, other:None} :::String
 #^^^^^ entity.name.tag
 #      ^^^^^ variable.other - constant.other.symbol

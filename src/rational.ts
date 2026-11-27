@@ -188,6 +188,9 @@ const numericPrefix = new RegExp(
   "y",
 );
 
+// Shared with editor grammar generators, which supply their own token boundaries.
+export const numericSourcePattern = numericPrefix.source;
+
 /**
  * Cap on the magnitude of a written decimal `e` or binary `p` exponent.
  * Float64 needs at most 308 decimal / 1023 binary; 10000 leaves headroom for
