@@ -10,7 +10,7 @@ earlier ExactRational-only draft on that branch.
 [D04 and D09](../design/LANGUAGE-DECISIONS.md) establish exact literals, exact
 designation and explicit projection. Refinement evidence and missing-evidence
 outcomes for refined parameters are specified in
-[#89](https://github.com/johnwarden/pattern-language/pull/89); this numeric spec
+[refinement evidence](refinement-evidence.md); this numeric spec
 does not redefine them.
 
 ## Rename map
@@ -110,9 +110,10 @@ and compare values including their concrete types.
 
 If two expressions have the same static type and compare exactly equal with
 `===`, substituting one for the other in an evaluated value position preserves
-the result whenever both expressions are valid there. Literal designation can
-make one expression valid where a binding with the same value lacks evidence;
-see [#89](https://github.com/johnwarden/pattern-language/pull/89).
+the result whenever both expressions are valid there. An expected refinement
+can be checked on any constant expression, including a name bound to a constant.
+A runtime parameter needs evidence for its value. See
+[refinement evidence](refinement-evidence.md#checking-a-constant-expression).
 
 ```pattern
 todo test "Numeric equality compares a Real with an exact literal"
@@ -131,12 +132,13 @@ end
 
 ## Operator calls and exact literals
 
-Binary arithmetic takes two successive argument packs. A numeric literal and
-an unrefined binding can both have type `NumericValue`. A literal can establish
-fit when a mixed integer signature supplies its expected refinement. A bound
-operand supplies evidence already known for that binding. These rules apply to
-infix calls, successive-pack calls and saved partials. A result annotation
-supplies no backward overload selection.
+Binary arithmetic takes two successive argument packs. A mixed signature
+supplies the required fit refinement for its exact operand. The checker can
+establish fit by evaluating a constant expression, including a name bound to a
+constant or a computation. A runtime operand needs evidence from its type or
+an earlier explicit check. These rules apply to infix calls, successive-pack
+calls and saved partials. A result annotation supplies no backward overload
+selection.
 
 Unary negation is `-(X)`. The complete binary subtraction application is
 `(-(X))(Y)`, corresponding to `X - Y`. Binary subtraction has no one-pack
@@ -149,10 +151,13 @@ It returns a value of type `T` if the value fits exactly. Otherwise it fails
 with `E_NOT_EXACTLY_REPRESENTABLE`. Stored values and results of exact
 arithmetic use the same operation.
 
-An ascription or binding alone follows the refinement evidence rules in
-[#89](https://github.com/johnwarden/pattern-language/pull/89). Explicit
-converters such as `float64(x)` may round and use the floating failure rules.
-Integer conversion always checks exact fit.
+An ascription or binding alone follows the
+[refinement evidence](refinement-evidence.md) rules. Explicit converters such
+as `float64(x)` may round and use the floating failure rules. Integer
+conversion always checks exact fit. A bound constant such as `a = 1` can
+establish fit for a call to `def f(x :: Int32) x`; a runtime `NumericValue`
+without evidence cannot. See
+[refinement evidence](refinement-evidence.md#checking-a-constant-expression).
 
 ```pattern
 todo test "Checked conversion validates stored and computed exact values"
@@ -208,8 +213,9 @@ The fit cases for mixed ratio signatures are `fitsRatio64`, `fitsRatio128`,
 and their counterparts for any additional supported widths. A real
 `NumericValue` fits when its reduced numerator and positive denominator
 fit the two signed limbs. Mixed float signatures use the corresponding
-float fit refinement. The rules below for literal fit and stored evidence
-apply to mixed integer, ratio and float signatures.
+float fit refinement. The rules below for checking constant expressions and
+using evidence for runtime inputs apply to mixed integer, ratio and float
+signatures.
 
 ### Mixed signatures and fit evidence
 
@@ -232,16 +238,16 @@ needs. Compare complete operand packs to establish overload
 disjointness. Several definitions can continue after the same first pack when
 their complete domains are disjoint. When both operands directly belong to
 `NumericValue`, use the exact operation. Once the concrete operand selects a
-mixed signature, a literal can establish the required predicate by
-designation. A failed literal fit reports `E_NOT_EXACTLY_REPRESENTABLE`. A
-bound operand that lacks the required evidence reports `E_NO_METHOD`. An
-explicit `.matches` check or an explicit conversion can establish fit before
-the call.
+mixed signature, a constant expression can establish the required predicate
+by designation. A failed constant fit reports `E_NOT_EXACTLY_REPRESENTABLE`.
+A runtime operand that lacks evidence reports `E_NO_METHOD`. An explicit
+`.matches` check or a checked conversion can establish fit for a runtime value.
 
-A partial application that receives a literal before the expected refinement
-is selected retains the literal designator until the complete signature is
-known. A partial that captures a bound argument retains its existing evidence.
-Neither partial uses predicate results to choose among candidate definitions.
+A saved partial retains constant arguments for checking when the complete
+signature is known, together with any existing evidence for captured runtime
+arguments. Overload disjointness is checked on complete domains with predicates
+erased. Calls designate their arguments against the union of those domains
+under [the refinement evidence rules](refinement-evidence.md#union-bindings-and-overloaded-calls).
 
 ```pattern
 todo test "A saved addition partial accepts direct and mixed second operands"
@@ -265,26 +271,43 @@ todo test "A saved addition partial accepts direct and mixed second operands"
   expect addToN(0.5) fails "E_NOT_EXACTLY_REPRESENTABLE"
 end
 
-todo test "A stored NumericValue needs fit evidence for a mixed integer call"
+todo test "A computed NumericValue constant can establish mixed integer fit"
+  n = 41 :: Int64
+  raw = 0 + 1
+  expect n + raw is 42 :: Int64
+  expect raw + n is 42 :: Int64
+  add = +
+  saved = add(raw)
+  expect saved(n) is 42 :: Int64
+end
+
+todo test "A runtime NumericValue needs fit evidence for a mixed integer call"
   type Fits64 pattern NumericValue .where fitsInt64
   n = 41 :: Int64
-  raw = 1
-  expect n + raw fails "E_NO_METHOD"
-  expect raw + n fails "E_NO_METHOD"
-  expect
+  def checked(raw :: NumericValue)
     if raw .matches Fits64
       n + raw
     else
       0 :: Int64
     end
-  is 42 :: Int64
-  expect
+  end
+  def checkedReverse(raw :: NumericValue)
     if raw .matches Fits64
       raw + n
     else
       0 :: Int64
     end
-  is 42 :: Int64
+  end
+  expect checked(1) is 42 :: Int64
+  expect checkedReverse(1) is 42 :: Int64
+  expect
+    def unchecked(raw :: NumericValue) n + raw
+    "defined"
+  fails "E_NO_METHOD"
+  expect
+    def uncheckedReverse(raw :: NumericValue) raw + n
+    "defined"
+  fails "E_NO_METHOD"
 end
 
 todo test "Mixed integer literal fit requires both integrality and range"
@@ -372,13 +395,14 @@ nonzero. For example:
     def /(left :: FitsInt32)(right :: NonZeroInt32) :: Ratio64
 
 Every valid call has evidence that its divisor is nonzero under
-[the refinement evidence rules](https://github.com/johnwarden/pattern-language/pull/89).
-Designation rejects a zero literal with a diagnostic naming `isNonZero`.
-A bound divisor without that evidence fails with `E_NO_METHOD`. An explicit
-`.matches` check can supply the evidence in its true branch. These rules
-apply before evaluation, including calls through successive packs or
-saved partials. A fraction atom with a zero denominator fails during
-reading with `E_SYNTAX`.
+[the refinement evidence rules](refinement-evidence.md).
+An expected nonzero divisor type triggers checking for any constant expression.
+A constant zero, including a name bound to zero, fails with
+`E_REFINEMENT_FAILED`. A runtime divisor without evidence fails with
+`E_NO_METHOD`. An explicit `.matches` check can supply the evidence in its
+true branch. These rules apply before evaluation, including calls through
+successive packs or saved partials. A fraction atom with a zero denominator
+fails during reading with `E_SYNTAX`.
 
 Fixed-width arithmetic depends on the implementation of refinement
 predicates, evidence, and refined signatures. Its executable contracts
@@ -452,29 +476,42 @@ end
 
 todo test "Division and remainder reject literal zero during designation"
   n = 1 :: Int32
-  expect n / 0 fails "isNonZero"
-  expect n / (0 :: Int32) fails "isNonZero"
-  expect n .div 0 fails "isNonZero"
-  expect n .flDiv 0 fails "isNonZero"
-  expect n % 0 fails "isNonZero"
-  expect (1/3 :: Ratio64) / (0 :: Ratio64) fails "isNonZero"
-  expect 1i / 0i fails "isNonZero"
+  expect n / 0 fails "E_REFINEMENT_FAILED"
+  expect n / (0 :: Int32) fails "E_REFINEMENT_FAILED"
+  expect n .div 0 fails "E_REFINEMENT_FAILED"
+  expect n .flDiv 0 fails "E_REFINEMENT_FAILED"
+  expect n % 0 fails "E_REFINEMENT_FAILED"
+  expect (1/3 :: Ratio64) / (0 :: Ratio64) fails "E_REFINEMENT_FAILED"
+  expect 1i / 0i fails "E_REFINEMENT_FAILED"
 end
 
-todo test "A bound divisor needs nonzero evidence in the call scope"
-  type NonZeroInt32 pattern Int32 .where isNonZero
+todo test "A constant divisor can establish nonzero evidence at the call"
   n = 1 :: Int32
   d = 3 :: Int32
   z = 0 :: Int32
-  expect n / d fails "E_NO_METHOD"
-  expect n / z fails "E_NO_METHOD"
-  expect
+  expect n / d is 1/3 :: Ratio64
+  expect n .div d is 0 :: Int32
+  expect n .flDiv d is 0 :: Int32
+  expect n % d is 1 :: Int32
+  expect n / z fails "E_REFINEMENT_FAILED"
+end
+
+todo test "A runtime divisor needs nonzero evidence in the call scope"
+  type NonZeroInt32 pattern Int32 .where isNonZero
+  n = 1 :: Int32
+  def checked(d :: Int32)
     if d .matches NonZeroInt32
       n / d
     else
       0 :: Ratio64
     end
-  is 1/3 :: Ratio64
+  end
+  expect checked(3 :: Int32) is 1/3 :: Ratio64
+  expect checked(0 :: Int32) is 0 :: Ratio64
+  expect
+    def unchecked(d :: Int32) n / d
+    "defined"
+  fails "E_NO_METHOD"
 end
 
 todo test "Truncated and floored quotients differ for a negative dividend"
@@ -493,7 +530,7 @@ todo test "Truncated remainder checks only the returned result"
   negFive = 0 - 5
   assert (negFive % 2) == (0 - 1)
   expect minInt32 % (-1) is 0 :: Int32
-  expect minInt32 % 0 fails "isNonZero"
+  expect minInt32 % 0 fails "E_REFINEMENT_FAILED"
   expect (-5 :: Float) % 2 fails "E_NOT_INTEGER_OPERAND"
 end
 
@@ -515,7 +552,7 @@ todo test "Floating division checks zero and underflow"
   expect zero / (-2) is 0 :: Float64
   expect smallest / 1 is 0x1p-1074 :: Float64
   expect smallest / 2 fails "E_UNDERFLOW"
-  expect smallest / 0 fails "isNonZero"
+  expect smallest / 0 fails "E_REFINEMENT_FAILED"
 end
 ```
 
@@ -553,8 +590,12 @@ todo test "Ratio arithmetic needs fit evidence and checks the reduced result"
   raw = 1/5
   (checked :: FitsRatio64) = 1/5
   large = 2147483647 :: Ratio64
-  expect narrow + raw fails "E_NO_METHOD"
+  expect narrow + raw is 8/15 :: Ratio64
   expect narrow + checked is 8/15 :: Ratio64
+  expect
+    def unchecked(value :: NumericValue) narrow + value
+    "defined"
+  fails "E_NO_METHOD"
   expect narrow + (1/2147483648) fails "E_NOT_EXACTLY_REPRESENTABLE"
   expect large * 2 fails "E_OVERFLOW"
   expect large * (1/2147483647) is 1 :: Ratio64
@@ -566,8 +607,8 @@ end
 Operations such as `sqrt`, `exp`, `log` and trigonometric functions can leave
 the exact real domain. Define them on fixed floating and complex formats.
 Prelude signatures that require refinements such as `nonNegative` or `isNonZero`
-follow [#89](https://github.com/johnwarden/pattern-language/pull/89); this spec
-does not decide missing-evidence diagnostics.
+follow [refinement evidence](refinement-evidence.md); this spec does not
+redefine missing-evidence diagnostics.
 
     def sqrt(n :: Float64 .where nonNegative)
     def sqrt(n :: Complex(N))
