@@ -11,8 +11,8 @@
     ]
   },
   {
-    "name": "source numeric spellings remain exact Rational spellings",
-    "source": "1_024 0.1 12e-3 0f0.1 0F1_000e-2 0x1.4p3 0X1_F.8P-2 0b1.01p+2 0B10_01\n-2 1//3 0xFFjunk 0b102 0fInfinity",
+    "name": "numeric atoms and grouped digits",
+    "source": "1_024 0.1 12e-3 0f0.1 0F1_000e-2 0x1.4p3 0X10_FF.8P-2 0b1.01p+2 0B10000000_00000001\n-2 1//3 0xFFjunk 0b102 0fInfinity\n1/3 1/3-2i/5 2e2i 4 / 5",
     "checks": [
       { "line": 0, "text": "1_024", "scope": "constant.numeric" },
       { "line": 0, "text": "0.1", "scope": "constant.numeric" },
@@ -20,14 +20,18 @@
       { "line": 0, "text": "0f0.1", "scope": "constant.numeric" },
       { "line": 0, "text": "0F1_000e-2", "scope": "constant.numeric" },
       { "line": 0, "text": "0x1.4p3", "scope": "constant.numeric" },
-      { "line": 0, "text": "0X1_F.8P-2", "scope": "constant.numeric" },
+      { "line": 0, "text": "0X10_FF.8P-2", "scope": "constant.numeric" },
       { "line": 0, "text": "0b1.01p+2", "scope": "constant.numeric" },
-      { "line": 0, "text": "0B10_01", "scope": "constant.numeric" },
+      { "line": 0, "text": "0B10000000_00000001", "scope": "constant.numeric" },
       { "line": 1, "text": "-", "scope": "keyword.operator", "not": ["constant.numeric"] },
       { "line": 1, "text": "//", "scope": "keyword.operator", "not": ["constant.numeric"] },
       { "line": 1, "text": "0xFFjunk", "not": ["constant.numeric"] },
       { "line": 1, "text": "0b102", "not": ["constant.numeric"] },
-      { "line": 1, "text": "0fInfinity", "not": ["constant.numeric"] }
+      { "line": 1, "text": "0fInfinity", "not": ["constant.numeric"] },
+      { "line": 2, "text": "1/3", "scope": "constant.numeric" },
+      { "line": 2, "text": "1/3-2i/5", "scope": "constant.numeric" },
+      { "line": 2, "text": "2e2i", "scope": "constant.numeric" },
+      { "line": 2, "text": " / ", "offset": 1, "length": 1, "scope": "keyword.operator" }
     ]
   },
   {
@@ -54,7 +58,7 @@
   },
   {
     "name": "tight UpperCamel call heads are constructor-like symbols after built-ins",
-    "source": "Some(Int)\nOuter(Some(String), Pair(Float, Rational))\nInt(String) Float(Rational) Type(Bool)\nSome Some (Int)\nFactory(Int) Factory\nABC(Int) A_(String)\n:Some(Int) :Int(String)\nSome?(Int)",
+    "source": "Some(Int)\nOuter(Some(String), Pair(Float, NumericValue))\nInt(String) Float(NumericValue) Type(Bool)\nSome Some (Int)\nFactory(Int) Factory\nABC(Int) A_(String)\n:Some(Int) :Int(String)\nSome?(Int)",
     "checks": [
       { "line": 0, "text": "Some", "scope": "constant.other.symbol.constructor", "not": ["entity.name.type"] },
       { "line": 0, "text": "Int", "scope": "support.type", "not": ["constant.other.symbol"] },
@@ -63,7 +67,7 @@
       { "line": 1, "text": "Pair", "scope": "constant.other.symbol.constructor" },
       { "line": 1, "text": "String", "scope": "support.type" },
       { "line": 1, "text": "Float", "scope": "support.type" },
-      { "line": 1, "text": "Rational", "scope": "support.type" },
+      { "line": 1, "text": "NumericValue", "scope": "support.type" },
       { "line": 2, "text": "Int", "scope": "support.type", "not": ["constant.other.symbol"] },
       { "line": 2, "text": "Float", "scope": "support.type", "not": ["constant.other.symbol"] },
       { "line": 2, "text": "Type", "scope": "support.type", "not": ["constant.other.symbol"] },
@@ -98,7 +102,7 @@
       { "line": 5, "text": "True", "scope": "constant.language" },
       { "line": 6, "text": "legacy", "scope": "keyword.other.test" },
       { "line": 7, "text": "end", "scope": "keyword.control" },
-      { "line": 8, "text": "concrete", "scope": "variable.other", "not": ["keyword", "storage"] },
+      { "line": 8, "text": "concrete", "scope": "storage.type" },
       { "line": 9, "text": "label", "scope": "entity.name.tag" },
       { "line": 9, "text": "value", "scope": "variable.other", "not": ["constant.other.symbol"] },
       { "line": 9, "text": "None", "scope": "entity.name.type", "not": ["constant.other.symbol"] },

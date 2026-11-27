@@ -6,7 +6,7 @@ import oniguruma from "vscode-oniguruma";
 import { parseDocument } from "yaml";
 import { generatedFiles, lexical, sublimeGrammar, textmateGrammar } from "../generate.mjs";
 import { identifierName, upperSnakeName, punctuation } from "../../../src/lexical.ts";
-import { parseNumericSpelling } from "../../../src/rational.ts";
+import { numericSourcePattern, parseNumericSpelling } from "../../../src/rational.ts";
 import { createPatternFenceHighlighter } from "../examples/markdown.mjs";
 
 const root = new URL("../", import.meta.url);
@@ -55,8 +55,8 @@ test("shared lexical spellings agree with the actual language helpers", () => {
     assert.equal(name.test(spelling), identifierName(spelling), `identifier ${spelling}`);
     assert.equal(upperSnake.test(spelling), upperSnakeName(spelling), `UpperSnake ${spelling}`);
   }
-  const numeric = new RegExp(`^(?:0[fF]${lexical.patterns.decimal}|${lexical.patterns.hex}|${lexical.patterns.binary}|${lexical.patterns.decimal})$`);
-  for (const spelling of ["0", "1_024", "0.1", "12e-3", "0f0.1", "0F1_000e-2", "0x1.4p3", "0X1_F.8P-2", "0b1.01p+2", "0B10_01", "0x1p-1074", "0xFFjunk", "0b102", "0fInfinity", "1//3", ".1", "1.", "1__2", "0f0x1", "0x.1", "0b1p"]) {
+  const numeric = new RegExp(`^(?:${numericSourcePattern})$`);
+  for (const spelling of ["0", "1_024", "0.1", "12e-3", "0f0.1", "0F1_000e-2", "0x1.4p3", "0X1_F.8P-2", "0b1.01p+2", "0B10_01", "0x1p-1074", "0xFFjunk", "0b102", "0fInfinity", "1//3", "1/3", "2i", "1/3-2i/5", "01", ".1", "1.", "1__2", "0f0x1", "0x.1", "0b1p"]) {
     assert.equal(numeric.test(spelling), parseNumericSpelling(spelling) !== undefined, `numeric spelling ${spelling}`);
   }
   // Value spellings now accept a sign; token highlighting still separates the

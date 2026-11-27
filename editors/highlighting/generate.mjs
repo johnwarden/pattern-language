@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { numericSourcePattern } from "../../src/rational.ts";
 import { stringify } from "yaml";
 
 const root = new URL("./", import.meta.url);
@@ -15,7 +16,7 @@ const include = (name) => ({ include: `#${name}` });
 
 // These expressions describe lexical spelling, not typing, dispatch, or validity.
 // Keep the spelling tables aligned with src/lexical.ts and src/rational.ts.
-const numeric = `(?<![\\p{L}\\p{N}_])(?:0[fF]${p.decimal}|${p.hex}|${p.binary}|${p.decimal})(?![\\p{L}\\p{N}_])`;
+const numeric = word(numericSourcePattern);
 const escape = String.raw`\\(?:[nrtvbf0"\\]|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
 // A reader's tight name' consumes the rest of the line, so it must not be
 // mistaken for a closed inline string when locating a later block opener.
