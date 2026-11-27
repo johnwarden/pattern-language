@@ -11,13 +11,13 @@ claims that this parser accepts them yet.
 
 ## Formatting safety
 
-Formatting and whitespace errors may cause syntax errors, never logic errors.
-For a form fixed by the applied grammar, code spacing or indentation must preserve
-the grammatical structure or be rejected. Raw expression/layout parsing may
-retain different trees; a grammar may explicitly support both forms of a keyword.
-Those exceptions do not permit silently repairing malformed use of one form. This
-motivates explicit aligned `end`s, tight calls and prefix/postfix operators,
-required infix spacing, and the whitespace-independent comment meaning of `#`.
+For a form fixed by the applied grammar, formatting that preserves atoms must
+preserve the grammatical structure or produce a syntax error. Adding a space
+inside a string literal, identifier, or numeric atom can change the program.
+Raw expression parsing can retain different layout trees, and a grammar can
+explicitly support multiple forms of a keyword. The formatting rule motivates
+aligned `end`s, tight calls and prefix/postfix operators, required infix spacing,
+and the whitespace-independent comment meaning of `#`.
 [WHITESPACE.md](design/WHITESPACE.md) specifies the requirement, examples of these
 exceptions and the bootstrap boundaries that still need review.
 
@@ -168,8 +168,10 @@ implicit normalization is part of these forms.
 
 Numeric literals have type `NumericValue`. `0f0.1` is the exact magnitude
 selected by Float64 rounding. Explicit converters return fixed-format values.
-`1/3`, `-1e2/3` and `0.5i` are numeric atoms. `(1 / 3)` is grouped division. A touching minus on a decimal or radix literal belongs to the atom,
-as in `-0.5`. `-(0.5)` is a prefix application. See
+`1/3`, `-1e2/3` and `0.5i` are numeric atoms. In `1/3 ^ 2` and `1+2i ^ 2`,
+each atom is one operand. Spaced `1 / 3` is a division application. A touching
+minus on a decimal or radix literal belongs to the atom, as in `-0.5`.
+`-(0.5)` is a prefix application. See
 [Numeric literals and exact text](specs/numeric-literals-and-text.md) for the
 full spelling and canonical-text rules.
 The specification reader stores decorated numeric spellings as inert

@@ -14,11 +14,10 @@ import {
 } from "./syntax.ts";
 import {
   matchNumericSource,
-  numericInfixes,
+  isCompoundNumericSpelling,
   parseNumericSpelling,
   syntaxNumber,
 } from "./rational.ts";
-import type { InfixOperatorSpelling } from "./infix-grouping.ts";
 import type { Syntax, Field, Span } from "./syntax.ts";
 import {
   punctuation,
@@ -645,7 +644,6 @@ class Reader {
         { code: INFIX_GROUPING_CODE, phase: "parse" },
       );
     }
-    if (operators.length) this.checkNumericGrouping(operands, operators);
     let result = operands[operands.length - 1]!;
     for (let i = operators.length - 1; i >= 0; i--) {
       const op = operators[i]!;
@@ -660,70 +658,6 @@ class Reader {
     }
     return result;
   }
-  private checkNumericGrouping(
-    operands: Syntax[],
-    operators: (InfixOperatorSpelling & { span: Span })[],
-  ) {
-    const texts = operands.map((operand) => ({
-      start: operand.span?.start,
-      end: operand.span?.end,
-      printed: "",
-    }));
-    const tight = texts.map(({ start, end }, index) => {
-      // A grouped or postfixed expression is already one outer operand.
-      const node = operands[index]!;
-      if (
-        node.kind !== "literal" &&
-        !(node.kind === "apply" && isName(node.head, "NumericSource"))
-      )
-        return [];
-      if (start === undefined || end === undefined) return [];
-      return numericInfixes(this.source.slice(start, end)).map(
-        ({ text, offset }) => ({
-          text,
-          display: text,
-          offset: start + offset,
-        }),
-      );
-    });
-    for (const [index, boundary] of operators.entries()) {
-      const left = tight[index]?.at(-1);
-      const right = tight[index + 1]?.[0];
-      const conflict =
-        left && requiresParentheses(left.text, boundary.text)
-          ? { index, atom: left }
-          : right && requiresParentheses(boundary.text, right.text)
-            ? { index: index + 1, atom: right }
-            : undefined;
-      if (!conflict) continue;
-      const expandedTexts = [...texts];
-      const operand = expandedTexts[conflict.index]!;
-      const part = (start: number, end: number) => {
-        const text = this.source.slice(start, end);
-        return numericInfixes(text).length
-          ? { start: undefined, end: undefined, printed: `(${text})` }
-          : { start, end, printed: text };
-      };
-      expandedTexts.splice(
-        conflict.index,
-        1,
-        part(operand.start!, conflict.atom.offset),
-        part(conflict.atom.offset + 1, operand.end!),
-      );
-      const expandedOperators: InfixOperatorSpelling[] = [...operators];
-      expandedOperators.splice(conflict.index, 0, conflict.atom);
-      throw new LanguageError(
-        parenthesesRequiredMessage(
-          this.source,
-          expandedTexts,
-          expandedOperators,
-          index,
-        ),
-        boundary.span,
-        { code: INFIX_GROUPING_CODE, phase: "parse" },
-      );
-    }
-  }
   postfix(stops: Set<string>): Syntax {
     const first = this.peek()!;
     let n = this.atom(stops);
@@ -732,9 +666,7 @@ class Reader {
       first.kind === "(" &&
       suffix?.kind === "name" &&
       this.tokens[this.pos - 1]!.end === suffix.start &&
-      /^[eEpP][+-]?\d/.test(
-        this.source.slice(suffix.start, suffix.start + 3),
-      )
+      /^[eEpP][+-]?\d/.test(this.source.slice(suffix.start, suffix.start + 3))
     ) {
       throw new LanguageError(
         "a numeric exponent belongs inside the atom",
@@ -866,7 +798,7 @@ class Reader {
         !t.quoted &&
         touching &&
         next?.kind === "numberSource" &&
-        numericInfixes(next.text).length
+        isCompoundNumericSpelling(next.text)
       )
         throw new LanguageError("a numeric atom cannot begin with +", t);
       if (

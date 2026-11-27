@@ -318,7 +318,22 @@ The prelude exposes exponentiation as `pow(base, exponent)` with both
 positional arguments in one pack. The token `^` remains available for
 language-specific operator definitions. See [infix grouping](arithmetic-grouping.md).
 
+The bootstrap `^` raises a real or complex `NumericValue` to a nonnegative
+integer exponent. It computes the result exactly and returns `1` at exponent
+zero.
+
 ```pattern
+test "Bootstrap powers keep exact real and complex results"
+  expect 1/3 ^ 2 is 1/9 :: NumericValue
+  expect 2i ^ 2 is (-4) :: NumericValue
+  assert (1+2i ^ 2) == (-3+4i)
+  assert (2i ^ 3) == (-8i)
+  expect 2i ^ 0 is 1 :: NumericValue
+  expect 2i ^ -1 fails "result exceeds safe numeric range"
+  expect 2i ^ 0.5 fails "result exceeds safe numeric range"
+  expect 2i ^ 1i fails "expected a real exponent for ^"
+end
+
 todo test "Exponentiation uses one complete argument pack"
   expect pow(2, 3) is 8 :: NumericValue
 end

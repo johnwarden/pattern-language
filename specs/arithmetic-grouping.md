@@ -387,17 +387,22 @@ diagnostics, and printer parentheses are implemented.
 ## Tight numeric atoms
 
 [Numeric literals](numeric-literals-and-text.md) make paren-free fraction and
-complex spellings such as `1/3` and `3+4i` single atoms. Spaced `/`, `+`, and
-`-` remain infix operators. If a spaced chain would be rejected by the surface
-rule above, the same operator pair is rejected when a tight atom sits beside a
-spaced operator without parentheses. Report `E_INFIX_GROUPING` with the same
-Write suggestions as for the spaced form.
+complex spellings such as `1/3` and `1+2i` single atoms. Each atom is one
+operand for infix grouping. Spaced `/`, `+`, and `-` are infix operators
+and follow the ordinary grouping rules.
 
 ```pattern
-test "Tight numeric atoms still require grouping beside spaced operators"
-  expect parse(Code)("1/3 / 3") fails "E_INFIX_GROUPING"
-  expect parse(Code)("1 / 3/3") fails "E_INFIX_GROUPING"
-  expect parse(Code)("1i/3 + 3") fails "E_INFIX_GROUPING"
-  expect parse(Code)("3+4i / 3") fails "E_INFIX_GROUPING"
+test "Only infix operators outside numeric atoms participate in grouping"
+  fraction = parse(Code)("1/3 ^ 2")
+  mixed = parse(Code)("1+2i ^ 2")
+  assert fraction == parse(Code)("^(1/3)(2)")
+  assert mixed == parse(Code)("^(1+2i)(2)")
+  expect toString(Code)(fraction) is "1/3 ^ 2"
+  expect toString(Code)(mixed) is "1+2i ^ 2"
+  assert parse(Code)(toString(Code)(fraction)) == fraction
+  assert parse(Code)(toString(Code)(mixed)) == mixed
+  expect parse(Code)("1 / 3 ^ 2") fails "E_INFIX_GROUPING"
+  expect parse(Code)("1 + 2i ^ 2") fails "E_INFIX_GROUPING"
+  expect parse(Code)("1/3 + 2i ^ 2") fails "E_INFIX_GROUPING"
 end
 ```

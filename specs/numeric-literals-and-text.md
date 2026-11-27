@@ -42,9 +42,9 @@ coefficient with an optional exponent. `UNSIGNED_INTEGER` is an integer
 coefficient without an exponent and must be positive as a denominator.
 Integer coefficients may be decimal, hexadecimal or binary.
 
-Parentheses are no longer required for fraction constants. Reason: the
-[arithmetic grouping rules](arithmetic-grouping.md) remove the formatting
-safety issue that motivated required parentheses around `(1/3)`.
+A fraction constant is one atom and can appear without parentheses. Adding
+spaces inside it changes the tokenization. For example, `1/3` is a literal
+and `1 / 3` is a division application.
 
 The denominator goes *after* any exponent and/or `i`.
 Reason: otherwise parentheses would be necessary inside constants to
@@ -257,23 +257,22 @@ end
 
 ## Tight atoms and arithmetic grouping
 
-A tight numeric atom such as `1/3` or `3+4i` is one literal. Spaced
-operators build applications. If an infix chain would be rejected by the
-[grouping rules](arithmetic-grouping.md) when written with spaces, the same
-operator pair is rejected when a tight atom sits beside a spaced operator
-without parentheses.
+A tight numeric atom such as `1/3` or `3+4i` is one operand. The
+[grouping rules](arithmetic-grouping.md) apply to spaced infix operators.
+Separating the characters of an atom is outside the
+[formatting-safety guarantee](../design/WHITESPACE.md#formatting-safety).
 
 ```pattern
-test "Grouping rules apply beside tight numeric atoms"
-  expect parse(Code)("1/3 / 3") fails "E_INFIX_GROUPING"
-  expect parse(Code)("1 / 3/3") fails "E_INFIX_GROUPING"
-  expect parse(Code)("1i/3 + 3") fails "E_INFIX_GROUPING"
-  expect parse(Code)("3+4i / 3") fails "E_INFIX_GROUPING"
+test "Tight numeric atoms read as either operand of a spaced operator"
+  assert parse(Code)("1/3 / 3") == parse(Code)("/(1/3)(3)")
+  assert parse(Code)("1 / 3/3") == parse(Code)("/(1)(3/3)")
+  assert parse(Code)("1i/3 + 3") == parse(Code)("+(1i/3)(3)")
+  assert parse(Code)("3+4i / 3") == parse(Code)("/(3+4i)(3)")
 end
 
-test "Code printing groups a decimal that canonicalizes to a fraction"
+test "Code printing preserves an infix operand that canonicalizes to a fraction"
   division = parse(Code)("0.75 / 3")
-  expect toString(Code)(division) is "(3/4) / 3" :: String
+  expect toString(Code)(division) is "3/4 / 3" :: String
   assert parse(Code)(toString(Code)(division)) == division
 end
 ```

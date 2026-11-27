@@ -2,7 +2,7 @@
 
 ## Formatting safety
 
-**Formatting and whitespace errors may produce syntax errors, never logic errors.**
+**Formatting that preserves atoms may produce syntax errors, never logic errors.**
 
 This guarantee is relative to the grammar being applied. When that grammar fixes
 a construct's form, formatting must preserve its grammatical structure, apart
@@ -15,8 +15,13 @@ This is why whitespace can be significant without being allowed to introduce
 logic errors. A reader must not guess a different interpretation to make a
 formatting mistake valid. The rule applies to indentation and line reflow as
 well as horizontal spacing, including Code, quotations, custom grammars and the
-Test DSL. Whitespace inside string literals and raw reader payloads is data;
-editing that content is not code formatting.
+Test DSL.
+
+Adding a space inside an atom can change the program. It can alter the contents
+of a string literal or raw reader payload, or split an identifier or numeric
+literal into separate tokens. For example, `1/3 ^ 2` has one infix operator
+whose left operand is the fraction `1/3`. In `1 / 3 ^ 2`, `/` is a
+second infix operator, so the ordinary grouping rule requires parentheses.
 
 | Boundary | Required outcome |
 | --- | --- |
