@@ -36,13 +36,15 @@ interpretations survive, it lists the first two and ends with
 `...and N others`. When source cannot select an interpretation, report
 the count.
 
-Literal designation can test a refinement once an expected type is known.
+Designation can test a refinement on any constant expression once an
+expected type is known. Bindings and calls use the same rule.
 Given `PositiveInt = pattern Int .where isPositive`, in
 `pattern PositiveInt | Float` the literal `-3` selects `Float` because
 the integer refinement rejects it. A positive
 literal such as `3` is ambiguous. Explicitly designating `-3` as the
-refined integer reports the failed predicate. A bound argument supplies
-its existing evidence. See [refinement predicates](refinement-predicates.md).
+refined integer reports the failed predicate. A name bound to a constant
+can also establish evidence this way. A runtime argument requires evidence
+from its type or an earlier explicit check. See [refinement predicates](refinement-predicates.md).
 
 Type macros remove repeated alternatives. `struct :A | :A` normalizes to
 `struct :A`. Direct descriptors preserve repeats.

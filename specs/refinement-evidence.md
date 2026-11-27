@@ -1,0 +1,402 @@
+# Refinement evidence
+
+A **refinement** such as `Float .where isNonZero` describes the `Float`
+values for which the predicate `isNonZero` returns `True`. A type or a
+successful check can establish that a particular value satisfies the
+predicate. That guarantee is **refinement evidence**.
+
+```pattern
+todo test "A refined binding carries its guarantee into the next binding"
+  type NonZeroFloat pattern Float .where isNonZero
+
+  (x :: NonZeroFloat) = 2 :: Float
+  (z :: NonZeroFloat) = x
+  expect z is 2 :: Float
+
+  expect
+    def unchecked(y :: Float) y :: NonZeroFloat
+    "defined"
+  fails "missing isNonZero"
+end
+```
+
+Binding `x` checks `isNonZero` on the literal `2 :: Float`. Binding `z`
+reuses the guarantee in the type of `x`. The type of the parameter `y`
+guarantees only `Float`. Because `y` could be zero, the checker rejects
+`y :: NonZeroFloat` in the function body.
+
+## Checking a constant expression
+
+A **constant expression** can be evaluated during checking without runtime
+input. Its result is **statically known**. A literal is the simplest case.
+A name bound to a constant expression can be used in another constant
+expression. A function call can also qualify when the checker can evaluate
+its body using the supplied constant arguments and any constants it refers to.
+
+**Designation** is the process of interpreting an expression at the type
+its context expects. A binding annotation, a parameter, a field type, or
+an expression ascription can supply that expected type. If it requires a
+refinement and the expression has one statically known value that fits
+the base type, the checker evaluates the predicate to establish the evidence.
+The same rule applies to literals, names bound to constants, and computations.
+
+For example, `two` below has the declared type `Float`. The checker also
+knows its value and can test `isNonZero` wherever `NonZeroFloat` is expected.
+The binding annotation requests that check directly. A separate expression
+ascription can request it too.
+
+```pattern
+todo test "A base-typed constant can be checked against a refinement"
+  type NonZeroFloat pattern Float .where isNonZero
+  def twice(n :: Float) n + n
+  def keep(n :: NonZeroFloat) n
+
+  (two :: Float) = twice(1 :: Float)
+  (nonzero :: NonZeroFloat) = two
+  expect nonzero is 2 :: Float
+  expect two :: NonZeroFloat is 2 :: Float
+  expect keep(two) is 2 :: Float
+  expect keep(twice(1 :: Float)) is 2 :: Float
+  expect (6 :: Float) / two is 3 :: Float
+  expect (6 :: Float) / 2 is 3 :: Float
+
+  (zero :: Float) = twice(0 :: Float)
+  expect
+    (invalid :: NonZeroFloat) = zero
+    invalid
+  fails "isNonZero"
+  expect keep(zero) fails "isNonZero"
+end
+```
+
+The type `Float` supplies no nonzero guarantee by itself. Evidence for
+`nonzero` comes from checking the statically known value of `two` against
+the requested refinement. A parameter with the same declared type still
+needs evidence when its value is unknown.
+
+When checking the body of `twice`, the parameter `n` can be any `Float`.
+When evaluating the constant call `twice(1 :: Float)`, `n` has the value
+`1 :: Float`. An interpreter can make this distinction during checking.
+Whether an optimizer later inlines a call has no effect on which programs
+pass checking.
+
+A field or element can establish its own refinement this way even when a
+different field is supplied at runtime.
+
+```pattern
+todo test "A constant field can establish a refinement beside a runtime field"
+  type NonZeroFloat pattern Float .where isNonZero
+  type PairOfFloats struct Pair(NonZeroFloat, Float)
+  (two :: Float) = (1 :: Float) + (1 :: Float)
+  def pairWith(other :: Float) Pair(two, other) :: PairOfFloats
+
+  expect pairWith(0 :: Float) is Pair(2, 0) :: PairOfFloats
+end
+```
+
+To establish a predicate on a whole compound value by constant evaluation,
+the whole value must be statically known. If a required predicate returns
+`False`, report which predicate failed. If evaluation raises an error,
+preserve its diagnostic.
+
+```pattern
+todo test "A literal can establish a refinement"
+  type NonZeroFloat pattern Float .where isNonZero
+  type NonZeroNumber pattern Number .where isNonZero
+  def safeDivide(x :: Float, y :: NonZeroFloat) x / y
+  def copy(x :: NonZeroFloat)
+    (z :: NonZeroFloat) = x
+    z
+  end
+
+  expect copy(2 :: Float) is 2 :: Float
+  (x :: NonZeroNumber) = 2 :: Float
+  expect x is 2 :: Float
+  expect safeDivide(1 :: Float, 2 :: Float) is 0.5 :: Float
+
+  expect
+    (z :: NonZeroNumber) = 0 :: Float
+    z
+  fails "isNonZero"
+end
+```
+
+## Explicit checks on a runtime value
+
+For a parameter whose value is unknown, `y .matches NonZeroFloat`
+explicitly checks the predicate at runtime. In the true branch, the
+checker knows that this particular `y` passed. An assignment, a type
+annotation, or a call can use that evidence.
+
+```pattern
+todo test "A Float parameter can be used as nonzero in the checked branch"
+  type NonZeroFloat pattern Float .where isNonZero
+  type NonZeroNumber pattern Number .where isNonZero
+  def safeDivide(x :: Float, y :: NonZeroFloat) x / y
+
+  def reciprocal(y :: Float) :: Float?
+    if y .matches NonZeroFloat
+      (z :: NonZeroNumber) = y
+      safeDivide(1 :: Float, y)
+    else
+      :None
+    end
+  end
+  expect reciprocal(2 :: Float) is 0.5 :: Float?
+  expect reciprocal(0 :: Float) is None :: Float?
+
+  expect
+    def unchecked(y :: Float) safeDivide(1 :: Float, y)
+    "defined"
+  fails "E_NO_METHOD"
+  expect
+    def afterBranch(y :: Float)
+      if y .matches NonZeroFloat
+        safeDivide(1 :: Float, y)
+      else
+        0 :: Float
+      end
+      safeDivide(1 :: Float, y)
+    end
+    "defined"
+  fails "E_NO_METHOD"
+end
+```
+
+`NonZeroFloat` and `NonZeroNumber` both use the same `Predicate` enum
+member, `:isNonZero`. The successful check establishes that predicate for
+`y`, so either binding can use it if `y` also fits the base type. A Boolean
+function with the same spelling supplies no such evidence. The predicate
+enum and the meaning of a bare name after `.where` are defined in
+[refinement predicates](https://github.com/johnwarden/pattern-language/blob/master/specs/refinement-predicates.md).
+
+The false branch has no nonzero guarantee. After the branches rejoin, a
+use of `y` can rely on the guarantee only if every path reaching that use
+established it. A checked assertion such as `assert y .matches NonZeroFloat`
+establishes evidence for the following statements because failure stops
+execution. A match arm's **guard** is a condition that must succeed before
+its body runs. If the arm binds `n :: Float` and its guard checks
+`n .matches NonZeroFloat`, the body can use `n` as nonzero.
+
+### Typed parsing
+
+`parse(T)(text)` checks the text against the expected type `T`, including
+predicates on nested fields. A successful parse returns a value with the
+guarantees of `T`.
+
+    type PositiveInt pattern Int .where isPositive
+    type Rectangle struct Rect(PositiveInt, PositiveInt)
+
+    parse(Rectangle)("Rect(2, 3)")
+    parse(Rectangle)("Rect(-2, 3)")
+    parse(Rectangle)("Rect(\"a\", 3)")
+
+The first call establishes `isPositive` for both fields. In the second,
+`-2` fails that predicate. In the third, the string `"a"` fails the base type `Int`.
+
+## Return types
+
+Every return path must meet the declared result type. In `zeroAsNone`,
+the true branch returns the value that passed the check. The other branch
+returns the absence case of `NonZeroNumber?`.
+
+    type NonZeroNumber pattern Number .where isNonZero
+    def zeroAsNone(x :: Number) :: NonZeroNumber?
+      if x .matches NonZeroNumber
+        x
+      else
+        :None
+      end
+    end
+
+A caller can rely on a built-in operation's specified result guarantee.
+For example, the absolute value of a finite nonzero float is nonzero.
+Fixed-precision float division also returns a nonzero result if the
+numerator is known to be nonzero and the operation succeeds. A nonzero
+exact quotient that rounds to zero raises `E_UNDERFLOW`. Integer
+quotient operations can return zero for a nonzero numerator. One overload
+can therefore specify a stronger result for inputs with a known refinement
+when all its successful results on those inputs satisfy the predicate.
+
+Division requires evidence for `isNonZero` on the divisor before evaluation.
+A constant zero fails the predicate. A divisor known only through a `Float`
+parameter lacks the required evidence, so an unchecked call fails with
+`E_NO_METHOD`. See [division and remainder signatures](https://github.com/johnwarden/pattern-language/pull/108).
+
+```pattern
+test "A literal zero fails the divisor refinement"
+  todo expect (1 :: Float) / (0 :: Float) fails "isNonZero"
+end
+```
+
+A checked conversion can also establish a predicate for a runtime value.
+For example, `checkedConvert(Int)(n)` checks `fitsInt64`, which tests whether
+the exact value fits the integer format. On success it returns an `Int`.
+See [checked conversion](https://github.com/johnwarden/pattern-language/blob/master/specs/fixed-precision-numbers.md#checked-conversion).
+
+## Disjointness of predicate-refined peers
+
+The **domain** of a pattern is the set of inputs it accepts. Two domains
+are **disjoint** if they have no input in common. **Predicate erasure**
+means dropping each `.where` condition for this comparison. For example,
+`Int .where isPositive` becomes `Int`. Keep the concrete type boundaries,
+tags, fields, and other arguments.
+
+For overloads, compare the complete argument packs. For match arms,
+compare the values permitted by the static type of the expression being
+matched (the *scrutinee*). Include the one level of projection that
+`match` permits into a concrete value. Reject the alternatives if the
+checker cannot prove they are disjoint after erasure, even if their
+predicates are mutually exclusive. A selected parameter or arm must
+still have evidence for its refinement.
+
+Two overloads distinguished only by refinements raise `E_REFINED_OVERLOAD`
+at definition time. Overlapping match arms raise `E_OVERLAPPING_MATCH_ARMS`
+when checking the match. To give one predicate priority, accept the base
+type once and test the predicates explicitly in the body. A final `else`
+in a match covers the values left by the preceding arms. See
+[overload domains](https://github.com/johnwarden/pattern-language/blob/master/specs/type-values.md#overload-domains-and-projection-dispatch)
+and [match arm domains](https://github.com/johnwarden/pattern-language/blob/master/specs/type-values.md#match-arm-domains).
+
+The integer examples use the numeric prelude cases `isPositive`, `isNonZero`,
+and `isNegative`. The last case accepts integers strictly below zero.
+
+```pattern
+todo test "Refinements alone cannot distinguish overloads, even when mutually exclusive"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  type Negative pattern Int .where isNegative
+  expect
+    def classify(n :: Positive) "positive"
+    def classify(n :: NonZero) "nonzero"
+    "definitions complete"
+  fails "E_REFINED_OVERLOAD"
+  expect
+    def sign(n :: Positive) "positive"
+    def sign(n :: Negative) "negative"
+    "definitions complete"
+  fails "E_REFINED_OVERLOAD"
+end
+
+todo test "The same tag leaves the erased overload domains overlapping"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  expect
+    def classify(:A, n :: Positive) "positive"
+    def classify(:A, n :: NonZero) "nonzero"
+    "definitions complete"
+  fails "E_REFINED_OVERLOAD"
+end
+
+todo test "Distinct tags distinguish overloads with refinements on the same Int"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  type Tag struct :A | :B
+  def classify(:A, n :: Positive) "A"
+  def classify(:B, n :: NonZero) "B"
+  expect classify(:A :: Tag, 2 :: Int) is "A"
+  expect classify(:B :: Tag, 2 :: Int) is "B"
+end
+
+todo test "One Int overload can give its predicates an explicit priority"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  def classify(n :: Int)
+    if n .matches Positive
+      "positive"
+    else
+      if n .matches NonZero "other nonzero" else "zero"
+    end
+  end
+  expect classify(2 :: Int) is "positive"
+  expect classify(-2 :: Int) is "other nonzero"
+  expect classify(0 :: Int) is "zero"
+end
+```
+
+With the same tag, both parameter packs erase to `(:A, Int)` and overlap.
+With different tags they erase to `(:A, Int)` and `(:B, Int)`. No single
+argument pack can match those two patterns.
+
+## Union bindings and overloaded calls
+
+A binding to an abstract union and a call to disjoint overloads use the
+same designation rule. For overloads the expected domain is the union of
+their complete argument-pack domains. Check the definition-time disjointness
+rule first. Then interpret the supplied arguments against that union,
+including constant evaluation of the predicates required by each interpretation.
+The resulting typed arguments select one clause.
+
+For `PositiveInt | Float64`, `-3` designates `Float64` because `isPositive`
+fails for the integer interpretation. Bare `3` has two valid interpretations
+and raises `E_AMBIGUOUS_VALUE_DESIGNATOR`. An expression already typed as
+`Float64` selects that member. This applies whether the expected union comes
+from a variable, one function definition, or an overload group.
+
+```pattern
+test "Int and Float64 overloads accept typed arguments and compete for a literal"
+  def pick(n :: Int) "integer"
+  def pick(n :: Float64) "float"
+  expect pick(3 :: Int) is "integer"
+  expect pick(3 :: Float64) is "float"
+  legacy expect pick(3) fails "E_AMBIGUOUS_CALL"
+  todo expect pick(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+
+todo test "Union bindings and overloads use the same constant designation"
+  type PositiveInt pattern Int .where isPositive
+  type Choice pattern PositiveInt | Float64
+  def pick(n :: PositiveInt) "integer"
+  def pick(n :: Float64) "float"
+  def pickUnion(n :: Choice)
+    match n
+      (i :: PositiveInt) -> "integer"
+      (f :: Float64) -> "float"
+    end
+  end
+
+  (x :: Choice) = -3
+  expect x is (-3) :: Float64
+  (y :: Choice) = 3 :: Float64
+  expect y is 3 :: Float64
+  expect
+    (z :: Choice) = 3
+    z
+  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+
+  (positive :: PositiveInt) = 3
+  expect pick(positive) is "integer"
+  expect pickUnion(positive) is "integer"
+  expect pick(-3) is "float"
+  expect pickUnion(-3) is "float"
+  expect pick(3 :: Float64) is "float"
+  expect pickUnion(3 :: Float64) is "float"
+  expect pick(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+  expect pickUnion(3) fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+end
+```
+
+A failed predicate excludes one constant interpretation. A predicate error
+retains its diagnostic. After one interpretation is selected, reuse its
+predicate checks when binding parameters. Runtime arguments require evidence
+from their types or earlier explicit checks. See [ambiguous value designators](ambiguous-values.md).
+
+## Diagnostics and test migration
+
+Designation checks the argument against the expected union before dispatch
+selects a clause. Reuse successful checks, and preserve errors raised by a
+predicate. The disjointness check compares erased structural domains without
+evaluating predicates.
+See the [#80 review](https://github.com/johnwarden/pattern-language/pull/80#issuecomment-6953945601).
+
+For an ambiguous designator, suggest an ascription (an expression such as
+`3 :: Float`) for each interpretation reported in the diagnostic. Use the
+member's [canonical type expression](https://github.com/johnwarden/pattern-language/blob/master/specs/type-values.md#canonical-expressions-and-typed-text)
+so the suggestion selects that interpretation when pasted into source. If
+an interpretation has no selectable spelling, report the count instead.
+
+The existing #80 diagnostic tests use bootstrap predicates. Migrate them
+to enum members as the corresponding cases become available. Preserve the
+missing-evidence tests for runtime parameters and fields drawn from them.
+Normalization of repeated type alternatives and the `E_REDUNDANT_QUOTE`
+diagnostic are specified in [type values](https://github.com/johnwarden/pattern-language/blob/master/specs/type-values.md#declarations-normalization-and-identity).

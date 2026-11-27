@@ -78,8 +78,10 @@ open to those contracts while requiring `isNonZero`, `isPositive`, and
 
 ## Evidence and first tests
 
-A successful explicit `.matches` check can establish evidence for its
-predicate. Dispatch uses existing evidence. See the
+An expected refined type can establish evidence by checking its predicate
+on a constant expression. Bindings, arguments, and expression ascriptions
+use the same rule. A successful explicit `.matches` check can establish
+evidence for a runtime value. See the
 [refinement evidence proposal](https://github.com/johnwarden/pattern-language/pull/89).
 
 ```pattern

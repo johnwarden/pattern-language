@@ -114,9 +114,9 @@ concrete singleton.
 
 A refinement restricts the admitted values while preserving their concrete
 identity. A concrete carveout adds its own boundary. Use `T .where p` in
-either pattern. Literal designation and explicit checks establish predicate
-evidence. Bindings and dispatch on bound arguments use the evidence already
-available. The [Predicate enum](refinement-predicates.md) supplies the
+either pattern. An expected refinement can establish evidence by checking
+any constant expression, including a bound constant. Runtime values require
+evidence from their types or earlier explicit checks. The [Predicate enum](refinement-predicates.md) supplies the
 initial refinement predicates. See the [refinement evidence proposal](https://github.com/johnwarden/pattern-language/pull/89).
 
 ```pattern

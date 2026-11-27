@@ -458,9 +458,9 @@ and by the `isSquare` case in
 [refinement predicates](refinement-predicates.md#evidence-and-first-tests).
 
 A refinement restricts the admitted values while preserving their concrete
-identity. Literal designation and explicit checks establish predicate
-evidence. Bindings and dispatch on bound arguments use the evidence already
-available; dispatch does not run predicates. A concrete carveout adds its
+identity. An expected refinement can establish evidence by checking any
+constant expression, including a bound constant. Runtime values require
+evidence from their types or earlier explicit checks. A concrete carveout adds its
 own boundary. Use `T .where p` in either pattern form.
 
 ```pattern
