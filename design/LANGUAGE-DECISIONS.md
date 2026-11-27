@@ -160,7 +160,15 @@ This is **descriptor equality**, not proof of extensional equality of arbitrary 
 
 Facet combinations require both constraints while preserving the member, not constructing a merged record. The author's documents call these products; R1/R2 recommend the term **intersection**, but that terminology has not been separately ratified. Likewise **abstract** versus **polymorphic** remains a naming choice; the recommendations favor abstract for the type category and polymorphic for functions.
 
-The author proposed disallowing a written singleton union such as `pattern String`. Normalization to the sole member was a reviewer suggestion, **not accepted policy**. How an abstract form behaves when constraints leave one admitted member remains open. **Sources:** A “Kinds…,” K, S; AR singleton question; R1/R2.
+Written single-member abstract unions such as `pattern String` remain allowed;
+there is no rule rejecting them. How a one-member abstract union compares to
+its member is undecided. How an abstract form behaves when constraints
+(qualifiers) leave one admitted member remains open. `Int` and `Float` are
+plain aliases of `Int64` and `Float64` (same type descriptors; spelling
+`type Int = Int64` / `type Float = Float64`), not single-member abstract
+aliases — so functions over `Int` are ordinary concrete functions, not
+`PolymorphicValue`s (**2026-11-27**). **Sources:** A “Kinds…,” K, S; AR
+singleton question; R1/R2; author decision 2026-11-27.
 
 ### D07. General abstract unions are separate from unambiguous grammars — confirmed direction
 
@@ -574,12 +582,12 @@ rejected. These are todo checks today. `Number` is removed for now.
 | Designation/projection | **Settled.** Only faithful wording/checking and eventual tests remain; no renewed policy debate is requested. |
 | Bare generic-family facets, MemberOf and parameter recovery | **Proposed.** Constraint vocabulary, structural matching and non-injective cases remain unresolved. |
 | Duplicate local type names, accessor bundles/imports and preferred display names | **Deferred policy; current errors retained.** Equivalent declarations and accessor collisions remain errors for now. No final alias/import policy is selected. |
-| Singleton abstract unions and qualifiers narrowed to one member | **Unresolved.** Author proposed rejecting explicit singleton unions; normalization is only a reviewer recommendation. |
+| Singleton abstract unions and qualifiers narrowed to one member | **Partially decided (2026-11-27).** Single-member abstract unions remain allowed. `Int`/`Float` are plain aliases of `Int64`/`Float64` (`type Int = Int64`, `type Float = Float64`), not abstract aliases; functions over `Int` are ordinary concrete functions. How a one-member abstract union compares to its member, and how qualifiers narrowed to one member behave, remain open. |
 | Runtime Expression *value* computation and descriptor/value comparison | **Concrete interpretation required (D03 / type-values); L12 interim bare-raw permission superseded.** Descriptor decoding/equality is separate and remains unsettled. Syntax/`SyntaxNode` cleanup follows staged consumer migration. |
 | Public `NumberLiteral(Float)` redesign | **Superseded.** Do not choose an A/B SyntaxNode numeric encoding; literals on Expression are exact Rationals. |
 | Specialization | **Deferred optimization only.** No source-visible generated overload semantics. |
 | Named functions and static overload groups | **Decided.** Closed `FunctionValue` data, static overload groups, ordinary value designation and bare capture as `PolymorphicValue` (`saved = f`; explicit `:: PolymorphicValue` still allowed). Function equality is alpha-equivalence after capture-binder normalization (call-visible labels kept; rest captures normalize); expanded printing uses the same `argN` capture binders. |
-| Numeric aliases/families, rounding edge policies and canonical spelling | **Provisional.** Do not infer these from isolated draft typos or examples. |
+| Numeric aliases/families, rounding edge policies and canonical spelling | **Int/`Float` plain aliases decided (2026-11-27)** (`type Int = Int64`, `type Float = Float64`). Families, rounding edge policies and canonical spelling remain provisional. |
 | Predicate/source portability, general canonicalization and unchecked insist | **Not solved here.** No new exemption from structural identity or serialization goals; no approved unchecked escape. |
 | Exact type/generic/facet/unambiguous/rest syntax and terminology | **Provisional.** Examples adopt review spellings without making every spelling a decision. |
 | Test DSL modifiers | Implemented assertion-level todo/legacy and whole-test todo execution/reporting; see TEST-SUITE.md. Future language semantics remain separate work. |
@@ -598,7 +606,7 @@ Obvious draft slips are normalized only to express the intended rules: String/sq
 | D03 concrete interpretation / parse into Expression | C04 and raw-expressions.test; bare raw construction superseded (`E_UNTYPED_EXPRESSION`); UpperCamel constructor heads; explicit concrete boundaries remain; SyntaxNode numeric A/B superseded |
 | D04 numeric meaning and conversion | C02, C03; C11 verifies explicit Rational projection; IEEE details deliberately unassigned |
 | D05 structural identity | C05, C06, C18, C23 |
-| D06 struct / `.where` / pattern kinds | C06, C07, C13, C15; singleton policy deliberately unassigned |
+| D06 struct / `.where` / pattern kinds | C06, C07, C13, C15; single-member abstract unions allowed; Int/Float plain aliases; one-member comparison and qualifier narrowing still open |
 | D07 general unions versus unambiguous grammars | C13, C14; qualifier spelling remains provisional |
 | D08 declaration-only accessors | C05, C16; duplicate-name/import outcomes deliberately unassigned |
 | D09 recursive designation / one-boundary projection | C03, C11, C12, C17 |

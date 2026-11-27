@@ -190,7 +190,7 @@ end
 
 The [fixed-precision numeric proposal](https://github.com/johnwarden/pattern-language/pull/86)
 defines numeric formats as prelude structs over `NumericValue`, with
-`Int` and `Float` as aliases and `Number` as an abstract union.
+`Int` and `Float` as plain aliases of `Int64` and `Float64` and `Number` as an abstract union.
 `Code` and `Body` are grammar-defined types. `ReservedSymbol` is internal
 to the bootstrap. Quoting a self-evaluating type name or Boolean literal
 name in executable source raises `E_QUOTED_PRIMITIVE`. The Code reader

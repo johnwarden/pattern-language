@@ -36,14 +36,32 @@ For example:
     type Int64 struct NumericValue .where fitsInt64
     type Float64 struct NumericValue .where fitsFloat64
 
-Short names use abstract single-member aliases:
+Short names are plain aliases of the default fixed formats (spelling as in
+[#112](https://github.com/johnwarden/pattern-language/pull/112)):
 
-    type Int abstract Int64
-    type Float abstract Float64
+    type Int = Int64
+    type Float = Float64
 
-Values keep the concrete member's identity. `Int` and `Int64` as type
-descriptors need not compare `===`; see open questions in `#88` on singleton
-abstract policy.
+`Int` and `Int64` are the same type descriptor; likewise `Float` and
+`Float64`. Functions over `Int` are ordinary concrete functions, not
+`PolymorphicValue`s. Abstract unions with a single member remain allowed;
+this document does not decide how a one-member abstract union compares to
+its member.
+
+```pattern
+todo test "Int and Int64 are the same type descriptor"
+  assert Int === Int64
+end
+
+todo test "Float and Float64 are the same type descriptor"
+  assert Float === Float64
+end
+
+todo test "A function over Int is not a PolymorphicValue"
+  f = (x :: Int) -> x
+  assert not(f .matches PolymorphicValue)
+end
+```
 
 | Family | Proposed domain | Initial scope |
 | --- | --- | --- |
