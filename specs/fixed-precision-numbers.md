@@ -42,11 +42,13 @@ Short names are plain aliases of the default fixed formats (spelling as in
     type Int = Int64
     type Float = Float64
 
-`Int` and `Int64` are the same type descriptor; likewise `Float` and
-`Float64`. Functions over `Int` are ordinary concrete functions, not
-`PolymorphicValue`s. Abstract unions with a single member remain allowed;
-this document does not decide how a one-member abstract union compares to
-its member.
+A plain alias is not a written single-member abstract union. Forms such as
+`type X pattern Int64` or `abstract Int64` remain allowed and still count as
+abstract ([#113](https://github.com/johnwarden/pattern-language/pull/113));
+they are a different construct from `type Int = Int64`. `Int` and `Int64` are
+the same type descriptor; likewise `Float` and `Float64`. Functions over
+`Int` are ordinary concrete functions, not `PolymorphicValue`s. This document
+does not decide how a one-member abstract union compares to its member.
 
 ```pattern
 todo test "Int and Int64 are the same type descriptor"
