@@ -61,6 +61,6 @@ test "Picture: nested pattern captures"
   expect p.w is 3 :: Float
   expect p.h is 4 :: Float
   observed = type Picture
-  expect observed is Struct(Picture(color: Struct(:Black | :Red), shape: Rectangle(Float, Float))) :: Type
+  expect observed is Struct(Picture(color: Struct(:Black | :Red), shape: Rectangle(Float64, Float64))) :: Type
   (p.color, p.w, p.h, (type Picture))
 end

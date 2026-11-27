@@ -165,25 +165,25 @@ test("canonical text includes annotations only at abstract positions", () => {
     run(
       "def Box type :Box(Any,n: Float)\nb = Box(3 :: Int,n: 4) :: Box\ntoString(Box)(b)",
     ),
-    '"Box(3 :: Int, n: 4)"',
+    '"Box(3 :: Int64, n: 4)"',
   );
   assert.equal(
     run("n = 3 :: Int\n(toString(Int)(n),toString(n))"),
     '("3", "3")',
   );
   assert.equal(run("(x :: Any) = 3 :: Int\ntoString(Int)(x)"), '"3"');
-  assert.equal(run("(x :: Any) = 3 :: Int\ntoString(Any)(x)"), '"3 :: Int"');
+  assert.equal(run("(x :: Any) = 3 :: Int\ntoString(Any)(x)"), '"3 :: Int64"');
 });
 
 test("REPL inspection distinguishes runtime concrete types from uninterpreted syntax", () => {
   const interpreter = new Interpreter();
   assert.equal(
     inspectResults(interpreter.run("(x :: Any) = 3 :: Int\nx")),
-    "3 :: Int",
+    "3 :: Int64",
   );
-  assert.equal(inspectResults(interpreter.run("3 :: Int")), "3 :: Int");
+  assert.equal(inspectResults(interpreter.run("3 :: Int64")), "3 :: Int64");
   assert.equal(inspectResults(interpreter.run("3")), "3 :: NumericValue");
-  assert.equal(inspectResults(interpreter.run("type Int")), "Int :: Type");
+  assert.equal(inspectResults(interpreter.run("type Int")), "Int64 :: Type");
 });
 
 test("open type patterns are abstract facets and preserve the complete concrete value", () => {
@@ -192,7 +192,7 @@ test("open type patterns are abstract facets and preserve the complete concrete 
       full +
         "(p :: Rectangular) = r\n(p,p.w,p.h,p == r,toString(Rectangular)(p))",
     ),
-    '(Rect(2, 3, color: "black"), 2, 3, True, "Rect(2, 3, color: \\"black\\") :: Struct(Rect(Float, Float, color: String))")',
+    '(Rect(2, 3, color: "black"), 2, 3, True, "Rect(2, 3, color: \\"black\\") :: Struct(Rect(Float64, Float64, color: String))")',
   );
   rejects(
     'def Rectangular type :Rect(w :: Float,h :: Float,**)\n(p :: Rectangular) = Rect(2,3,color: "black")\np',
@@ -233,7 +233,7 @@ test("concrete Type cannot disguise an open constraint", () => {
   assert.throws(
     () =>
       run(
-        "Struct(Apply(:R,OpenFields(Fields(Int),labels: True,positional: False)))",
+        "Struct(Apply(:R,OpenFields(Fields(Int64),labels: True,positional: False)))",
       ),
     /Facet/,
   );
@@ -281,7 +281,7 @@ test("ordinary type values keep their intrinsic meta-type across abstract storag
     run(
       "(x :: Any) = type Int\n(y :: Any) = Int\n(x == y,x == (type Int),toString(Any)(x),y .matches (type ReservedSymbol))",
     ),
-    '(False, True, "Int :: Type", True)',
+    '(True, True, "Int64 :: Type", False)',
   );
 });
 
@@ -290,7 +290,7 @@ test("concrete meta-type slots unbox abstract storage and omit redundant annotat
     run(
       "(x :: Any) = type Int\n(m :: Type) = x\n(toString(Type)(m),m == (type Int))",
     ),
-    '("Int", True)',
+    '("Int64", True)',
   );
 });
 
@@ -319,13 +319,13 @@ test("REPL inspection retains abstract field metadata in otherwise concrete valu
   const result = interpreter.run(
     "def Box type :Box(Any)\nBox(3 :: Int) :: Box",
   );
-  assert.equal(interpreter.inspect(result), "Box(3 :: Int) :: Box");
+  assert.equal(interpreter.inspect(result), "Box(3 :: Int64) :: Box");
 });
 
 test("Facet construction normalizes root type aliases without creating a concrete space", () => {
   assert.equal(
     run(
-      "a = Facet(type :R(Int))\nb = Facet(:(Struct(R(Int))))\n(a == b,parse(Type)(toString(Type)(a)) == a)",
+      "a = Facet(type :R(Int))\nb = Facet(:(Struct(R(Int64))))\n(a == b,parse(Type)(toString(Type)(a)) == a)",
     ),
     "(True, True)",
   );

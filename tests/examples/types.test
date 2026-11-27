@@ -9,7 +9,7 @@ test "Canonical type alternatives"
   assert parse(Type)(toString(Type)(a)) == b
 
   mixed = type Some(Int) | 10 | :None | 2
-  expect mixed is Struct(:None | 2 | 10 | Some(Int)) :: Type
+  expect mixed is Struct(:None | 2 | 10 | Some(Int64)) :: Type
 
   ((a == b), toString(Type)(a), (parse(Type)(toString(Type)(a)) == b), mixed)
 end
@@ -35,7 +35,7 @@ test "Factory defaults and complete types"
   expect r is Rect(3, 4, color: Black) :: Rectangle
   expect r.color is Black :: Color
   # Legacy blocked: public descriptor text is still provisional.
-  legacy expect toString(Type)(type Rectangle) is "Struct(Rect(Int, Int, color: Struct(:Black | :White)))" :: String
+  legacy expect toString(Type)(type Rectangle) is "Struct(Rect(Int64, Int64, color: Struct(:Black | :White)))" :: String
 
   assert not(:(Rect(3, 4)) .matches (type Rectangle))
   (r, r.color, toString(Type)(type Rectangle), :(Rect(3, 4)) .matches (type Rectangle))
@@ -54,7 +54,7 @@ test "Type fields and ignored captures"
   Rect(_, h) = r
 
   observed = type Rectangle
-  expect observed is Struct(Rect(Float, Float)) :: Type
+  expect observed is Struct(Rect(Float64, Float64)) :: Type
   expect h is 4 :: Float
   ((type Rectangle), h)
 end
@@ -64,7 +64,7 @@ test "Inspect a pattern union"
   Struct(:|(left)(right)) = t
 
   legacy expect left is :None :: Expression
-  legacy expect right is Some(Int) :: Expression
+  legacy expect right is Some(Int64) :: Expression
   (left, right)
 end
 
@@ -76,7 +76,7 @@ test "Local and global type text"
 
   expect local is "Rectangle" :: String
   # Legacy blocked: local alias policy and global descriptor spelling are still provisional.
-  legacy expect global is "Struct(Rect(Float, Float))" :: String
+  legacy expect global is "Struct(Rect(Float64, Float64))" :: String
 
   assert parseLocal(Type)(local) == t
 
@@ -121,7 +121,7 @@ test "A union of type values"
   def Square type :Square(Float)
   shape = UnionType(type Circle, type Square)
 
-  expect shape is UnionType(Struct(Circle(Float)), Struct(Square(Float))) :: Type
+  expect shape is UnionType(Struct(Circle(Float64)), Struct(Square(Float64))) :: Type
 end
 
 test "Option factory with ()"
@@ -132,7 +132,7 @@ test "Option factory with ()"
   expect toString(Option(Int))(a) is "None" :: String
   expect a is None :: Option(Int)
   expect b is Some(5) :: Option(Int)
-  expect Option(Int) is Struct(:None | Some(Int)) :: Type
+  expect Option(Int) is Struct(:None | Some(Int64)) :: Type
   (toString(Option(Int))(a), b, Option(Int))
 end
 
@@ -201,7 +201,7 @@ test "Local recursive type block"
     List(Int)
   )) = Cons(5, :Nil)
 
-  expect x is Cons(5, Nil) :: (parse(Type)("Struct(Recursive(:Nil | Cons(Int,Recur(0))))"))
+  expect x is Cons(5, Nil) :: (parse(Type)("Struct(Recursive(:Nil | Cons(Int64,Recur(0))))"))
 end
 
 test "Portable recursive type"
@@ -211,7 +211,7 @@ test "Portable recursive type"
   restored = parse(Type)(text)
   value = Cons(5, :Nil) :: restored
   # Legacy blocked: public recursive descriptor text is still provisional.
-  legacy expect text is "Struct(Recursive(:Nil | Cons(Int, Recur(0))))" :: String
+  legacy expect text is "Struct(Recursive(:Nil | Cons(Int64, Recur(0))))" :: String
 
   assert restored == t
 
@@ -250,11 +250,11 @@ test "Types are ordinary values"
   r = Rect
   value = Rect(2, 2) :: Rect
 
-  expect r is Struct(Rect(Float, Float)) :: Type
+  expect r is Struct(Rect(Float64, Float64)) :: Type
   expect value is Rect(2, 2) :: Rect
-  expect Int is Int :: ReservedSymbol
-  expect Float is Float :: ReservedSymbol
-  expect Struct(Int) is Struct(Int) :: Type
+  expect Int is Int64 :: Type
+  expect Float is Float64 :: Type
+  expect Struct(Int) is Struct(Int64) :: Type
   (r, value, Int, Float, Struct(Int))
 end
 
@@ -273,27 +273,27 @@ test "Type normalization and wrappers"
   observedTypeTypeInt = type type type Int
   observedRect = type Rect
   observedTypeRect = type type Rect
-  expect observedInt is Int :: Type
-  expect observedTypeInt is Int :: Type
-  expect observedTypeTypeInt is Int :: Type
-  expect Struct(Int) is Struct(Int) :: Type
-  expect observedRect is Struct(Rect(Float, Float)) :: Type
-  expect observedTypeRect is Struct(Rect(Float, Float)) :: Type
-  expect Struct(Rect) is Struct(Rect(Float, Float)) :: Type
-  expect Struct(Struct(Rect)) is Struct(Rect(Float, Float)) :: Type
+  expect observedInt is Int64 :: Type
+  expect observedTypeInt is Int64 :: Type
+  expect observedTypeTypeInt is Int64 :: Type
+  expect Struct(Int) is Struct(Int64) :: Type
+  expect observedRect is Struct(Rect(Float64, Float64)) :: Type
+  expect observedTypeRect is Struct(Rect(Float64, Float64)) :: Type
+  expect Struct(Rect) is Struct(Rect(Float64, Float64)) :: Type
+  expect Struct(Struct(Rect)) is Struct(Rect(Float64, Float64)) :: Type
   (observedInt, observedTypeInt, observedTypeTypeInt, Struct(Int), observedRect, observedTypeRect, Struct(Rect), Struct(Struct(Rect)))
 end
 
 test "Types as ordinary values"
   def Rectangle type :Rect(width :: Float, height :: Float)
-  t = Struct(Rect(Float, Float))
+  t = Struct(Rect(Float64, Float64))
   Struct(body) = t
 
   assert Struct(body) == t
 
   assert t == (type Rectangle)
   # Legacy blocked: public descriptor text is still provisional.
-  legacy expect toString(Type)(t) is "Struct(Rect(Float, Float))" :: String
+  legacy expect toString(Type)(t) is "Struct(Rect(Float64, Float64))" :: String
 
   ((Struct(body) == t), (t == (type Rectangle)), toString(Type)(t))
 end

@@ -123,7 +123,7 @@ test("each is expectation requires the stated type and canonical data spelling",
     );
   }
   assert.equal(runTest(sample("3", "is 3 :: Int")).passed, false);
-  assert.equal(runTest(sample("3 :: Int", "is 3 :: Int")).passed, true);
+  assert.equal(runTest(sample("3 :: Int64", "is 3 :: Int")).passed, true);
 });
 test("one result is required; multiple and labeled returns must be destructured", () => {
   for (const [body, clause] of [

@@ -233,7 +233,7 @@ descriptor.
 
 ```pattern
 test "Descriptor inspection binds the typed pattern field"
-  t = Struct(Rect(Int))
+  t = Struct(Rect(Int64))
   copy = match t
     Struct(p) -> Struct(p)
   end
@@ -266,7 +266,7 @@ todo test "Reading a descriptor as Type produces a Struct value"
   assert not(code .matches Type)
   assert descriptor .matches Struct
   assert descriptor .matches Type
-  assert descriptor === Struct(Rect(Int))
+  assert descriptor === Struct(Rect(Int64))
 end
 ```
 
@@ -416,9 +416,9 @@ text; it rewrites to the same descriptor as `Struct(...)`.
 
 ```pattern
 test "Bootstrap Type(...) constructors and text still rewrite to Struct(...)"
-  assert Type(Rect(Int)) === Struct(Rect(Int))
-  assert parse(Type)("Type(Rect(Int))") === Struct(Rect(Int))
-  expect toString(Type)(Type(Int)) is "Struct(Int)" :: String
+  assert Type(Rect(Int64)) === Struct(Rect(Int64))
+  assert parse(Type)("Type(Rect(Int64))") === Struct(Rect(Int64))
+  expect toString(Type)(Type(Int)) is "Struct(Int64)" :: String
 end
 
 todo test "Macros normalize alternatives and direct descriptors preserve them"

@@ -89,7 +89,7 @@ test "Constructor heads stay tags while bare symbols need quotation"
   expect :Foo is Foo :: UpperCamelSymbol
 
   def Rect type Rect(Float, Float)
-  assert Struct(Rect(Float, Float)) == Rect
+  assert Struct(Rect(Float64, Float64)) == Rect
 
   expect
     def Wrong Foo
@@ -120,7 +120,7 @@ end
 test "Anonymous type macro"
   t = t -> type :Some(t)
 
-  expect t(type Int) is Struct(Some(Int)) :: Type
+  expect t(type Int) is Struct(Some(Int64)) :: Type
 end
 
 test "Option"
@@ -185,7 +185,7 @@ test "Bad vector element"
   expect
     def Vector(t :: Type) type [values... :: t*]
     [1, "bad"] :: Vector(Int)
-  fails "expected Vector(Int)"
+  fails "expected Vector(Int64)"
 end
 
 test "No structural accessor discovery"

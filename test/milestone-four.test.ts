@@ -60,7 +60,7 @@ test("nonproductive recursive groups reject with source locations", () => {
 test("local type-value inspection expands roots and names nested references", () => {
   const i = new Interpreter();
   assert.equal(i.inspect(i.run("Code")), "TreeGrammar(SyntaxNode) :: Type");
-  assert.equal(i.inspect(i.run("Struct(Int)")), "Struct(Int) :: Type");
+  assert.equal(i.inspect(i.run("Struct(Int)")), "Struct(Int64) :: Type");
   assert.equal(i.inspect(i.run("type :Empty")), "Struct(:Empty) :: Type");
   assert.equal(
     i.inspect(
@@ -80,7 +80,7 @@ test("local type-value inspection expands roots and names nested references", ()
     run(
       "def Circle type :Circle(Float)\ndef Picture type :Picture(Circle)\ntoString(Type)(Picture)",
     ),
-    '"Struct(Picture(Struct(Circle(Float))))"',
+    '"Struct(Picture(Struct(Circle(Float64))))"',
   );
 });
 test("generated type patterns honor the lexical origin of aliases and private names", () => {

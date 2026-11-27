@@ -101,7 +101,7 @@ test("recursive and parameterized types travel to a fresh interpreter as finite 
     i,
     "def List(t :: Type) type :Nil | :Cons(t,List(t))\ntoString(Type)(type List(Int))",
   );
-  assert.equal(text, "Struct(Recursive(:Nil | Cons(Int, Recur(0))))");
+  assert.equal(text, "Struct(Recursive(:Nil | Cons(Int64, Recur(0))))");
   const j = transfer(text);
   assert.equal(
     displayResults(
@@ -123,7 +123,7 @@ test("recursive and parameterized types travel to a fresh interpreter as finite 
 test("postfix type descriptions round-trip inhabitants across interpreters", () => {
   const i = new Interpreter();
   const text = stringResult(i, "def T type (Int)@\ntoString(Type)(T)");
-  assert.equal(text, "Struct(Postfix(:@, Int))");
+  assert.equal(text, "Struct(Postfix(:@, Int64))");
   assert.equal(
     displayResults(
       i.run(
@@ -293,7 +293,7 @@ test("nested recursive boundaries retain references to enclosing binders", () =>
     first,
     "def Tree type :Leaf(Int) | :Branch([_... :: Tree*])\ntoString(Type)(type Tree)",
   );
-  assert.equal(text, "Struct(Recursive(Branch([Repeat(Recur(0))]) | Leaf(Int)))");
+  assert.equal(text, "Struct(Recursive(Branch([Repeat(Recur(0))]) | Leaf(Int64)))");
   const second = transfer(text);
   assert.equal(
     displayResults(
@@ -331,7 +331,7 @@ test("generic parse and print factories support whole-pack partial application",
   );
   assert.equal(
     run("t = type :Rect(Int,String)\nCode$` $t"),
-    "Struct(Rect(Int, String))",
+    "Struct(Rect(Int64, String))",
   );
 });
 
@@ -859,7 +859,7 @@ test("type-description grammar is a structural facet over cached and reconstruct
 // From test/value-representation.test.ts
 
 test("equal trees have equal global text regardless of compiled caches", () => {
-  for (const expression of ["Struct(Rect(Float))", "UnionType(Int,String)"]) {
+  for (const expression of ["Struct(Rect(Float64))", "UnionType(Int64,String)"]) {
     assert.equal(
       run(
         "a = " +
@@ -872,8 +872,8 @@ test("equal trees have equal global text regardless of compiled caches", () => {
     );
   }
   assert.throws(
-    () => run("b = :Int\nparse(Expression)(toString(Expression)(b)) == b"),
-    /quoted Int is not a symbol/,
+    () => run("b = :Int64\nparse(Expression)(toString(Expression)(b)) == b"),
+    /quoted Int64 is not a symbol/,
   );
 });
 
@@ -885,7 +885,7 @@ test("ordinary type trees work in type positions without a preexisting matcher",
     "(True, True, True)",
   );
   assert.equal(
-    run("def factory() :(Struct(Rect(Int)))\ndef R factory()\nRect(3) :: R"),
+    run("def factory() :(Struct(Rect(Int64)))\ndef R factory()\nRect(3) :: R"),
     "Rect(3)",
   );
   assert.equal(run("t = Int\nr = t .where (n -> n > (0 :: Int))\n1 :: r"), "1");
@@ -916,7 +916,7 @@ test("invalid type-shaped data is not compiled or silently normalized by matchin
 test("explicit Struct(Int) preserves its distinct ordinary value tree", () => {
   assert.equal(
     run("(Struct(Int),Struct(Int) == Int,Struct(Struct(Int)) == Struct(Int))"),
-    "(Struct(Int), False, True)",
+    "(Struct(Int64), False, True)",
   );
   assert.equal(
     run("t = Struct(Int)\nparse(Type)(toString(Type)(t)) == t"),
@@ -975,7 +975,7 @@ test("factory defaults and type descriptions remain separate ordinary values", (
     run(
       'def Rectangle type :Rect(w :: Int,h :: Int,color: String)\ndef rectangle(w :: Int,h :: Int,color: String = "black") Rect(w,h,color: color) :: Rectangle\nt = type Rectangle\n(toString(Type)(t),parse(Type)(toString(Type)(t)) == t)',
     ),
-    '("Struct(Rect(Int, Int, color: String))", True)',
+    '("Struct(Rect(Int64, Int64, color: String))", True)',
   );
 });
 

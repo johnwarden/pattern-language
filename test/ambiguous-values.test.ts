@@ -51,7 +51,7 @@ test("an ambiguous value designator retains its diagnostic code, phase and locat
 
 test("type suggestions do not use the enclosing union's local name", () => {
   const error = ambiguity("def EitherNumber abstract Int | Float\n3 .matches EitherNumber");
-  assert.match(error.diagnostic.message, /`3 :: Int`/);
+  assert.match(error.diagnostic.message, /`3 :: Int64`/);
   assert.doesNotMatch(error.diagnostic.message, /EitherNumber/);
 });
 

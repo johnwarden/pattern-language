@@ -206,7 +206,7 @@ test("program Run displays concrete and meta-type annotations", () => {
   assert.equal(app.el("error").textContent, "");
   assert.equal(
     app.el("result").textContent,
-    "(Rect(3, 4) :: Rect, Struct(Rect(Float, Float)) :: Type, Int :: ReservedSymbol)",
+    "(Rect(3, 4) :: Rect, Struct(Rect(Float64, Float64)) :: Type, Int64 :: Type)",
   );
   app.dom.window.close();
 });
@@ -267,7 +267,7 @@ test("blocked storage has an honest fallback", () => {
   assert.equal(a.el("result").textContent, "");
   a.edit("source", "3 :: Int");
   a.click("run");
-  assert.equal(a.el("result").textContent, "3 :: Int");
+  assert.equal(a.el("result").textContent, "3 :: Int64");
   a.dom.window.close();
 });
 test("old editor draft is preserved without silently rewriting syntax", () => {

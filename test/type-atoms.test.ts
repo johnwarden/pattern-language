@@ -72,9 +72,9 @@ test("postfix type modifiers are distinct trees from prefix application", () => 
 
 test("primitive atoms survive lexical storage changes and are reserved declarations", () => {
   const i = new Interpreter();
-  i.env.bindings.delete("Int");
-  assert.equal(displayResults(i.run("Int")), "Int");
-  rejects("def Int type Box(Float)\n0", "E_RESERVED_PRIMITIVE");
+  i.env.bindings.delete("Int64");
+  assert.equal(displayResults(i.run("Int64")), "Int64");
+  rejects("def Int64 type Box(Float)\n0", "E_RESERVED_PRIMITIVE");
 });
 
 test("language constants self-evaluate independently of lexical storage", () => {
@@ -89,9 +89,9 @@ test("language constants self-evaluate independently of lexical storage", () => 
 
 test("equal compiled and raw type trees have equal canonical strings", () => {
   for (const expression of [
-    "Struct(Rect(Float,Float))",
-    "Struct(Int)",
-    "UnionType(Int,String)",
+    "Struct(Rect(Float64,Float64))",
+    "Struct(Int64)",
+    "UnionType(Int64,String)",
   ]) {
     assert.equal(
       run(

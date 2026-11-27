@@ -78,7 +78,7 @@ test("typed Code positional splices preserve packs and check every inserted gram
 });
 
 test("primitive lifting preserves the value's concrete interpretation", () => {
-  for (const value of ["3 :: Int", "negate(3) :: Int"]) {
+  for (const value of ["3 :: Int64", "negate(3) :: Int"]) {
     const i = new Interpreter();
     const [original, code] = i.run("n = " + value + "\nc = Code$` $n\n(n,c)");
     assert.ok(equal(single(i.evaluateCode(code.value)), original.value), value);

@@ -13,7 +13,7 @@ test("the type-description syntax schema is defined in the source language", () 
   assert.equal(
     run(
       prelude +
-        "\np = type TypeDescription\n(Int .matches p,UnionType(Int,String) .matches p,(type :Some(Int) | :None) .matches p,:(Primitive(Unknown)) .matches p)",
+        "\np = type TypeDescription\n(Int64 .matches p,UnionType(Int,String) .matches p,(type :Some(Int) | :None) .matches p,:(Primitive(Unknown)) .matches p)",
     ),
     "(True, True, True, False)",
   );
@@ -55,21 +55,21 @@ test("type unions flatten, deduplicate, and have order independent canonical tex
   );
   assert.equal(
     run("def A UnionType(type Int,type String)\nUnionType(type A,Int)"),
-    "UnionType(Int, String)",
+    "UnionType(Int64, String)",
   );
-  assert.equal(run("UnionType(Int,Int)"), "UnionType(Int)");
+  assert.equal(run("UnionType(Int,Int)"), "UnionType(Int64)");
 });
 
 test("concrete pattern unions remain distinct from abstract type unions", () => {
-  assert.equal(run("type Int | String"), "Struct(Int | String)");
+  assert.equal(run("type Int | String"), "Struct(Int64 | String)");
   const interpreter = new Interpreter();
-  interpreter.env.bindings.set("text", valLiteral("Struct(Int | String)"));
+  interpreter.env.bindings.set("text", valLiteral("Struct(Int64 | String)"));
   assert.equal(
     displayResults(interpreter.run("parse(Type)(text)")),
-    "Struct(Int | String)",
+    "Struct(Int64 | String)",
   );
   assert.throws(() => run("UnionType(1)"), /type values/);
-  assert.equal(run("type :Some(Int) | :None"), "Struct(:None | Some(Int))");
+  assert.equal(run("type :Some(Int) | :None"), "Struct(:None | Some(Int64))");
 });
 
 test("union descriptions support normal destructuring and preserve literal data escapes", () => {

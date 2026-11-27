@@ -3,6 +3,7 @@ import { postfixMethodName } from "./syntax.ts";
 import { punctuation } from "./lexical.ts";
 import {
   primitiveNames,
+  numericAliases,
   constantNames,
   bootstrapTypeNames,
   isSelfEvaluating,
@@ -697,14 +698,6 @@ export class Interpreter {
     const scope = new Scope();
     for (const [name, predicate] of Object.entries({
       NumericValue: (v: Value): boolean => !!asNumeric(v),
-      Num: (v: Value): boolean => {
-        const r = asRational(v);
-        return !!r && isExactFloat64(r);
-      },
-      Int: (v: Value): boolean => {
-        const r = asRational(v);
-        return !!r && fitsFixedInteger(r, "int64");
-      },
       Int64: (v: Value): boolean => {
         const r = asRational(v);
         return !!r && fitsFixedInteger(r, "int64");
@@ -737,10 +730,6 @@ export class Interpreter {
       Type: (v: Value): boolean => !!this.materializeType(v),
       Bool: (v: Value): boolean =>
         v.kind === "symbol" && ["True", "False"].includes(v.name),
-      Float: (v: Value): boolean => {
-        const r = asRational(v);
-        return !!r && isExactFloat64(r);
-      },
       Float64: (v: Value): boolean => {
         const r = asRational(v);
         return !!r && isExactFloat64(r);
@@ -752,19 +741,20 @@ export class Interpreter {
       ReservedSymbol: (v: Value): boolean =>
         v.kind === "symbol" && primitiveNames.has(v.name),
     })) {
-      const numericKind = ["Num", "Float", "Float64"].includes(name)
-        ? "float64"
-        : ["Int", "Int64"].includes(name)
-          ? "int64"
-          : name === "Int32"
-            ? "int32"
-            : name === "UInt64"
-              ? "uint64"
-              : name === "Float32"
-                ? "float32"
-                : name === "NumericValue"
-                  ? "rational"
-                  : undefined;
+      const numericKind =
+        name === "Float64"
+          ? "float64"
+          : name === "Int64"
+            ? "int64"
+            : name === "Int32"
+              ? "int32"
+              : name === "UInt64"
+                ? "uint64"
+                : name === "Float32"
+                  ? "float32"
+                  : name === "NumericValue"
+                    ? "rational"
+                    : undefined;
       scope.bindings.set(name, {
         kind: "type",
         name,
@@ -774,10 +764,7 @@ export class Interpreter {
         numeric: numericKind,
         pattern: () => ({
           ...test(name, predicate),
-          identity: [
-            "primitive",
-            name === "Float64" ? "Float64" : (numericKind ?? name),
-          ],
+          identity: ["primitive", numericKind ?? name],
         }),
       });
       this.primitives.set(name, scope.bindings.get(name) as TypeValue);
@@ -796,8 +783,6 @@ export class Interpreter {
       symbol.name = "Symbol";
       scope.bindings.set("Symbol", symbol);
     }
-    // Canonical primitive atoms have fixed language meanings.
-    for (const alias of ["Num"]) scope.bindings.delete(alias);
     for (const name of constantNames)
       scope.bindings.set(name, this.boolean(name === "True"));
     for (const [name, value] of scope.bindings) {
@@ -808,6 +793,13 @@ export class Interpreter {
         capturePattern: value.pattern(),
         accessors: [],
       });
+    }
+    // Ordinary bindings: Int = Int64, Float = Float64 (same type values).
+    for (const [alias, target] of numericAliases) {
+      const type = this.primitives.get(target);
+      if (!type) continue;
+      scope.bindings.set(alias, type);
+      this.primitives.set(alias, type);
     }
     scope.functions.set("language", [
       this.native("language", [0], () => this.grammar.description()),
@@ -1147,9 +1139,14 @@ export class Interpreter {
     const typeConstructor = (head: "Type" | "Struct") =>
       this.native(head, [1], ([pattern]) => {
         const type = this.materializeType(pattern);
-        return type && typeDescription(type).kind !== "symbol"
-          ? type
-          : this.structuralType(term("Struct", unwrap(pattern)));
+        if (type) {
+          const description = typeDescription(type);
+          // Primitive formats describe as reserved symbols; Struct(Int) wraps
+          // that symbol even when Int is the ordinary Int64 binding.
+          if (description.kind !== "symbol") return type;
+          return this.structuralType(term("Struct", description));
+        }
+        return this.structuralType(term("Struct", unwrap(pattern)));
       });
     scope.functions.set("Type", [typeConstructor("Type")]);
     scope.functions.set("Struct", [typeConstructor("Struct")]);
@@ -3687,8 +3684,13 @@ export class Interpreter {
                 aliases.set(type.name, type);
         }
     }
+    // Int/Float are ordinary bindings of Int64/Float64. They must not win local
+    // print names (isTypeCapture is true for UpperCamel), or type text prints
+    // Int and fails to round-trip through description leaves that need the
+    // reserved symbol. localType still resolves them for whole-type parse.
+    const printable = [...aliases].filter(([name]) => !numericAliases.has(name));
     const references = new Map<unknown, string>();
-    for (const [name, type] of [...aliases]
+    for (const [name, type] of printable
       .filter(([name]) => isTypeCapture(name))
       .sort(([a], [b]) => b.length - a.length || (a < b ? 1 : -1)))
       references.set(type.key, name);
@@ -3699,7 +3701,7 @@ export class Interpreter {
       localName: env
         ? (type) => {
             if (type.declaration && available(type)) return type.name;
-            const exact = [...aliases]
+            const exact = printable
               .sort(([a], [b]) => a.length - b.length || (a < b ? -1 : 1))
               .filter(([, t]) => typeIdentity(t) === typeIdentity(type));
             const typeName = exact.find(([name]) => isTypeCapture(name))?.[0];

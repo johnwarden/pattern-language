@@ -77,11 +77,11 @@ test("quoted expression values use the same punctuation notation and round trip 
 test("refinement arrows and their comparison bodies share infix formatting", () => {
   assert.equal(
     run("(type Int) .where (n -> n < 5)"),
-    "Int .where (n -> n < 5)",
+    "Int64 .where (n -> n < 5)",
   );
   assert.equal(
     run("(type Int) .where (n -> (n + 1) < 5)"),
-    "Int .where (n -> (n + 1) < 5)",
+    "Int64 .where (n -> (n + 1) < 5)",
   );
 });
 

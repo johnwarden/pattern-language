@@ -14,7 +14,7 @@ test("TitleCase captures reject non-type annotations, reserved names and duplica
       e instanceof LanguageError && e.diagnostic.code === "E_CAPTURE_TYPE",
   );
   assert.throws(
-    () => run("def f(Int :: Type) Int\nf(Int)"),
+    () => run("def f(Int64 :: Type) Int64\nf(Int64)"),
     /reserved self-evaluating name/,
   );
   assert.throws(

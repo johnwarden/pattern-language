@@ -53,11 +53,11 @@ document does not decide how a one-member abstract union compares to its
 member.
 
 ```pattern
-todo test "Int and Int64 are the same type descriptor"
+test "Int and Int64 are the same type descriptor"
   assert Int === Int64
 end
 
-todo test "Float and Float64 are the same type descriptor"
+test "Float and Float64 are the same type descriptor"
   assert Float === Float64
 end
 
@@ -747,7 +747,8 @@ test "Numeric conversions preserve format and equality compares magnitudes"
   fails "E_UNBOUND_TYPE"
   expect
     type Int64
-  is Int :: Type
+  is Int64 :: Type
+  assert Int === Int64
   assert (type Int) === (type Int64)
   expect
     type Int32

@@ -13,12 +13,12 @@ const transfer = (text: string) => {
 test("type values construct, destructure, and rebuild using ordinary patterns", () => {
   assert.equal(
     run(
-      "def Rectangle type :Rect(w :: Float,h :: Float)\nt = Struct(Rect(Float,Float))\nStruct(p) = t\n(Struct(p) == t,t == (type Rectangle))",
+      "def Rectangle type :Rect(w :: Float,h :: Float)\nt = Struct(Rect(Float64,Float64))\nStruct(p) = t\n(Struct(p) == t,t == (type Rectangle))",
     ),
     "(True, True)",
   );
   assert.equal(
-    run("def R Struct(Rect(Float,Float))\nRect(3,4) :: R"),
+    run("def R Struct(Rect(Float64,Float64))\nRect(3,4) :: R"),
     "Rect(3, 4)",
   );
   assert.equal(
@@ -31,7 +31,7 @@ test("type values construct, destructure, and rebuild using ordinary patterns", 
     run(
       "t = type :Rect(Int,String)\nmatch t\n  Struct(Rect(a,b)) -> Struct(Rect(b,a))\nend",
     ),
-    "Struct(Rect(String, Int))",
+    "Struct(Rect(String, Int64))",
   );
 });
 
@@ -59,7 +59,7 @@ test("global text does not depend on names; local aliases resolve in the caller 
   );
   const source =
     "def Rectangle type :Rect(Float,Float)\nt = type Rectangle\ndef f()\n  def Rectangle type :Other\n  (toStringLocal(Type)(t),parseLocal(Type)(toStringLocal(Type)(t)) == t)\nend\nf()";
-  assert.equal(run(source), '("Struct(Rect(Float, Float))", True)');
+  assert.equal(run(source), '("Struct(Rect(Float64, Float64))", True)');
   assert.equal(
     run(
       'def Rectangle type :Rect(Float,Float)\nparseLocal(Symbol)("Rectangle")',
@@ -109,10 +109,10 @@ test("local inspection keeps nested type values structural in raw data", () => {
   const value = term("Box", rectangle);
   assert.equal(
     i.inspect([{ label: "_1", value }]),
-    "Box(Struct(Rect(Int))) :: Expression",
+    "Box(Struct(Rect(Int64))) :: Expression",
   );
   const restored = single(
-    i.run('parseLocal(Expression)("Box(Struct(Rect(Int)))")'),
+    i.run('parseLocal(Expression)("Box(Struct(Rect(Int64)))")'),
   );
   assert.equal(equal(restored, value), true);
 });
@@ -120,7 +120,7 @@ test("local inspection keeps nested type values structural in raw data", () => {
 test("primitive atoms are ordinary self-evaluating type values", () => {
   assert.equal(
     run("(Int,Float,Bool,Int == (type Int))"),
-    "(Int, Float, Bool, True)",
+    "(Int64, Float64, Bool, True)",
   );
   assert.equal(run("def accept(t :: Type) t\naccept(String)"), "String");
   assert.throws(() => run("Imaginary"), /unbound name/);
@@ -140,13 +140,13 @@ test("explicit Type wrappers and primitive atoms have different value trees", ()
 
 test("primitive text is independent of lexical primitive bindings", () => {
   const i = new Interpreter();
-  i.env.bindings.delete("Int");
+  i.env.bindings.delete("Int64");
   assert.equal(
-    displayResults(i.run("parse(Type)(toString(Type)(Int)) == (type Int)")),
+    displayResults(i.run("parse(Type)(toString(Type)(Int64)) == (type Int64)")),
     "True",
   );
   assert.throws(
-    () => run("def Int type :Other\n0"),
+    () => run("def Int64 type :Other\n0"),
     /primitive type names are reserved/,
   );
 });
@@ -156,7 +156,7 @@ test("referenced types remain nested values in unions and constructor fields", (
     "def Circle type :Circle(Float)\ndef Square type :Square(Float)\nshape = UnionType(type Circle,type Square)\n";
   assert.equal(
     run(source + "shape"),
-    "UnionType(Struct(Circle(Float)), Struct(Square(Float)))",
+    "UnionType(Struct(Circle(Float64)), Struct(Square(Float64)))",
   );
   assert.equal(
     run(source + "parse(Type)(toString(Type)(shape)) == shape"),
@@ -171,7 +171,7 @@ test("referenced types remain nested values in unions and constructor fields", (
   );
   assert.equal(
     run("def Circle type :Circle(Float)\ntype :Box(Circle)"),
-    "Struct(Box(Struct(Circle(Float))))",
+    "Struct(Box(Struct(Circle(Float64))))",
   );
   assert.equal(
     run(source + "shape == (type :Circle(Float) | :Square(Float))"),

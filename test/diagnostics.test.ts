@@ -47,7 +47,7 @@ test("nested mismatch reports actual field and method definition", () => {
   assert.equal(error.diagnostic.code, "E_NO_METHOD");
   assert.match(
     renderDiagnostic(error),
-    /argument 1.width: expected Int, received Red/,
+    /argument 1.width: expected Int64, received Red/,
   );
   assert.equal(error.diagnostic.primary?.column, 15);
   assert.equal(error.diagnostic.related[0].span?.line, 1);
@@ -109,6 +109,6 @@ test("invalid factory parameter patterns fail at declaration even without use", 
 test("multiple rejected methods retain separate reasons", () => {
   const error = fail("def f(x :: Int) x\ndef f(x :: String) x\nf(:Red)");
   assert.equal(error.diagnostic.notes.length, 2);
-  assert.match(error.diagnostic.notes[0], /expected Int/);
+  assert.match(error.diagnostic.notes[0], /expected Int64/);
   assert.match(error.diagnostic.notes[1], /expected String/);
 });

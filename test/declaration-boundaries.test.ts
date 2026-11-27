@@ -21,7 +21,7 @@ test("constructor subpatterns expose captures on Picture, not on a synthetic sha
   );
   assert.equal(
     run(picture + "type Picture"),
-    "Struct(Picture(color: Struct(:Black | :Red), shape: Rectangle(Float, Float)))",
+    "Struct(Picture(color: Struct(:Black | :Red), shape: Rectangle(Float64, Float64)))",
   );
 });
 

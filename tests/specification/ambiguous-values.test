@@ -7,8 +7,8 @@
 test "An ambiguous numeric literal lists its interpretations"
   b = abstract Int | Float
   expect 3 .matches b fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
-  expect 3 .matches b fails "3 :: Int"
-  expect 3 .matches b fails "3 :: Float"
+  expect 3 .matches b fails "3 :: Int64"
+  expect 3 .matches b fails "3 :: Float64"
 
   expect
     (x :: b) = 3
@@ -17,11 +17,11 @@ test "An ambiguous numeric literal lists its interpretations"
   expect
     (x :: b) = 3
     x
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     (x :: b) = 3
     x
-  fails "3 :: Float"
+  fails "3 :: Float64"
 end
 
 test "An ambiguous absence between peer options is an ambiguous value designator"
@@ -37,7 +37,7 @@ test "An ambiguous absence between peer options is an ambiguous value designator
   expect
     (x :: Foo) = :None
     x
-  fails ":None :: Float?"
+  fails ":None :: Float64?"
 end
 
 test "Each suggested interpretation resolves the ambiguity when pasted back"
@@ -66,17 +66,17 @@ end
 test "Suggestions name each member as a type expression"
   u = abstract Int* | Float*
   expect [1, 2] .matches u fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
-  expect [1, 2] .matches u fails "[1, 2] :: Int*"
-  expect [1, 2] .matches u fails "[1, 2] :: Float*"
+  expect [1, 2] .matches u fails "[1, 2] :: Int64*"
+  expect [1, 2] .matches u fails "[1, 2] :: Float64*"
   type Opt concrete Int? | Float?
   expect
     (x :: Opt) = :None
     x
-  fails ":None :: Int?"
+  fails ":None :: Int64?"
   expect
     (x :: Opt) = :None
     x
-  fails ":None :: Float?"
+  fails ":None :: Float64?"
 end
 
 test "Single-value routes report the same ambiguity"
@@ -88,29 +88,29 @@ test "Single-value routes report the same ambiguity"
   expect
     def f(n :: b) n
     f(3)
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     def f(n :: b) n
     f(3)
-  fails "3 :: Float"
+  fails "3 :: Float64"
   expect
     g = (n :: b) -> n
     g(3)
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     g = (n :: b) -> n
     g(3)
-  fails "3 :: Float"
+  fails "3 :: Float64"
   expect
     match 3
       (n :: b) -> n
     end
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     match 3
       (n :: b) -> n
     end
-  fails "3 :: Float"
+  fails "3 :: Float64"
 end
 
 test "Nested and multi-value routes list their interpretations"
@@ -122,43 +122,43 @@ test "Nested and multi-value routes list their interpretations"
   expect
     def f(n :: b, m :: Int) n
     f(3, 4)
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     def f(n :: b, m :: Int) n
     f(3, 4)
-  fails "3 :: Float"
+  fails "3 :: Float64"
   expect
     (x :: b, y :: Int) = (3, 4)
     x
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     (x :: b, y :: Int) = (3, 4)
     x
-  fails "3 :: Float"
+  fails "3 :: Float64"
   expect
     (Box(x :: b)) = Box(3)
     x
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     (Box(x :: b)) = Box(3)
     x
-  fails "3 :: Float"
+  fails "3 :: Float64"
   expect
     (xs :: b*) = [3, 4]
     xs
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     (xs :: b*) = [3, 4]
     xs
-  fails "3 :: Float"
+  fails "3 :: Float64"
   expect
     (x :: b?) = 3
     x
-  fails "3 :: Int"
+  fails "3 :: Int64"
   expect
     (x :: b?) = 3
     x
-  fails "3 :: Float"
+  fails "3 :: Float64"
 end
 
 test "An ambiguity is reported even when the designator has no source text"
@@ -184,7 +184,7 @@ test "Ambiguity suggestions come from complete matches"
   expect
     (Pair(x :: b, y :: String) | Pair(x :: Int, y :: c)) = Pair(3, :None)
     x
-  fails ":None :: Float?"
+  fails ":None :: Float64?"
   expect
     (Pair(x :: b, y :: String) | Pair(x :: Int, y :: c)) = Pair(3, :None)
     x
@@ -196,14 +196,14 @@ test "An untyped ambiguity can precede a typed interpretation"
   expect
     def f((y | y), x :: b) x
     f(4, 3)
-  fails "3 :: Int"
+  fails "3 :: Int64"
 end
 
 test "A nested union reports the outer member designations"
   b = abstract Int | Float
   u = abstract b* | Float64*
   expect [3] .matches u fails "[3] :: Float64*"
-  expect [3] .matches u fails "[3 :: Float] :: (UnionType(Float, Int))*"
+  expect [3] .matches u fails "[3 :: Float64] :: (UnionType(Float64, Int64))*"
   expect [3] .matches u fails "...and 1 other"
   assert ([3] :: Float64*) .matches u
   assert ([3 :: Float] :: (UnionType(Float, Int))*) .matches u
@@ -213,8 +213,8 @@ test "Recursive member suggestions use writable descriptor expressions"
   def IntList type :Nil | :Cons(Int, IntList)
   def FloatList type :Nil | :Cons(Float, FloatList)
   u = abstract IntList | FloatList
-  expect :Nil .matches u fails ":Nil :: Struct(:(Recursive(:Nil | Cons(Float, Recur(0)))))"
-  assert (:Nil :: Struct(:(Recursive(:Nil | Cons(Float, Recur(0)))))) .matches u
+  expect :Nil .matches u fails ":Nil :: Struct(:(Recursive(:Nil | Cons(Float64, Recur(0)))))"
+  assert (:Nil :: Struct(:(Recursive(:Nil | Cons(Float64, Recur(0)))))) .matches u
 end
 
 test "A recursive suggestion preserves binders across nested types"
@@ -244,7 +244,7 @@ test "Interpretations beyond the second are counted"
   b = abstract Int | Float | NumericValue
   expect 3 .matches b fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect 3 .matches b fails "...and 1 other"
-  c = abstract Int | Float | NumericValue | Float64 | Float32
+  c = abstract Int | Float | NumericValue | Float32 | Int32
   expect 3 .matches c fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   expect 3 .matches c fails "...and 3 others"
 end
@@ -271,16 +271,16 @@ test "A refinement member that rejects the designator does not make it ambiguous
   u = abstract p | Float
   assert 3 .matches u
   (x :: u) = 3
-  expect toString(u)(x) is "3 :: Float" :: String
+  expect toString(u)(x) is "3 :: Float64" :: String
   def f(n :: u) toString(u)(n)
-  expect f(3) is "3 :: Float" :: String
+  expect f(3) is "3 :: Float64" :: String
   g = (n :: u) -> toString(u)(n)
-  expect g(3) is "3 :: Float" :: String
+  expect g(3) is "3 :: Float64" :: String
   expect
     match 3
       (n :: u) -> toString(u)(n)
     end
-  is "3 :: Float" :: String
+  is "3 :: Float64" :: String
 end
 
 test "A designator is ambiguous on every route when both members accept it"
@@ -314,7 +314,7 @@ test "A union of refinements selects the one member that accepts the designator"
   fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
   assert 3 .matches w
   def f(n :: w) toString(w)(n)
-  expect f(3) is "3 :: Float" :: String
+  expect f(3) is "3 :: Float64" :: String
   assert not(1 .matches w)
   expect
     def h(n :: w) n
@@ -361,9 +361,9 @@ test "Literal designation checks refinements nested in lists, options and constr
   def f(x :: list) x
   g = (x :: option) -> x
   def h(x :: box) x
-  expect toString(list)(f([3])) is "[3] :: Struct([Repeat(Float)])" :: String
-  expect toString(option)(g(3)) is "3 :: Struct(Float | :None)" :: String
-  expect toString(box)(h(Box(3))) is "Box(3) :: Struct(Box(Float))" :: String
+  expect toString(list)(f([3])) is "[3] :: Struct([Repeat(Float64)])" :: String
+  expect toString(option)(g(3)) is "3 :: Struct(Float64 | :None)" :: String
+  expect toString(box)(h(Box(3))) is "Box(3) :: Struct(Box(Float64))" :: String
   expect [7] .matches list fails "2 interpretations match"
   expect 7 .matches option fails "2 interpretations match"
 end

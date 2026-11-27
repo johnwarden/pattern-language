@@ -27,14 +27,11 @@ const numeric = new Set([
   "float32",
   "float64",
   "rational",
-  "Int",
   "Int32",
   "Int64",
   "UInt64",
-  "Float",
   "Float32",
   "Float64",
-  "Num",
   "NumericValue",
 ]);
 const symbols = new Set([
@@ -69,7 +66,7 @@ export function patternOverlap(left: P, right: P): Answer {
           ? "int32"
           : name === "uint64" || name === "UInt64"
             ? "uint64"
-            : name === "int64" || name === "Int" || name === "Int64"
+            : name === "int64" || name === "Int64"
               ? "int64"
               : undefined;
       if (kind) return fitsFixedInteger(r, kind as FixedIntegerKind);

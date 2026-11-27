@@ -31,7 +31,7 @@ end
 
 test "Evaluating ReservedSymbol heads reports not callable"
   expect Bool(1) fails "E_NOT_CALLABLE"
-  expect Int(1) fails "E_NOT_CALLABLE"
+  expect Int64(1) fails "E_NOT_CALLABLE"
   expect Any(1) fails "E_NOT_CALLABLE"
   expect Expression(1) fails "E_NOT_CALLABLE"
 
