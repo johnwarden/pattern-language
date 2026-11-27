@@ -213,10 +213,17 @@ These are settled rules, **not remaining design blockers**. Wording and checking
 ### D10. where constraints need evidence; refinement-qualified functions are allowed — retained/clarified
 
 An expected refined type can establish evidence by constant evaluation,
-including for a base-typed binding whose value is statically known. Bindings,
-arguments, fields, and expression ascriptions use this rule. Explicit checks,
+including for a base-typed binding whose value is statically known (for
+example `a = 1` passed to `def f(x :: Int32) x`). Bindings, arguments,
+fields, and expression ascriptions use this rule. Explicit checks,
 assertions, and specified result guarantees can supply evidence for runtime
-values. See [refinement evidence](../specs/refinement-evidence.md). Missing evidence is a checking failure, not proof of nonmembership. A sole function over a refinement is allowed and callable with sufficient evidence.
+values. See [refinement evidence](../specs/refinement-evidence.md). A failed
+constant predicate reports `E_REFINEMENT_FAILED`; missing evidence for a
+runtime value reports `E_NO_METHOD`. Missing evidence is a checking failure,
+not proof of nonmembership. A sole function over a refinement is allowed and
+callable with sufficient evidence. A function whose domain is an abstract
+refinement is a `PolymorphicValue`; functions over ordinary concrete aliases
+such as `Int` are not.
 
 The no-predicate-dispatch boundary rejects selecting between overlapping base/refinement implementations by running predicates. A base-domain overload and its refinement overload overlap; without an accepted specificity rule, they are rejected/ambiguous rather than prioritized. Unrelated concrete domains can coexist. No unchecked ordinary `insist`, predicate-based fallback or new static specificity rule is approved. **Sources:** O retained overload rule; C “where”; AR question and evidence clarification; R2 explanation.
 

@@ -42,9 +42,11 @@ Given `PositiveInt = pattern Int .where isPositive`, in
 `pattern PositiveInt | Float` the literal `-3` selects `Float` because
 the integer refinement rejects it. A positive
 literal such as `3` is ambiguous. Explicitly designating `-3` as the
-refined integer reports the failed predicate. A name bound to a constant
+refined integer fails with `E_REFINEMENT_FAILED`. A name bound to a constant
 can also establish evidence this way. A runtime argument requires evidence
-from its type or an earlier explicit check. See [refinement predicates](refinement-predicates.md).
+from its type or an earlier explicit check. See
+[refinement evidence](refinement-evidence.md) and
+[refinement predicates](refinement-predicates.md).
 
 Type macros remove repeated alternatives. `struct :A | :A` normalizes to
 `struct :A`. Direct descriptors preserve repeats.

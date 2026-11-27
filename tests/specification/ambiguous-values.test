@@ -339,14 +339,18 @@ end
 test "A value that fails a refinement reports the failed predicate"
   p = Int .where (n -> n > (5 :: Int))
   u = abstract p | Float
-  expect
+  legacy expect
     def f(n :: u) n
     f(3 :: p)
   fails "E_PATTERN_MISMATCH"
-  expect
+  legacy expect
     def f(n :: u) n
     f(3 :: p)
   fails "value does not satisfy subset (n -> n > (5 :: Int))"
+  todo expect
+    def f(n :: u) n
+    f(3 :: p)
+  fails "E_REFINEMENT_FAILED"
 end
 
 test "Literal designation checks refinements nested in lists, options and constructor fields"
@@ -398,5 +402,5 @@ test "A field supplied by a runtime parameter still needs refinement evidence"
   todo expect
     def unchecked(n :: Int) f(Box(n))
     "defined"
-  fails "missing"
+  fails "E_NO_METHOD"
 end

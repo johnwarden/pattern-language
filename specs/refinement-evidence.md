@@ -16,28 +16,38 @@ todo test "A refined binding carries its guarantee into the next binding"
   expect
     def unchecked(y :: Float) y :: NonZeroFloat
     "defined"
-  fails "missing isNonZero"
+  fails "E_NO_METHOD"
 end
 ```
 
 Binding `x` checks `isNonZero` on the literal `2 :: Float`. Binding `z`
 reuses the guarantee in the type of `x`. The type of the parameter `y`
 guarantees only `Float`. Because `y` could be zero, the checker rejects
-`y :: NonZeroFloat` in the function body.
+`y :: NonZeroFloat` in the function body with `E_NO_METHOD` (missing
+evidence for a runtime value).
+
+A function whose parameter domain is an abstract refinement — for example
+`pattern Float .where isNonZero` — is a `PolymorphicValue`, because that
+domain is abstract. Functions over ordinary concrete aliases such as
+`Int` (`Int = Int64`) or `Float` (`Float = Float64`) are ordinary concrete
+functions, not `PolymorphicValue`s. See
+[fixed-precision numbers](fixed-precision-numbers.md#types-and-representation).
 
 ## Checking a constant expression
 
 A **constant expression** can be evaluated during checking without runtime
-input. Its result is **statically known**. A literal is the simplest case.
-A name bound to a constant expression can be used in another constant
-expression. A function call can also qualify when the checker can evaluate
-its body using the supplied constant arguments and any constants it refers to.
+input. Its result is **statically known**. Constant evaluation is ordinary
+evaluation of that expression: there is no separate step budget, fuel limit,
+or special diagnostic for nontermination. A literal is the simplest case. A
+name bound to a constant expression can be used in another constant
+expression. A function call qualifies when its arguments and the values it
+refers to are constant, so evaluating its body is constant evaluation.
 
 **Designation** is the process of interpreting an expression at the type
 its context expects. A binding annotation, a parameter, a field type, or
 an expression ascription can supply that expected type. If it requires a
 refinement and the expression has one statically known value that fits
-the base type, the checker evaluates the predicate to establish the evidence.
+the base type, checking evaluates the predicate to establish the evidence.
 The same rule applies to literals, names bound to constants, and computations.
 
 For example, `two` below has the declared type `Float`. The checker also
@@ -64,8 +74,8 @@ todo test "A base-typed constant can be checked against a refinement"
   expect
     (invalid :: NonZeroFloat) = zero
     invalid
-  fails "isNonZero"
-  expect keep(zero) fails "isNonZero"
+  fails "E_REFINEMENT_FAILED"
+  expect keep(zero) fails "E_REFINEMENT_FAILED"
 end
 ```
 
@@ -82,8 +92,8 @@ pass checking.
 
 The same rule applies to the fit predicate of a concrete numeric type.
 `Int32` is a concrete carveout of `NumericValue` using `fitsInt32`. In
-`f(a)` below, the parameter type supplies the expected `Int32`, and the
-checker can evaluate `fitsInt32` on the bound constant `a`.
+`f(a)` below, the parameter type supplies the expected `Int32`, and
+checking evaluates `fitsInt32` on the bound constant `a`.
 
 ```pattern
 todo test "A bound constant can designate into a fixed-width parameter"
@@ -123,8 +133,11 @@ end
 
 To establish a predicate on a whole compound value by constant evaluation,
 the whole value must be statically known. If a required predicate returns
-`False`, report which predicate failed. If evaluation raises an error,
-preserve its diagnostic.
+`False`, report `E_REFINEMENT_FAILED` (the message names which predicate
+failed). Numeric fit predicates that fail exact representation report
+`E_NOT_EXACTLY_REPRESENTABLE` instead; see
+[fixed-precision numbers](fixed-precision-numbers.md#mixed-signatures-and-fit-evidence).
+If evaluation raises an error, preserve its diagnostic.
 
 ```pattern
 todo test "A literal can establish a refinement"
@@ -144,7 +157,7 @@ todo test "A literal can establish a refinement"
   expect
     (z :: NonZeroNumber) = 0 :: Float
     z
-  fails "isNonZero"
+  fails "E_REFINEMENT_FAILED"
 end
 ```
 
@@ -195,15 +208,16 @@ member, `:isNonZero`. The successful check establishes that predicate for
 `y`, so either binding can use it if `y` also fits the base type. A Boolean
 function with the same spelling supplies no such evidence. The predicate
 enum and the meaning of a bare name after `.where` are defined in
-[refinement predicates](https://github.com/johnwarden/pattern-language/blob/master/specs/refinement-predicates.md).
+[refinement predicates](refinement-predicates.md).
 
 The false branch has no nonzero guarantee. After the branches rejoin, a
 use of `y` can rely on the guarantee only if every path reaching that use
 established it. A checked assertion such as `assert y .matches NonZeroFloat`
 establishes evidence for the following statements because failure stops
-execution. A match arm's **guard** is a condition that must succeed before
-its body runs. If the arm binds `n :: Float` and its guard checks
-`n .matches NonZeroFloat`, the body can use `n` as nonzero.
+execution. An unchecked or disabled assert establishes no evidence. A match
+arm's **guard** is a condition that must succeed before its body runs. If
+the arm binds `n :: Float` and its guard checks `n .matches NonZeroFloat`,
+the body can use `n` as nonzero.
 
 ### Ordering explicit checks
 
@@ -234,15 +248,20 @@ end
 predicates on nested fields. A successful parse returns a value with the
 guarantees of `T`.
 
-    type PositiveInt pattern Int .where isPositive
-    type Rectangle struct Rect(PositiveInt, PositiveInt)
+```pattern
+todo test "Typed parsing establishes nested field refinements"
+  type PositiveInt pattern Int .where isPositive
+  type Rectangle struct Rect(PositiveInt, PositiveInt)
 
-    parse(Rectangle)("Rect(2, 3)")
-    parse(Rectangle)("Rect(-2, 3)")
-    parse(Rectangle)("Rect(\"a\", 3)")
+  expect parse(Rectangle)("Rect(2, 3)") is Rect(2, 3) :: Rectangle
+  expect parse(Rectangle)("Rect(-2, 3)") fails "E_REFINEMENT_FAILED"
+  expect parse(Rectangle)("Rect(\"a\", 3)") fails "E_PATTERN_MISMATCH"
+end
+```
 
 The first call establishes `isPositive` for both fields. In the second,
-`-2` fails that predicate. In the third, the string `"a"` fails the base type `Int`.
+`-2` fails that predicate (`E_REFINEMENT_FAILED`). In the third, the string
+`"a"` fails the base type `Int` (`E_PATTERN_MISMATCH`).
 
 ## Return types
 
@@ -250,39 +269,47 @@ Every return path must meet the declared result type. In `zeroAsNone`,
 the true branch returns the value that passed the check. The other branch
 returns the absence case of `NonZeroNumber?`.
 
-    type NonZeroNumber pattern Number .where isNonZero
-    def zeroAsNone(x :: Number) :: NonZeroNumber?
-      if x .matches NonZeroNumber
-        x
-      else
-        :None
-      end
+```pattern
+todo test "Every return path meets a refined optional result"
+  type NonZeroNumber pattern Number .where isNonZero
+  def zeroAsNone(x :: Number) :: NonZeroNumber?
+    if x .matches NonZeroNumber
+      x
+    else
+      :None
     end
+  end
+  expect zeroAsNone(2) is 2 :: NonZeroNumber?
+  expect zeroAsNone(0) is None :: NonZeroNumber?
+end
+```
 
 A caller can rely on a built-in operation's specified result guarantee.
 For example, the absolute value of a finite nonzero float is nonzero.
 Fixed-precision float division also returns a nonzero result if the
-numerator is known to be nonzero and the operation succeeds. A nonzero
-exact quotient that rounds to zero raises `E_UNDERFLOW`. Integer
+numerator is known to be nonzero and the operation succeeds. `E_UNDERFLOW`
+fires only when a nonzero exact result underflows to zero; see
+[arithmetic policy](fixed-precision-numbers.md#arithmetic-policy). Integer
 quotient operations can return zero for a nonzero numerator. One overload
 can therefore specify a stronger result for inputs with a known refinement
 when all its successful results on those inputs satisfy the predicate.
 
 Division requires evidence for `isNonZero` on the divisor before evaluation.
-A constant zero fails the predicate. A divisor known only through a `Float`
-parameter lacks the required evidence, so an unchecked call fails with
-`E_NO_METHOD`. See [division and remainder signatures](https://github.com/johnwarden/pattern-language/pull/108).
+A constant zero fails the predicate with `E_REFINEMENT_FAILED`. A divisor
+known only through a `Float` parameter lacks the required evidence, so an
+unchecked call fails with `E_NO_METHOD`. See
+[division and remainder signatures](fixed-precision-numbers.md#division-and-remainder-signatures).
 
 ```pattern
 test "A literal zero fails the divisor refinement"
-  todo expect (1 :: Float) / (0 :: Float) fails "isNonZero"
+  todo expect (1 :: Float) / (0 :: Float) fails "E_REFINEMENT_FAILED"
 end
 ```
 
 A checked conversion can also establish a predicate for a runtime value.
 For example, `checkedConvert(Int)(n)` checks `fitsInt64`, which tests whether
 the exact value fits the integer format. On success it returns an `Int`.
-See [checked conversion](https://github.com/johnwarden/pattern-language/blob/master/specs/fixed-precision-numbers.md#checked-conversion).
+See [checked conversion](fixed-precision-numbers.md#checked-conversion).
 
 ## Union bindings and overloaded calls
 
@@ -356,9 +383,15 @@ predicate. The disjointness check compares erased structural domains without
 evaluating predicates.
 See the [#80 review](https://github.com/johnwarden/pattern-language/pull/80#issuecomment-6953945601).
 
+Failed constant predicate checks report `E_REFINEMENT_FAILED`. Missing
+evidence for a runtime value required at a refined binding, argument, field,
+or call reports `E_NO_METHOD`. Structural shape mismatch remains
+`E_PATTERN_MISMATCH`. Failed numeric fit reports
+`E_NOT_EXACTLY_REPRESENTABLE`.
+
 For an ambiguous designator, suggest an ascription (an expression such as
 `3 :: Float`) for each interpretation reported in the diagnostic. Use the
-member's [canonical type expression](https://github.com/johnwarden/pattern-language/blob/master/specs/type-values.md#canonical-expressions-and-typed-text)
+member's [canonical type expression](type-values.md#canonical-expressions-and-typed-text)
 so the suggestion selects that interpretation when pasted into source. If
 an interpretation has no selectable spelling, report the count instead.
 
@@ -366,4 +399,5 @@ The existing #80 diagnostic tests use bootstrap predicates. Migrate them
 to enum members as the corresponding cases become available. Preserve the
 missing-evidence tests for runtime parameters and fields drawn from them.
 Normalization of repeated type alternatives and the `E_REDUNDANT_QUOTE`
-diagnostic are specified in [type values](https://github.com/johnwarden/pattern-language/blob/master/specs/type-values.md#declarations-normalization-and-identity).
+diagnostic are specified in
+[type values](type-values.md#declarations-normalization-and-identity).

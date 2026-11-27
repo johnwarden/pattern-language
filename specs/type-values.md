@@ -117,7 +117,7 @@ identity. A concrete carveout adds its own boundary. Use `T .where p` in
 either pattern. An expected refinement can establish evidence by checking
 any constant expression, including a bound constant. Runtime values require
 evidence from their types or earlier explicit checks. The [Predicate enum](refinement-predicates.md) supplies the
-initial refinement predicates. See the [refinement evidence proposal](https://github.com/johnwarden/pattern-language/pull/89).
+initial refinement predicates. See [refinement evidence](refinement-evidence.md).
 
 ```pattern
 todo test "Abstract refinement and concrete carveout both use named predicates"
@@ -773,7 +773,7 @@ todo test "A refined arm can use evidence from an earlier explicit check"
       end
     end
     "defined"
-  fails "missing isPositive"
+  fails "E_NO_METHOD"
 end
 
 todo test "An overlapping match is rejected even inside an uncalled function"
