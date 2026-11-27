@@ -375,6 +375,9 @@ mapping first; parse directly into Expression remains a later migration, not a
 mandatory new primitive taxonomy. Avoid generic applications swallowing
 statement forms by accidental priority.
 
+The [first Body spec test](specs/code-bodies.md) reads a binding and an unbound
+final name as Code, inspects both rows and round-trips the stored program.
+
 **Complete when:** direct ordinary patterns classify/destructure representative Code,
 typed quotes/splices preserve its grammar and packs, recursive grammar groups work,
 and raw reading does not execute the stored program. General arbitrary sidefix
