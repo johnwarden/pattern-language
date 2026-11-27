@@ -307,7 +307,10 @@ independently constructed box, and both must print back to the same text.
 A reader in the shared interpreter and a reader in a fresh interpreter with
 the same prelude must give the same results from those two strings. In both
 readers, `.value` is out of scope and a local declaration can supply `.content`.
-The [transport test](../test/round-trip-parsing.test.ts) runs both readers.
+Each named test case starts a fresh interpreter with the same prelude, so the
+shared-reader case below reconstitutes in the producer interpreter outside the
+declaration block, and the fresh-reader case reconstitutes from only those two
+strings in a separate case.
 
 Supporting destination identity, plain-construction accessor locality, and
 same-process interop are the live cases below (and matching cases in
@@ -320,6 +323,8 @@ test "5a.2 acceptance: BoxedText type and value travel as printed text"
     box = Box("hello") :: BoxedText
     (toString(Type)(BoxedText), toString(BoxedText)(box))
   )
+  assert typeText == "Struct(Box(String))"
+  assert valueText == "Box(\"hello\")"
   restoredType = parse(Type)(typeText)
   box = parse(restoredType)(valueText)
   plain = struct Box(String)
@@ -328,6 +333,25 @@ test "5a.2 acceptance: BoxedText type and value travel as printed text"
   assert toString(Type)(restoredType) == typeText
   assert toString(restoredType)(box) == valueText
   expect box.value fails "E_UNBOUND_NAME"
+  type LocalBox struct Box(content :: String)
+  (local :: LocalBox) = box
+  assert local.content == "hello"
+end
+
+test "5a.2 acceptance: BoxedText texts reconstruct in a fresh interpreter"
+  typeText = "Struct(Box(String))"
+  valueText = "Box(\"hello\")"
+  restoredType = parse(Type)(typeText)
+  restored = parse(restoredType)(valueText)
+  plain = struct Box(String)
+  assert restoredType === plain
+  assert restored === (Box("hello") :: plain)
+  assert toString(Type)(restoredType) == typeText
+  assert toString(restoredType)(restored) == valueText
+  expect restored.value fails "E_UNBOUND_NAME"
+  type LocalBox struct Box(content :: String)
+  (local :: LocalBox) = restored
+  assert local.content == "hello"
 end
 
 test "5a.2 acceptance: BoxedText equals capture-free struct Box(String)"

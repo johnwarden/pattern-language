@@ -95,51 +95,6 @@ const read = (body: string) =>
 
 // From test/type-values.test.ts
 
-test("BoxedText has the same text round trip in shared and fresh interpreters", () => {
-  const shared = new Interpreter();
-  shared.run(
-    `(typeText, valueText) = (
-    type BoxedText struct Box(value :: String)
-    box = Box("hello") :: BoxedText
-    (toString(Type)(BoxedText), toString(BoxedText)(box))
-  )`,
-    "repl",
-  );
-  const typeText = stringResult(shared, "typeText");
-  const valueText = stringResult(shared, "valueText");
-
-  const fresh = new Interpreter();
-  fresh.env.bindings.set("typeText", valLiteral(typeText));
-  fresh.env.bindings.set("valueText", valLiteral(valueText));
-
-  for (const reader of [shared, fresh]) {
-    reader.run("restoredType = parse(Type)(typeText)", "repl");
-    reader.run("restored = parse(restoredType)(valueText)", "repl");
-    assert.equal(run("restoredType === struct Box(String)", reader), "True");
-    assert.equal(
-      run('restored === (Box("hello") :: (struct Box(String)))', reader),
-      "True",
-    );
-    assert.equal(
-      stringResult(reader, "toString(Type)(restoredType)"),
-      typeText,
-    );
-    assert.equal(
-      stringResult(reader, "toString(restoredType)(restored)"),
-      valueText,
-    );
-    assert.throws(
-      () => reader.run("restored.value"),
-      (error: unknown) =>
-        error instanceof LanguageError &&
-        error.diagnostic.code === "E_UNBOUND_NAME",
-    );
-    reader.run("type LocalBox struct Box(content :: String)", "repl");
-    reader.run("(local :: LocalBox) = restored", "repl");
-    assert.equal(stringResult(reader, "local.content"), "hello");
-  }
-});
-
 test("recursive and parameterized types travel to a fresh interpreter as finite data", () => {
   const i = new Interpreter();
   const text = stringResult(

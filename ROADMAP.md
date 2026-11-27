@@ -333,7 +333,7 @@ the same prelude. Give each reader only the two strings. Both reconstruct
 the independently described type and value, reproduce both strings, and can
 declare a local accessor for the box. See the
 [executable spec](specs/type-values.md#milestone-5a2-acceptance-single-field-struct-round-trip)
-and its [two-interpreter check](test/round-trip-parsing.test.ts). Destination forms use
+(shared-reader and fresh-reader cases). Destination forms use
 `struct` / `Struct(...)`; bootstrap `concrete` / `Type(...)` remain
 recognized.
 
