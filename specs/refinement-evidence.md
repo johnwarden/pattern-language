@@ -80,6 +80,33 @@ When evaluating the constant call `twice(1 :: Float)`, `n` has the value
 Whether an optimizer later inlines a call has no effect on which programs
 pass checking.
 
+The same rule applies to the fit predicate of a concrete numeric type.
+`Int32` is a concrete carveout of `NumericValue` using `fitsInt32`. In
+`f(a)` below, the parameter type supplies the expected `Int32`, and the
+checker can evaluate `fitsInt32` on the bound constant `a`.
+
+```pattern
+todo test "A bound constant can designate into a fixed-width parameter"
+  def f(x :: Int32) x
+  a = 1
+  expect f(a) is 1 :: Int32
+end
+
+todo test "A fixed-width parameter rejects a constant that does not fit"
+  def f(x :: Int32) x
+  a = 2147483648
+  expect f(a) fails "E_NOT_EXACTLY_REPRESENTABLE"
+end
+
+todo test "A runtime value needs fit evidence for a fixed-width parameter"
+  def f(x :: Int32) x
+  expect
+    def unchecked(a :: NumericValue) f(a)
+    "defined"
+  fails "E_NO_METHOD"
+end
+```
+
 A field or element can establish its own refinement this way even when a
 different field is supplied at runtime.
 
