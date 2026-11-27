@@ -46,33 +46,10 @@ Lower snake and kebab classes are not introduced by this change.
 
 ## Typed macros and preparation environments
 
-A grammar type describes a macro's input. An ordinary function
-expandMacro(env)(statement) transforms that typed input into Code. Defining the
-function alone does not install a macro: registration remains explicit. Registered
-input grammars may describe sidefix, application, body or annotation forms; this
-intentionally expands beyond the bootstrap's sidefix-only macro restriction.
-
-LexicalEnvironment is a read-only preparation environment. It exposes binding types
-and compile-time information, not unrestricted runtime values. Keep source spans
-and hygiene when projecting typed inputs. Select structurally, then validate
-environment-dependent constraints; a failed predicate does not select a fallback
-expander. Environment-dependent types initially belong to preparation, with no
-promise of portable runtime environment/refinement serialization.
-
-```text
-type BooleanExpression(env :: LexicalEnvironment) refinement
-  (expression :: Expression) env.typeOf(expression) is Bool
-end
-def expandMacro(env :: LexicalEnvironment)(:unless (condition :: BooleanExpression(env)) (body :: Body))
-  Code$` if($condition, $zeroValue, $body)
-end
-```
-
-This sketch does not define zeroValue or choose a new registration spelling.
-Diagnostics should identify the failing operand, expected contextual type, inferred
-type, macro/grammar name and source location. For example, a String condition in
-unless should report expected BooleanExpression / Bool and received String, rather
-than only saying that the entire form failed to match.
+[Typed macro expansion and lexical capture](../specs/macro-expansion.md)
+specifies explicit registration, structural selection and preparation environments.
+It also proposes contextual operand checking and a source definition of the
+expression arrow.
 
 ## Unquoted DSL syntax in Code
 
