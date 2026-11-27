@@ -175,15 +175,12 @@ test "Checked conversion validates stored and computed exact values"
   expect checkedConvert(Int32)(2 :: Int32) fails "E_NO_METHOD"
   expect float64(tenth) is 0f0.1 :: Float64
 end
-
-test "A bound NumericValue does not supply fixed-width call evidence"
-  def f(x :: Int32) x
-  a = 1
-  # Bootstrap call dispatch retains NumericValue -> fixed conversion pending refinement evidence (#89).
-  legacy expect f(a) is 1 :: Int32
-  todo expect f(a) fails "E_NO_METHOD"
-end
 ```
+
+Bound-constant Int32 fit that succeeds is covered live in
+[refinement evidence](refinement-evidence.md#checking-a-constant-expression).
+Out-of-range and runtime missing-evidence Int32 call cases there stay
+`todo` until that implementation lands (#123).
 
 ## Mixed arithmetic
 
