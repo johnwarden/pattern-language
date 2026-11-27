@@ -178,6 +178,29 @@ execution. A match arm's **guard** is a condition that must succeed before
 its body runs. If the arm binds `n :: Float` and its guard checks
 `n .matches NonZeroFloat`, the body can use `n` as nonzero.
 
+### Ordering explicit checks
+
+Use explicit checks to give predicates a priority within one base-type
+function. The overload-domain rule is specified in
+[type values](type-values.md#overload-domains-and-projection-dispatch).
+
+```pattern
+todo test "One Int overload can give its predicates an explicit priority"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  def classify(n :: Int)
+    if n .matches Positive
+      "positive"
+    else
+      if n .matches NonZero "other nonzero" else "zero"
+    end
+  end
+  expect classify(2 :: Int) is "positive"
+  expect classify(-2 :: Int) is "other nonzero"
+  expect classify(0 :: Int) is "zero"
+end
+```
+
 ### Typed parsing
 
 `parse(T)(text)` checks the text against the expected type `T`, including
@@ -234,90 +257,6 @@ For example, `checkedConvert(Int)(n)` checks `fitsInt64`, which tests whether
 the exact value fits the integer format. On success it returns an `Int`.
 See [checked conversion](https://github.com/johnwarden/pattern-language/blob/master/specs/fixed-precision-numbers.md#checked-conversion).
 
-## Disjointness of predicate-refined peers
-
-The **domain** of a pattern is the set of inputs it accepts. Two domains
-are **disjoint** if they have no input in common. **Predicate erasure**
-means dropping each `.where` condition for this comparison. For example,
-`Int .where isPositive` becomes `Int`. Keep the concrete type boundaries,
-tags, fields, and other arguments.
-
-For overloads, compare the complete argument packs. For match arms,
-compare the values permitted by the static type of the expression being
-matched (the *scrutinee*). Include the one level of projection that
-`match` permits into a concrete value. Reject the alternatives if the
-checker cannot prove they are disjoint after erasure, even if their
-predicates are mutually exclusive. A selected parameter or arm must
-still have evidence for its refinement.
-
-Two overloads distinguished only by refinements raise `E_REFINED_OVERLOAD`
-at definition time. Overlapping match arms raise `E_OVERLAPPING_MATCH_ARMS`
-when checking the match. To give one predicate priority, accept the base
-type once and test the predicates explicitly in the body. A final `else`
-in a match covers the values left by the preceding arms. See
-[overload domains](https://github.com/johnwarden/pattern-language/blob/master/specs/type-values.md#overload-domains-and-projection-dispatch)
-and [match arm domains](https://github.com/johnwarden/pattern-language/blob/master/specs/type-values.md#match-arm-domains).
-
-The integer examples use the numeric prelude cases `isPositive`, `isNonZero`,
-and `isNegative`. The last case accepts integers strictly below zero.
-
-```pattern
-todo test "Refinements alone cannot distinguish overloads, even when mutually exclusive"
-  type Positive pattern Int .where isPositive
-  type NonZero pattern Int .where isNonZero
-  type Negative pattern Int .where isNegative
-  expect
-    def classify(n :: Positive) "positive"
-    def classify(n :: NonZero) "nonzero"
-    "definitions complete"
-  fails "E_REFINED_OVERLOAD"
-  expect
-    def sign(n :: Positive) "positive"
-    def sign(n :: Negative) "negative"
-    "definitions complete"
-  fails "E_REFINED_OVERLOAD"
-end
-
-todo test "The same tag leaves the erased overload domains overlapping"
-  type Positive pattern Int .where isPositive
-  type NonZero pattern Int .where isNonZero
-  expect
-    def classify(:A, n :: Positive) "positive"
-    def classify(:A, n :: NonZero) "nonzero"
-    "definitions complete"
-  fails "E_REFINED_OVERLOAD"
-end
-
-todo test "Distinct tags distinguish overloads with refinements on the same Int"
-  type Positive pattern Int .where isPositive
-  type NonZero pattern Int .where isNonZero
-  type Tag struct :A | :B
-  def classify(:A, n :: Positive) "A"
-  def classify(:B, n :: NonZero) "B"
-  expect classify(:A :: Tag, 2 :: Int) is "A"
-  expect classify(:B :: Tag, 2 :: Int) is "B"
-end
-
-todo test "One Int overload can give its predicates an explicit priority"
-  type Positive pattern Int .where isPositive
-  type NonZero pattern Int .where isNonZero
-  def classify(n :: Int)
-    if n .matches Positive
-      "positive"
-    else
-      if n .matches NonZero "other nonzero" else "zero"
-    end
-  end
-  expect classify(2 :: Int) is "positive"
-  expect classify(-2 :: Int) is "other nonzero"
-  expect classify(0 :: Int) is "zero"
-end
-```
-
-With the same tag, both parameter packs erase to `(:A, Int)` and overlap.
-With different tags they erase to `(:A, Int)` and `(:B, Int)`. No single
-argument pack can match those two patterns.
-
 ## Union bindings and overloaded calls
 
 A binding to an abstract union and a call to disjoint overloads use the
@@ -325,7 +264,8 @@ same designation rule. For overloads the expected domain is the union of
 their complete argument-pack domains. Check the definition-time disjointness
 rule first. Then interpret the supplied arguments against that union,
 including constant evaluation of the predicates required by each interpretation.
-The resulting typed arguments select one clause.
+The resulting typed arguments select one clause. Overload validity follows
+[the overload-domain rules](type-values.md#overload-domains-and-projection-dispatch).
 
 For `PositiveInt | Float64`, `-3` designates `Float64` because `isPositive`
 fails for the integer interpretation. Bare `3` has two valid interpretations

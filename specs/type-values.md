@@ -538,15 +538,32 @@ applies `P` at that boundary. A second projection can open the stored
 member's boundary. For `Int??`, `:None .as Int??` selects outer
 absence, while `(:None .as Int?) .as Int??` selects stored inner absence.
 
+### Pattern domains and disjointness
+
+The **domain** of a pattern is the set of inputs it accepts. Two domains
+are **disjoint** if they have no input in common. The domains of overloads
+and match arms must be pairwise disjoint after **predicate erasure**. Erasure
+drops each `.where` condition for this comparison. For example, `Int .where isPositive`
+becomes `Int`. Keep concrete type boundaries, tags, fields, and other arguments.
+
+The checker must establish disjointness from the remaining structural patterns.
+Reject alternatives when that cannot be proved, including when only their
+predicates would distinguish them. This comparison requires neither running
+predicates nor proving implications between them. The diagnostic explains
+which structural domains may overlap.
+
+Binding a selected input still requires evidence for its refinement.
+The evidence rules are specified in
+[refinement evidence](refinement-evidence.md).
+
 ### Overload domains and projection dispatch
 
-Overloads of one function must have pairwise disjoint parameter domains.
-Adding a definition that shares an admitted argument pack with an existing
-overload raises `E_OVERLAPPING_OVERLOAD` at the definition. The specific
-code for overloads distinguished only by refinements is `E_REFINED_OVERLOAD`. For example, a
-base type and its refinement share the values admitted by the refinement.
-Compare the whole pack after erasing refinement predicates. A distinct tag in
-another argument can establish disjointness. See [disjointness of predicate-refined peers](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
+Compare overloads over their complete argument-pack domains using
+[pattern domains and disjointness](#pattern-domains-and-disjointness).
+Adding an overlapping definition raises `E_OVERLAPPING_OVERLOAD` at the
+definition. Overloads distinguished only by refinements use
+`E_REFINED_OVERLOAD`. A distinct tag in another argument can establish
+disjointness.
 
 ```pattern
 test "Overlapping overload domains are rejected at definition time"
@@ -557,6 +574,51 @@ test "Overlapping overload domains are rejected at definition time"
   fails "E_OVERLAPPING_OVERLOAD"
 end
 ```
+
+The integer examples use the numeric prelude cases `isPositive`, `isNonZero`,
+and `isNegative`. The last case accepts integers strictly below zero.
+
+```pattern
+todo test "Refinements alone cannot distinguish overloads, even when mutually exclusive"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  type Negative pattern Int .where isNegative
+  expect
+    def classify(n :: Positive) "positive"
+    def classify(n :: NonZero) "nonzero"
+    "definitions complete"
+  fails "E_REFINED_OVERLOAD"
+  expect
+    def sign(n :: Positive) "positive"
+    def sign(n :: Negative) "negative"
+    "definitions complete"
+  fails "E_REFINED_OVERLOAD"
+end
+
+todo test "The same tag leaves the erased overload domains overlapping"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  expect
+    def classify(:A, n :: Positive) "positive"
+    def classify(:A, n :: NonZero) "nonzero"
+    "definitions complete"
+  fails "E_REFINED_OVERLOAD"
+end
+
+todo test "Distinct tags distinguish overloads with refinements on the same Int"
+  type Positive pattern Int .where isPositive
+  type NonZero pattern Int .where isNonZero
+  type Tag struct :A | :B
+  def classify(:A, n :: Positive) "A"
+  def classify(:B, n :: NonZero) "B"
+  expect classify(:A :: Tag, 2 :: Int) is "A"
+  expect classify(:B :: Tag, 2 :: Int) is "B"
+end
+```
+
+With the same tag, both parameter packs erase to `(:A, Int)` and overlap.
+With different tags they erase to `(:A, Int)` and `(:B, Int)`. No single
+argument pack can match those two patterns.
 
 An explicit projection in a parameter may inspect a stored field's
 concrete type. A `Reading` with an `Int` field and a `Reading` with a
@@ -581,7 +643,7 @@ end
 Both definitions may coexist because their projected field patterns are
 disjoint. `classify` gives the same results as the earlier `match`
 example. It takes a `Reading` and dispatches on the field's concrete
-type. Refinement requirements in either overload use existing evidence.
+type. Refinement requirements follow [refinement evidence](refinement-evidence.md).
 
 ### Match arm domains
 
@@ -596,11 +658,12 @@ call, so it is not a call subject
 ([#110](https://github.com/johnwarden/pattern-language/pull/110) elaborates
 that rule).
 
-Peer arms must be pairwise disjoint. The checker verifies that rule during
-elaboration, when it resolves the scrutinee type and arm patterns. It checks
-the match even if execution never reaches it. The bootstrap still uses
-ordered first-match. Overlap raises `E_OVERLAPPING_MATCH_ARMS`. See
-[MATCH-DISJOINTNESS](../design/MATCH-DISJOINTNESS.md).
+Peer arms must satisfy [pattern domains and disjointness](#pattern-domains-and-disjointness).
+The checker verifies that rule during elaboration, when it resolves the
+scrutinee type and arm patterns. It checks the match even if execution never
+reaches it. The bootstrap still uses ordered first-match. Overlap raises
+`E_OVERLAPPING_MATCH_ARMS`. The alternatives considered are recorded in
+[the match design rationale](../design/MATCH-DISJOINTNESS.md).
 
 The admitted scrutinee domain is the set of values the scrutinee's static
 type permits at that match. Compare the arms on that same set of original
@@ -623,15 +686,12 @@ A function parameter or match arm cannot use `P | Q` as its binding pattern,
 even when constructor tags distinguish the alternatives. Write separate arms
 or overloads. Union types remain valid in annotations.
 
-Erase refinement predicates only when comparing peer domains for disjointness.
-Keep concrete boundaries, tags and fields. If disjointness cannot be proved,
-raise `E_OVERLAPPING_MATCH_ARMS` and report that lack of proof. The checker
-still enforces the selected arm's refinement statically. A refined binding
-requires evidence for the value being bound, for example from its static type
-or an earlier explicit check. Selection does not run a predicate to supply
-missing evidence or fall through to `else`. For ordered predicate checks, put
-`if` / `.matches` inside one base-type arm. See
-[refinement evidence](https://github.com/johnwarden/pattern-language/blob/spec/refinement-evidence/specs/refinement-evidence.md#disjointness-of-predicate-refined-peers).
+Evidence for a selected arm follows
+[the refinement evidence rules](refinement-evidence.md#explicit-checks-on-a-runtime-value).
+Selection uses existing evidence for a runtime input. Missing evidence is a
+checking failure, including when the match has an `else` arm.
+Predicate-check ordering is illustrated in
+[ordering explicit checks](refinement-evidence.md#ordering-explicit-checks).
 
 When the scrutinee's static type is an abstract union, require one explicit
 peer arm for each declared alternative and no additional arms. Each arm's
@@ -647,6 +707,9 @@ At most one `else` may appear, and only as the last arm. On a scrutinee outside
 the abstract-union rule, it takes any value left by the peer arms. A provably
 unreachable `else` is an error. In particular, a match with all the required
 abstract-union arms has no residual. Peer arms keep `->`.
+
+`Remaining` in design explanations names this residual domain. User-written
+`P \ Q` and `Remaining` types are deferred.
 
 ```pattern
 todo test "Overlapping match arms raise E_OVERLAPPING_MATCH_ARMS"
