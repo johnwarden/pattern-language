@@ -18,7 +18,7 @@ test("language schema gates descriptor shapes without consulting the user scope"
     assert.throws(() => run(source), /invalid type-description shape/);
   assert.equal(
     run(
-      "def ordinaryHead(h) False\ndef TypeDescription type :Nope\nStruct(:(Box(Int))) == (type :Box(Int))",
+      "def ordinaryHead(h) False\ndef TypeDescription type :Nope\nStruct(:(Box(Int64))) == (type :Box(Int64))",
     ),
     "True",
   );
@@ -128,7 +128,7 @@ test("schema and decoder agree on generated single-value and argument-pack posit
         "decoder: " + descriptor,
       );
   };
-  const leaves = [":A", "Int", "Struct(Box(String))", "Literal(:A)"];
+  const leaves = [":A", "Int64", "Struct(Box(String))", "Literal(:A)"];
   const contexts = [
     (p: string) => "Struct(" + p + ")",
     (p: string) => "Struct(Box(" + p + "))",

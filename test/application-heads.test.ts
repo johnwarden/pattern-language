@@ -28,7 +28,7 @@ test("stored Code with a non-callable head fails during evaluation, not reading"
     "value(2)",
     "data()(2)",
     "Bool(1)",
-    "Int(1)",
+    "Int64(1)",
     "Any(1)",
     "Expression(1)",
     ":Tag(1)",

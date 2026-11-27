@@ -65,7 +65,7 @@ test("union text and union container text omit redundant concrete tags", () => {
 test("facets and Any still retain required concrete metadata", () => {
   assert.throws(() => run("(x :: Any) = Rect(2,3)\nx"), /explicit concrete/);
   assert.throws(() => run('parse(Any)("3")'), /explicit concrete/);
-  assert.equal(run("(x :: Any) = 3 :: Int\ntoString(Any)(x)"), '"3 :: Int"');
+  assert.equal(run("(x :: Any) = 3 :: Int\ntoString(Any)(x)"), '"3 :: Int64"');
 });
 test("ordinary recursive expression grammar exposes concrete applications and symbols", () => {
   const i = new Interpreter();

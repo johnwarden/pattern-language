@@ -32,7 +32,7 @@ test("REPL does not evaluate an incomplete clause-bearing form on the last pendi
 test("program output annotates every result in a complete labeled pack", () => {
   const result = invoke('(1 :: Int,word: "hello" :: String)');
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, '(1 :: Int, word: "hello" :: String)\n');
+  assert.equal(result.stdout, '(1 :: Int64, word: "hello" :: String)\n');
   assert.equal(invoke("()").stdout, "()\n");
   assert.equal(invoke("3").stdout, "3 :: NumericValue\n");
 });

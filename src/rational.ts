@@ -669,6 +669,107 @@ export function mulRationals(a: Rational, b: Rational): Rational {
   return reduceRational(a.n * b.n, a.d * b.d);
 }
 
+/** Fixed-width integer formats in the initial prelude. */
+export type FixedIntegerKind = "int32" | "int64" | "uint64";
+export const INT32_MIN = -(2n ** 31n);
+export const INT32_MAX = 2n ** 31n - 1n;
+export const INT64_MIN = -(2n ** 63n);
+export const INT64_MAX = 2n ** 63n - 1n;
+export const UINT64_MAX = 2n ** 64n - 1n;
+
+export function fitsFixedInteger(
+  value: Rational,
+  kind: FixedIntegerKind,
+): boolean {
+  if (value.d !== 1n) return false;
+  switch (kind) {
+    case "int32":
+      return value.n >= INT32_MIN && value.n <= INT32_MAX;
+    case "int64":
+      return value.n >= INT64_MIN && value.n <= INT64_MAX;
+    case "uint64":
+      return value.n >= 0n && value.n <= UINT64_MAX;
+  }
+}
+
+/** Integer + - * % over fixed formats (division requires Ratio results). */
+export function fixedIntegerArithmetic(
+  op: string,
+  left: Rational,
+  right: Rational,
+): Rational {
+  if (left.d !== 1n || right.d !== 1n)
+    throw new LanguageError("expected an integer");
+  switch (op) {
+    case "+":
+      return { n: left.n + right.n, d: 1n };
+    case "-":
+      return { n: left.n - right.n, d: 1n };
+    case "*":
+      return { n: left.n * right.n, d: 1n };
+    case "%":
+      if (right.n === 0n)
+        throw new LanguageError("result exceeds safe numeric range");
+      return { n: left.n % right.n, d: 1n };
+    default:
+      throw new LanguageError("expected an integer operation");
+  }
+}
+
+export function powFixedInteger(
+  left: Rational,
+  right: Rational,
+  kind: FixedIntegerKind,
+): Rational {
+  if (left.d !== 1n) throw new LanguageError("expected an integer");
+  const exponent = nonnegativeIntegerExponent(right);
+  const b = left.n;
+  if (exponent === 0n) return { n: 1n, d: 1n };
+  if (b === 0n) return { n: 0n, d: 1n };
+  if (b === 1n) return { n: 1n, d: 1n };
+  if (b === -1n) {
+    const value = { n: exponent % 2n === 0n ? 1n : -1n, d: 1n };
+    if (!fitsFixedInteger(value, kind))
+      throw new LanguageError("integer overflow", undefined, {
+        code: "E_OVERFLOW",
+      });
+    return value;
+  }
+  const maxAbs =
+    kind === "int32"
+      ? -INT32_MIN
+      : kind === "int64"
+        ? -INT64_MIN
+        : UINT64_MAX;
+  const abs = (x: bigint) => (x < 0n ? -x : x);
+  let result = 1n;
+  let factor = b;
+  let power = exponent;
+  while (power > 0n) {
+    if (power & 1n) {
+      result *= factor;
+      if (abs(result) > maxAbs)
+        throw new LanguageError("integer overflow", undefined, {
+          code: "E_OVERFLOW",
+        });
+    }
+    power >>= 1n;
+    if (power > 0n) {
+      factor *= factor;
+      if (abs(factor) > maxAbs)
+        throw new LanguageError("integer overflow", undefined, {
+          code: "E_OVERFLOW",
+        });
+    }
+  }
+  const value = { n: result, d: 1n };
+  if (!fitsFixedInteger(value, kind))
+    throw new LanguageError("integer overflow", undefined, {
+      code: "E_OVERFLOW",
+    });
+  return value;
+}
+
 export function negateNumeric(value: ExactNumeric): ExactNumeric {
   const neg = (part: Rational) => ({ n: -part.n, d: part.d });
   return isRational(value)
@@ -743,15 +844,29 @@ export function remRationals(a: Rational, b: Rational): Rational {
   const q = (a.n * b.d) / (a.d * b.n);
   return subRationals(a, mulRationals(reduceRational(q, 1n), b));
 }
+function powBigInt(base: bigint, exponent: bigint): bigint {
+  if (exponent === 0n || base === 1n) return 1n;
+  if (base === 0n) return 0n;
+  if (base === -1n) return exponent % 2n === 0n ? 1n : -1n;
+  let result = 1n;
+  let factor = base;
+  let power = exponent;
+  while (power > 0n) {
+    if (power & 1n) result *= factor;
+    power >>= 1n;
+    if (power > 0n) factor *= factor;
+  }
+  return result;
+}
+
 export function powRationals(a: Rational, b: Rational): Rational {
   const exponent = nonnegativeIntegerExponent(b);
-  let n = 1n,
-    d = 1n;
-  for (let i = 0n; i < exponent; i++) {
-    n *= a.n;
-    d *= a.d;
-  }
-  return reduceRational(n, d);
+  if (exponent === 0n) return { n: 1n, d: 1n };
+  if (a.n === 0n) return { n: 0n, d: 1n };
+  if (a.d === 1n && a.n === 1n) return { n: 1n, d: 1n };
+  if (a.d === 1n && a.n === -1n)
+    return { n: exponent % 2n === 0n ? 1n : -1n, d: 1n };
+  return reduceRational(powBigInt(a.n, exponent), powBigInt(a.d, exponent));
 }
 
 function powComplex(base: ExactNumeric, exponent: Rational): ExactNumeric {

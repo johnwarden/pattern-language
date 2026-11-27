@@ -314,7 +314,8 @@ types are not installed in shared setup merely to allow an assertion to be recor
 ### C01 — intrinsic primitive values
 
 Confirmed direction; the PrimitiveType spelling/self-description is P's proposed vocabulary.
-Live: `"hello" :: String`, `True :: Bool`, `Int :: ReservedSymbol`, `5 :: Rational`,
+Live: `"hello" :: String`, `True :: Bool`, `Int64 :: ReservedSymbol`,
+`Int = Int64` as an ordinary type-value binding (`Int :: Type`), `5 :: Rational`,
 `:Widget :: UpperCamelSymbol`. Legacy still treats `type Bool` as Type. Todo:
 `Bool :: PrimitiveType` and `PrimitiveType :: PrimitiveType`.
 
@@ -535,21 +536,25 @@ Code keeps `:` where a bare name would bind: `a = :None :: Int?`,
 `Struct(:None | String)`, `toString(Expression)(:foo)`. Value text is read with the
 expected type's grammar, so `test` or `expect` are keywords only where that
 grammar makes them so. Union `::` tags still follow D07: `None` in `Float??`
-prints `None`, while the inner member prints `None :: Struct(Float | :None)`.
+prints `None`, while the inner member prints `None :: Struct(Float64 | :None)`.
 **Sources:** L9.
 
 ### D20. Primitive names are ReservedSymbol values — confirmed 9 November 2026
 
 Primitive names are values of the primitive type `ReservedSymbol`, which is
-disjoint from the ordinary symbol classes:
+disjoint from the ordinary symbol classes. Fixed-format short names are not
+reserved: `Int = Int64` and `Float = Float64` are ordinary bindings of those
+type values (**2026-11-27**).
 
 ```text
-expect Int is Int :: ReservedSymbol
+expect Int64 is Int64 :: ReservedSymbol
+expect Int is Int64 :: Type
+assert Int === Int64
 assert (type Int) == Int
-assert (Int .matches UpperCamelSymbol) == False
+assert (Int64 .matches UpperCamelSymbol) == False
 ```
 
-The type description of `type Int` is the reserved symbol itself, not `:Int`.
+The type description of `type Int64` is the reserved symbol itself, not `:Int64`.
 `Symbol` is not reserved; the prelude defines it as the union of the four ordinary classes.
 Prelude `not : Bool -> Bool` is the ordinary function `def not(x :: Bool) x == False`.
 

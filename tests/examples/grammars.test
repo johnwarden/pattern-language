@@ -109,7 +109,7 @@ test "Test DSL with typed Code"
 
   expect t.name is "Typed code body" :: String
   legacy expect t.check.expected.e is 4 :: Expression
-  legacy expect t.check.expected.type is Int :: Expression
+  legacy expect t.check.expected.type is :Int :: Expression
   (t.name, t.check.expected.e, t.check.expected.type)
 end
 

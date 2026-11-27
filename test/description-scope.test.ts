@@ -64,7 +64,7 @@ test("untyped type captures require inference rather than implying Any", () => {
   assert.equal(run("match Foo(1)\n  Foo(x) -> x\nend"), "1");
   assert.equal(
     run("def Rectangle type :Rect(w :: Float,h :: Float)\ntype Rectangle"),
-    "Struct(Rect(Float, Float))",
+    "Struct(Rect(Float64, Float64))",
   );
   assert.equal(
     run(

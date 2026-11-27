@@ -3,6 +3,7 @@ import { postfixMethodName } from "./syntax.ts";
 import { punctuation } from "./lexical.ts";
 import {
   primitiveNames,
+  numericAliases,
   constantNames,
   bootstrapTypeNames,
   isSelfEvaluating,
@@ -113,7 +114,15 @@ import {
   isNumeric,
   syntaxNumber,
 } from "./values.ts";
-import { exactArithmetic, isRational, negateNumeric } from "./rational.ts";
+import {
+  exactArithmetic,
+  fixedIntegerArithmetic,
+  fitsFixedInteger,
+  isRational,
+  negateNumeric,
+  powFixedInteger,
+} from "./rational.ts";
+import type { FixedIntegerKind } from "./rational.ts";
 import type {
   Value,
   TypeValue,
@@ -690,23 +699,17 @@ export class Interpreter {
     const scope = new Scope();
     for (const [name, predicate] of Object.entries({
       NumericValue: (v: Value): boolean => !!asNumeric(v),
-      Num: (v: Value): boolean => {
+      Int64: (v: Value): boolean => {
         const r = asRational(v);
-        return !!r && isExactFloat64(r);
+        return !!r && fitsFixedInteger(r, "int64");
       },
-      Int: (v: Value): boolean => {
+      Int32: (v: Value): boolean => {
         const r = asRational(v);
-        if (r)
-          return (
-            r.d === 1n &&
-            r.n >= BigInt(Number.MIN_SAFE_INTEGER) &&
-            r.n <= BigInt(Number.MAX_SAFE_INTEGER)
-          );
-        return (
-          v.kind === "literal" &&
-          typeof v.value === "number" &&
-          Number.isSafeInteger(v.value)
-        );
+        return !!r && fitsFixedInteger(r, "int32");
+      },
+      UInt64: (v: Value): boolean => {
+        const r = asRational(v);
+        return !!r && fitsFixedInteger(r, "uint64");
       },
       String: (v: Value): boolean =>
         v.kind === "literal" && typeof v.value === "string",
@@ -728,10 +731,6 @@ export class Interpreter {
       Type: (v: Value): boolean => !!this.materializeType(v),
       Bool: (v: Value): boolean =>
         v.kind === "symbol" && ["True", "False"].includes(v.name),
-      Float: (v: Value): boolean => {
-        const r = asRational(v);
-        return !!r && isExactFloat64(r);
-      },
       Float64: (v: Value): boolean => {
         const r = asRational(v);
         return !!r && isExactFloat64(r);
@@ -740,32 +739,23 @@ export class Interpreter {
         const r = asRational(v);
         return !!r && isExactFloat32(r);
       },
-      Int64: (v: Value): boolean => {
-        const r = asRational(v);
-        if (r)
-          return (
-            r.d === 1n &&
-            r.n >= BigInt(Number.MIN_SAFE_INTEGER) &&
-            r.n <= BigInt(Number.MAX_SAFE_INTEGER)
-          );
-        return (
-          v.kind === "literal" &&
-          typeof v.value === "number" &&
-          Number.isSafeInteger(v.value)
-        );
-      },
       ReservedSymbol: (v: Value): boolean =>
         v.kind === "symbol" && primitiveNames.has(v.name),
     })) {
-      const numericKind = ["Num", "Float", "Float64"].includes(name)
-        ? "float64"
-        : ["Int", "Int64"].includes(name)
-          ? "int64"
-          : name === "Float32"
-            ? "float32"
-            : name === "NumericValue"
-              ? "rational"
-              : undefined;
+      const numericKind =
+        name === "Float64"
+          ? "float64"
+          : name === "Int64"
+            ? "int64"
+            : name === "Int32"
+              ? "int32"
+              : name === "UInt64"
+                ? "uint64"
+                : name === "Float32"
+                  ? "float32"
+                  : name === "NumericValue"
+                    ? "rational"
+                    : undefined;
       scope.bindings.set(name, {
         kind: "type",
         name,
@@ -775,10 +765,7 @@ export class Interpreter {
         numeric: numericKind,
         pattern: () => ({
           ...test(name, predicate),
-          identity: [
-            "primitive",
-            name === "Float64" ? "Float64" : (numericKind ?? name),
-          ],
+          identity: ["primitive", numericKind ?? name],
         }),
       });
       this.primitives.set(name, scope.bindings.get(name) as TypeValue);
@@ -797,8 +784,6 @@ export class Interpreter {
       symbol.name = "Symbol";
       scope.bindings.set("Symbol", symbol);
     }
-    // Canonical primitive atoms have fixed language meanings.
-    for (const alias of ["Num", "Int64"]) scope.bindings.delete(alias);
     for (const name of constantNames)
       scope.bindings.set(name, this.boolean(name === "True"));
     for (const [name, value] of scope.bindings) {
@@ -809,6 +794,13 @@ export class Interpreter {
         capturePattern: value.pattern(),
         accessors: [],
       });
+    }
+    // Ordinary bindings: Int = Int64, Float = Float64 (same type values).
+    for (const [alias, target] of numericAliases) {
+      const type = this.primitives.get(target);
+      if (!type) continue;
+      scope.bindings.set(alias, type);
+      this.primitives.set(alias, type);
     }
     scope.functions.set("language", [
       this.native("language", [0], () => this.grammar.description()),
@@ -939,9 +931,33 @@ export class Interpreter {
                 ? this.check(space, value)
                 : single(this.ascribeNumeric(value));
             }
+            if (
+              space.numeric === "int32" ||
+              space.numeric === "int64" ||
+              space.numeric === "uint64"
+            ) {
+              if (name === "/")
+                throw new LanguageError(
+                  "no applicable function /: division on " +
+                    space.name +
+                    " is unavailable until Ratio support lands",
+                  undefined,
+                  { code: "E_NO_METHOD" },
+                );
+              const left = asRational(a),
+                right = asRational(b);
+              if (!left || !right) throw new LanguageError("expected a number");
+              const result =
+                name === "^"
+                  ? powFixedInteger(left, right, space.numeric)
+                  : fixedIntegerArithmetic(name, left, right);
+              if (!fitsFixedInteger(result, space.numeric))
+                throw new LanguageError("integer overflow", undefined, {
+                  code: "E_OVERFLOW",
+                });
+              return this.check(space, valLiteral(result));
+            }
             let result = op(numeric(a), numeric(b));
-            if (space?.numeric === "int64" && name === "/")
-              result = Math.trunc(result);
             if (space?.numeric === "float32") result = Math.fround(result);
             const value = checked(result);
             return space ? this.check(space, value) : value;
@@ -1002,11 +1018,22 @@ export class Interpreter {
       scope.bindings.set(
         method,
         this.native(method, [1], ([v]) => {
+          if (target === "Int") {
+            const r = asRational(v);
+            if (!r) throw new LanguageError("expected a number");
+            const truncated =
+              r.d === 1n ? r : { n: r.n / r.d, d: 1n };
+            if (!fitsFixedInteger(truncated, "int64"))
+              throw new LanguageError("integer overflow", undefined, {
+                code: "E_OVERFLOW",
+              });
+            return this.check(
+              this.primitives.get(target)!,
+              valLiteral(truncated),
+            );
+          }
           const n = numeric(v);
-          return this.check(
-            this.primitives.get(target)!,
-            checked(target === "Int" ? Math.trunc(n) : n),
-          );
+          return this.check(this.primitives.get(target)!, checked(n));
         }),
       );
     scope.bindings.set(
@@ -1032,10 +1059,61 @@ export class Interpreter {
       }),
     );
     scope.bindings.set(
+      "checkedConvert",
+      this.native("checkedConvert", [1, 1], ([typeArg, value]) => {
+        const type = this.materializeType(typeArg);
+        if (!type?.numeric || type.numeric === "rational")
+          throw new LanguageError(
+            "checkedConvert requires a fixed numeric format",
+          );
+        try {
+          this.check(this.primitives.get("NumericValue")!, value);
+        } catch (e) {
+          if (e instanceof Mismatch)
+            throw new Mismatch(
+              "no applicable function checkedConvert: " + e.diagnostic.message,
+              e.diagnostic.primary,
+              { code: "E_NO_METHOD", causes: [e.diagnostic] },
+            );
+          throw e;
+        }
+        const fail = (): never => {
+          throw new LanguageError(
+            "not exactly representable as " + type.name,
+            undefined,
+            { code: "E_NOT_EXACTLY_REPRESENTABLE" },
+          );
+        };
+        const r = asRational(value);
+        if (!r) return fail();
+        if (type.numeric === "float32") {
+          if (!isExactFloat32(r)) fail();
+          return this.check(
+            type,
+            valLiteral(Math.fround(rationalToNumber(r))),
+          );
+        }
+        if (type.numeric === "float64") {
+          if (!isExactFloat64(r)) fail();
+          return this.check(type, valLiteral(rationalToNumber(r)));
+        }
+        if (
+          type.numeric === "int32" ||
+          type.numeric === "int64" ||
+          type.numeric === "uint64"
+        ) {
+          if (!fitsFixedInteger(r, type.numeric)) fail();
+          return this.check(type, valLiteral(r));
+        }
+        return fail();
+      }),
+    );
+    scope.bindings.set(
       "isInt64",
-      this.native("isInt64", [1], ([v]) =>
-        this.boolean(Number.isSafeInteger(numeric(v))),
-      ),
+      this.native("isInt64", [1], ([v]) => {
+        const r = asRational(v);
+        return this.boolean(!!r && fitsFixedInteger(r, "int64"));
+      }),
     );
     scope.bindings.set(
       "where",
@@ -1081,9 +1159,14 @@ export class Interpreter {
     const typeConstructor = (head: "Type" | "Struct") =>
       this.native(head, [1], ([pattern]) => {
         const type = this.materializeType(pattern);
-        return type && typeDescription(type).kind !== "symbol"
-          ? type
-          : this.structuralType(term("Struct", unwrap(pattern)));
+        if (type) {
+          const description = typeDescription(type);
+          // Primitive formats describe as reserved symbols; Struct(Int) wraps
+          // that symbol even when Int is the ordinary Int64 binding.
+          if (description.kind !== "symbol") return type;
+          return this.structuralType(term("Struct", description));
+        }
+        return this.structuralType(term("Struct", unwrap(pattern)));
       });
     scope.functions.set("Type", [typeConstructor("Type")]);
     scope.functions.set("Struct", [typeConstructor("Struct")]);
@@ -3008,7 +3091,7 @@ export class Interpreter {
                 code: "E_UNBOUND_TYPE",
                 phase: "declaration",
                 notes: [
-                  "Quote literal tags with a colon. The numeric prelude names are Int, Float, and Float32.",
+                  "Quote literal tags with a colon. The numeric prelude names include Int, Int32, Int64, UInt64, Float, Float32, and Float64.",
                 ],
               });
             return literalPattern(valSymbol(n.name));
@@ -3621,8 +3704,13 @@ export class Interpreter {
                 aliases.set(type.name, type);
         }
     }
+    // Int/Float are ordinary bindings of Int64/Float64. They must not win local
+    // print names (isTypeCapture is true for UpperCamel), or type text prints
+    // Int and fails to round-trip through description leaves that need the
+    // reserved symbol. localType still resolves them for whole-type parse.
+    const printable = [...aliases].filter(([name]) => !numericAliases.has(name));
     const references = new Map<unknown, string>();
-    for (const [name, type] of [...aliases]
+    for (const [name, type] of printable
       .filter(([name]) => isTypeCapture(name))
       .sort(([a], [b]) => b.length - a.length || (a < b ? 1 : -1)))
       references.set(type.key, name);
@@ -3633,7 +3721,7 @@ export class Interpreter {
       localName: env
         ? (type) => {
             if (type.declaration && available(type)) return type.name;
-            const exact = [...aliases]
+            const exact = printable
               .sort(([a], [b]) => a.length - b.length || (a < b ? -1 : 1))
               .filter(([, t]) => typeIdentity(t) === typeIdentity(type));
             const typeName = exact.find(([name]) => isTypeCapture(name))?.[0];
@@ -4049,50 +4137,88 @@ export class Interpreter {
     }
     const r = asRational(v);
     if (!r) throw new LanguageError("expected a number");
+    if (
+      space.numeric === "int32" ||
+      space.numeric === "int64" ||
+      space.numeric === "uint64"
+    ) {
+      const negated = negateNumeric(r);
+      if (!isRational(negated) || !fitsFixedInteger(negated, space.numeric))
+        throw new LanguageError("integer overflow", undefined, {
+          code: "E_OVERFLOW",
+        });
+      return this.check(space, valLiteral(negated));
+    }
     const n = rationalToNumber(r);
     if (!Number.isFinite(n)) throw new LanguageError("expected a number");
     const negated = -n;
-    if (
-      !Number.isFinite(negated) ||
-      (space.numeric !== "float32" &&
-        space.numeric !== "float64" &&
-        Number.isInteger(negated) &&
-        !Number.isSafeInteger(negated))
-    )
+    if (!Number.isFinite(negated))
       throw new LanguageError("result exceeds safe numeric range");
     const value = valLiteral(negated);
     return space ? this.check(space, value) : singleton(value);
   }
   private requireExactNumericDesignation(type: TypeValue, value: Value) {
     const numeric = type.numeric ?? type.baseType?.numeric;
-    if (numeric !== "float32" && numeric !== "float64") return;
+    if (
+      numeric !== "float32" &&
+      numeric !== "float64" &&
+      numeric !== "int32" &&
+      numeric !== "int64" &&
+      numeric !== "uint64"
+    )
+      return;
     const target = type.baseType ?? type;
     const prior = concreteSpace(value);
     if (prior && typeIdentity(prior) === typeIdentity(target)) return;
     const r = asRational(value);
     if (!r) return;
-    const exact = numeric === "float32" ? isExactFloat32(r) : isExactFloat64(r);
-    if (!exact)
+    if (numeric === "float32" || numeric === "float64") {
+      const exact =
+        numeric === "float32" ? isExactFloat32(r) : isExactFloat64(r);
+      if (!exact)
+        throw new LanguageError(
+          "not exactly representable as " +
+            (numeric === "float32" ? "Float32" : target.name),
+          undefined,
+          { code: "E_NOT_EXACTLY_REPRESENTABLE" },
+        );
+      return;
+    }
+    if (!fitsFixedInteger(r, numeric as FixedIntegerKind))
       throw new LanguageError(
-        "not exactly representable as " +
-          (numeric === "float32" ? "Float32" : target.name),
+        "not exactly representable as " + target.name,
+        undefined,
+        { code: "E_NOT_EXACTLY_REPRESENTABLE" },
       );
   }
   private numericPayload(type: TypeValue, value: Value): Value {
     const r = asRational(value);
     if (type.numeric === "float32") {
       if (!r || !isExactFloat32(r))
-        throw new LanguageError("not exactly representable as Float32");
+        throw new LanguageError("not exactly representable as Float32", undefined, {
+          code: "E_NOT_EXACTLY_REPRESENTABLE",
+        });
       return valLiteral(Math.fround(rationalToNumber(r)));
     }
-    if (type.numeric === "int64") {
-      if (!r || r.d !== 1n) throw new LanguageError("expected a number");
-      return valLiteral(Number(r.n));
+    if (
+      type.numeric === "int32" ||
+      type.numeric === "int64" ||
+      type.numeric === "uint64"
+    ) {
+      if (!r || !fitsFixedInteger(r, type.numeric))
+        throw new LanguageError(
+          "not exactly representable as " + type.name,
+          undefined,
+          { code: "E_NOT_EXACTLY_REPRESENTABLE" },
+        );
+      return valLiteral(r);
     }
     if (type.numeric === "float64") {
       if (!r || !isExactFloat64(r))
         throw new LanguageError(
           "not exactly representable as " + (type.baseType ?? type).name,
+          undefined,
+          { code: "E_NOT_EXACTLY_REPRESENTABLE" },
         );
       return valLiteral(rationalToNumber(r));
     }

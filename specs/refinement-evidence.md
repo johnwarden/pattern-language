@@ -96,7 +96,7 @@ The same rule applies to the fit predicate of a concrete numeric type.
 checking evaluates `fitsInt32` on the bound constant `a`.
 
 ```pattern
-todo test "A bound constant can designate into a fixed-width parameter"
+test "A bound constant can designate into a fixed-width parameter"
   def f(x :: Int32) x
   a = 1
   expect f(a) is 1 :: Int32

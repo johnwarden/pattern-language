@@ -6,7 +6,7 @@ test "Abstract slots preserve identity"
   (y :: Int) = x
   assert x == y
 
-  expect toString(Any)(x) is "3 :: Int" :: String
+  expect toString(Any)(x) is "3 :: Int64" :: String
   expect toString(Int)(x) is "3" :: String
 
   ((n == x), (x == y), toString(Any)(x), toString(Int)(x))
@@ -41,12 +41,12 @@ test "Function block"
 end
 
 test "Definitions evaluate their bodies"
-  def r :(Rect(Float))
-  def R type :Rect(Float)
+  def r :(Rect(Float64))
+  def R type :Rect(Float64)
 
-  expect :(Rect(Float)) is Rect(Float) :: Expression
+  expect :(Rect(Float64)) is Rect(Float64) :: Expression
   observed = type R
-  expect observed is Struct(Rect(Float)) :: Type
+  expect observed is Struct(Rect(Float64)) :: Type
   (r, (type R))
 end
 
@@ -88,7 +88,7 @@ test "Narrow an abstract slot"
 
   expect value is 3 :: Int
   observed = type Int
-  expect observed is Int :: Type
+  expect observed is Int64 :: Type
 
   assert value == x
 
@@ -126,11 +126,13 @@ end
 test "Explicit primitive values"
   t = Float
 
-  expect t is Float :: ReservedSymbol
-  expect Int is Int :: ReservedSymbol
+  expect t is Float64 :: Type
+  expect Int is Int64 :: Type
   expect Bool is Bool :: ReservedSymbol
 
   assert t == (type Float)
+  assert Int === Int64
+  assert Float === Float64
 
   (t, Int, Bool, (t == (type Float)))
 end
@@ -184,7 +186,7 @@ test "Open structural facet"
 
   assert p == r
   # Legacy blocked: abstract facet reconstruction text is still provisional (C15).
-  legacy expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: Struct(Rect(Float, Float, color: String))" :: String
+  legacy expect toString(Rectangular)(p) is "Rect(2, 3, color: \"black\") :: Struct(Rect(Float64, Float64, color: String))" :: String
 
   assert parse(Rectangular)(toString(Rectangular)(p)) == r
 

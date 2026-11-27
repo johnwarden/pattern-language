@@ -126,7 +126,7 @@ test("type pattern bodies remain opaque while nested type forms remain valid", (
     run("def O type O(type :: Expression)\nv = O(:x) :: O\nv.type"),
     "x",
   );
-  assert.equal(run("type type Int"), "Int");
+  assert.equal(run("type type Int"), "Int64");
   const grammar = readFileSync(
     new URL("../default.pattern", import.meta.url),
     "utf8",

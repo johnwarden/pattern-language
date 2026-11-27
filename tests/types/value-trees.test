@@ -61,7 +61,7 @@ end
 
 test "Reserved primitive names cannot be redeclared"
   expect
-    type Int concrete Box(Float)
+    type Int64 concrete Box(Float)
     0
   fails "E_RESERVED_PRIMITIVE"
 end

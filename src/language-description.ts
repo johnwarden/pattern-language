@@ -8,7 +8,7 @@ import {
 import type { Syntax, Field } from "./syntax.ts";
 import { valLiteral, valSymbol, unwrap, asNumeric } from "./values.ts";
 import type { Value } from "./values.ts";
-import { numericFromSyntax, syntaxNumber } from "./rational.ts";
+import { isRational, numericFromSyntax, syntaxNumber } from "./rational.ts";
 
 /** These are semantic readers, not hidden additions to surface syntax. */
 export const HOST_READERS = [
@@ -237,28 +237,38 @@ export function decodeSyntax(input: Value): Syntax {
           if (tag.kind !== "symbol" || tag.name !== "Hole")
             return invalid("invalid template part");
           const protection = unwrap(fields[1]);
-          if (
-            protection.kind !== "literal" ||
-            typeof protection.value !== "number" ||
-            protection.value < 0 ||
-            protection.value > 32 ||
-            !Number.isInteger(protection.value)
-          )
+          const depth = (() => {
+            if (protection.kind !== "literal") return;
+            if (typeof protection.value === "number") {
+              if (
+                !Number.isInteger(protection.value) ||
+                protection.value < 0 ||
+                protection.value > 32
+              )
+                return;
+              return protection.value;
+            }
+            if (
+              isRational(protection.value) &&
+              protection.value.d === 1n &&
+              protection.value.n >= 0n &&
+              protection.value.n <= 32n
+            )
+              return Number(protection.value.n);
+          })();
+          if (depth === undefined)
             return invalid("invalid hole protection depth");
           const spelling = text(fields[2]);
-          if (protection.value === 0 && spelling)
+          if (depth === 0 && spelling)
             return invalid("active holes cannot have residual literal text");
-          if (
-            protection.value > 0 &&
-            !spelling.startsWith("$".repeat(protection.value))
-          )
+          if (depth > 0 && !spelling.startsWith("$".repeat(depth)))
             return invalid(
               "protected holes require their residual literal spelling",
             );
           return {
             kind: "hole" as const,
             value: child(fields[0]),
-            protection: protection.value,
+            protection: depth,
             spelling: spelling || undefined,
           };
         });

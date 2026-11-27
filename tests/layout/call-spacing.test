@@ -36,7 +36,7 @@ end
 test "type form versus type call"
   observed = type Int
 
-  expect observed is Int :: Type
+  expect observed is Int64 :: Type
   expect parse(Code)("type (Int)") fails "a keyword operand cannot be a single parenthesized group"
 end
 

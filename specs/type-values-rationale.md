@@ -383,7 +383,7 @@ concrete spaces:
 ```pattern
 todo test "struct Int is a newtype wrapper"
   id = struct Int
-  expect id is Struct(Int)
+  expect id is Struct(Int64)
 
   (x :: id) = 5
   expect x is 5 :: id
@@ -507,7 +507,7 @@ open it with `match` inside the body.
 ```pattern
 test "A concrete Rect supports an area match"
   t = struct Rect(Int, Int)
-  expect t is Struct(Rect(Int, Int))
+  expect t is Struct(Rect(Int64, Int64))
 
   (r :: t) = Rect(2, 3)
 
@@ -724,7 +724,7 @@ supplies the context.
 ```pattern
 todo test "Nested union patterns are allowed inside struct fields"
   type Foo struct Foo(String | Float, String | Float)
-  expect Foo is Struct(Foo(String | Float, String | Float))
+  expect Foo is Struct(Foo(String | Float64, String | Float64))
 end
 ```
 

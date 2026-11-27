@@ -19,7 +19,7 @@ test("definition bodies evaluate normally and TitleCase results must be types", 
         return true;
       },
     );
-  assert.equal(run("def R type :Rect(Float)\ntype R"), "Struct(Rect(Float))");
+  assert.equal(run("def R type :Rect(Float)\ntype R"), "Struct(Rect(Float64))");
   assert.equal(
     run("def make() type :Rect(Float)\ndef R make()\nRect(3) :: R"),
     "Rect(3)",

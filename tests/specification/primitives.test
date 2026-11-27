@@ -1,15 +1,17 @@
 test "C01 intrinsic primitive values"
   expect True is True :: Bool
   expect False is False :: Bool
-  expect Int is Int :: ReservedSymbol
+  expect Int64 is Int64 :: ReservedSymbol
+  expect Int is Int64 :: Type
   expect "hello" is "hello" :: String
   expect 5 is 5 :: NumericValue
   expect :Widget is Widget :: UpperCamelSymbol
   expect :foo is foo :: LowerCamelSymbol
   expect :Symbol is Symbol :: UpperCamelSymbol
-  assert Int .matches ReservedSymbol
-  assert not(Int .matches UpperCamelSymbol)
-  assert not(Int .matches Symbol)
+  assert Int64 .matches ReservedSymbol
+  assert Int === Int64
+  assert Float === Float64
+  assert not(Int .matches ReservedSymbol)
   assert not(True .matches UpperCamelSymbol)
   assert not(True .matches ReservedSymbol)
   assert False .matches Bool
@@ -52,7 +54,7 @@ test "Literal and computed Booleans share one Bool type"
   assert isInt64(3)
   assert 2 .matches Int
   expect
-    True == Int
+    True == Int64
   fails "E_INCOMPARABLE_TYPES"
   t = type True | False
   assert parse(Type)(toString(Type)(t)) == t
@@ -92,19 +94,19 @@ test "Match arms use bare True and False"
 end
 
 test "Quoted primitive names in Code"
-  expect :Int fails "E_QUOTED_PRIMITIVE"
+  expect :Int64 fails "E_QUOTED_PRIMITIVE"
   expect :True fails "E_QUOTED_PRIMITIVE"
-  expect Int == :Int fails "E_QUOTED_PRIMITIVE"
+  expect Int64 == :Int64 fails "E_QUOTED_PRIMITIVE"
   expect :String(:A) fails "E_QUOTED_PRIMITIVE"
   expect
-    type :Int
+    type :Int64
   fails "E_QUOTED_PRIMITIVE"
   expect
     type :String(:A)
   fails "E_QUOTED_PRIMITIVE"
   assert (type String(:A)) == Struct(Apply(Literal(String), Fields(:A)))
-  expect :(Int) is Int :: Expression
-  expect parse(Code)(":Int") is :Int :: Code
+  expect :(Int64) is Int64 :: Expression
+  expect parse(Code)(":Int64") is :Int64 :: Code
   expect parse(Code)(":(Int)") is :(Int) :: Code
   todo expect parse(Code)(":Foo") is :Foo :: QuotedSymbol
   todo expect parse(Code)(":(Int)") is :(Int) :: QuotedSymbol
