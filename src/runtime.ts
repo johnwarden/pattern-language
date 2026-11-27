@@ -34,6 +34,7 @@ import {
   isOpenPattern,
   patternCaptures,
   explicitPatternCaptures,
+  orderedParts,
 } from "./pattern-captures.ts";
 import { dispatchSignature } from "./dispatch-domain.ts";
 import { TYPE_SCHEMA } from "./type-schema.ts";
@@ -2562,29 +2563,124 @@ export class Interpreter {
   ): void {
     if (!fn.macro && existing.some((c) => c.kind === "closure" && !c.macro)) {
       const domain = this.methodDomain(fn);
+      const domainPacks = fn.parameters.map((pack) =>
+        this.compiler(fn.env, false).fields(pack),
+      );
       for (const prior of existing) {
         if (prior.kind !== "closure" || prior.macro) continue;
         const other = this.methodDomain(prior);
-        if ((domain.refined || other.refined) && domain.key === other.key)
+        const related = [
+          {
+            message: "Conflicting overload",
+            span: prior.signature?.span,
+          },
+        ];
+        if (domain.key === other.key) {
+          if (domain.refined || other.refined)
+            throw new LanguageError(
+              "overloads cannot differ only by refinements: " + name,
+              fn.signature?.span,
+              {
+                code: "E_REFINED_OVERLOAD",
+                phase: "declaration",
+                notes: [
+                  "Compare overload domains after erasing refinement predicates.",
+                  "Refinements validate the selected function; they cannot select an overload.",
+                ],
+                related,
+              },
+            );
           throw new LanguageError(
-            "overloads cannot differ only by refinements: " + name,
+            "overlapping overload domains for " + name,
             fn.signature?.span,
             {
-              code: "E_REFINED_OVERLOAD",
+              code: "E_OVERLAPPING_OVERLOAD",
+              phase: "declaration",
+              related,
+            },
+          );
+        }
+        const otherPacks = prior.parameters.map((pack) =>
+          this.compiler(prior.env, false).fields(pack),
+        );
+        const packCount = Math.min(domainPacks.length, otherPacks.length);
+        let overlaps = true;
+        for (let i = 0; i < packCount; i++) {
+          if (!this.dispatchDomainsOverlap(domainPacks[i], otherPacks[i])) {
+            overlaps = false;
+            break;
+          }
+        }
+        if (overlaps)
+          throw new LanguageError(
+            "overlapping overload domains for " + name,
+            fn.signature?.span,
+            {
+              code: "E_OVERLAPPING_OVERLOAD",
               phase: "declaration",
               notes: [
-                "Refinements validate the selected function; they cannot select an overload.",
+                "Compare overload domains after erasing refinement predicates.",
               ],
-              related: [
-                {
-                  message: "Conflicting overload",
-                  span: prior.signature?.span,
-                },
-              ],
+              related,
             },
           );
       }
     }
+  }
+  /**
+   * Structural overlap after predicate erasure. Distinct concrete type
+   * identities are disjoint for overload dispatch (Int vs Float64). An
+   * untyped or Any position absorbs every counterpart.
+   */
+  private dispatchDomainsOverlap(
+    left: Pattern<Value>,
+    right: Pattern<Value>,
+  ): boolean {
+    const anyType = this.primitives.get("Any");
+    const anyId = anyType ? typeIdentity(anyType) : undefined;
+    const peel = (p: Pattern<Value>): Pattern<Value> => {
+      while (true) {
+        if (p.kind === "capture" || p.kind === "map") {
+          p = p.pattern;
+          continue;
+        }
+        if (p.kind === "ref" && p.dispatchBase) {
+          p = p.dispatchBase();
+          continue;
+        }
+        break;
+      }
+      return p;
+    };
+    const go = (a: Pattern<Value>, b: Pattern<Value>): boolean => {
+      a = peel(a);
+      b = peel(b);
+      if (a.kind === "any" || b.kind === "any") return true;
+      if (a.kind === "ref" && a.dispatchIdentity?.() === anyId) return true;
+      if (b.kind === "ref" && b.dispatchIdentity?.() === anyId) return true;
+      if (a.kind === "ref" && b.kind === "ref") {
+        const idA = a.dispatchIdentity?.() ?? a.key;
+        const idB = b.dispatchIdentity?.() ?? b.key;
+        return idA === idB;
+      }
+      if (a.kind === "label" && b.kind === "label")
+        return a.label === b.label && go(a.pattern, b.pattern);
+      if (a.kind === "fields" && b.kind === "fields") {
+        const partsA = orderedParts(a.parts);
+        const partsB = orderedParts(b.parts);
+        if (partsA.length !== partsB.length) return false;
+        return partsA.every((part, i) => go(part, partsB[i]));
+      }
+      if (a.kind === "node" && b.kind === "node")
+        return go(a.head, b.head) && go(a.body, b.body);
+      if (a.kind === "sequence" && b.kind === "sequence")
+        return (
+          a.parts.length === b.parts.length &&
+          a.parts.every((part, i) => go(part, b.parts[i]))
+        );
+      return false;
+    };
+    return go(left, right);
   }
   private methodDomain(fn: Closure) {
     return dispatchSignature(
@@ -2592,38 +2688,82 @@ export class Interpreter {
     );
   }
   /**
-   * During overload designation, exclude a candidate when a supplied argument
-   * fails that candidate's non-union refinement (constant predicate check).
-   * Union designation still runs at bind time so probe-style predicates are
-   * not double-executed during selection. Omitted defaults are not touched.
+   * Build the union of parameter types across structurally applicable
+   * closures and designate each supplied argument against that union.
+   * Returns typed arguments when designation changes at least one value.
    */
-  private checkSuppliedRefinements(
-    parameters: Field<Syntax>[],
+  private designateAgainstOverloadUnion(
+    candidates: Closure[],
     args: Field<Value>[],
-    env: Scope,
-  ): void {
-    const used = new Set<number>();
-    for (const arg of args) {
-      const index = !positional(arg.label)
-        ? parameters.findIndex((field) => field.label === arg.label)
-        : parameters.findIndex(
-            (field, i) => !used.has(i) && positional(field.label),
-          );
-      if (index < 0) continue;
-      used.add(index);
-      const annotation = binary(parameters[index].value, "::");
-      if (!annotation) continue;
-      let type: TypeValue;
-      try {
-        type = this.typeFromSyntax(annotation[1], env);
-      } catch {
-        continue;
+  ): Field<Value>[] | undefined {
+    const designated = args.map((arg) => ({ ...arg }));
+    let changed = false;
+    const usedByCandidate = candidates.map(() => new Set<number>());
+    for (let ai = 0; ai < args.length; ai++) {
+      const arg = args[ai];
+      const types: TypeValue[] = [];
+      for (let ci = 0; ci < candidates.length; ci++) {
+        const parameters = candidates[ci].parameters[0];
+        const used = usedByCandidate[ci];
+        const index = !positional(arg.label)
+          ? parameters.findIndex((field) => field.label === arg.label)
+          : parameters.findIndex(
+              (field, i) => !used.has(i) && positional(field.label),
+            );
+        if (index < 0) return;
+        used.add(index);
+        const annotation = binary(parameters[index].value, "::");
+        if (!annotation) return;
+        try {
+          types.push(this.typeFromSyntax(annotation[1], candidates[ci].env));
+        } catch {
+          return;
+        }
       }
-      // Multi-member unions designate at bind time (once). A `pattern`
-      // alias is a single-member union and still needs its refinement check.
-      if (type.unionMembers && type.unionMembers.length > 1) continue;
-      if (!predicatesOfType(type).size) continue;
-      this.check(type, arg.value, env);
+      if (types.length < 2) continue;
+      // Multi-member union parameters designate at bind time. Skipping them
+      // here keeps probe-style predicate errors from selecting overloads
+      // (tests/specification/ambiguous-values.test).
+      if (types.some((t) => (t.unionMembers?.length ?? 0) > 1)) return;
+      const unique = [
+        ...new Map(types.map((t) => [typeIdentity(t), t] as const)).values(),
+      ];
+      const expected =
+        unique.length === 1 ? unique[0] : this.unionType(unique);
+      const checked = single(this.check(expected, arg.value));
+      designated[ai] = { ...arg, value: checked };
+      changed = true;
+    }
+    return changed ? designated : undefined;
+  }
+  /**
+   * Erase refinement wrappers (and single-member unions of them) to the
+   * structural base used for overload-domain comparison.
+   */
+  private erasedDispatchBase(type: TypeValue | undefined): TypeValue | undefined {
+    if (!type) return;
+    if (type.baseType) return type.baseType;
+    // Only read a data `unionMembers` field. Structural Recursive descriptors
+    // expose an accessor that can throw while the descriptor is still decoding.
+    const ownMembers = (t: TypeValue) => {
+      const desc = Object.getOwnPropertyDescriptor(t, "unionMembers");
+      if (!desc || desc.get) return;
+      return desc.value as TypeValue[] | undefined;
+    };
+    const alias = this.aliasTargets.get(type);
+    if (alias) {
+      const fromAlias = this.erasedDispatchBase(alias);
+      if (fromAlias) return fromAlias;
+      const aliasMembers = ownMembers(alias);
+      if (aliasMembers?.length === 1) {
+        const member = aliasMembers[0];
+        return this.erasedDispatchBase(member) ?? member.baseType;
+      }
+    }
+    const members = ownMembers(type);
+    if (members?.length === 1) {
+      const member = members[0];
+      return this.erasedDispatchBase(member) ?? member.baseType;
     }
   }
   private expandMacro(
@@ -2754,43 +2894,10 @@ export class Interpreter {
           const pattern = this.compiler(candidate.env, false).fields(
             candidate.parameters[0],
           );
-          // Structural recognition first (no defaults). Then constant
-          // refinement checks on supplied args may exclude an interpretation
-          // (specs/refinement-evidence.md — union bindings and overloaded calls).
+          // Structural recognition only. Predicates do not select overloads;
+          // designation against the union of domains runs after this loop.
           valueMatcher().recognize(pattern, args);
-          try {
-            this.checkSuppliedRefinements(
-              candidate.parameters[0],
-              args,
-              candidate.env,
-            );
-            applicable.push({ candidate });
-          } catch (e) {
-            if (!(e instanceof Mismatch) && !(e instanceof LanguageError))
-              throw e;
-            const code =
-              e instanceof Mismatch || e instanceof LanguageError
-                ? e.diagnostic.code
-                : undefined;
-            if (
-              code === "E_REFINEMENT_FAILED" ||
-              code === "E_NOT_EXACTLY_REPRESENTABLE" ||
-              code === "E_PATTERN_MISMATCH" ||
-              code === "E_SUBSET_MISMATCH"
-            )
-              rejected.push({
-                candidate,
-                error:
-                  e instanceof Mismatch
-                    ? e
-                    : new Mismatch(
-                        e.message,
-                        e.diagnostic.primary,
-                        e.diagnostic,
-                      ),
-              });
-            else applicable.push({ candidate });
-          }
+          applicable.push({ candidate });
         } catch (e) {
           if (!(e instanceof Mismatch)) throw e;
           rejected.push({ candidate, error: e });
@@ -2880,6 +2987,46 @@ export class Interpreter {
           ]),
         },
       );
+    }
+    if (
+      applicable.length > 1 &&
+      args.length > 0 &&
+      applicable.every((a) => a.candidate.kind === "closure")
+    ) {
+      // Designate supplied args against the union of structurally applicable
+      // domains, then let the typed result select one clause. Predicates run
+      // during designation, not as an overload filter.
+      const closures = applicable.map((a) => a.candidate as Closure);
+      const designated = this.designateAgainstOverloadUnion(closures, args);
+      if (designated) {
+        const narrowed: typeof applicable = [];
+        for (const entry of applicable) {
+          const candidate = entry.candidate as Closure;
+          try {
+            this.matchParameters(
+              candidate.parameters[0],
+              designated,
+              candidate.env,
+            );
+            narrowed.push(entry);
+          } catch (e) {
+            if (!(e instanceof Mismatch) && !(e instanceof LanguageError))
+              throw e;
+            rejected.push({
+              candidate,
+              error:
+                e instanceof Mismatch
+                  ? e
+                  : new Mismatch(e.message, e.diagnostic.primary, e.diagnostic),
+            });
+          }
+        }
+        if (narrowed.length === 1) {
+          applicable.length = 0;
+          applicable.push(narrowed[0]);
+          args = designated;
+        }
+      }
     }
     if (applicable.length !== 1) {
       // Competing closures with a supplied argument are value designation
@@ -4032,6 +4179,7 @@ export class Interpreter {
     requireConcrete = false,
     allowProjection = false,
   ): Pattern<Value> {
+    const erased = this.erasedDispatchBase(type) ?? type.baseType;
     return {
       kind: "ref",
       key: type.key,
@@ -4044,10 +4192,10 @@ export class Interpreter {
       get wrappedPrimitive() {
         return type.wrappedPrimitive;
       },
-      dispatchBase: type.baseType
-        ? () => this.typePattern(type.baseType!, requireConcrete)
+      dispatchBase: erased
+        ? () => this.typePattern(erased, requireConcrete)
         : undefined,
-      dispatchIdentity: () => typeIdentity(type.baseType ?? type),
+      dispatchIdentity: () => typeIdentity(erased ?? type),
       resolve: () => {
         let original: Value | undefined;
         let selected: Pattern<Value> | undefined;

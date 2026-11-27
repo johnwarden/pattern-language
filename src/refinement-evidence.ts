@@ -10,10 +10,13 @@ import { isRational } from "./rational.ts";
 import type { Pattern } from "./pattern.ts";
 import { runtimeDependency, patternExpressions } from "./availability.ts";
 
-/** Initial Predicate enum cases from specs/refinement-predicates.md. */
+/** Initial Predicate enum cases from specs/refinement-predicates.md.
+ * `isNegative` is also required by overload-disjointness examples in type-values.
+ */
 export const PREDICATE_CASES = [
   "isNonZero",
   "isPositive",
+  "isNegative",
   "isSquare",
 ] as const;
 export type PredicateCase = (typeof PREDICATE_CASES)[number];
@@ -198,6 +201,9 @@ export function surfaceIf(
 export type TypeResolver = (syntax: Syntax, env: Scope) => TypeValue;
 export type CaptureNames = (pattern: Syntax) => Set<string>;
 
+/** Names that carry runtime provenance even after a local binding. */
+type RuntimeNames = Set<string>;
+
 /**
  * Walk a function body and reject refined uses of runtime names that lack
  * evidence. Constants are left to ordinary evaluation.
@@ -214,6 +220,7 @@ export function checkBodyEvidence(options: {
     branch: { condition: Syntax; consequent: Syntax; alternative: Syntax },
     evidence: EvidenceMap,
     bound: Set<string>,
+    runtimeNames: RuntimeNames,
   ) => {
     const check = matchesCheck(branch.condition);
     if (check) {
@@ -226,16 +233,21 @@ export function checkBodyEvidence(options: {
       const thenEvidence = copyEvidence(evidence);
       if (type)
         addEvidence(thenEvidence, check.subject.name, predicatesOfType(type));
-      walk(branch.condition, evidence, bound);
-      walk(branch.consequent, thenEvidence, bound);
-      walk(branch.alternative, evidence, bound);
+      walk(branch.condition, evidence, bound, runtimeNames);
+      walk(branch.consequent, thenEvidence, bound, runtimeNames);
+      walk(branch.alternative, evidence, bound, runtimeNames);
       return;
     }
-    walk(branch.condition, evidence, bound);
-    walk(branch.consequent, evidence, bound);
-    walk(branch.alternative, evidence, bound);
+    walk(branch.condition, evidence, bound, runtimeNames);
+    walk(branch.consequent, evidence, bound, runtimeNames);
+    walk(branch.alternative, evidence, bound, runtimeNames);
   };
-  const walk = (n: Syntax, evidence: EvidenceMap, bound: Set<string>) => {
+  const walk = (
+    n: Syntax,
+    evidence: EvidenceMap,
+    bound: Set<string>,
+    runtimeNames: RuntimeNames,
+  ) => {
     if (
       n.kind === "literal" ||
       n.kind === "symbol" ||
@@ -247,23 +259,35 @@ export function checkBodyEvidence(options: {
     if (n.kind === "form") {
       const branch = surfaceIf(n);
       if (branch) {
-        walkIf(branch, evidence, bound);
+        walkIf(branch, evidence, bound, runtimeNames);
         return;
       }
       if (n.name === "Definition" || n.name === "MacroRegistration") return;
       for (const [, capture] of n.captures)
-        for (const field of capture.fields) walk(field.value, evidence, bound);
+        for (const field of capture.fields)
+          walk(field.value, evidence, bound, runtimeNames);
       return;
     }
     if (n.kind === "block") {
-      const branch = surfaceIf(n);
-      if (branch) {
-        walkIf(branch, evidence, bound);
-        return;
-      }
       const localBound = new Set(bound);
       const localEvidence = copyEvidence(evidence);
-      for (const line of n.lines) {
+      const localRuntime = new Set(runtimeNames);
+      for (let i = 0; i < n.lines.length; ) {
+        // An if/else occupying the next two lines grants evidence only in the
+        // consequent; keep walking any statements that follow the conditional.
+        if (i + 1 < n.lines.length) {
+          const pair = surfaceIf({
+            kind: "block",
+            lines: n.lines.slice(i, i + 2),
+            span: n.span,
+          });
+          if (pair) {
+            walkIf(pair, localEvidence, localBound, localRuntime);
+            i += 2;
+            continue;
+          }
+        }
+        const line = n.lines[i++];
         const item =
           line.kind === "sequence" && line.items.length === 1
             ? line.items[0]
@@ -274,79 +298,156 @@ export function checkBodyEvidence(options: {
             kind: "pack",
             body: binding[0],
           }))
-            walk(expression, localEvidence, localBound);
+            walk(expression, localEvidence, localBound, localRuntime);
           for (const field of binding[1])
-            walk(field.value, localEvidence, localBound);
+            walk(field.value, localEvidence, localBound, localRuntime);
           requirePatternEvidence(
             binding[0],
             binding[1],
             localEvidence,
             localBound,
+            localRuntime,
             env,
             binders,
             resolveType,
           );
+          const rhsRuntime = binding[1].some((field) =>
+            expressionDependsOnRuntime(
+              field.value,
+              env,
+              binders,
+              localBound,
+              localRuntime,
+            ),
+          );
           for (const name of binders({ kind: "pack", body: binding[0] })) {
-            localBound.add(name);
-            for (const field of binding[0]) {
-              const annotation = binary(field.value, "::");
-              const capture =
-                field.value.kind === "symbol"
-                  ? field.value
-                  : annotation?.[0].kind === "symbol"
-                    ? annotation[0]
-                    : undefined;
-              if (!capture || capture.quoted || capture.name !== name) continue;
-              if (annotation) {
-                try {
-                  addEvidence(
-                    localEvidence,
-                    name,
-                    predicatesOfType(resolveType(annotation[1], env)),
-                  );
-                } catch {
-                  /* type errors surface elsewhere */
+            if (rhsRuntime) {
+              // Preserve runtime provenance through aliases such as `alias = n`.
+              localRuntime.add(name);
+            } else {
+              localBound.add(name);
+              for (const field of binding[0]) {
+                const annotation = binary(field.value, "::");
+                const capture =
+                  field.value.kind === "symbol"
+                    ? field.value
+                    : annotation?.[0].kind === "symbol"
+                      ? annotation[0]
+                      : undefined;
+                if (!capture || capture.quoted || capture.name !== name)
+                  continue;
+                if (annotation) {
+                  try {
+                    addEvidence(
+                      localEvidence,
+                      name,
+                      predicatesOfType(resolveType(annotation[1], env)),
+                    );
+                  } catch {
+                    /* type errors surface elsewhere */
+                  }
                 }
               }
             }
           }
         } else {
-          walk(item, localEvidence, localBound);
+          walk(item, localEvidence, localBound, localRuntime);
         }
       }
       return;
     }
     if (n.kind === "pack") {
-      for (const field of n.body) walk(field.value, evidence, bound);
+      for (const field of n.body)
+        walk(field.value, evidence, bound, runtimeNames);
       return;
     }
     if (n.kind === "sequence") {
-      for (const item of n.items) walk(item, evidence, bound);
+      for (const item of n.items) walk(item, evidence, bound, runtimeNames);
       return;
     }
     if (n.kind === "postfix") {
-      walk(n.operand, evidence, bound);
+      walk(n.operand, evidence, bound, runtimeNames);
       return;
     }
     const annotation = binary(n, "::");
     if (annotation) {
-      walk(annotation[0], evidence, bound);
+      walk(annotation[0], evidence, bound, runtimeNames);
       requireExpressionEvidence(
         annotation[0],
         annotation[1],
         evidence,
         bound,
+        runtimeNames,
         env,
         binders,
         resolveType,
       );
       return;
     }
-    walk(n.head, evidence, bound);
-    for (const field of n.body) walk(field.value, evidence, bound);
-    requireCallEvidence(n, evidence, bound, env, binders, resolveType);
+    walk(n.head, evidence, bound, runtimeNames);
+    for (const field of n.body)
+      walk(field.value, evidence, bound, runtimeNames);
+    requireCallEvidence(n, evidence, bound, runtimeNames, env, binders, resolveType);
   };
-  walk(body, options.evidence, new Set());
+  walk(body, options.evidence, new Set(), new Set());
+}
+
+/** True when `expression` is the bare runtime name (not a computation over it). */
+function isDirectRuntimeDesignator(
+  expression: Syntax,
+  name: string,
+): boolean {
+  let n = expression;
+  while (true) {
+    const annotation = binary(n, "::");
+    if (annotation) {
+      n = annotation[0];
+      continue;
+    }
+    if (n.kind === "pack" && n.body.length === 1) {
+      n = n.body[0].value;
+      continue;
+    }
+    break;
+  }
+  return n.kind === "symbol" && !n.quoted && n.name === name;
+}
+
+function expressionDependsOnRuntime(
+  expression: Syntax,
+  env: Scope,
+  binders: CaptureNames,
+  bound: Set<string>,
+  runtimeNames: RuntimeNames,
+): boolean {
+  if (expression.kind === "symbol" && !expression.quoted) {
+    if (runtimeNames.has(expression.name)) return true;
+  }
+  return !!runtimeSubject(expression, env, binders, bound, runtimeNames);
+}
+
+function runtimeSubject(
+  expression: Syntax,
+  env: Scope,
+  binders: CaptureNames,
+  bound: Set<string>,
+  runtimeNames: RuntimeNames,
+): Extract<Syntax, { kind: "symbol" }> | undefined {
+  if (expression.kind === "symbol" && !expression.quoted) {
+    if (runtimeNames.has(expression.name)) return expression;
+  }
+  const dependency = runtimeDependency(expression, env, binders, bound);
+  if (dependency && runtimeNames.has(dependency.name)) return dependency;
+  if (
+    dependency &&
+    !bound.has(dependency.name) &&
+    !runtimeNames.has(dependency.name)
+  )
+    return dependency;
+  // A local alias recorded in runtimeNames is found above; peel nested forms.
+  if (expression.kind === "symbol" && runtimeNames.has(expression.name))
+    return expression;
+  return dependency;
 }
 
 function requireExpressionEvidence(
@@ -354,6 +455,7 @@ function requireExpressionEvidence(
   typeSyntax: Syntax,
   evidence: EvidenceMap,
   bound: Set<string>,
+  runtimeNames: RuntimeNames,
   env: Scope,
   binders: CaptureNames,
   resolveType: TypeResolver,
@@ -365,7 +467,15 @@ function requireExpressionEvidence(
   } catch {
     return;
   }
-  requireTypeEvidence(expression, type, evidence, bound, env, binders);
+  requireTypeEvidence(
+    expression,
+    type,
+    evidence,
+    bound,
+    runtimeNames,
+    env,
+    binders,
+  );
 }
 
 /** Positional field types from a struct/constructor type pattern. */
@@ -432,6 +542,7 @@ function requireTypeEvidence(
   type: TypeValue,
   evidence: EvidenceMap,
   bound: Set<string>,
+  runtimeNames: RuntimeNames,
   env: Scope,
   binders: CaptureNames,
 ): void {
@@ -450,16 +561,37 @@ function requireTypeEvidence(
           fieldTypes[i],
           evidence,
           bound,
+          runtimeNames,
           env,
           binders,
         );
     }
     if (aligned) return;
   }
-  const required = predicatesOfType(type);
+  const required = predicatesOfSelected(type, expression, env, binders, bound);
   if (!required.size) return;
-  const dependency = runtimeDependency(expression, env, binders, bound);
+  const dependency = runtimeSubject(
+    expression,
+    env,
+    binders,
+    bound,
+    runtimeNames,
+  );
   if (!dependency) return;
+  // Evidence for `n` does not establish predicates for a computation over `n`.
+  if (!isDirectRuntimeDesignator(expression, dependency.name)) {
+    throw new LanguageError(
+      "missing refinement evidence for computed value from " + dependency.name,
+      expression.span,
+      {
+        code: "E_NO_METHOD",
+        phase: "declaration",
+        notes: [
+          "A runtime computation needs its own evidence before a refined use; input evidence does not transfer.",
+        ],
+      },
+    );
+  }
   if (hasEvidence(evidence, dependency.name, required, env)) return;
   throw new LanguageError(
     "missing refinement evidence for " + dependency.name,
@@ -474,11 +606,89 @@ function requireTypeEvidence(
   );
 }
 
+/**
+ * Predicates required by `type` for this expression. Multi-member unions only
+ * contribute predicates from members whose erased base matches the argument's
+ * static type (so Float64 does not owe PositiveInt's isPositive).
+ */
+function predicatesOfSelected(
+  type: TypeValue,
+  expression: Syntax,
+  env: Scope,
+  binders: CaptureNames,
+  bound: Set<string>,
+): Set<PredicateId> {
+  const members = type.unionMembers;
+  if (!members || members.length <= 1) return predicatesOfType(type);
+  void binders;
+  void bound;
+  let argType: TypeValue | undefined;
+  const annotation = binary(expression, "::");
+  if (annotation) {
+    try {
+      // Compare by resolved type when the checker can resolve the ascription.
+      // Fall back to the symbol name for simple `:: Int` forms.
+      const ascribed = annotation[1];
+      if (ascribed.kind === "symbol" && !ascribed.quoted) {
+        const binding = env.get(ascribed.name);
+        argType =
+          binding && "kind" in binding && binding.kind === "type"
+            ? binding
+            : undefined;
+        if (!argType) {
+          const matching = members.filter((member) => {
+            const base = member.baseType ?? member;
+            return base.name === ascribed.name || member.name === ascribed.name;
+          });
+          if (matching.length)
+            return matching.reduce((ids, member) => {
+              for (const id of predicatesOfType(member)) ids.add(id);
+              return ids;
+            }, new Set<PredicateId>());
+        }
+      }
+    } catch {
+      /* fall through */
+    }
+  } else if (expression.kind === "symbol" && !expression.quoted) {
+    const binding = env.get(expression.name);
+    if (
+      binding &&
+      "kind" in binding &&
+      binding.kind === "slot" &&
+      binding.type?.kind === "type"
+    )
+      argType = binding.type;
+  }
+  if (argType) {
+    const argBase = argType.baseType ?? argType;
+    const matching = members.filter((member) => {
+      const base = member.baseType ?? member;
+      return (
+        base.key === argBase.key ||
+        base.name === argBase.name ||
+        member.key === argType!.key ||
+        member.name === argType!.name
+      );
+    });
+    if (matching.length)
+      return matching.reduce((ids, member) => {
+        for (const id of predicatesOfType(member)) ids.add(id);
+        return ids;
+      }, new Set<PredicateId>());
+    // Typed argument that matches no member: no predicate obligation here.
+    return new Set();
+  }
+  // Untyped designator: do not demand every member's predicates at once.
+  return new Set();
+}
+
 function requirePatternEvidence(
   pattern: Field<Syntax>[],
   values: Field<Syntax>[],
   evidence: EvidenceMap,
   bound: Set<string>,
+  runtimeNames: RuntimeNames,
   env: Scope,
   binders: CaptureNames,
   resolveType: TypeResolver,
@@ -491,6 +701,7 @@ function requirePatternEvidence(
         annotation[1],
         evidence,
         bound,
+        runtimeNames,
         env,
         binders,
         resolveType,
@@ -498,10 +709,14 @@ function requirePatternEvidence(
   }
 }
 
+/** Native operators whose trailing operand requires isNonZero evidence. */
+const NONZERO_DIVISOR_OPS = new Set(["/", "%", "div", "flDiv"]);
+
 function requireCallEvidence(
   call: Syntax,
   evidence: EvidenceMap,
   bound: Set<string>,
+  runtimeNames: RuntimeNames,
   env: Scope,
   binders: CaptureNames,
   resolveType: TypeResolver,
@@ -514,38 +729,143 @@ function requireCallEvidence(
     head = head.head;
   }
   if (head.kind !== "symbol" || head.quoted) return;
-  const candidates = env
-    .visible(head.name)
-    .filter((c): c is Closure => c.kind === "closure" && !c.macro);
-  if (!candidates.length) return;
-  for (const candidate of candidates) {
-    const patterns = candidate.parameters[0];
-    const args = packs[packs.length - 1];
-    if (!patterns || !args) continue;
-    if (patterns.length !== args.length) continue;
-    for (let i = 0; i < patterns.length; i++) {
-      const annotation = binary(patterns[i].value, "::");
-      if (!annotation) continue;
-      try {
-        requireExpressionEvidence(
-          args[i].value,
-          annotation[1],
-          evidence,
-          bound,
-          env,
-          binders,
-          resolveType,
-          candidate.env,
-        );
-      } catch (error) {
+  if (NONZERO_DIVISOR_OPS.has(head.name)) {
+    // Infix `/` is curried as /(dividend)(divisor); a flat two-arg pack is
+    // accepted the same way.
+    const divisor =
+      packs.length >= 2 && packs[1].length === 1
+        ? packs[1][0].value
+        : packs[0]?.length >= 2
+          ? packs[0][1].value
+          : undefined;
+    if (divisor) {
+      const dependency = runtimeSubject(
+        divisor,
+        env,
+        binders,
+        bound,
+        runtimeNames,
+      );
+      if (dependency) {
+        const required = new Set<PredicateId>(["isNonZero"]);
         if (
-          error instanceof LanguageError &&
-          error.diagnostic.code === "E_NO_METHOD"
+          !isDirectRuntimeDesignator(divisor, dependency.name) ||
+          !hasEvidence(evidence, dependency.name, required, env)
         )
-          throw error;
+          throw new LanguageError(
+            "missing refinement evidence for " +
+              (isDirectRuntimeDesignator(divisor, dependency.name)
+                ? dependency.name
+                : "computed value from " + dependency.name),
+            divisor.span,
+            {
+              code: "E_NO_METHOD",
+              phase: "declaration",
+              notes: [
+                "A runtime divisor needs isNonZero evidence before /, %, div, or flDiv.",
+              ],
+            },
+          );
       }
     }
   }
+  const candidates = env.visible(head.name);
+  const closures = candidates.filter(
+    (c): c is Closure => c.kind === "closure" && !c.macro,
+  );
+  for (const candidate of closures) {
+    if (candidate.parameters.length < packs.length) continue;
+    let applicable = true;
+    for (let p = 0; p < packs.length; p++) {
+      const patterns = candidate.parameters[p];
+      const args = packs[p];
+      if (!patterns || !args || patterns.length !== args.length) {
+        applicable = false;
+        break;
+      }
+    }
+    if (!applicable) continue;
+    for (let p = 0; p < packs.length; p++) {
+      const patterns = candidate.parameters[p];
+      const args = packs[p];
+      for (let i = 0; i < patterns.length; i++) {
+        const annotation = binary(patterns[i].value, "::");
+        if (!annotation) continue;
+        let paramType: TypeValue;
+        try {
+          paramType = resolveType(annotation[1], candidate.env);
+        } catch {
+          continue;
+        }
+        // Skip refined obligations that the argument's static type cannot meet
+        // when another overload covers that type (e.g. Float64 vs PositiveInt).
+        if (!argumentMayMeet(args[i].value, paramType, env, resolveType))
+          continue;
+        try {
+          requireExpressionEvidence(
+            args[i].value,
+            annotation[1],
+            evidence,
+            bound,
+            runtimeNames,
+            env,
+            binders,
+            resolveType,
+            candidate.env,
+          );
+        } catch (error) {
+          if (
+            error instanceof LanguageError &&
+            error.diagnostic.code === "E_NO_METHOD"
+          )
+            throw error;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Whether this argument's static type can inhabit `paramType` after predicate
+ * erasure. Used to avoid demanding PositiveInt evidence when the argument is
+ * already typed as Float64 and a Float64 overload exists.
+ */
+function argumentMayMeet(
+  argument: Syntax,
+  paramType: TypeValue,
+  env: Scope,
+  resolveType: TypeResolver,
+): boolean {
+  let argType: TypeValue | undefined;
+  const annotation = binary(argument, "::");
+  if (annotation) {
+    try {
+      argType = resolveType(annotation[1], env);
+    } catch {
+      return true;
+    }
+  } else if (argument.kind === "symbol" && !argument.quoted) {
+    const binding = env.get(argument.name);
+    if (
+      binding &&
+      "kind" in binding &&
+      binding.kind === "slot" &&
+      binding.type?.kind === "type"
+    )
+      argType = binding.type;
+  }
+  if (!argType) return true;
+  const argBase = argType.baseType ?? argType;
+  const paramBases = (paramType.unionMembers ?? [paramType]).map(
+    (member) => member.baseType ?? member,
+  );
+  return paramBases.some(
+    (base) =>
+      base.key === argBase.key ||
+      base.name === argBase.name ||
+      base.name === "Any" ||
+      argBase.name === "Any",
+  );
 }
 
 /** Boolean tests for the initial Predicate cases. */
@@ -565,5 +885,6 @@ export function predicateTest(name: PredicateCase, value: Value): boolean {
     return n.real.n !== 0n || n.imaginary.n !== 0n;
   }
   if (!isRational(n)) return false;
+  if (name === "isNegative") return n.n < 0n;
   return n.n > 0n;
 }

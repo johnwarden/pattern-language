@@ -36,12 +36,12 @@ test "Defined functions can be overloaded on disjoint constructors"
   expect blue is 2 :: NumericValue
 end
 
-test "An overlapping defined function is ambiguous"
+test "An overlapping defined function is rejected at definition time"
   expect
     def f(x) 1
     def f(:Red) 2
-    f(:Red)
-  fails "E_AMBIGUOUS_VALUE_DESIGNATOR"
+    "definitions complete"
+  fails "E_OVERLAPPING_OVERLOAD"
 end
 
 test "Variables, functions and accessors keep separate uses of the same name"
